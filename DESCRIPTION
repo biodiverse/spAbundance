@@ -1,0 +1,14 @@
+Package: spAbundance
+Type: Package
+Title: Single-Species and Multi-Species Spatial Abundance Models 
+Version: 0.1.0
+Author: Jeffrey Doser [aut, cre], Andrew Finley [aut]
+Maintainer: "Jeffrey Doser [aut, cre]" <doserjef@msu.edu>
+Description: Fits single-species and multi-species non-spatial and spatial abundance models in a Bayesian framework using Markov Chain Monte Carlo (MCMC). 
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    stats, coda, abind, RANN, lme4, foreach, doParallel, methods
+Suggests:
+    testthat

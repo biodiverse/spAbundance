@@ -1,0 +1,12 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+inst/doc
+docs
+compile
+pkgdown
+_pkgdown.yml
+src/*.o
+src/*.so
+*.swp

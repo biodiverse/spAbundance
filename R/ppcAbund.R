@@ -1,0 +1,228 @@
+ppcAbund <- function(object, fit.stat, group, ...) {
+
+  # Check for unused arguments ------------------------------------------
+  formal.args <- names(formals(sys.function(sys.parent())))
+  elip.args <- names(list(...))
+  for(i in elip.args){
+      if(! i %in% formal.args)
+          warning("'",i, "' is not an argument")
+  }
+  # Call ----------------------------------------------------------------
+  cl <- match.call()
+
+  # Some initial checks -------------------------------------------------
+  # Object ----------------------------
+  if (missing(object)) {
+    stop("error: object must be specified")
+  }
+  # if (class(object) %in% c('lfCount', 'sfCount')) {
+  #   stop("error: ppcOcc is not implemented for lfCount and sfCount")
+  # }
+  if (!(class(object) %in% c('NMix', 'spNMix', 'msNMix', 'sfMsNMix', 
+			     'abund', 'spAbund', 'msAbund', 'sfMsAbund'))) {
+    stop("error: object must be one of the following classes: NMix, spNMix, msNMix, sfMSNMix, abund, spAbund, msAbund, sfMsAbund")
+  }
+  # Fit statistic ---------------------
+  if (missing(fit.stat)) {
+    stop("error: fit.stat must be specified")
+  }
+  if (!tolower(fit.stat) %in% c('chi-squared', 'freeman-tukey', 'chi-square')) {
+    stop("error: fit.stat must be either 'chi-squared' or 'freeman-tukey'")
+  }
+  fit.stat <- tolower(fit.stat)
+  # Group -----------------------------
+  if (missing(group)) {
+    stop("error: group must be specified")
+  }
+  if (!(group %in% c(0, 1, 2))) {
+    stop("error: group must be 0 (raw data), 1 (sites), or 2 (replicates)")
+  }
+  if (group != 0 & class(object) %in% c('abund', 'spAbund')) {
+    stop("error: group must be 0 (raw data) for abundance GLM models")
+  }
+
+  # TODO: temporary
+  if (class(object) %in% c('msAbund', 'sfMsAbund')) {
+    stop("error: ppcAbund not currently implemented for msAbund and sfMsAbund objects")
+  }
+  # Functions -------------------------------------------------------------
+  logit <- function(theta, a = 0, b = 1) {log((theta-a)/(b-theta))}
+  logit.inv <- function(z, a = 0, b = 1) {b-(b-a)/(1+exp(z))}
+
+  out <- list()
+  # Single-species N-mixture models ---------------------------------------
+  if (class(object) %in% c('NMix', 'spNMix')) {
+    y <- object$y
+    J <- nrow(y)
+    if (is(object, 'NMix')) {
+      fitted.out <- fitted.NMix(object)
+    } else {
+      fitted.out <- fitted.spNMix(object)
+    }
+    N.samples <- object$N.samples
+    y.rep.samples <- fitted.out$y.rep.samples
+    det.prob <- fitted.out$p.samples
+    n.samples <- object$n.post * object$n.chains
+    fit.y <- rep(NA, n.samples)
+    fit.y.rep <- rep(NA, n.samples)
+    K <- apply(y, 1, function(a) sum(!is.na(a)))
+    e <- 0.0001
+    if (group == 0) {
+      if (fit.stat %in% c('chi-squared', 'chi-square')) {
+        fit.big.y.rep <- array(NA, dim = c(J, max(K), n.samples))
+        fit.big.y <- array(NA, dim = c(J, max(K), n.samples))
+        for (i in 1:n.samples) {
+	  for (j in 1:J) {
+            E <- det.prob[i, j, 1:K[j]] * N.samples[i, j]
+	    fit.big.y.rep[j, 1:K[j], i] <- (y.rep.samples[i, j, 1:K[j]] - E)^2 / (E + e)
+	    fit.big.y[j, 1:K[j], i] <- (y[j, 1:K[j]] - E)^2 / (E + e)
+	  } # j
+	  fit.y[i] <- sum(fit.big.y[, , i], na.rm = TRUE)
+	  fit.y.rep[i] <- sum(fit.big.y.rep[, , i], na.rm = TRUE)
+	} # i
+      } else if (fit.stat == 'freeman-tukey') {
+        fit.big.y.rep <- array(NA, dim = c(J, max(K), n.samples))
+        fit.big.y <- array(NA, dim = c(J, max(K), n.samples))
+        for (i in 1:n.samples) {
+	  for (j in 1:J) {
+            E <- det.prob[i, j, 1:K[j]] * N.samples[i, j]
+	    fit.big.y.rep[j, 1:K[j], i] <- (y.rep.samples[i, j, 1:K[j]] - E)^2 / (E + e)
+	    fit.big.y.rep[j, 1:K[j], i] <- (sqrt(y.rep.samples[i, j, 1:K[j]]) - sqrt(E))^2
+	    fit.big.y[j, 1:K[j], i] <- (sqrt(y[j, 1:K[j]]) - sqrt(E))^2
+	  } # j
+	  fit.y[i] <- sum(fit.big.y[, , i], na.rm = TRUE)
+	  fit.y.rep[i] <- sum(fit.big.y.rep[, , i], na.rm = TRUE)
+	} # i
+      }
+    }
+    # Do the stuff 
+    if (group == 1) {
+      y.grouped <- apply(y, 1, sum, na.rm = TRUE)
+      y.rep.grouped <- apply(y.rep.samples, c(1, 2), sum, na.rm = TRUE)
+      fit.big.y.rep <- matrix(NA, length(y.grouped), n.samples)
+      fit.big.y <- matrix(NA, length(y.grouped), n.samples)
+      if (fit.stat %in% c('chi-squared', 'chi-square')) {
+        for (i in 1:n.samples) {
+          E.grouped <- apply(det.prob[i, , , drop = FALSE] * N.samples[i, ], 2, sum, na.rm = TRUE)
+          fit.big.y[, i] <- (y.grouped - E.grouped)^2 / (E.grouped + e)
+          fit.y[i] <- sum(fit.big.y[, i])
+	  fit.big.y.rep[, i] <- (y.rep.grouped[i,] - E.grouped)^2 / (E.grouped + e)
+          fit.y.rep[i] <- sum(fit.big.y.rep[, i])
+        }
+      } else if (fit.stat == 'freeman-tukey') {
+        for (i in 1:n.samples) {
+          E.grouped <- apply(det.prob[i, , , drop = FALSE] * N.samples[i, ], 2, sum, na.rm = TRUE)
+          fit.big.y[, i] <- (sqrt(y.grouped) - sqrt(E.grouped))^2 
+          fit.y[i] <- sum(fit.big.y[, i])
+	  fit.big.y.rep[, i] <- (sqrt(y.rep.grouped[i,]) - sqrt(E.grouped))^2 
+          fit.y.rep[i] <- sum(fit.big.y.rep[, i])
+        }
+      }
+    } else if (group == 2) {
+      y.grouped <- apply(y, 2, sum, na.rm = TRUE)
+      y.rep.grouped <- apply(y.rep.samples, c(1, 3), sum, na.rm = TRUE)
+      fit.big.y <- matrix(NA, length(y.grouped), n.samples)
+      fit.big.y.rep <- matrix(NA, length(y.grouped), n.samples)
+      if (fit.stat %in% c('chi-squared', 'chi-square')) {
+        for (i in 1:n.samples) {
+          E.grouped <- apply(det.prob[i, , , drop = FALSE] * N.samples[i, ], 3, sum, na.rm = TRUE)
+          fit.big.y[, i] <- (y.grouped - E.grouped)^2 / (E.grouped + e)
+          fit.y[i] <- sum(fit.big.y[, i])
+	  fit.big.y.rep[, i] <- (y.rep.grouped[i,] - E.grouped)^2 / (E.grouped + e)
+          fit.y.rep[i] <- sum(fit.big.y.rep[, i])
+        }
+      } else if (fit.stat == 'freeman-tukey') {
+        for (i in 1:n.samples) {
+          E.grouped <- apply(det.prob[i, , , drop = FALSE] * N.samples[i, ], 3, sum, na.rm = TRUE)
+          fit.big.y[, i] <- (sqrt(y.grouped) - sqrt(E.grouped))^2 
+          fit.y[i] <- sum(fit.big.y[, i])
+	  fit.big.y.rep[, i] <- (sqrt(y.rep.grouped[i,]) - sqrt(E.grouped))^2 
+          fit.y.rep[i] <- sum(fit.big.y.rep[, i])
+        }
+      }
+    }
+    out$fit.y <- fit.y
+    out$fit.y.rep <- fit.y.rep
+    if (group != 0) {
+      out$fit.y.group.quants <- apply(fit.big.y, 1, quantile, c(0.025, 0.25, 0.5, 0.75, 0.975))
+      out$fit.y.rep.group.quants <- apply(fit.big.y.rep, 1, quantile, c(0.025, 0.25, 0.5, 0.75, 0.975))
+    } else {
+      out$fit.y.group.quants <- apply(fit.big.y, c(1, 2), quantile, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm = TRUE)
+      out$fit.y.rep.group.quants <- apply(fit.big.y.rep, c(1, 2), quantile, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm = TRUE)
+    }
+    # For summaries
+    out$group <- group
+    out$fit.stat <- fit.stat
+    out$class <- class(object)
+    out$call <- cl
+    out$n.samples <- object$n.samples
+    out$n.burn <- object$n.burn
+    out$n.thin <- object$n.thin
+    out$n.post <- object$n.post
+    out$n.chains <- object$n.chains
+  } 
+ 
+  # Single-species abundance models --------------------------------------- 
+  if (class(object) %in% c('abund', 'spAbund')) {
+    y <- object$y
+    J <- nrow(y)
+    if (is(object, 'abund')) {
+      y.rep.samples <- fitted.abund(object)
+    } else {
+      y.rep.samples <- fitted.spAbund(object)
+    }
+    mu.samples <- object$mu.samples
+    n.samples <- object$n.post * object$n.chains
+    fit.y <- rep(NA, n.samples)
+    fit.y.rep <- rep(NA, n.samples)
+    K <- apply(y, 1, function(a) sum(!is.na(a)))
+    e <- 0.0001
+    if (group == 0) {
+      if (fit.stat %in% c('chi-squared', 'chi-square')) {
+        fit.big.y.rep <- array(NA, dim = c(J, max(K), n.samples))
+        fit.big.y <- array(NA, dim = c(J, max(K), n.samples))
+        for (i in 1:n.samples) {
+	  for (j in 1:J) {
+            E <- mu.samples[i, j, 1:K[j]]
+	    fit.big.y.rep[j, 1:K[j], i] <- (y.rep.samples[i, j, 1:K[j]] - E)^2 / (E + e)
+	    fit.big.y[j, 1:K[j], i] <- (y[j, 1:K[j]] - E)^2 / (E + e)
+	  } # j
+	  fit.y[i] <- sum(fit.big.y[, , i], na.rm = TRUE)
+	  fit.y.rep[i] <- sum(fit.big.y.rep[, , i], na.rm = TRUE)
+	} # i
+      } else if (fit.stat == 'freeman-tukey') {
+        fit.big.y.rep <- array(NA, dim = c(J, max(K), n.samples))
+        fit.big.y <- array(NA, dim = c(J, max(K), n.samples))
+        for (i in 1:n.samples) {
+	  for (j in 1:J) {
+            E <- mu.samples[i, j, 1:K[j]]
+	    fit.big.y.rep[j, 1:K[j], i] <- (y.rep.samples[i, j, 1:K[j]] - E)^2 / (E + e)
+	    fit.big.y.rep[j, 1:K[j], i] <- (sqrt(y.rep.samples[i, j, 1:K[j]]) - sqrt(E))^2
+	    fit.big.y[j, 1:K[j], i] <- (sqrt(y[j, 1:K[j]]) - sqrt(E))^2
+	  } # j
+	  fit.y[i] <- sum(fit.big.y[, , i], na.rm = TRUE)
+	  fit.y.rep[i] <- sum(fit.big.y.rep[, , i], na.rm = TRUE)
+	} # i
+      }
+    }
+    out$fit.y <- fit.y
+    out$fit.y.rep <- fit.y.rep
+    out$fit.y.group.quants <- apply(fit.big.y, c(1, 2), quantile, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm = TRUE)
+    out$fit.y.rep.group.quants <- apply(fit.big.y.rep, c(1, 2), quantile, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm = TRUE)
+    # For summaries
+    out$group <- group
+    out$fit.stat <- fit.stat
+    out$class <- class(object)
+    out$call <- cl
+    out$n.samples <- object$n.samples
+    out$n.burn <- object$n.burn
+    out$n.thin <- object$n.thin
+    out$n.post <- object$n.post
+    out$n.chains <- object$n.chains
+  } 
+
+  class(out) <- 'ppcAbund'
+
+  return(out)
+
+}

@@ -1,0 +1,17 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^LICENSE\.md$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^vignettes$
+^compile$
+^README\.Rmd$
+^\.Rhistory$
+^\.gitignore$
+^vignettes/\.gitignore$
+^\.git$
+^codecov\.yml$
+^\.github$
+^tests$
+^README\.html$
