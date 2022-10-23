@@ -120,17 +120,18 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),
   # Random effects --------------------------------------------------------
   if (length(mu.RE) > 0) {
     p.nmix.re <- length(unlist(mu.RE$beta.indx))
+    # p.nmix.re <- length(unlist(mu.RE$levels))
     tmp <- sapply(mu.RE$beta.indx, length)
     re.col.indx <- unlist(lapply(1:length(mu.RE$beta.indx), function(a) rep(a, tmp[a])))
-    sigma.sq.mu <- mu.RE$sigma.sq.mu[re.col.indx]
+    sigma.sq.mu <- mu.RE$sigma.sq.mu
     n.nmix.re.long <- mu.RE$levels[re.col.indx]
     n.nmix.re <- sum(n.nmix.re.long)
     beta.star.indx <- rep(1:p.nmix.re, n.nmix.re.long)
     beta.star <- rep(0, n.nmix.re)
     X.random <- X[, , unlist(mu.RE$beta.indx), drop = FALSE]
     n.random <- dim(X.random)[3]
-    X.re <- array(NA, dim = c(J, max(n.rep), p.nmix.re))
-    for (i in 1:p.nmix.re) {
+    X.re <- array(NA, dim = c(J, max(n.rep), length(unique(re.col.indx))))
+    for (i in 1:length(unique(re.col.indx))) {
       for (j in 1:J) {
         X.re[j, 1:n.rep[j], i] <- sample(1:mu.RE$levels[i], n.rep[j], replace = TRUE)  
       }
@@ -139,11 +140,6 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),
     for (i in 1:p.nmix.re) {
       beta.star[which(beta.star.indx == i)] <- rnorm(n.nmix.re.long[i], 0, 
 						     sqrt(sigma.sq.mu[i]))
-    }
-    if (p.nmix.re > 1) {
-      for (j in 2:p.nmix.re) {
-        X.re[, , j] <- X.re[, , j] + max(X.re[, , j - 1], na.rm = TRUE)
-      }
     }
     if (p.nmix.re > 1) {
       for (j in 2:p.nmix.re) {
@@ -162,7 +158,6 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),
   }
 
   # Data formation --------------------------------------------------------
-  psi <- matrix(NA, J, max(n.rep))
   mu <- matrix(NA, J, max(n.rep))
   y <- matrix(NA, J, max(n.rep))
   for (j in 1:J) {
@@ -170,22 +165,21 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),
       if (family == 'NB') {
         if (sp) {
           if (length(mu.RE) > 0) {
-            psi[j, k] <- logit.inv(t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
+            mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
 				   w[j] + 
 				   beta.star.sites[j, k])
           } else {
-            psi[j, k] <- logit.inv(t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + w[j])
+            mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + w[j])
           }
         } else {
           if (length(mu.RE) > 0) {
-            psi[j, k] <- logit.inv(t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
+            mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
 				   beta.star.sites[j, k])
           } else {
-            psi[j, k] <- logit.inv(t(as.matrix(X[j, k, ])) %*% as.matrix(beta))
+            mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta))
           }
         }
-        # Get mean and overdispersion parameter 
-        mu[j, k] <- kappa * exp(logit(psi[j, k]))
+        # Get data following NB with mean mu and overdispersion kappa. 
         y[j, k] <- rnbinom(1, size = kappa, mu = mu[j, k])
       } else if (family == 'Poisson') {
         if (sp) {

@@ -57,7 +57,7 @@ abund(formula, data, inits, priors, tuning,
   length equal to the number of coefficients to be estimated or of length one
   if priors are the same for all coefficients. If not specified, prior means 
   are set to 0 and prior variances set to 100. \code{kappa} is the negative binomial 
-  dispersion parameter and is assumed to follow a uniform distribution. The 
+  over-dispersion parameter and is assumed to follow a uniform distribution. The 
   hyperparameters of the uniform distribution are passed as a vector of length
   two with the first and second elements corresponding to the lower and upper
   bounds of the uniform distribution. \code{sigma.sq.mu}
@@ -165,7 +165,7 @@ abund(formula, data, inits, priors, tuning,
     for the regression coefficients.}
 
   \item{kappa.samples}{a \code{coda} object of posterior samples
-    for the abundance dispersion parameter. Only included when
+    for the abundance overdispersion parameter. Only included when
     \code{family = 'NB'}.}
 
   \item{y.rep.samples}{a three-dimensional array of posterior samples 
@@ -242,7 +242,7 @@ prior.list <- list(beta.normal = list(mean = 0, var = 100),
 inits.list <- list(beta = 0,
 		   kappa = kappa)
 
-tuning <- 0.3
+tuning <- list(kappa = 0.2, beta = 0.1, beta.star = 0.2)
 n.batch <- 5
 batch.length <- 25
 n.burn <- 0

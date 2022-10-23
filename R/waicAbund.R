@@ -56,6 +56,8 @@ waicAbund <- function(object, N.max, ...) {
     kappa.samples <- object$kappa.samples
     y <- object$y
     y.max <- apply(y, 1, max, na.rm = TRUE)
+    # TODO: 
+    # y.max <- ifelse(y.max == 0, 1, y.max)
     K <- apply(y, 1, function(a) sum(!is.na(a)))
     K.max <- max(K)
     mu.samples <- object$mu.samples

@@ -1,7 +1,7 @@
 spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
 		   cov.model = 'exponential', NNGP = TRUE, 
 		   n.neighbors = 15, search.type = 'cb',
-		   n.batch, batch.length, accept.rate = 0.43, family = 'NB', 
+		   n.batch, batch.length, accept.rate = 0.43, family = 'Poisson', 
 		   n.omp.threads = 1, verbose = TRUE,
 		   n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
 		   n.chains = 1, k.fold, k.fold.threads = 1, k.fold.seed = 100, 
@@ -143,7 +143,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   # return error if they are. 
   # Abundance -------------------------
   if (!is.null(findbars(abund.formula))) {
-    abund.re.names <- sapply(findbars(abund.formula), all.vars)
+    abund.re.names <- unique(unlist(sapply(findbars(abund.formula), all.vars)))
     for (i in 1:length(abund.re.names)) {
       if (is(data$abund.covs[, abund.re.names[i]], 'factor')) {
         stop(paste("error: random effect variable ", abund.re.names[i], " specified as a factor. Random effect variables must be specified as numeric.", sep = ''))
@@ -155,7 +155,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
   # Detection -----------------------
   if (!is.null(findbars(det.formula))) {
-    det.re.names <- sapply(findbars(det.formula), all.vars)
+    det.re.names <- unique(unlist(sapply(findbars(det.formula), all.vars)))
     for (i in 1:length(det.re.names)) {
       if (is(data$det.covs[, det.re.names[i]], 'factor')) {
         stop(paste("error: random effect variable ", det.re.names[i], " specified as a factor. Random effect variables must be specified as numeric.", sep = ''))
@@ -196,6 +196,12 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       data$det.covs[y.missing, i] <- NA
     }
   }
+
+  # Remove missing values from det.covs in order to ensure formula parsing
+  # works when random slopes are provided.
+  tmp <- apply(data$det.covs, 1, function (a) sum(is.na(a)))
+  data$det.covs <- as.data.frame(data$det.covs[tmp == 0, , drop = FALSE])
+
   # Formula -------------------------------------------------------------
   # Abundance -------------------------
   if (is(abund.formula, 'formula')) {
@@ -204,12 +210,15 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     X.re <- as.matrix(tmp[[4]])
     x.re.names <- colnames(X.re)
     x.names <- tmp[[2]]
+    X.random <- as.matrix(tmp[[5]])
+    x.random.names <- colnames(X.random)
   } else {
     stop("error: abund.formula is misspecified")
   }
   # Get RE level names
   re.level.names <- lapply(data$abund.covs[, x.re.names, drop = FALSE],
       		     function (a) sort(unique(a)))
+  x.re.names <- x.random.names
 
   # Detection -----------------------
   if (is(det.formula, 'formula')) {
@@ -218,11 +227,14 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     X.p.re <- as.matrix(tmp[[4]])
     x.p.re.names <- colnames(X.p.re)
     x.p.names <- tmp[[2]]
+    X.p.random <- as.matrix(tmp[[5]])
+    x.p.random.names <- colnames(X.p.random)
   } else {
     stop("error: det.formula is misspecified")
   }
   p.re.level.names <- lapply(data$det.covs[, x.p.re.names, drop = FALSE],
                              function (a) sort(unique(a)))
+  x.p.re.names <- x.p.random.names
 
   # Get basic info from inputs ------------------------------------------
   # Number of sites
@@ -256,6 +268,10 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   N.long.indx <- N.long.indx - 1
   y <- c(y)
   names.long <- which(!is.na(y))
+  # Make necessary adjustment for site-level covariates only
+  if (nrow(X.p) == J) {
+    X.p <- X.p[N.long.indx + 1, , drop = FALSE]
+  }
   # Remove missing observations when the covariate data are available but
   # there are missing detection-nondetection data. 
   if (nrow(X.p) == length(y)) {
@@ -269,20 +285,16 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   n.obs <- nrow(X.p)
 
   # Get random effect matrices all set ----------------------------------
+  X.re <- X.re - 1
   if (p.abund.re > 1) {
     for (j in 2:p.abund.re) {
       X.re[, j] <- X.re[, j] + max(X.re[, j - 1]) + 1
     }
   }
+  X.p.re <- X.p.re - 1
   if (p.det.re > 1) {
     for (j in 2:p.det.re) {
       X.p.re[, j] <- X.p.re[, j] + max(X.p.re[, j - 1]) + 1
-    }
-  }
-  lambda.p <- matrix(0, n.obs, n.det.re)
-  if (p.det.re > 0) {
-    for (i in 1:n.det.re) {
-      lambda.p[which(X.p.re == (i - 1), arr.ind = TRUE)[, 1], i] <- 1
     }
   }
   # Priors --------------------------------------------------------------
@@ -457,18 +469,23 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     sigma.sq.p.b <- 0
   }
   # kappa -----------------------------
-  if ("kappa.unif" %in% names(priors)) {
-    if (!is.vector(priors$kappa.unif) | !is.atomic(priors$kappa.unif) | length(priors$kappa.unif) != 2) {
-      stop("error: kappa.unif must be a vector of length 2 with elements corresponding to kappa's lower and upper bounds")
+  if (family == 'NB') {
+    if ("kappa.unif" %in% names(priors)) {
+      if (!is.vector(priors$kappa.unif) | !is.atomic(priors$kappa.unif) | length(priors$kappa.unif) != 2) {
+        stop("error: kappa.unif must be a vector of length 2 with elements corresponding to kappa's lower and upper bounds")
+      }
+      kappa.a <- priors$kappa.unif[1]
+      kappa.b <- priors$kappa.unif[2]
+    } else {
+      if (verbose) {
+        message("No prior specified for kappa.unif.\nSetting uniform bounds of 0 and 100.\n")
+      }
+      kappa.a <- 0 
+      kappa.b <- 100 
     }
-    kappa.a <- priors$kappa.unif[1]
-    kappa.b <- priors$kappa.unif[2]
   } else {
-    if (verbose) {
-      message("No prior specified for kappa.unif.\nSetting uniform bounds of 0 and 100.\n")
-    }
-    kappa.a <- 0 
-    kappa.b <- 100 
+    kappa.a <- 0
+    kappa.b <- 0
   }
   # phi -----------------------------
   if ("phi.unif" %in% names(priors)) {
@@ -486,17 +503,28 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     phi.a <- 3 / max(coords.D)
     phi.b <- 3 / sort(unique(c(coords.D)))[2]
   }
-  # sigma.sq -----------------------------
+  if (("sigma.sq.ig" %in% names(priors)) & ("sigma.sq.unif" %in% names(priors))) {
+    stop("error: cannot specify both an IG and a uniform prior for sigma.sq")
+  }
   if ("sigma.sq.ig" %in% names(priors)) { # inverse-gamma prior.
+    sigma.sq.ig <- TRUE
     if (!is.vector(priors$sigma.sq.ig) | !is.atomic(priors$sigma.sq.ig) | length(priors$sigma.sq.ig) != 2) {
       stop("error: sigma.sq.ig must be a vector of length 2 with elements corresponding to sigma.sq's shape and scale parameters")
     }
     sigma.sq.a <- priors$sigma.sq.ig[1]
     sigma.sq.b <- priors$sigma.sq.ig[2]
+  } else if ('sigma.sq.unif' %in% names(priors)) {
+      sigma.sq.ig <- FALSE
+      if (!is.vector(priors$sigma.sq.unif) | !is.atomic(priors$sigma.sq.unif) | length(priors$sigma.sq.unif) != 2) {
+        stop("error: sigma.sq.unif must be a vector of length 2 with elements corresponding to sigma.sq's lower and upper bounds")
+      }
+      sigma.sq.a <- priors$sigma.sq.unif[1]
+      sigma.sq.b <- priors$sigma.sq.unif[2]
   } else {
     if (verbose) {
       message("No prior specified for sigma.sq.\nUsing an inverse-Gamma prior with the shape parameter set to 2 and scale parameter to 1.\n")
     }
+    sigma.sq.ig <- TRUE
     sigma.sq.a <- 2
     sigma.sq.b <- 1
   }
@@ -562,9 +590,9 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       beta.inits <- rep(beta.inits, p.abund)
     }
   } else {
-    beta.inits <- rnorm(p.abund, mu.beta, sqrt(sigma.beta))
+    beta.inits <- rnorm(p.abund, 0, 1)
     if (verbose) {
-      message('beta is not specified in initial values.\nSetting initial values to random values from the prior distribution\n')
+      message('beta is not specified in initial values.\nSetting initial values to random values from a standard normal distribution\n')
     }
   }
   # alpha -----------------------
@@ -583,9 +611,9 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       alpha.inits <- rep(alpha.inits, p.det)
     }
   } else {
-    alpha.inits <- rnorm(p.det, mu.alpha, sqrt(sigma.alpha))
+    alpha.inits <- rnorm(p.det, 0, 1)
     if (verbose) {
-      message("alpha is not specified in initial values.\nSetting initial values to random values from the prior distribution\n")
+      message("alpha is not specified in initial values.\nSetting initial values to random values from a standard normal distribution\n")
     }
   }
   # sigma.sq.mu -------------------
@@ -605,9 +633,9 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
         sigma.sq.mu.inits <- rep(sigma.sq.mu.inits, p.abund.re)
       }
     } else {
-      sigma.sq.mu.inits <- runif(p.abund.re, 0.5, 10)
+      sigma.sq.mu.inits <- runif(p.abund.re, 0.05, 2)
       if (verbose) {
-        message("sigma.sq.mu is not specified in initial values.\nSetting initial values to random values between 0.5 and 10\n")
+        message("sigma.sq.mu is not specified in initial values.\nSetting initial values to random values between 0.05 and 2\n")
       }
     }
     beta.star.indx <- rep(0:(p.abund.re - 1), n.abund.re.long)
@@ -635,9 +663,9 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
         sigma.sq.p.inits <- rep(sigma.sq.p.inits, p.det.re)
       }
     } else {
-      sigma.sq.p.inits <- runif(p.det.re, 0.5, 10)
+      sigma.sq.p.inits <- runif(p.det.re, 0.05, 2)
       if (verbose) {
-        message("sigma.sq.p is not specified in initial values.\nSetting initial values to random values between 0.5 and 10\n")
+        message("sigma.sq.p is not specified in initial values.\nSetting initial values to random values between 0.05 and 2\n")
       }
     }
     alpha.star.indx <- rep(0:(p.det.re - 1), n.det.re.long)
@@ -648,16 +676,20 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     alpha.star.inits <- 0
   }
   # kappa ---------------------------
-  if ("kappa" %in% names(inits)) {
-    kappa.inits <- inits[["kappa"]]
-    if (length(kappa.inits) != 1) {
-      stop("error: initial values for kappa must be of length 1")
+  if (family == 'NB') {
+    if ("kappa" %in% names(inits)) {
+      kappa.inits <- inits[["kappa"]]
+      if (length(kappa.inits) != 1) {
+        stop("error: initial values for kappa must be of length 1")
+      }
+    } else {
+      kappa.inits <- runif(1, kappa.a, kappa.b)
+      if (verbose) {
+        message("kappa is not specified in initial values.\nSetting initial value to random value from the prior distribution\n")
+      }
     }
   } else {
-    kappa.inits <- runif(1, kappa.a, kappa.b)
-    if (verbose) {
-      message("kappa is not specified in initial values.\nSetting initial value to random value from the prior distribution\n")
-    }
+    kappa.inits <- 0
   }
   # phi -----------------------------
   if ("phi" %in% names(inits)) {
@@ -678,9 +710,13 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       stop("error: initial values for sigma.sq must be of length 1")
     }
   } else {
-    sigma.sq.inits <- rigamma(1, sigma.sq.a, sigma.sq.b)
+    if (sigma.sq.ig) {
+    sigma.sq.inits <- runif(1, 0.05, 3)
+    } else {
+      sigma.sq.inits <- runif(1, sigma.sq.a, sigma.sq.b)
+    }
     if (verbose) {
-      message("sigma.sq is not specified in initial values.\nSetting initial value to random value from the prior distribution\n")
+      message("sigma.sq is not specified in initial values.\nSetting initial value to random value between 0.05 and 3 or the user-specified bounds if using a uniform prior.\n")
     }
   }
   # w -----------------------------
@@ -743,17 +779,103 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
 
   # Get tuning values ---------------------------------------------------
   sigma.sq.tuning <- 0
+  beta.tuning <- 0
+  alpha.tuning <- 0
+  w.tuning <- 0
   phi.tuning <- 0
   nu.tuning <- 0
   kappa.tuning <- 0
+  beta.star.tuning <- 0
+  alpha.star.tuning <- 0
   if (missing(tuning)) {
+    beta.tuning <- rep(1, p.abund)
+    beta.star.tuning <- rep(1, n.abund.re)
+    alpha.tuning <- rep(1, p.det)
+    alpha.star.tuning <- rep(1, n.det.re)
     phi.tuning <- 1
     kappa.tuning <- 1
     if (cov.model == 'matern') {
       nu.tuning <- 1
     }
+    if (!sigma.sq.ig) {
+      sigma.sq.tuning <- 1
+    }
   } else {
     names(tuning) <- tolower(names(tuning))
+    # beta ---------------------------
+    if(!"beta" %in% names(tuning)) {
+      stop("error: beta must be specified in tuning value list")
+    }
+    beta.tuning <- tuning$beta
+    if (length(beta.tuning) != 1 & length(beta.tuning) != p.abund) {
+      stop(paste("error: beta tuning must be a single value or a vector of length ", 
+        	 p.abund, sep = ''))
+    } 
+    if (length(beta.tuning) == 1) {
+      beta.tuning <- rep(beta.tuning, p.abund)
+    }
+    if (p.abund.re > 0) {
+      # beta.star ---------------------------
+      if(!"beta.star" %in% names(tuning)) {
+        stop("error: beta.star must be specified in tuning value list")
+      }
+      beta.star.tuning <- tuning$beta.star
+      if (length(beta.star.tuning) != 1) {
+        stop("error: beta.star tuning must be a single value")
+      } 
+      beta.star.tuning <- rep(beta.star.tuning, n.abund.re)
+    } else {
+      beta.star.tuning <- NULL 
+    }
+    # alpha ---------------------------
+    if(!"alpha" %in% names(tuning)) {
+      stop("error: alpha must be specified in tuning value list")
+    }
+    alpha.tuning <- tuning$alpha
+    if (length(alpha.tuning) != 1 & length(alpha.tuning) != p.det) {
+      stop(paste("error: alpha tuning must be a single value or a vector of length ", 
+        	 p.det, sep = ''))
+    } 
+    if (length(alpha.tuning) == 1) {
+      alpha.tuning <- rep(alpha.tuning, p.det)
+    }
+    if (p.det.re > 0) {
+      # alpha.star ---------------------------
+      if(!"alpha.star" %in% names(tuning)) {
+        stop("error: alpha.star must be specified in tuning value list")
+      }
+      alpha.star.tuning <- tuning$alpha.star
+      if (length(alpha.star.tuning) != 1) {
+        stop("error: alpha.star tuning must be a single value")
+      } 
+      alpha.star.tuning <- rep(alpha.star.tuning, n.det.re)
+    } else {
+      alpha.star.tuning <- NULL
+    }
+    if (family == 'NB') {
+      # kappa ---------------------------
+      if(!"kappa" %in% names(tuning)) {
+        stop("error: kappa must be specified in tuning value list")
+      }
+      kappa.tuning <- tuning$kappa
+      if (length(kappa.tuning) != 1) {
+        stop("error: kappa tuning must be a single value")
+      } 
+    } else {
+      kappa.tuning <- NULL
+    }
+    # w ---------------------------
+    if(!"w" %in% names(tuning)) {
+      stop("error: w must be specified in tuning value list")
+    }
+    w.tuning <- tuning$w
+    if (length(w.tuning) != 1 & length(w.tuning) != J) {
+      stop(paste("error: w tuning must be a single value or a vector of length ", 
+        	 J, sep = ''))
+    } 
+    if (length(w.tuning) == 1) {
+      w.tuning <- rep(w.tuning, J)
+    }
     # phi ---------------------------
     if(!"phi" %in% names(tuning)) {
       stop("error: phi must be specified in tuning value list")
@@ -761,14 +883,6 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     phi.tuning <- tuning$phi
     if (length(phi.tuning) != 1) {
       stop("error: phi tuning must be a single value")
-    } 
-    # kappa ---------------------------
-    if(!"kappa" %in% names(tuning)) {
-      stop("error: kappa must be specified in tuning value list")
-    }
-    kappa.tuning <- tuning$kappa
-    if (length(kappa.tuning) != 1) {
-      stop("error: kappa tuning must be a single value")
     } 
     if (cov.model == 'matern') {
       # nu --------------------------
@@ -779,13 +893,44 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       if (length(nu.tuning) != 1) {
         stop("error: nu tuning must be a single value")
       } 
+    } else {
+      nu.tuning <- NULL
+    }
+    if (!sigma.sq.ig) {
+      # sigma.sq --------------------------
+      if(!"sigma.sq" %in% names(tuning)) {
+        stop("error: sigma.sq must be specified in tuning value list")
+      }
+      sigma.sq.tuning <- tuning$sigma.sq
+      if (length(sigma.sq.tuning) != 1) {
+        stop("error: sigma.sq tuning must be a single value")
+      } 
     }
   }
-  # Log the tuning values since they are used in the AMCMC. 
-  # Note that kappa is placed first here. 
-  tuning.c <- log(c(kappa.tuning, sigma.sq.tuning, phi.tuning, nu.tuning))
+  tuning.c <- log(c(beta.tuning, alpha.tuning, beta.star.tuning, 
+		    alpha.star.tuning, sigma.sq.tuning, phi.tuning, 
+		    nu.tuning, w.tuning, kappa.tuning))
 
   curr.chain <- 1
+
+  # Other miscellaneous ---------------------------------------------------
+  # For prediction with random slopes
+  re.cols <- list()
+  if (p.abund.re > 0) {
+    split.names <- strsplit(x.re.names, "[-]")
+    for (j in 1:p.abund.re) {
+      re.cols[[j]] <- split.names[[j]][1]
+      names(re.cols)[j] <- split.names[[j]][2]
+    }
+  }
+  re.det.cols <- list()
+  if (p.det.re > 0) {
+    split.names <- strsplit(x.p.re.names, "[-]")
+    for (j in 1:p.det.re) {
+      re.det.cols[[j]] <- split.names[[j]][1]
+      names(re.det.cols)[j] <- split.names[[j]][2]
+    }
+  }
 
   if (!NNGP) {
     stop("spNMix is currently only implemented with NNGPs. Please set NNGP = TRUE")
@@ -855,6 +1000,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     storage.mode(kappa.inits) <- "double"
     storage.mode(phi.inits) <- "double"
     storage.mode(sigma.sq.inits) <- "double"
+    storage.mode(sigma.sq.ig) <- "integer"
     storage.mode(nu.inits) <- "double"
     storage.mode(w.inits) <- "double"
     storage.mode(N.long.indx) <- "integer"
@@ -894,6 +1040,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     storage.mode(samples.info) <- "integer"
     # For detection random effects
     storage.mode(X.p.re) <- "integer"
+    storage.mode(X.p.random) <- "double"
     alpha.level.indx <- sort(unique(c(X.p.re)))
     storage.mode(alpha.level.indx) <- "integer"
     storage.mode(n.det.re.long) <- "integer"
@@ -904,6 +1051,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     storage.mode(alpha.star.indx) <- "integer"
     # For abundance random effects
     storage.mode(X.re) <- "integer"
+    storage.mode(X.random) <- "double"
     beta.level.indx <- sort(unique(c(X.re)))
     storage.mode(beta.level.indx) <- "integer"
     storage.mode(sigma.sq.mu.inits) <- "double"
@@ -911,24 +1059,31 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     storage.mode(sigma.sq.mu.b) <- "double"
     storage.mode(beta.star.inits) <- "double"
     storage.mode(beta.star.indx) <- "integer"
+    # NB = 1, Poisson = 0
+    family.c <- ifelse(family == 'NB', 1, 0)
+    storage.mode(family.c) <- "integer"
 
     # Fit the model -------------------------------------------------------
     out.tmp <- list()
     for (i in 1:n.chains) {
       # Change initial values if i > 1
       if ((i > 1) & (!fix.inits)) {
-        beta.inits <- rnorm(p.abund, mu.beta, sqrt(sigma.beta))
-        alpha.inits <- rnorm(p.det, mu.alpha, sqrt(sigma.alpha))
+        beta.inits <- rnorm(p.abund, 0, 1)
+        alpha.inits <- rnorm(p.det, 0, 1)
         if (p.abund.re > 0) {
-          sigma.sq.mu.inits <- runif(p.abund.re, 0.5, 10)
+          sigma.sq.mu.inits <- runif(p.abund.re, 0.05, 2)
           beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
         }
         if (p.det.re > 0) {
-          sigma.sq.p.inits <- runif(p.det.re, 0.5, 10)
+          sigma.sq.p.inits <- runif(p.det.re, 0.5, 2)
           alpha.star.inits <- rnorm(n.det.re, sqrt(sigma.sq.p.inits[alpha.star.indx + 1]))
         }
         kappa.inits <- runif(1, kappa.a, kappa.b)
-        sigma.sq.inits <- rigamma(1, sigma.sq.a, sigma.sq.b)
+	if (!sigma.sq.ig) {
+          sigma.sq.inits <- runif(1, a, b)
+	} else {
+	  sigma.sq.inits <- runif(1, 0.05, 3)
+	}
         phi.inits <- runif(1, phi.a, phi.b)
         if (cov.model == 'matern') {
           nu.inits <- runif(1, nu.a, nu.b)
@@ -936,7 +1091,8 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       }
       storage.mode(chain.info) <- "integer"
       # Run the model in C
-      out.tmp[[i]] <- .Call("spNMixNNGP", y, X, X.p, coords, X.re, X.p.re, y.max, consts, 
+      out.tmp[[i]] <- .Call("spNMixNNGP", y, X, X.p, coords, X.re, X.p.re, X.random, X.p.random, 
+			    y.max, consts, 
 			    n.abund.re.long, n.det.re.long, 
           	            n.neighbors, nn.indx, nn.indx.lu, u.indx, u.indx.lu, ui.indx, 
 			    beta.inits, alpha.inits, kappa.inits, 
@@ -948,7 +1104,8 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
         		    sigma.sq.mu.a, sigma.sq.mu.b, 
           		    sigma.sq.p.a, sigma.sq.p.b, kappa.a, kappa.b, 
         		    tuning.c, cov.model.indx, n.batch, batch.length, accept.rate, 
-        		    n.omp.threads, verbose, n.report, samples.info, chain.info)
+        		    n.omp.threads, verbose, n.report, samples.info, chain.info, 
+			    sigma.sq.ig, family.c)
       chain.info[1] <- chain.info[1] + 1
     } # i   
     # Calculate R-Hat ---------------
@@ -972,8 +1129,11 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       					      mcmc(t(a$sigma.sq.mu.samples)))), 
       			     autoburnin = FALSE)$psrf[, 2])
       }
+    if (family == 'NB') {
       out$rhat$kappa <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-        						       mcmc(t(a$kappa.samples))))))
+        						       mcmc(t(a$kappa.samples)))), 
+						autoburnin = FALSE)$psrf[, 2])
+    }
       out$rhat$theta <- gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
       					        mcmc(t(a$theta.samples)))), 
       			      autoburnin = FALSE)$psrf[, 2]
@@ -995,8 +1155,10 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     out$alpha.samples <- mcmc(do.call(rbind, 
       				lapply(out.tmp, function(a) t(a$alpha.samples))))
     colnames(out$alpha.samples) <- x.p.names
-    out$kappa.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$kappa.samples))))
-    colnames(out$kappa.samples) <- c("kappa")
+    if (family == 'NB') {
+      out$kappa.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$kappa.samples))))
+      colnames(out$kappa.samples) <- c("kappa")
+    }
     out$theta.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$theta.samples))))
     if (cov.model != 'matern') {
       colnames(out$theta.samples) <- c('sigma.sq', 'phi')
@@ -1024,12 +1186,6 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     out$X.p.re <- matrix(tmp, J * K.max, p.det.re)
     out$X.p.re <- out$X.p.re[apply(out$X.p.re, 1, function(a) sum(is.na(a))) == 0, , drop = FALSE]
     colnames(out$X.p.re) <- x.p.re.names
-    tmp <- matrix(NA, J * K.max, n.det.re)
-    tmp[names.long, ] <- lambda.p
-    tmp <- array(tmp, dim = c(J, K.max, n.det.re))
-    tmp <- tmp[order(ord), , ]
-    out$lambda.p <- matrix(tmp, J * K.max, n.det.re)
-    out$lambda.p <- out$lambda.p[apply(out$lambda.p, 1, function(a) sum(is.na(a))) == 0, ]
     if (p.abund.re > 0) {
       out$sigma.sq.mu.samples <- mcmc(
         do.call(rbind, lapply(out.tmp, function(a) t(a$sigma.sq.mu.samples))))
@@ -1055,7 +1211,9 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     # Calculate effective sample sizes
     out$ESS <- list()
     out$ESS$beta <- effectiveSize(out$beta.samples)
-    out$ESS$kappa <- effectiveSize(out$kappa.samples)
+    if (family == 'NB') {
+      out$ESS$kappa <- effectiveSize(out$kappa.samples)
+    }
     out$ESS$theta <- effectiveSize(out$theta.samples)
     out$ESS$alpha <- effectiveSize(out$alpha.samples)
     if (p.det.re > 0) {
@@ -1070,14 +1228,16 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     out$n.samples <- n.samples
     out$call <- cl
     out$n.neighbors <- n.neighbors
+    out$coords <- coords
     out$cov.model.indx <- cov.model.indx
     out$type <- "NNGP"
     out$n.post <- n.post.samples
     out$n.thin <- n.thin
     out$n.burn <- n.burn
     out$n.chains <- n.chains
-    # TODO: 
-    out$dist <- "NB"
+    out$re.cols <- re.cols
+    out$re.det.cols <- re.det.cols
+    out$dist <- family
     if (p.det.re > 0) {
       out$pRE <- TRUE
     } else {

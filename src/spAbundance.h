@@ -81,16 +81,17 @@ extern "C" {
 	            SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r, 
 	            SEXP samplesInfo_r, SEXP chainInfo_r);
 
-  SEXP abund(SEXP y_r, SEXP X_r, SEXP XRE_r, 
-            SEXP consts_r, SEXP K_r, SEXP nAbundRELong_r, 
-            SEXP betaStarting_r, SEXP kappaStarting_r,
-            SEXP sigmaSqMuStarting_r, SEXP betaStarStarting_r, 
-            SEXP siteIndx_r, SEXP betaStarIndx_r, SEXP betaLevelIndx_r, 
-	    SEXP muBeta_r, SEXP SigmaBeta_r, SEXP sigmaSqMuA_r, SEXP sigmaSqMuB_r, 
-	    SEXP kappaA_r, SEXP kappaB_r, SEXP tuning_r,
-	    SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r, SEXP nThreads_r, 
-            SEXP verbose_r, SEXP nReport_r, SEXP samplesInfo_r,
-	    SEXP chainInfo_r);
+  SEXP abund(SEXP y_r, SEXP X_r, SEXP XRE_r, SEXP XRandom_r,
+             SEXP consts_r, SEXP K_r, SEXP nAbundRELong_r, 
+             SEXP betaStarting_r, SEXP kappaStarting_r, 
+	     SEXP sigmaSqMuStarting_r, SEXP betaStarStarting_r, 
+             SEXP siteIndx_r, SEXP betaStarIndx_r, SEXP betaLevelIndx_r, 
+	     SEXP muBeta_r, SEXP SigmaBeta_r, 
+	     SEXP kappaA_r, SEXP kappaB_r, SEXP sigmaSqMuA_r, 
+	     SEXP sigmaSqMuB_r, SEXP tuning_r,
+	     SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r, SEXP nThreads_r, 
+             SEXP verbose_r, SEXP nReport_r, SEXP samplesInfo_r,
+	     SEXP chainInfo_r, SEXP family_r);
 
   SEXP spAbundNNGP(SEXP y_r, SEXP X_r, SEXP coords_r, SEXP XRE_r, 
                    SEXP XRandom_r, SEXP consts_r, SEXP nAbundRELong_r, 

@@ -150,6 +150,7 @@ simNMix <- function(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(), p.RE = 
   }
 
   # Random effects --------------------------------------------------------
+  # Abundance -------------------------
   if (length(mu.RE) > 0) {
     p.nmix.re <- length(unlist(mu.RE$beta.indx))
     tmp <- sapply(mu.RE$beta.indx, length)
@@ -188,6 +189,7 @@ simNMix <- function(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(), p.RE = 
     X.re <- NA
     beta.star <- NA
   }
+  # Detection -------------------------
   if (length(p.RE) > 0) {
     p.det.re <- length(unlist(p.RE$alpha.indx))
     tmp <- sapply(p.RE$alpha.indx, length)
@@ -230,19 +232,18 @@ simNMix <- function(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(), p.RE = 
   if (family == 'NB') {
     if (sp) {
       if (length(mu.RE) > 0) {
-        psi <- logit.inv(X %*% as.matrix(beta) + w + beta.star.sites)
+        mu <- exp(X %*% as.matrix(beta) + w + beta.star.sites)
       } else {
-        psi <- logit.inv(X %*% as.matrix(beta) + w)
+        mu <- exp(X %*% as.matrix(beta) + w)
       }
     } else {
       if (length(mu.RE) > 0) {
-        psi <- logit.inv(X %*% as.matrix(beta) + beta.star.sites)
+        mu <- exp(X %*% as.matrix(beta) + beta.star.sites)
       } else {
-        psi <- logit.inv(X %*% as.matrix(beta))
+        mu <- exp(X %*% as.matrix(beta))
       }
     }
     # Get mean and overdispersion parameter 
-    mu <- kappa * exp(logit(psi))
     N <- rnbinom(J, size = kappa, mu = mu)
   } else if (family == 'Poisson') {
     if (sp) {
