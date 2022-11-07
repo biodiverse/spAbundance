@@ -239,54 +239,33 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, mu.RE = list(),
     beta.star <- NA
   }
 
-  # Latent Abundance Process ----------------------------------------------
-  psi <- array(NA, dim = c(n.sp, J, max(n.rep)))
+  # Data formation --------------------------------------------------------
   mu <- array(NA, dim = c(n.sp, J, max(n.rep)))
   y <- array(NA, dim = c(n.sp, J, max(n.rep)))
-  if (family == 'NB') {
-    for (j in 1:J) {
-      for (k in 1:n.rep[j]) {
-        for (i in 1:n.sp) {
-          if (sp | factor.model) {
-            if (length(mu.RE) > 0) {
-              psi[i, j, k] <- logit.inv(t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]) + w.star[i, j] + beta.star.sites[i, j, k])
-            } else {
-              psi[i, j, k] <- logit.inv(t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]) + w.star[i, j])
-            }
+  for (j in 1:J) {
+    for (k in 1:n.rep[j]) {
+      for (i in 1:n.sp) {
+        if (sp | factor.model) {
+          if (length(mu.RE) > 0) {
+            mu[i, j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]) + w.star[i, j] + beta.star.sites[i, j, k])
           } else {
-            if (length(mu.RE) > 0) {
-              psi[i, j, k] <- logit.inv(t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]) + beta.star.sites[i, j, k])
-            } else {
-              psi[i, j, k] <- logit.inv(t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]))
-            }
+            mu[i, j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]) + w.star[i, j])
           }
-          mu[i, j, k] <- kappa[i] * exp(logit(psi[i, j, k]))
+        } else {
+          if (length(mu.RE) > 0) {
+            mu[i, j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]) + beta.star.sites[i, j, k])
+          } else {
+            mu[i, j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]))
+          }
+        }
+        if (family == 'NB') {
           y[i, j, k] <- rnbinom(1, size = kappa[i], mu = mu[i, j, k])
-        } # i (species)
-      } # k (replicate)
-    } # j (site)
-  } else if (family == 'Poisson') {
-    for (j in 1:J) {
-      for (k in 1:n.rep[j]) {
-        for (i in 1:n.sp) {
-          if (sp | factor.model) {
-            if (length(mu.RE) > 0) {
-              mu[i, j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]) + w.star[i, j] + beta.star.sites[i, j, k])
-            } else {
-              mu[i, j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]) + w.star[i, j])
-            }
-          } else {
-            if (length(mu.RE) > 0) {
-              mu[i, j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]) + beta.star.sites[i, j, k])
-            } else {
-              mu[i, j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]))
-            }
-          }
+        } else {
           y[i, j, k] <- rpois(1, lambda = mu[i, j, k])
-        } # i (species)
-      } # k (replicate)
-    } # j (site)
-  }
+        }
+      } # i (species)
+    } # k (replicate)
+  } # j (site)
   return(
     list(X = X, coords = coords, w = w, lambda = lambda, y = y, 
 	 X.re = X.re, beta.star = beta.star, mu = mu)

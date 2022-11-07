@@ -249,6 +249,8 @@ NMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   if (nrow(X.p) == length(y)) {
     X.p <- X.p[!is.na(y), , drop = FALSE]  
   }
+  # TODO: determine if you need X.p.random here as well, and implement this
+  #       for spNMix as well if you decide to. 
   if (nrow(X.p.re) == length(y) & p.det.re > 0) {
     X.p.re <- X.p.re[!is.na(y), , drop = FALSE]
   }
@@ -1109,10 +1111,24 @@ NMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       }
       class(out.fit) <- "NMix"
 
+      # Get unique factors for random effects
+      if (p.abund.re > 0) {
+        # Get unique factors for random effects.
+        tmp <- split(seq_along(colnames(X.re.0)), colnames(X.re.0))
+        tmp <- sapply(tmp, function(a) a[1])
+        X.re.0 <- X.re.0[, tmp, drop = FALSE]
+      }
       # Predict abundance at new sites
       if (p.abund.re > 0) {X.0 <- cbind(X.0, X.re.0)}
       out.pred <- predict.NMix(out.fit, X.0)
 
+      # Get unique factors for random effects
+      if (p.det.re > 0) {
+        # Get unique factors for random effects.
+        tmp <- split(seq_along(colnames(X.p.re.0)), colnames(X.p.re.0))
+        tmp <- sapply(tmp, function(a) a[1])
+        X.p.re.0 <- X.p.re.0[, tmp, drop = FALSE]
+      }
       # Generate detection values
       if (p.det.re > 0) {X.p.0 <- cbind(X.p.0, X.p.re.0)}
       out.p.pred <- predict.NMix(out.fit, X.p.0, type = 'detection')

@@ -18,9 +18,9 @@ ppcAbund <- function(object, fit.stat, group, ...) {
   # if (class(object) %in% c('lfCount', 'sfCount')) {
   #   stop("error: ppcOcc is not implemented for lfCount and sfCount")
   # }
-  if (!(class(object) %in% c('NMix', 'spNMix', 'msNMix', 'sfMsNMix', 
-			     'abund', 'spAbund', 'msAbund', 'sfMsAbund'))) {
-    stop("error: object must be one of the following classes: NMix, spNMix, msNMix, sfMSNMix, abund, spAbund, msAbund, sfMsAbund")
+  if (!(class(object) %in% c('NMix', 'spNMix', 'abund', 'spAbund', 
+			     'msAbund'))) {
+    stop("error: object must be one of the following classes: NMix, spNMix, abund, spAbund, msAbund")
   }
   # Fit statistic ---------------------
   if (missing(fit.stat)) {
@@ -37,17 +37,9 @@ ppcAbund <- function(object, fit.stat, group, ...) {
   if (!(group %in% c(0, 1, 2))) {
     stop("error: group must be 0 (raw data), 1 (sites), or 2 (replicates)")
   }
-  if (group != 0 & class(object) %in% c('abund', 'spAbund')) {
+  if (group != 0 & class(object) %in% c('abund', 'spAbund', 'msAbund')) {
     stop("error: group must be 0 (raw data) for abundance GLM models")
   }
-
-  # TODO: temporary
-  if (class(object) %in% c('msAbund', 'sfMsAbund')) {
-    stop("error: ppcAbund not currently implemented for msAbund and sfMsAbund objects")
-  }
-  # Functions -------------------------------------------------------------
-  logit <- function(theta, a = 0, b = 1) {log((theta-a)/(b-theta))}
-  logit.inv <- function(z, a = 0, b = 1) {b-(b-a)/(1+exp(z))}
 
   out <- list()
   # Single-species N-mixture models ---------------------------------------
@@ -220,6 +212,76 @@ ppcAbund <- function(object, fit.stat, group, ...) {
     out$n.post <- object$n.post
     out$n.chains <- object$n.chains
   } 
+
+  # Multi-species abundance models ----------------------------------------
+  if (class(object) %in% c('msAbund', 'spMsAbund', 'lfMsAbund', 'sfMsAbund')) {
+    y <- object$y
+    J <- dim(y)[2] 
+    n.sp <- dim(y)[1]
+    if (is(object, 'msAbund')) {
+      y.rep.samples <- fitted.msAbund(object)
+    }
+    if (is(object, 'spMsAbund')) {
+      y.rep.samples <- fitted.spMsAbund(object)
+    }
+    if (is(object, 'lfMsAbund')) {
+      y.rep.samples <- fitted.lfMsAbund(object)
+    }
+    if (is(object, 'sfMsAbund')) {
+      y.rep.samples <- fitted.sfMsAbund(object)
+    }
+    mu.samples <- object$mu.samples
+    n.samples <- object$n.post * object$n.chains
+    fit.y <- matrix(NA, n.samples, n.sp)
+    fit.y.rep <- matrix(NA, n.samples, n.sp)
+    K <- apply(y[1, , , drop = FALSE], 2, function(a) sum(!is.na(a)))
+    e <- 0.0001
+    if (group == 0) {
+      for (i in 1:n.sp) {
+        message(noquote(paste("Currently on species ", i, " out of ", n.sp, sep = '')))
+        if (fit.stat %in% c('chi-squared', 'chi-square')) {
+          fit.big.y.rep <- array(NA, dim = c(n.sp, J, max(K), n.samples))
+          fit.big.y <- array(NA, dim = c(n.sp, J, max(K), n.samples))
+          for (t in 1:n.samples) {
+            for (j in 1:J) {
+              E <- mu.samples[t, i, j, 1:K[j]]
+              fit.big.y.rep[i, j, 1:K[j], t] <- (y.rep.samples[t, i, j, 1:K[j]] - E)^2 / (E + e)
+              fit.big.y[i, j, 1:K[j], t] <- (y[i, j, 1:K[j]] - E)^2 / (E + e)
+            } # j
+            fit.y[t, i] <- sum(fit.big.y[i, , , t], na.rm = TRUE)
+            fit.y.rep[t, i] <- sum(fit.big.y.rep[i, , , t], na.rm = TRUE)
+          } # t
+        } else if (fit.stat == 'freeman-tukey') {
+          fit.big.y.rep <- array(NA, dim = c(n.sp, J, max(K), n.samples))
+          fit.big.y <- array(NA, dim = c(n.sp, J, max(K), n.samples))
+          for (t in 1:n.samples) {
+            for (j in 1:J) {
+              E <- mu.samples[t, i, j, 1:K[j]]
+              fit.big.y.rep[i, j, 1:K[j], t] <- (y.rep.samples[t, i, j, 1:K[j]] - E)^2 / (E + e)
+              fit.big.y.rep[i, j, 1:K[j], t] <- (sqrt(y.rep.samples[t, i, j, 1:K[j]]) - sqrt(E))^2
+              fit.big.y[i, j, 1:K[j], t] <- (sqrt(y[i, j, 1:K[j]]) - sqrt(E))^2
+            } # j
+            fit.y[t, i] <- sum(fit.big.y[i, , , t], na.rm = TRUE)
+            fit.y.rep[t, i] <- sum(fit.big.y.rep[i, , , t], na.rm = TRUE)
+          } # t
+        }
+      }
+    }
+    out$fit.y <- fit.y
+    out$fit.y.rep <- fit.y.rep
+    out$fit.y.group.quants <- apply(fit.big.y, c(1, 2, 3), quantile, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm = TRUE)
+    out$fit.y.rep.group.quants <- apply(fit.big.y.rep, c(1, 2, 3), quantile, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm = TRUE)
+    # For summaries
+    out$group <- group
+    out$fit.stat <- fit.stat
+    out$class <- class(object)
+    out$call <- cl
+    out$n.samples <- object$n.samples
+    out$n.burn <- object$n.burn
+    out$n.thin <- object$n.thin
+    out$n.post <- object$n.post
+    out$n.chains <- object$n.chains
+  }
 
   class(out) <- 'ppcAbund'
 

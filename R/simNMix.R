@@ -208,19 +208,24 @@ simNMix <- function(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(), p.RE = 
     for (i in 1:p.det.re) {
       alpha.star[which(alpha.star.indx == i)] <- rnorm(n.det.re.long[i], 0, sqrt(sigma.sq.p[i]))
     }
-    X.p.re <- X.p.re[, , p.re.col.indx, drop = FALSE]
     for (j in 1:J) {
       X.p.re[j, -(1:n.rep[j]), ] <- NA
     }
+    indx.mat <- X.p.re[, , p.re.col.indx, drop = FALSE]
+    if (length(p.RE$levels) > 1) {
+      for (j in 2:length(p.RE$levels)) {
+        X.p.re[, , j] <- X.p.re[, , j] + max(X.p.re[, , j - 1], na.rm = TRUE)
+      }
+    }
     if (p.det.re > 1) {
       for (j in 2:p.det.re) {
-        X.p.re[, , j] <- X.p.re[, , j] + max(X.p.re[, , j - 1], na.rm = TRUE) 
+        indx.mat[, , j] <- indx.mat[, , j] + max(indx.mat[, , j - 1], na.rm = TRUE) 
       }
     }
     alpha.star.sites <- matrix(NA, J, max(n.rep))
     for (j in 1:J) {
       for (k in 1:n.rep[j]) {
-        alpha.star.sites[j, k] <- alpha.star[X.p.re[j, k, ]] %*% X.p.random[j, k, ]
+        alpha.star.sites[j, k] <- alpha.star[indx.mat[j, k, ]] %*% X.p.random[j, k, ]
       }
     }
   } else {

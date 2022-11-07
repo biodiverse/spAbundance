@@ -193,6 +193,9 @@ abund <- function(formula, data, inits, priors, tuning,
   if (nrow(X.re) == length(y) & p.abund.re > 0) {
     X.re <- X.re[!is.na(y), , drop = FALSE]
   }
+  if (nrow(X.random) == length(y) & p.abund.re > 0) {
+    X.random <- X.random[!is.na(y), , drop = FALSE]
+  }
   y <- y[!is.na(y)]
   # Number of data points for the y vector
   n.obs <- nrow(X)
@@ -784,12 +787,18 @@ abund <- function(formula, data, inits, priors, tuning,
       }
       dimnames(X.0.new)[[3]] <- x.names
       dimnames(X.re.0.new)[[3]] <- colnames(X.re.0)
+      # Get unique factors for random effects
+      if (p.abund.re > 0) {
+        # Get unique factors for random effects.
+        tmp <- split(seq_along(colnames(X.re.0)), colnames(X.re.0))
+        tmp <- sapply(tmp, function(a) a[1])
+        X.re.0.new <- X.re.0.new[, , tmp, drop = FALSE]
+      }
       if (p.abund.re > 0) {X.0.new <- abind(X.0.new, X.re.0.new, along = 3)}
       out.pred <- predict.abund(out.fit, X.0.new)
 
-
-      # TODO: not sure this is quite correct. 
-      rmspe.samples <- apply(out.pred$y.0.samples, 1, function(a) sqrt(mean(y.mat.0 - a)^2))
+      rmspe.samples <- apply(out.pred$y.0.samples, 1, 
+			     function(a) sqrt(mean(y.mat.0 - a, na.rm = TRUE)^2))
       mean(rmspe.samples, na.rm = TRUE)
     }
     # Return objects from cross-validation

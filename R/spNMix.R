@@ -1186,6 +1186,13 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     out$X.p.re <- matrix(tmp, J * K.max, p.det.re)
     out$X.p.re <- out$X.p.re[apply(out$X.p.re, 1, function(a) sum(is.na(a))) == 0, , drop = FALSE]
     colnames(out$X.p.re) <- x.p.re.names
+    tmp <- matrix(NA, J * K.max, p.det.re)
+    tmp[names.long, ] <- X.p.random
+    tmp <- array(tmp, dim = c(J, K.max, p.det.re))
+    tmp <- tmp[order(ord), , ]
+    out$X.p.random <- matrix(tmp, J * K.max, p.det.re)
+    out$X.p.random <- out$X.p.random[apply(out$X.p.random, 1, function(a) sum(is.na(a))) == 0, , drop = FALSE]
+    colnames(out$X.p.random) <- x.p.random.names
     if (p.abund.re > 0) {
       out$sigma.sq.mu.samples <- mcmc(
         do.call(rbind, lapply(out.tmp, function(a) t(a$sigma.sq.mu.samples))))

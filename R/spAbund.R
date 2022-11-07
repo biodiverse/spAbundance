@@ -219,12 +219,14 @@ spAbund <- function(formula, data, inits, priors, tuning,
   if (nrow(X.re) == length(y) & p.abund.re > 0) {
     X.re <- X.re[!is.na(y), , drop = FALSE]
   }
+  if (nrow(X.random) == length(y) & p.abund.re > 0) {
+    X.random <- X.random[!is.na(y), , drop = FALSE]
+  }
   y <- y[!is.na(y)]
   # Number of data points for the y vector
   n.obs <- nrow(X)
 
   # Get random effect matrices all set ----------------------------------
-  # TODO: might need to check these a bit more. 
   X.re <- X.re - 1
   if (p.abund.re > 1) {
     # Subtract 1 for C
@@ -922,8 +924,8 @@ spAbund <- function(formula, data, inits, priors, tuning,
       }
       dimnames(out$X)[[3]] <- x.names
       dimnames(out$X.re)[[3]] <- colnames(X.re)
-      out$X <- out$X[order(ord), , ]
-      out$X.re <- out$X.re[order(ord), , ]
+      out$X <- out$X[order(ord), , , drop = FALSE]
+      out$X.re <- out$X.re[order(ord), , , drop = FALSE]
       out$coords <- coords[order(ord), ]
       out$y <- y.mat[order(ord), , drop = FALSE]
       out$n.samples <- n.samples
@@ -957,7 +959,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
       sites.random <- sample(1:J)    
       sites.k.fold <- split(sites.random, sites.random %% k.fold)
       registerDoParallel(k.fold.threads)
-      model.deviance <- foreach (i = 1:k.fold, .combine = sum) %dopar% {
+      rmspe <- foreach (i = 1:k.fold, .combine = mean) %dopar% {
         curr.set <- sort(sites.random[sites.k.fold[[i]]])
         y.indx <- !((site.indx + 1) %in% curr.set)
         y.fit <- y[y.indx]
@@ -1138,25 +1140,20 @@ spAbund <- function(formula, data, inits, priors, tuning,
         }
         dimnames(X.0.new)[[3]] <- x.names
         dimnames(X.re.0.new)[[3]] <- colnames(X.re.0)
+        # Get unique factors for random effects.
+	if (p.abund.re > 0) {
+          tmp <- split(seq_along(colnames(X.re.0)), colnames(X.re.0))
+          tmp <- sapply(tmp, function(a) a[1])
+          X.re.0.new <- X.re.0.new[, , tmp, drop = FALSE]
+	}
         if (p.abund.re > 0) {X.0.new <- abind(X.0.new, X.re.0.new, along = 3)}
         out.pred <- predict.spAbund(out.fit, X.0.new, coords.0, verbose = FALSE)
 
-        like.samples <- matrix(NA, nrow(X.0.new), max(K.0))
-        for (j in 1:nrow(X.0.new)) {
-          for (k in 1:K.0[j]) {
-            if (family == 'NB') {
-              like.samples[j, k] <- mean(dnbinom(y.mat.0[j, k], mu = out.pred$mu.0.samples[, j, k], 
-            				  size = out.fit$kappa.samples))
-            } else {
-              like.samples[j, k] <- mean(dpois(y.mat.0[j, k], lambda = out.pred$mu.0.samples[, j, k]))
-            }
-          }
-        }
-        sum(log(like.samples), na.rm = TRUE)
+        rmspe.samples <- apply(out.pred$y.0.samples, 1, 
+          		     function(a) sqrt(mean(y.mat.0 - a, na.rm = TRUE)^2))
+        mean(rmspe.samples, na.rm = TRUE)
       }
-      model.deviance <- -2 * model.deviance
-      # Return objects from cross-validation
-      out$k.fold.deviance <- model.deviance
+      out$rmspe <- rmspe
       stopImplicitCluster()
     }
   } # NNGP

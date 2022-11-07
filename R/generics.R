@@ -95,10 +95,6 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
   if (missing(object)) {
     stop("error: predict expects object\n")
   }
-  if (!is(object, "NMix")) {
-  # if (class(object) != "NMix") {
-    stop("error: requires an output object of class NMix\n")
-  }
   if (!(tolower(type) %in% c('abundance', 'detection'))) {
     stop("error: prediction type must be either 'abundance' or 'detection'")
   }
@@ -113,13 +109,13 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
   # Abundance predictions ------------------------------------------------
   if (tolower(type) == 'abundance') {  
     p.abund <- ncol(object$X)
-    p.design <- p.abund
-    if (object$muRE & !ignore.RE) {
-      p.design <- p.abund + ncol(object$sigma.sq.mu.samples)
-    }
-    if (ncol(X.0) != p.design) {
-      stop(paste("error: X.0 must have ", p.design, " columns\n", sep = ''))
-    }
+    # p.design <- p.abund
+    # if (object$muRE & !ignore.RE) {
+    #   p.design <- p.abund + ncol(object$sigma.sq.mu.samples)
+    # }
+    # if (ncol(X.0) != p.design) {
+    #   stop(paste("error: X.0 must have ", p.design, " columns\n", sep = ''))
+    # }
 
     # Composition sampling --------------------------------------------------
     beta.samples <- as.matrix(object$beta.samples)
@@ -142,19 +138,19 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
       x.re.names <- colnames(object$X.re)
       x.0.names <- colnames(X.0)
       re.long.indx <- sapply(re.cols, length)
-      tmp <- which(colnames(X.0) %in% x.re.names)
+      tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
       indx <- list()
       for (i in 1:length(tmp)) {
         indx[[i]] <- rep(tmp[i], re.long.indx[i])
       }
+      indx <- unlist(indx)
       if (length(indx) == 0) {
         stop("error: column names in X.0 must match variable names in data$occ.covs")
       }
-      indx <- unlist(indx)
-      n.abund.re <- length(unlist(re.level.names))
+      n.abund.re <- length(indx)
       n.unique.abund.re <- length(unique(indx))
       # Check RE columns
-      for (i in 1:n.unique.abund.re) {
+      for (i in 1:n.abund.re) {
         if (is.character(re.cols[[i]])) {
           # Check if all column names in svc are in occ.covs
           if (!all(re.cols[[i]] %in% x.0.names)) {
@@ -162,7 +158,7 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
               stop(paste("error: variable name ", paste(missing.cols, collapse=" and "), " not in abundance covariates", sep=""))
           }
           # Convert desired column names into the numeric column index
-          re.cols[[i]] <- (1:p.abund)[x.0.names %in% re.cols[[i]]]
+          re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
           
         } else if (is.numeric(re.cols[[i]])) {
           # Check if all column indices are in 1:p.abund
@@ -230,13 +226,13 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
   # Detection predictions -------------------------------------------------
   if (tolower(type) == 'detection') {
     p.det <- ncol(object$X.p)
-    p.design <- p.det
-    if (object$pRE & !ignore.RE) {
-      p.design <- p.det + ncol(object$sigma.sq.p.samples)
-    }
-    if (ncol(X.0) != p.design) {
-      stop(paste("error: X.0 must have ", p.design, " columns\n", sep = ''))
-    }
+    # p.design <- p.det
+    # if (object$pRE & !ignore.RE) {
+    #   p.design <- p.det + ncol(object$sigma.sq.p.samples)
+    # }
+    # if (ncol(X.0) != p.design) {
+    #   stop(paste("error: X.0 must have ", p.design, " columns\n", sep = ''))
+    # }
     re.det.cols <- object$re.det.cols
 
     # Composition sampling --------------------------------------------------
@@ -256,19 +252,19 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
       x.p.re.names <- colnames(object$X.p.re)
       x.p.0.names <- colnames(X.0)
       re.long.indx <- sapply(re.det.cols, length)
-      tmp <- which(colnames(X.0) %in% x.p.re.names)
+      tmp <- sapply(x.p.re.names, function(a) which(colnames(X.0) %in% a))
       indx <- list()
       for (i in 1:length(tmp)) {
         indx[[i]] <- rep(tmp[i], re.long.indx[i])
       }
+      indx <- unlist(indx)
       if (length(indx) == 0) {
         stop("error: column names in X.0 must match variable names in data$det.covs")
       }
-      indx <- unlist(indx)
-      n.det.re <- length(unlist(p.re.level.names))
+      n.det.re <- length(indx)
       n.unique.det.re <- length(unique(indx))
       # Check RE columns
-      for (i in 1:n.unique.det.re) {
+      for (i in 1:n.det.re) {
         if (is.character(re.det.cols[[i]])) {
           # Check if all column names in svc are in occ.covs
           if (!all(re.det.cols[[i]] %in% x.p.0.names)) {
@@ -276,7 +272,7 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
               stop(paste("error: variable name ", paste(missing.cols, collapse=" and "), " not in detection covariates", sep=""))
           }
           # Convert desired column names into the numeric column index
-          re.det.cols[[i]] <- (1:p.det)[x.p.0.names %in% re.det.cols[[i]]]
+          re.det.cols[[i]] <- which(x.p.0.names %in% re.det.cols[[i]])
           
         } else if (is.numeric(re.det.cols[[i]])) {
           # Check if all column indices are in 1:p.abund
@@ -524,6 +520,294 @@ fitted.spNMix <- function(object, ...) {
   fitted.NMix(object)
 }
 
+# msAbund -----------------------------------------------------------------
+print.msAbund <- function(x, ...) {
+  cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)),
+      "", sep = "\n")
+}
+
+summary.msAbund <- function(object,
+			    level = 'both',
+			    quantiles = c(0.025, 0.5, 0.975),
+			    digits = max(3L, getOption("digits") - 3L), ...) {
+
+  print(object)
+
+  n.post <- object$n.post
+  n.samples <- object$n.samples
+  n.burn <- object$n.burn
+  n.thin <- object$n.thin
+  n.chains <- object$n.chains
+  run.time <- object$run.time[3] / 60 # minutes
+
+  cat(paste("Samples per Chain: ", n.samples,"\n", sep=""))
+  cat(paste("Burn-in: ", n.burn,"\n", sep=""))
+  cat(paste("Thinning Rate: ",n.thin,"\n", sep=""))
+  cat(paste("Number of Chains: ", n.chains, "\n", sep = ""))
+  cat(paste("Total Posterior Samples: ",n.post * n.chains,"\n", sep=""))
+  cat(paste("Run Time (min): ", round(run.time, digits), "\n\n", sep = ""))
+
+  if (tolower(level) %in% c('community', 'both')) {
+
+    cat("----------------------------------------\n");
+    cat("\tCommunity Level\n");
+    cat("----------------------------------------\n");
+
+    # Abundance 
+    cat("Abundance Means (log scale): \n")
+    tmp.1 <- t(apply(object$beta.comm.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$beta.comm.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$beta.comm, round(object$ESS$beta.comm, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+
+    cat("\nAbundance Variances (log scale): \n")
+    tmp.1 <- t(apply(object$tau.sq.beta.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$tau.sq.beta.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$tau.sq.beta, round(object$ESS$tau.sq.beta, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    if (object$muRE) {
+      cat("\n")
+      cat("Abundance Random Effect Variances (log scale): \n")
+      tmp.1 <- t(apply(object$sigma.sq.mu.samples, 2,
+            	   function(x) c(mean(x), sd(x))))
+      colnames(tmp.1) <- c("Mean", "SD")
+      tmp <- t(apply(object$sigma.sq.mu.samples, 2,
+            	 function(x) quantile(x, prob = quantiles)))
+      diags <- matrix(c(object$rhat$sigma.sq.mu, round(object$ESS$sigma.sq.mu, 0)), ncol = 2)
+      colnames(diags) <- c('Rhat', 'ESS')
+
+      print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    }
+  }
+
+  if (tolower(level) %in% c('species', 'both')) {
+    if (tolower(level) == 'both') cat("\n")
+    cat("----------------------------------------\n");
+    cat("\tSpecies Level\n");
+    cat("----------------------------------------\n");
+    cat("Abundance (log scale): \n")
+    tmp.1 <- t(apply(object$beta.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$beta.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$beta, round(object$ESS$beta, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    
+    # NB Overdispersion
+    if (object$dist == "NB") {
+      cat("\n")
+      cat("----------------------------------------\n");
+      cat("\tNB overdispersion\n");
+      cat("----------------------------------------\n");
+      tmp.1 <- t(apply(object$kappa.samples, 2,
+            	   function(x) c(mean(x), sd(x))))
+      colnames(tmp.1) <- c("Mean", "SD")
+      tmp <- t(apply(object$kappa.samples, 2,
+            	 function(x) quantile(x, prob = quantiles)))
+      diags <- matrix(c(object$rhat$kappa, round(object$ESS$kappa, 0)), ncol = 2)
+      colnames(diags) <- c('Rhat', 'ESS')
+      print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    }
+  }
+}
+
+fitted.msAbund <- function(object, ...) {
+  return(object$y.rep.samples)
+}
+
+predict.msAbund <- function(object, X.0, coords.0, ignore.RE = FALSE, ...) {
+  # Check for unused arguments ------------------------------------------
+  formal.args <- names(formals(sys.function(sys.parent())))
+  elip.args <- names(list(...))
+  for(i in elip.args){
+      if(! i %in% formal.args)
+          warning("'",i, "' is not an argument")
+  }
+  # Call ----------------------------------------------------------------
+  cl <- match.call()
+
+  # Functions ---------------------------------------------------------------
+  logit <- function(theta, a = 0, b = 1) {log((theta-a)/(b-theta))}
+  logit.inv <- function(z, a = 0, b = 1) {b-(b-a)/(1+exp(z))}
+
+  # Some initial checks ---------------------------------------------------
+  if (missing(object)) {
+    stop("error: predict expects object\n")
+  }
+  if (!is(object, "msAbund")) {
+    stop("error: requires an output object of class msAbund\n")
+  }
+
+  # Check X.0 -------------------------------------------------------------
+  if (missing(X.0)) {
+    stop("error: X.0 must be specified\n")
+  }
+  if (!(length(dim(X.0)) %in% c(2, 3))) {
+    stop("error: X.0 must be a matrix with two columns corresponding to site and covariate or a three-dimensional array with dimensions corresponding to site, replicate, and covariate")
+  }
+  if (length(dim(X.0)) == 2) {
+    tmp <- colnames(X.0) 
+    X.0 <- array(X.0, dim = c(nrow(X.0), 1, ncol(X.0)))
+    dimnames(X.0)[[3]] <- tmp
+  }
+  # Predictions -----------------------------------------------------------
+  p.abund <- dim(object$X)[3]
+  # p.design <- p.abund
+  # if (object$muRE & !ignore.RE) {
+  #   p.design <- p.abund + ncol(object$sigma.sq.mu.samples)
+  # }
+  # if (dim(X.0)[3] != p.design) {
+  #   stop(paste("error: X.0 must have ", p.design, " covariates\n", sep = ''))
+  # }
+  J.0 <- nrow(X.0)
+  K.max.0 <- ncol(X.0)
+  n.sp <- dim(object$y)[1]
+
+  # Composition sampling --------------------------------------------------
+  re.cols <- object$re.cols
+  beta.samples <- as.matrix(object$beta.samples)
+  if (object$dist == 'NB') {
+    kappa.samples <- as.matrix(object$kappa.samples)
+  }
+  n.post <- object$n.post * object$n.chains
+  out <- list()
+  if (object$muRE) {
+    p.abund.re <- length(object$re.level.names)
+  } else {
+    p.abund.re <- 0
+  }
+
+  # Get X.0 in long format. 
+  tmp.names <- dimnames(X.0)[[3]]
+  X.0 <- matrix(X.0, nrow = nrow(X.0) * ncol(X.0), ncol = dim(X.0)[3])
+  colnames(X.0) <- tmp.names
+  missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) > 0))
+  non.missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) == 0))
+  X.0 <- X.0[non.missing.indx, ]
+
+  if (object$muRE & !ignore.RE) {
+    beta.star.samples <- object$beta.star.samples
+    re.level.names <- object$re.level.names
+    # Get columns in design matrix with random effects
+    x.re.names <- dimnames(object$X.re)[[3]]
+    x.0.names <- colnames(X.0)
+    # Get the number of times each factor is used. 
+    re.long.indx <- sapply(re.cols, length)
+    tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
+    indx <- list()
+    for (i in 1:length(tmp)) {
+      indx[[i]] <- rep(tmp[i], re.long.indx[i])
+    }
+    indx <- unlist(indx)
+    if (length(indx) == 0) {
+      stop("error: column names in X.0 must match variable names in data$occ.covs")
+    }
+    n.re <- length(indx)
+    n.unique.re <- length(unique(indx))
+    # Check RE columns
+    for (i in 1:n.re) {
+      if (is.character(re.cols[[i]])) {
+        # Check if all column names in svc are in occ.covs
+        if (!all(re.cols[[i]] %in% x.0.names)) {
+            missing.cols <- re.cols[[i]][!(re.cols[[i]] %in% x.0.names)]
+            stop(paste("error: variable name ", paste(missing.cols, collapse=" and "), " not in occurrence covariates", sep=""))
+        }
+        # Convert desired column names into the numeric column index
+        re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
+        
+      } else if (is.numeric(re.cols[[i]])) {
+        # Check if all column indices are in 1:p.abund
+        if (!all(re.cols %in% 1:p.abund)) {
+            missing.cols <- re.cols[[i]][!(re.cols[[i]] %in% (1:p.abund))]
+            stop(paste("error: column index ", paste(missing.cols, collapse=" "), " not in design matrix columns", sep=""))
+        }
+      }
+    }
+    re.cols <- unlist(re.cols)
+    X.re <- as.matrix(X.0[, indx, drop = FALSE])
+    X.fix <- as.matrix(X.0[, -indx, drop = FALSE])
+    X.random <- as.matrix(X.0[, re.cols, drop = FALSE])
+    n.abund.re <- length(unlist(re.level.names))
+    X.re.ind <- matrix(NA, nrow(X.re), p.abund.re)
+
+    for (i in 1:p.abund.re) {
+      for (j in 1:nrow(X.re)) {
+        tmp <- which(re.level.names[[i]] == X.re[j, i])
+        if (length(tmp) > 0) {
+          X.re.ind[j, i] <- tmp 
+        }
+      }
+    }
+    if (p.abund.re > 1) {
+      for (j in 2:p.abund.re) {
+        X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+      }
+    }
+    # Create the random effects corresponding to each 
+    # new location
+    beta.star.sites.0.samples <- array(0, dim = c(n.post, n.sp, nrow(X.re)))
+    for (i in 1:n.sp) {
+      for (t in 1:p.abund.re) {
+        for (j in 1:nrow(X.re)) {
+          if (!is.na(X.re.ind[j, t])) {
+            beta.star.sites.0.samples[, i, j] <- 
+              beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] + 
+              beta.star.sites.0.samples[, i, j]
+          } else {
+            beta.star.sites.0.samples[, i, j] <- 
+              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) + 
+              beta.star.sites.0.samples[, i, j]
+          }
+        } # j
+      } # t
+    }
+  } else {
+    X.fix <- X.0
+    beta.star.sites.0.samples <- array(0, dim = c(n.post, n.sp, nrow(X.0)))
+    p.abund.re <- 0
+  }
+
+  tmp <- matrix(NA, n.post, length(c(missing.indx, non.missing.indx)))
+  sp.indx <- rep(1:n.sp, p.abund)
+  out$mu.0.samples <- array(NA, dim = c(n.post, n.sp, J.0, K.max.0))
+  mu.long <- array(NA, dim = c(n.post, n.sp, nrow(X.fix)))
+  for (i in 1:n.sp) {
+    mu.long[, i, ] <- exp(t(X.fix %*% t(beta.samples[, sp.indx == i]) + 
+	                  t(beta.star.sites.0.samples[, i, ])))
+    tmp[, non.missing.indx] <- mu.long[, i, ]
+    out$mu.0.samples[, i, , ] <- array(tmp, dim = c(n.post, J.0, K.max.0))
+  }
+  K <- apply(out$mu.0.samples[1, 1, , , drop = FALSE], 3, function(a) sum(!is.na(a)))
+  out$y.0.samples <- array(NA, dim(out$mu.0.samples))
+  for (i in 1:n.sp) {
+    for (j in 1:J.0) {
+      for (k in 1:K[j]) {
+        if (object$dist == 'NB') {
+          out$y.0.samples[, i, j, k] <- rnbinom(n.post, kappa.samples[, i], 
+          				        mu = out$mu.0.samples[, i, j, k])
+        } else {
+          out$y.0.samples[, i, j, k] <- rpois(n.post, out$mu.0.samples[, i, j, k])
+        }
+      }
+    }
+  }
+  out$call <- cl
+
+  class(out) <- "predict.msAbund"
+  out
+}
 
 # ppcAbund ------------------------------------------------------------------
 summary.ppcAbund <- function(object, level = 'both',
@@ -549,45 +833,45 @@ summary.ppcAbund <- function(object, level = 'both',
     cat("Fit statistic: ", object$fit.stat, "\n")
   }
 
-  # if (object$class %in% c('msPGOcc', 'spMsPGOcc', 'lfMsPGOcc', 'sfMsNMix')) {
+  if (object$class %in% c('msAbund', 'spMsAbund', 'lfMsAbund', 'sfMsAbund')) {
 
-  #   if (tolower(level) == 'community') {
-  #     cat("----------------------------------------\n");
-  #     cat("\tCommunity Level\n");
-  #     cat("----------------------------------------\n");
-  #     cat("Bayesian p-value: ", round(mean(object$fit.y.rep > object$fit.y), digits), "\n")
-  #     cat("Fit statistic: ", object$fit.stat, "\n")
-  #   }
+    if (tolower(level) == 'community') {
+      cat("----------------------------------------\n");
+      cat("\tCommunity Level\n");
+      cat("----------------------------------------\n");
+      cat("Bayesian p-value: ", round(mean(object$fit.y.rep > object$fit.y), digits), "\n")
+      cat("Fit statistic: ", object$fit.stat, "\n")
+    }
 
-  #   if (tolower(level) == 'species') {
-  #     cat("----------------------------------------\n");
-  #     cat("\tSpecies Level\n");
-  #     cat("----------------------------------------\n");
-  #     N <- ncol(object$fit.y)
-  #     for (i in 1:N) {
-  #       cat(paste(object$sp.names[i], " Bayesian p-value: ",
-  #       	  round(mean(object$fit.y.rep[, i] > object$fit.y[, i]), digits), "\n", sep = ''))
-  #     }
-  #     cat("Fit statistic: ", object$fit.stat, "\n")
-  #   }
+    if (tolower(level) == 'species') {
+      cat("----------------------------------------\n");
+      cat("\tSpecies Level\n");
+      cat("----------------------------------------\n");
+      N <- ncol(object$fit.y)
+      for (i in 1:N) {
+        cat(paste(object$sp.names[i], " Bayesian p-value: ",
+        	  round(mean(object$fit.y.rep[, i] > object$fit.y[, i]), digits), "\n", sep = ''))
+      }
+      cat("Fit statistic: ", object$fit.stat, "\n")
+    }
 
-  #   if (tolower(level) == 'both') {
-  #     cat("----------------------------------------\n");
-  #     cat("\tCommunity Level\n");
-  #     cat("----------------------------------------\n");
-  #     cat("Bayesian p-value: ", round(mean(object$fit.y.rep > object$fit.y), digits), "\n")
-  #     cat("\n")
-  #     cat("----------------------------------------\n");
-  #     cat("\tSpecies Level\n");
-  #     cat("----------------------------------------\n");
-  #     N <- ncol(object$fit.y)
-  #     for (i in 1:N) {
-  #       cat(paste(object$sp.names[i], " Bayesian p-value: ",
-  #       	  round(mean(object$fit.y.rep[, i] > object$fit.y[, i]), digits), "\n", sep = ''))
-  #     }
-  #     cat("Fit statistic: ", object$fit.stat, "\n")
-  #   }
-  # }
+    if (tolower(level) == 'both') {
+      cat("----------------------------------------\n");
+      cat("\tCommunity Level\n");
+      cat("----------------------------------------\n");
+      cat("Bayesian p-value: ", round(mean(object$fit.y.rep > object$fit.y), digits), "\n")
+      cat("\n")
+      cat("----------------------------------------\n");
+      cat("\tSpecies Level\n");
+      cat("----------------------------------------\n");
+      N <- ncol(object$fit.y)
+      for (i in 1:N) {
+        cat(paste(object$sp.names[i], " Bayesian p-value: ",
+        	  round(mean(object$fit.y.rep[, i] > object$fit.y[, i]), digits), "\n", sep = ''))
+      }
+      cat("Fit statistic: ", object$fit.stat, "\n")
+    }
+  }
 
 }
 
@@ -1018,13 +1302,13 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, ...) {
   }
   # Predictions -----------------------------------------------------------
   p.abund <- dim(object$X)[3]
-  p.design <- p.abund
-  if (object$muRE & !ignore.RE) {
-    p.design <- p.abund + ncol(object$sigma.sq.mu.samples)
-  }
-  if (dim(X.0)[3] != p.design) {
-    stop(paste("error: X.0 must have ", p.design, " covariates\n", sep = ''))
-  }
+  # p.design <- p.abund
+  # if (object$muRE & !ignore.RE) {
+  #   p.design <- p.abund + ncol(object$sigma.sq.mu.samples)
+  # }
+  # if (dim(X.0)[3] != p.design) {
+  #   stop(paste("error: X.0 must have ", p.design, " covariates\n", sep = ''))
+  # }
   J.0 <- nrow(X.0)
   K.max.0 <- ncol(X.0)
 
@@ -1042,11 +1326,13 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, ...) {
     p.abund.re <- 0
   }
 
-  # TODO: the function currently doesn't handle unbalanced replicates. 
   # Get X.0 in long format. 
   tmp.names <- dimnames(X.0)[[3]]
   X.0 <- matrix(X.0, nrow = nrow(X.0) * ncol(X.0), ncol = dim(X.0)[3])
   colnames(X.0) <- tmp.names
+  missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) > 0))
+  non.missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) == 0))
+  X.0 <- X.0[non.missing.indx, ]
 
   if (object$muRE & !ignore.RE) {
     beta.star.samples <- object$beta.star.samples
@@ -1056,7 +1342,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, ...) {
     x.0.names <- colnames(X.0)
     # Get the number of times each factor is used. 
     re.long.indx <- sapply(re.cols, length)
-    tmp <- which(colnames(X.0) %in% x.re.names)
+    tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
     indx <- list()
     for (i in 1:length(tmp)) {
       indx[[i]] <- rep(tmp[i], re.long.indx[i])
@@ -1068,7 +1354,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, ...) {
     n.re <- length(indx)
     n.unique.re <- length(unique(indx))
     # Check RE columns
-    for (i in 1:n.unique.re) {
+    for (i in 1:n.re) {
       if (is.character(re.cols[[i]])) {
         # Check if all column names in svc are in occ.covs
         if (!all(re.cols[[i]] %in% x.0.names)) {
@@ -1076,7 +1362,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, ...) {
             stop(paste("error: variable name ", paste(missing.cols, collapse=" and "), " not in occurrence covariates", sep=""))
         }
         # Convert desired column names into the numeric column index
-        re.cols[[i]] <- (1:p.abund)[x.0.names %in% re.cols[[i]]]
+        re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
         
       } else if (is.numeric(re.cols[[i]])) {
         # Check if all column indices are in 1:p.abund
@@ -1129,12 +1415,15 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, ...) {
     p.abund.re <- 0
   }
 
-  out$mu.0.samples <- array(exp(t(X.fix %*% t(beta.samples) + 
-        				t(beta.star.sites.0.samples))), 
-			    dim = c(n.post, J.0, K.max.0))
+  tmp <- matrix(NA, n.post, length(c(missing.indx, non.missing.indx)))
+  mu.long <- exp(t(X.fix %*% t(beta.samples) + 
+	       t(beta.star.sites.0.samples)))
+  tmp[, non.missing.indx] <- mu.long
+  out$mu.0.samples <- array(tmp, dim = c(n.post, J.0, K.max.0))
+  K <- apply(out$mu.0.samples[1, , , drop = FALSE], 2, function(a) sum(!is.na(a)))
   out$y.0.samples <- array(NA, dim(out$mu.0.samples))
   for (j in 1:J.0) {
-    for (k in 1:K.max.0) {
+    for (k in 1:K[j]) {
       if (object$dist == 'NB') {
         out$y.0.samples[, j, k] <- rnbinom(n.post, kappa.samples, 
 					   mu = out$mu.0.samples[, j, k])
@@ -1278,12 +1567,15 @@ predict.spAbund <- function(object, X.0, coords.0,
   }
   coords.0 <- as.matrix(coords.0)
   sites.0.indx <- rep(0:(nrow(X.0) - 1), times = ncol(X.0))
+  K.max.0 <- ncol(X.0)
 
-  # TODO: the function currently doesn't handle unbalanced replicates. 
   # Get X.0 in long format. 
   tmp.names <- dimnames(X.0)[[3]]
   X.0 <- matrix(X.0, nrow = nrow(X.0) * ncol(X.0), ncol = dim(X.0)[3])
   colnames(X.0) <- tmp.names
+  missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) > 0))
+  non.missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) == 0))
+  X.0 <- X.0[non.missing.indx, ]
 
   n.post <- object$n.post * object$n.chains
   X <- object$X
@@ -1309,10 +1601,6 @@ predict.spAbund <- function(object, X.0, coords.0,
   coords.0.indx <- which(is.na(match.indx))
   coords.indx <- match.indx[!is.na(match.indx)]
   coords.place.indx <- which(!is.na(match.indx))
-  # TODO: also note you got rid of all the "new", so keep that in mind if bugs arise.  
-  # coords.0.new <- coords.0[coords.0.indx, , drop = FALSE]
-  # X.0.new <- X.0[coords.0.indx, , , drop = FALSE]
-
 
   # if (length(coords.indx) == nrow(X.0)) {
   #   stop("error: no new locations to predict at. See object$psi.samples for occurrence probabilities at sampled sites.")
@@ -1349,7 +1637,7 @@ predict.spAbund <- function(object, X.0, coords.0,
             stop(paste("error: variable name ", paste(missing.cols, collapse=" and "), " not in occurrence covariates", sep=""))
         }
         # Convert desired column names into the numeric column index
-        re.cols[[i]] <- (1:p.abund)[x.0.names %in% re.cols[[i]]]
+        re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
         
       } else if (is.numeric(re.cols[[i]])) {
         # Check if all column indices are in 1:p.abund
@@ -1465,11 +1753,14 @@ predict.spAbund <- function(object, X.0, coords.0,
 		 n.post, cov.model.indx, n.omp.threads, verbose, n.report, family.c)
   }
 
-  # TODO: need to make sure the ordering here is right. 
-  out$y.0.samples <- array(mcmc(t(out$y.0.samples)), dim = c(n.post, J.0,
-							     nrow(out$y.0.samples) / J.0))
-  out$mu.0.samples <- array(mcmc(t(out$mu.0.samples)), dim = c(n.post, J.0,
-							     nrow(out$mu.0.samples) / J.0))
+  # TODO: not sure this ordering is right. Actually, I think the ordering is right
+  #       but it messes with the organization of years and weeks 
+  tmp <- matrix(NA, n.post, length(c(missing.indx, non.missing.indx)))
+  tmp[, non.missing.indx] <- t(out$y.0.samples)
+  out$y.0.samples <- array(tmp, dim = c(n.post, J.0, K.max.0))
+  tmp <- matrix(NA, n.post, length(c(missing.indx, non.missing.indx)))
+  tmp[, non.missing.indx] <- t(out$mu.0.samples)
+  out$mu.0.samples <- array(tmp, dim = c(n.post, J.0, K.max.0))
   out$w.0.samples <- mcmc(t(out$w.0.samples))
   out$run.time <- proc.time() - ptm
   out$call <- cl
@@ -1528,12 +1819,12 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
     coords.0 <- as.matrix(coords.0)
     p.abund <- ncol(object$X)
     p.design <- p.abund
-    if (object$muRE & !ignore.RE) {
-      p.design <- p.abund + ncol(object$sigma.sq.mu.samples)
-    }
-    if (ncol(X.0) != p.design) {
-      stop(paste("error: X.0 must have ", p.design, " columns\n", sep = ''))
-    }
+    # if (object$muRE & !ignore.RE) {
+    #   p.design <- p.abund + ncol(object$sigma.sq.mu.samples)
+    # }
+    # if (ncol(X.0) != p.design) {
+    #   stop(paste("error: X.0 must have ", p.design, " columns\n", sep = ''))
+    # }
     X <- object$X
     coords <- object$coords
     J <- nrow(X)
@@ -1571,21 +1862,21 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
       re.level.names <- object$re.level.names
       # Get columns in design matrix with random effects
       x.re.names <- colnames(object$X.re)
-      x.0.names <- colnames(X.0.new)
+      x.0.names <- colnames(X.0)
       re.long.indx <- sapply(re.cols, length)
-      tmp <- which(colnames(X.0.new) %in% x.re.names)
+      tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
       indx <- list()
       for (i in 1:length(tmp)) {
         indx[[i]] <- rep(tmp[i], re.long.indx[i])
       }
+      indx <- unlist(indx)
       if (length(indx) == 0) {
         stop("error: column names in X.0 must match variable names in data$occ.covs")
       }
-      indx <- unlist(indx)
-      n.abund.re <- length(unlist(re.level.names))
+      n.abund.re <- length(indx)
       n.unique.abund.re <- length(unique(indx))
       # Check RE columns
-      for (i in 1:n.unique.abund.re) {
+      for (i in 1:n.abund.re) {
         if (is.character(re.cols[[i]])) {
           # Check if all column names in svc are in occ.covs
           if (!all(re.cols[[i]] %in% x.0.names)) {
@@ -1593,7 +1884,7 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
               stop(paste("error: variable name ", paste(missing.cols, collapse=" and "), " not in abundance covariates", sep=""))
           }
           # Convert desired column names into the numeric column index
-          re.cols[[i]] <- (1:p.abund)[x.0.names %in% re.cols[[i]]]
+          re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
           
         } else if (is.numeric(re.cols[[i]])) {
           # Check if all column indices are in 1:p.abund
@@ -1604,9 +1895,9 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
         }
       }
       re.cols <- unlist(re.cols)
-      X.re <- as.matrix(X.0.new[, indx, drop = FALSE])
-      X.fix <- as.matrix(X.0.new[, -indx, drop = FALSE])
-      X.random <- as.matrix(X.0.new[, re.cols, drop = FALSE])
+      X.re <- as.matrix(X.0[, indx, drop = FALSE])
+      X.fix <- as.matrix(X.0[, -indx, drop = FALSE])
+      X.random <- as.matrix(X.0[, re.cols, drop = FALSE])
       n.abund.re <- length(unlist(re.level.names))
       X.re.ind <- matrix(NA, nrow(X.re), p.abund.re)
       for (i in 1:p.abund.re) {
@@ -1640,8 +1931,8 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
         } # j
       } # t
     } else {
-      X.fix <- X.0.new
-      beta.star.sites.0.samples <- matrix(0, n.post, nrow(X.0.new))
+      X.fix <- X.0
+      beta.star.sites.0.samples <- matrix(0, n.post, nrow(X.0))
       p.abund.re <- 0
     }
     # Get samples in proper format for C++
@@ -1710,76 +2001,8 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
       out$w.0.samples <- mcmc(tmp)
     }
   }
-  # Detection predictions -------------------------------------------------
   if (tolower(type) == 'detection') {
-    p.det <- ncol(object$X.p)
-    p.design <- p.det
-    if (object$pRE & !ignore.RE) {
-      p.design <- p.det + ncol(object$sigma.sq.p.samples)
-    }
-    if (ncol(X.0) != p.design) {
-      stop(paste("error: X.0 must have ", p.design, " columns\n", sep = ''))
-    }
-
-    # Composition sampling --------------------------------------------------
-    alpha.samples <- as.matrix(object$alpha.samples)
-    n.post <- object$n.post * object$n.chains
-    out <- list()
-    if (object$pRE) {
-      p.det.re <- length(object$p.re.level.names)
-    } else {
-      p.det.re <- 0
-    }
-
-    if (object$pRE & !ignore.RE) {
-      alpha.star.samples <- object$alpha.star.samples
-      p.re.level.names <- object$p.re.level.names
-      # Get columns in design matrix with random effects
-      x.p.re.names <- colnames(object$X.p.re)
-      indx <- which(colnames(X.0) %in% x.p.re.names)
-      if (length(indx) == 0) {
-        stop("error: column names in X.0 must match variable names in data$det.covs")
-      }
-      X.re <- as.matrix(X.0[, indx, drop = FALSE])
-      X.fix <- as.matrix(X.0[, -indx, drop = FALSE])
-      n.det.re <- length(unlist(p.re.level.names))
-      X.re.ind <- matrix(NA, nrow(X.re), p.det.re)
-      for (i in 1:p.det.re) {
-        for (j in 1:nrow(X.re)) {
-          tmp <- which(p.re.level.names[[i]] == X.re[j, i])
-          if (length(tmp) > 0) {
-            if (i > 1) {
-              X.re.ind[j, i] <- tmp + length(p.re.level.names[[i - 1]]) 
-            } else {
-              X.re.ind[j, i] <- tmp 
-            }
-          }
-        }
-      }
-      # Create the random effects corresponding to each 
-      # new location
-      alpha.star.sites.0.samples <- matrix(0, n.post,  nrow(X.re))
-      for (t in 1:p.det.re) {
-        for (j in 1:nrow(X.re)) {
-          if (!is.na(X.re.ind[j, t])) {
-            alpha.star.sites.0.samples[, j] <- 
-              alpha.star.samples[, X.re.ind[j, t]] + 
-              alpha.star.sites.0.samples[, j]
-          } else {
-            alpha.star.sites.0.samples[, j] <- 
-              rnorm(n.post, 0, sqrt(object$sigma.sq.p.samples[, t])) + 
-              alpha.star.sites.0.samples[, j]
-          }
-        } # j
-      } # t
-    } else {
-      X.fix <- X.0
-      alpha.star.sites.0.samples <- matrix(0, n.post, nrow(X.0))
-      p.det.re <- 0
-    }
-    J.str <- nrow(X.0)
-    out$p.0.samples <- mcmc(logit.inv(t(X.fix %*% t(alpha.samples) + 
-          				t(alpha.star.sites.0.samples))))
+    out <- predict.NMix(object, X.0, ignore.RE, type, ...)
   }
   out$call <- cl
 

@@ -162,43 +162,29 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),
   y <- matrix(NA, J, max(n.rep))
   for (j in 1:J) {
     for (k in 1:n.rep[j]) {
+      if (sp) {
+        if (length(mu.RE) > 0) {
+          mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
+      			   w[j] + 
+      			   beta.star.sites[j, k])
+        } else {
+          mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + w[j])
+        }
+      } else {
+        if (length(mu.RE) > 0) {
+          mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
+      			   beta.star.sites[j, k])
+        } else {
+          mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta))
+        }
+      }
       if (family == 'NB') {
-        if (sp) {
-          if (length(mu.RE) > 0) {
-            mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
-				   w[j] + 
-				   beta.star.sites[j, k])
-          } else {
-            mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + w[j])
-          }
-        } else {
-          if (length(mu.RE) > 0) {
-            mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
-				   beta.star.sites[j, k])
-          } else {
-            mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta))
-          }
-        }
-        # Get data following NB with mean mu and overdispersion kappa. 
         y[j, k] <- rnbinom(1, size = kappa, mu = mu[j, k])
-      } else if (family == 'Poisson') {
-        if (sp) {
-          if (length(mu.RE) > 0) {
-            mu[j, k] <- exp(t(X[j, k, ]) %*% as.matrix(beta) + w[j] + beta.star.sites[j, k])
-          } else {
-            mu[j, k] <- exp(t(X[j, k, ]) %*% as.matrix(beta) + w[j])
-          }
-        } else {
-          if (length(mu.RE) > 0) {
-            mu[j, k] <- exp(t(X[j, k, ]) %*% as.matrix(beta) + beta.star.sites[j, k])
-          } else {
-            mu[j, k] <- exp(t(X[j, k, ]) %*% as.matrix(beta))
-          }
-        }
+      } else {
         y[j, k] <- rpois(1, lambda = mu[j, k])
       }
-    } # k (rep)
-  } # j (site)
+    } # k
+  } # j
 
   return(
     list(X = X, coords = coords, w = w, mu = mu, 
