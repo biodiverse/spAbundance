@@ -19,8 +19,8 @@ ppcAbund <- function(object, fit.stat, group, ...) {
   #   stop("error: ppcOcc is not implemented for lfCount and sfCount")
   # }
   if (!(class(object) %in% c('NMix', 'spNMix', 'abund', 'spAbund', 
-			     'msAbund'))) {
-    stop("error: object must be one of the following classes: NMix, spNMix, abund, spAbund, msAbund")
+			     'msAbund', 'sfMsAbund'))) {
+    stop("error: object must be one of the following classes: NMix, spNMix, abund, spAbund, msAbund, sfMsAbund")
   }
   # Fit statistic ---------------------
   if (missing(fit.stat)) {

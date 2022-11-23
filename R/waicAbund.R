@@ -16,8 +16,8 @@ waicAbund <- function(object, N.max, ...) {
     stop("error: object must be specified")
   }
   if (!(class(object) %in% c('NMix', 'spNMix', 'abund', 'spAbund', 
-			     'msAbund'))) {
-    stop("error: object must be one of the following classes: abund, spAbund, NMix, spNMix, msAbund\n")
+			     'msAbund', 'sfMsAbund'))) {
+    stop("error: object must be one of the following classes: abund, spAbund, NMix, spNMix, msAbund, sfMsAbund\n")
   }
 
   if (!(class(object) %in% c('abund', 'spAbund', 'msAbund', 'sfMsAbund'))) {

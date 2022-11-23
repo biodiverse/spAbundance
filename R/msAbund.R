@@ -176,7 +176,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
   n.abund.re <- length(unlist(apply(X.re, 2, unique)))
   n.abund.re.long <- apply(X.re, 2, function(a) length(unique(a)))
   # Number of sites
-  J <- nrow(coords)
+  J <- ncol(y)
   # Number of replicate surveys
   # Note this assumes equivalent detection histories for all species. 
   # May want to change this at some point. 
@@ -578,7 +578,6 @@ msAbund <- function(formula, data, inits, priors, tuning,
   # Set storage for all variables ---------------------------------------
   storage.mode(y) <- "double"
   storage.mode(X) <- "double"
-  storage.mode(coords) <- "double"
   consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re)
   storage.mode(consts) <- "integer"
   storage.mode(beta.inits) <- "double"
@@ -707,7 +706,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
     y.non.miss.indx <- which(!is.na(y.mat), arr.ind = TRUE)
     out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
       								dim = c(n.sp * n.obs, n.post.samples))))
-    tmp <- array(NA, dim = c(n.post.samples, n.sp, J, K.max))
+    tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
     for (j in 1:(n.obs * n.sp)) {
       curr.indx <- y.non.miss.indx[j, ]
       tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$y.rep.samples[j, ]
@@ -715,7 +714,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
     out$y.rep.samples <- tmp
     out$mu.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$mu.samples, 
       								dim = c(n.sp * n.obs, n.post.samples))))
-    tmp <- array(NA, dim = c(n.post.samples, n.sp, J, K.max))
+    tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
     for (j in 1:(n.obs * n.sp)) {
       curr.indx <- y.non.miss.indx[j, ]
       tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$mu.samples[j, ]
@@ -723,7 +722,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
     out$mu.samples <- tmp
     out$like.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$like.samples, 
       								dim = c(n.sp * n.obs, n.post.samples))))
-    tmp <- array(NA, dim = c(n.post.samples, n.sp, J, K.max))
+    tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
     for (j in 1:(n.obs * n.sp)) {
       curr.indx <- y.non.miss.indx[j, ]
       tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$like.samples[j, ]

@@ -7,11 +7,9 @@
 static const R_CallMethodDef CallEntries[] = {
     {"NMix", (DL_FUNC) &NMix, 42},
     {"spNMixNNGP", (DL_FUNC) &spNMixNNGP, 59},
-    {"msNMix", (DL_FUNC) &msNMix, 49},
-    {"sfMsNMixNNGP", (DL_FUNC) &sfMsNMixNNGP, 65},
     {"abund", (DL_FUNC) &abund, 30},
     {"spAbundNNGP", (DL_FUNC) &spAbundNNGP, 48},
-    {"sfMsAbundNNGP", (DL_FUNC) &sfMsAbundNNGP, 47},
+    {"sfMsAbundNNGP", (DL_FUNC) &sfMsAbundNNGP, 49},
     {"waicAbund", (DL_FUNC) &waicAbund, 13},
     {NULL, NULL, 0}
 };
