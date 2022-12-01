@@ -169,9 +169,9 @@ extern "C" {
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
 	if (family == 1) {
-          Rprintf("Spatial Factor NNGP Multispecies Negative Binomial Abundance model fit with %i sites and %i species.\n\n", J, nSp);
+          Rprintf("Spatial Factor NNGP Multispecies Negative Binomial\nAbundance model fit with %i sites and %i species.\n\n", J, nSp);
 	} else {
-          Rprintf("Spatial Factor NNGP Multispecies Poisson Abundance model fit with %i sites and %i species.\n\n", J, nSp);
+          Rprintf("Spatial Factor NNGP Multispecies Poisson Abundance\nmodel fit with %i sites and %i species.\n\n", J, nSp);
 	}
         Rprintf("Samples per Chain: %i \n", nSamples);
         Rprintf("Burn-in: %i \n", nBurn); 

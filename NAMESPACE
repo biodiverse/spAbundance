@@ -2,6 +2,8 @@ useDynLib(spAbundance, .registration=TRUE)
 
 export(simNMix)
 export(simAbund)
+export(simMsAbund)
+export(simMsNMix)
 export(NMix)
 export(spNMix)
 export(abund)

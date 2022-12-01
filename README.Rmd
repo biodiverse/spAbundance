@@ -16,8 +16,8 @@ knitr::opts_chunk$set(
 ```{r, echo=FALSE, results='asis', message=FALSE, eval = FALSE}
 library(badger)
 cat(
-	badger::badge_cran_release("spAbundance", "green"),
-	badger::badge_cran_download("spAbundance", "grand-total", "blue"),
+	# badger::badge_cran_release("spAbundance", "green"),
+	# badger::badge_cran_download("spAbundance", "grand-total", "blue"),
 	badger::badge_codecov()
 )
 ```

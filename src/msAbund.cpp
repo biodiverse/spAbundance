@@ -122,8 +122,8 @@ extern "C" {
 #else
         Rprintf("Source not compiled with OpenMP support.\n\n");
 #endif
-      }
         Rprintf("Adaptive Metropolis with target acceptance rate: %.1f\n", 100*acceptRate);
+      }
       Rprintf("----------------------------------------\n");
       Rprintf("\tChain %i\n", currChain);
       Rprintf("----------------------------------------\n");

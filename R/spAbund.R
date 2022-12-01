@@ -1146,7 +1146,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
           tmp <- sapply(tmp, function(a) a[1])
           X.re.0.new <- X.re.0.new[, , tmp, drop = FALSE]
 	}
-        if (p.abund.re > 0) {X.0.new <- abind(X.0.new, X.re.0.new, along = 3)}
+        if (p.abund.re > 0) {X.0.new <- abind(X.0.new, X.re.0.new + 1, along = 3)}
         out.pred <- predict.spAbund(out.fit, X.0.new, coords.0, verbose = FALSE)
 
         rmspe.samples <- apply(out.pred$y.0.samples, 1, 

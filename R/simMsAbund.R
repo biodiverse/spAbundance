@@ -1,5 +1,5 @@
 simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, mu.RE = list(), 
-		       sp = FALSE, cov.model, sigma.sq, phi, nu, family = 'NB',
+		       sp = FALSE, cov.model, sigma.sq, phi, nu, family = 'Poisson',
 		       factor.model = FALSE, n.factors, ...) {
 
   # Check for unused arguments ------------------------------------------
@@ -159,7 +159,6 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, mu.RE = list(),
   coords <- as.matrix(expand.grid(s.x, s.y))
   w.star <- matrix(0, nrow = n.sp, ncol = J)
   if (factor.model) {
-    # TODO: 
     lambda <- matrix(rnorm(n.sp * n.factors, 0, 1), n.sp, n.factors) 
     # Set diagonals to 1
     diag(lambda) <- 1

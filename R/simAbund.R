@@ -1,5 +1,5 @@
 simAbund <- function(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),  
-		     sp = FALSE, cov.model, sigma.sq, phi, nu, family = 'NB', ...) {
+		     sp = FALSE, cov.model, sigma.sq, phi, nu, family = 'Poisson', ...) {
 
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))

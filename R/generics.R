@@ -200,7 +200,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, ...) {
   colnames(X.0) <- tmp.names
   missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) > 0))
   non.missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) == 0))
-  X.0 <- X.0[non.missing.indx, ]
+  X.0 <- X.0[non.missing.indx, , drop = FALSE]
 
   if (object$muRE & !ignore.RE) {
     beta.star.samples <- object$beta.star.samples
@@ -443,7 +443,7 @@ predict.spAbund <- function(object, X.0, coords.0,
   colnames(X.0) <- tmp.names
   missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) > 0))
   non.missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) == 0))
-  X.0 <- X.0[non.missing.indx, ]
+  X.0 <- X.0[non.missing.indx, , drop = FALSE]
 
   n.post <- object$n.post * object$n.chains
   X <- object$X
@@ -817,7 +817,7 @@ predict.msAbund <- function(object, X.0, coords.0, ignore.RE = FALSE, ...) {
   colnames(X.0) <- tmp.names
   missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) > 0))
   non.missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) == 0))
-  X.0 <- X.0[non.missing.indx, ]
+  X.0 <- X.0[non.missing.indx, , drop = FALSE]
 
   if (object$muRE & !ignore.RE) {
     beta.star.samples <- object$beta.star.samples

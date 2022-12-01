@@ -81,7 +81,6 @@ abund <- function(formula, data, inits, priors, tuning,
     }
   }
 
-  # First subset detection covariates to only use those that are included in the analysis. 
   # Get occurrence covariates in proper format
   # Subset covariates to only use those that are included in the analysis
   data$covs <- data$covs[names(data$covs) %in% all.vars(formula)]
@@ -201,7 +200,6 @@ abund <- function(formula, data, inits, priors, tuning,
   n.obs <- nrow(X)
 
   # Get random effect matrices all set ----------------------------------
-  # TODO: might need to check this a bit more. 
   X.re <- X.re - 1
   if (p.abund.re > 1) {
     # Subtract 1 for C
@@ -632,8 +630,6 @@ abund <- function(formula, data, inits, priors, tuning,
       out$muRE <- FALSE
     }
   }
-  # TODO: this (and the prediction function) need to be updated to 
-  #       work with unbalanced replicate surveys. 
   # K-fold cross-validation -------
   if (!missing(k.fold)) {
     if (verbose) {
@@ -795,7 +791,7 @@ abund <- function(formula, data, inits, priors, tuning,
         X.re.0.new <- X.re.0.new[, , tmp, drop = FALSE]
       }
       if (p.abund.re > 0) {X.0.new <- abind(X.0.new, X.re.0.new, along = 3)}
-      out.pred <- predict.abund(out.fit, X.0.new)
+      out.pred <- predict.abund(out.fit, X.0.new + 1)
 
       rmspe.samples <- apply(out.pred$y.0.samples, 1, 
 			     function(a) sqrt(mean(y.mat.0 - a, na.rm = TRUE)^2))

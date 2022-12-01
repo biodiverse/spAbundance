@@ -1,6 +1,6 @@
 simMsNMix <- function(J.x, J.y, n.rep, n.sp, beta, alpha, kappa, mu.RE = list(), 
 		      p.RE = list(), sp = FALSE, cov.model, 
-		      sigma.sq, phi, nu, family = 'NB',
+		      sigma.sq, phi, nu, family = 'Poisson',
 		      factor.model = FALSE, n.factors, ...) {
 
   # Check for unused arguments ------------------------------------------
@@ -192,7 +192,6 @@ simMsNMix <- function(J.x, J.y, n.rep, n.sp, beta, alpha, kappa, mu.RE = list(),
   coords <- as.matrix(expand.grid(s.x, s.y))
   w.star <- matrix(0, nrow = n.sp, ncol = J)
   if (factor.model) {
-    # TODO: 
     lambda <- matrix(rnorm(n.sp * n.factors, 0, 1), n.sp, n.factors) 
     # Set diagonals to 1
     diag(lambda) <- 1
@@ -241,6 +240,7 @@ simMsNMix <- function(J.x, J.y, n.rep, n.sp, beta, alpha, kappa, mu.RE = list(),
 
   # Random effects --------------------------------------------------------
   if (length(mu.RE) > 0) {
+    # TODO: this does not currently simulate random slopes
     p.abund.re <- length(mu.RE$levels)
     sigma.sq.mu <- rep(NA, p.abund.re)
     n.abund.re.long <- mu.RE$levels
@@ -301,25 +301,23 @@ simMsNMix <- function(J.x, J.y, n.rep, n.sp, beta, alpha, kappa, mu.RE = list(),
   }
 
   # Latent Abundance Process ----------------------------------------------
-  psi <- matrix(NA, nrow = n.sp, ncol = J)
   mu <- matrix(NA, nrow = n.sp, ncol = J)
   N <- matrix(NA, nrow = n.sp, ncol = J)
   if (family == 'NB') {
     for (i in 1:n.sp) {
       if (sp | factor.model) {
         if (length(mu.RE) > 0) {
-          psi[i, ] <- logit.inv(X %*% as.matrix(beta[i, ]) + w.star[i, ] + beta.star.sites[i, ])
+          mu[i, ] <- exp(X %*% as.matrix(beta[i, ]) + w.star[i, ] + beta.star.sites[i, ])
         } else {
-          psi[i, ] <- logit.inv(X %*% as.matrix(beta[i, ]) + w.star[i, ])
+          mu[i, ] <- exp(X %*% as.matrix(beta[i, ]) + w.star[i, ])
         }
       } else {
         if (length(mu.RE) > 0) {
-          psi[i, ] <- logit.inv(X %*% as.matrix(beta[i, ]) + beta.star.sites[i, ])
+          mu[i, ] <- exp(X %*% as.matrix(beta[i, ]) + beta.star.sites[i, ])
         } else {
-          psi[i, ] <- logit.inv(X %*% as.matrix(beta[i, ]))
+          mu[i, ] <- exp(X %*% as.matrix(beta[i, ]))
         }
       }
-      mu[i, ] <- kappa[i] * exp(logit(psi[i, ]))
       N[i, ] <- rnbinom(J, size = kappa[i], mu = mu[i, ])
     }
   } else if (family == 'Poisson') {
