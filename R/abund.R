@@ -111,8 +111,6 @@ abund <- function(formula, data, inits, priors, tuning,
   }
 
   # Checking missing values ---------------------------------------------
-  # TODO: I believe these checks will fail if only site-level covariates on 
-  #       abundance
   # y -------------------------------
   y.na.test <- apply(y, 1, function(a) sum(!is.na(a)))
   if (sum(y.na.test == 0) > 0) {

@@ -139,8 +139,6 @@ spAbund <- function(formula, data, inits, priors, tuning,
   }
 
   # Checking missing values ---------------------------------------------
-  # TODO: I believe these checks will fail if only site-level covariates on 
-  #       abundance
   # y -------------------------------
   y.na.test <- apply(y, 1, function(a) sum(!is.na(a)))
   if (sum(y.na.test == 0) > 0) {
@@ -882,14 +880,14 @@ spAbund <- function(formula, data, inits, priors, tuning,
         curr.indx <- y.non.miss.indx[j, ]
         tmp[, curr.indx[1], curr.indx[2]] <- out$mu.samples[, j]
       }
-      out$mu.samples <- tmp[, order(ord), ]
+      out$mu.samples <- tmp[, order(ord), , drop = FALSE]
       out$like.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$like.samples))))
       tmp <- array(NA, dim = c(n.post.samples * n.chains, J, ncol(y.mat)))
       for (j in 1:n.obs) {
         curr.indx <- y.non.miss.indx[j, ]
         tmp[, curr.indx[1], curr.indx[2]] <- out$like.samples[, j]
       }
-      out$like.samples <- tmp[, order(ord), ]
+      out$like.samples <- tmp[, order(ord), , drop = FALSE]
       out$w.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$w.samples))))
       out$w.samples <- mcmc(out$w.samples[, order(ord), drop = FALSE])
       if (p.abund.re > 0) {
