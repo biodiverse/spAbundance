@@ -749,7 +749,7 @@ fitted.msAbund <- function(object, ...) {
   return(object$y.rep.samples)
 }
 
-predict.msAbund <- function(object, X.0, coords.0, ignore.RE = FALSE, ...) {
+predict.msAbund <- function(object, X.0, ignore.RE = FALSE, ...) {
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
   elip.args <- names(list(...))

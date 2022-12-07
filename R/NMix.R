@@ -139,8 +139,6 @@ NMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
 
   # Checking missing values ---------------------------------------------
-  # TODO: I believe these checks will fail if only site-level covariates on 
-  #       abundance
   # y -------------------------------
   y.na.test <- apply(y, 1, function(a) sum(!is.na(a)))
   if (sum(y.na.test == 0) > 0) {
@@ -243,16 +241,17 @@ NMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   # Make necessary adjustment for site-level covariates only
   if (nrow(X.p) == J) {
     X.p <- X.p[N.long.indx + 1, , drop = FALSE]
+    X.p.re <- X.p.re[N.long.indx + 1, , drop = FALSE]
+    X.p.random <- X.p.random[N.long.indx + 1, , drop = FALSE]
   }
   # Remove missing observations when the covariate data are available but
   # there are missing detection-nondetection data. 
   if (nrow(X.p) == length(y)) {
     X.p <- X.p[!is.na(y), , drop = FALSE]  
   }
-  # TODO: determine if you need X.p.random here as well, and implement this
-  #       for spNMix as well if you decide to. 
   if (nrow(X.p.re) == length(y) & p.det.re > 0) {
     X.p.re <- X.p.re[!is.na(y), , drop = FALSE]
+    X.p.random <- X.p.random[!is.na(y), , drop = FALSE]
   }
   y <- y[!is.na(y)]
   # Number of data points for the y vector
@@ -935,7 +934,7 @@ NMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     sites.random <- sample(1:J)    
     sites.k.fold <- split(sites.random, sites.random %% k.fold)
     registerDoParallel(k.fold.threads)
-    rmspe <- foreach (i = 1:k.fold, .combine = mean) %dopar% {
+    rmspe <- foreach (i = 1:k.fold, .combine = sum) %dopar% {
       curr.set <- sort(sites.random[sites.k.fold[[i]]])
       y.indx <- !((N.long.indx + 1) %in% curr.set)
       y.fit <- y[y.indx]
@@ -1111,6 +1110,14 @@ NMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       }
       class(out.fit) <- "NMix"
 
+      # Get RE levels correct for use in prediction code. 
+      if (p.abund.re > 0) {
+        tmp.2 <- colnames(X.re.0)
+        tmp <- unlist(re.level.names)
+        X.re.0 <- matrix(tmp[c(X.re.0 + 1)], nrow(X.re.0), ncol(X.re.0))
+        colnames(X.re.0) <- tmp.2
+      }
+
       # Get unique factors for random effects
       if (p.abund.re > 0) {
         # Get unique factors for random effects.
@@ -1121,6 +1128,14 @@ NMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       # Predict abundance at new sites
       if (p.abund.re > 0) {X.0 <- cbind(X.0, X.re.0 + 1)}
       out.pred <- predict.NMix(out.fit, X.0)
+
+      # Get RE levels correct for use in prediction code. 
+      if (p.det.re > 0) {
+        tmp.2 <- colnames(X.p.re.0)
+        tmp <- unlist(p.re.level.names)
+        X.p.re.0 <- matrix(tmp[c(X.p.re.0 + 1)], nrow(X.p.re.0), ncol(X.p.re.0))
+        colnames(X.p.re.0) <- tmp.2
+      }
 
       # Get unique factors for random effects
       if (p.det.re > 0) {

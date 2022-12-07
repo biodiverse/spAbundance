@@ -279,9 +279,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
   if (nrow(X.p.re) == length(y) & p.det.re > 0) {
     X.p.re <- X.p.re[!is.na(y), , drop = FALSE]
-  }
-  if (nrow(X.p.random) == length(y) / n.sp & p.det.re > 0) {
-    X.p.random <- X.p.random[!is.na(c(y.mat[1, , ])), , drop = FALSE]
+    X.p.random <- X.p.random[!is.na(y), , drop = FALSE]
   }
   y <- y[!is.na(y)]
   # Number of data points for the y vector

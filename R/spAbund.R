@@ -957,7 +957,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
       sites.random <- sample(1:J)    
       sites.k.fold <- split(sites.random, sites.random %% k.fold)
       registerDoParallel(k.fold.threads)
-      rmspe <- foreach (i = 1:k.fold, .combine = mean) %dopar% {
+      rmspe <- foreach (i = 1:k.fold, .combine = sum) %dopar% {
         curr.set <- sort(sites.random[sites.k.fold[[i]]])
         y.indx <- !((site.indx + 1) %in% curr.set)
         y.fit <- y[y.indx]
@@ -1126,6 +1126,14 @@ spAbund <- function(formula, data, inits, priors, tuning,
         }
         class(out.fit) <- "spAbund"
 
+        # Get RE levels correct for use in prediction code. 
+        if (p.abund.re > 0) {
+          tmp.2 <- colnames(X.re.0)
+          tmp <- unlist(re.level.names)
+          X.re.0 <- matrix(tmp[c(X.re.0 + 1)], nrow(X.re.0), ncol(X.re.0))
+          colnames(X.re.0) <- tmp.2
+        }
+
         X.0.new <- array(NA, dim = c(J.0, ncol(y.mat.0), p.abund))
         X.re.0.new <- array(NA, dim = c(J.0, ncol(y.mat.0), p.abund.re))
         y.non.miss.indx.0 <- which(!is.na(y.mat.0), arr.ind = TRUE)
@@ -1144,7 +1152,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
           tmp <- sapply(tmp, function(a) a[1])
           X.re.0.new <- X.re.0.new[, , tmp, drop = FALSE]
 	}
-        if (p.abund.re > 0) {X.0.new <- abind(X.0.new, X.re.0.new + 1, along = 3)}
+        if (p.abund.re > 0) {X.0.new <- abind(X.0.new, X.re.0.new, along = 3)}
         out.pred <- predict.spAbund(out.fit, X.0.new, coords.0, verbose = FALSE)
 
         rmspe.samples <- apply(out.pred$y.0.samples, 1, 
