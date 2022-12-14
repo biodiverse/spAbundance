@@ -569,8 +569,6 @@ extern "C" {
 	}
         for (j = 0; j < J; j++) {
 	  if (NCand[j] >= yMax[j]) {
-            // Rprintf("logPostCurrN[%i]: %f\n", j, logPostCurrN[j]);
-            // Rprintf("logPostCurrN[%i]: %f\n", j, logPostCurrN[j]);
             /********************************
              * Current
              *******************************/

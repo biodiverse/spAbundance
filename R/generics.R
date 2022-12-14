@@ -1576,7 +1576,8 @@ fitted.spNMix <- function(object, ...) {
 
 # spNMix ------------------------------------------------------------------
 predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1, 
-			   verbose = TRUE, ignore.RE = FALSE, type = 'abundance', ...) {
+			   verbose = TRUE, n.report = 100, 
+			   ignore.RE = FALSE, type = 'abundance', ...) {
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
   elip.args <- names(list(...))
@@ -1700,9 +1701,9 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
         }
       }
       re.cols <- unlist(re.cols)
-      X.re <- as.matrix(X.0[, indx, drop = FALSE])
-      X.fix <- as.matrix(X.0[, -indx, drop = FALSE])
-      X.random <- as.matrix(X.0[, re.cols, drop = FALSE])
+      X.re <- as.matrix(X.0.new[, indx, drop = FALSE])
+      X.fix <- as.matrix(X.0.new[, -indx, drop = FALSE])
+      X.random <- as.matrix(X.0.new[, re.cols, drop = FALSE])
       n.abund.re <- length(unlist(re.level.names))
       X.re.ind <- matrix(NA, nrow(X.re), p.abund.re)
       for (i in 1:p.abund.re) {
@@ -1736,7 +1737,7 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
         } # j
       } # t
     } else {
-      X.fix <- X.0
+      X.fix <- X.0.new
       beta.star.sites.0.samples <- matrix(0, n.post, nrow(X.0))
       p.abund.re <- 0
     }
@@ -1783,7 +1784,7 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
       ptm <- proc.time()
 
       out <- .Call("spNMixNNGPPredict", coords, J, family.c, p.abund, n.neighbors,
-                   X.fix, coords.0, J.0, nn.indx.0, beta.samples,
+                   X.fix, coords.0.new, J.0, nn.indx.0, beta.samples,
                    theta.samples, kappa.samples, w.samples, beta.star.sites.0.samples,
           	   n.post, cov.model.indx, n.omp.threads, verbose, n.report)
     }

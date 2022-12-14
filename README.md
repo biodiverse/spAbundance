@@ -39,6 +39,7 @@ will be updated as new functionality is included
 | `spNMix()`             | Single-species spatial N-mixture model                           |
 | `abund()`              | Single-species abundance GLM without imperfect detection         |
 | `spAbund()`            | Single-species spatial abundance GLM without imperfect detection |
+| `msAbund()`            | Multi-species abundance GLM without imperfect detection          |
 | `ppcAbund()`           | Posterior predictive check using Bayesian p-values               |
 | `waicAbund()`          | Calculate Widely Applicable Information Criterion (WAIC)         |
 | `simNMix()`            | Simulate single-species repeated count data                      |

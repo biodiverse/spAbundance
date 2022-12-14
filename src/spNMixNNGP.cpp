@@ -433,6 +433,7 @@ extern "C" {
     SEXP tuningSamples_r; 
     PROTECT(tuningSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
 
+
     /**********************************************************************
      * Prep for random effects
      * *******************************************************************/
@@ -745,6 +746,7 @@ extern "C" {
 	  }
         }
 
+
         /********************************************************************
          *Update sigmaSq
          *******************************************************************/
@@ -1011,6 +1013,9 @@ extern "C" {
 	  if (corName == "matern") {
 	    Rprintf("\tnu\t\t%3.1f\t\t%1.5f\n", 100.0*REAL(acceptSamples_r)[s * nAMCMC + nuAMCMCIndx], exp(tuning[nuAMCMCIndx]));
 	  }
+	  // for (j = 0; j < J; j++) {
+	  //   Rprintf("\tw[%i]\t\t%3.1f\t\t%1.5f\n", j, 100.0*REAL(acceptSamples_r)[s * nAMCMC + wAMCMCIndx + j], exp(tuning[wAMCMCIndx]));
+	  // }
           Rprintf("-------------------------------------------------\n");
           #ifdef Win32
           R_FlushConsole();

@@ -167,8 +167,6 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
 
   # Checking missing values ---------------------------------------------
-  # TODO: I believe these checks will fail if only site-level covariates on 
-  #       abundance
   # y -------------------------------
   y.na.test <- apply(y, 1, function(a) sum(!is.na(a)))
   if (sum(y.na.test == 0) > 0) {
@@ -271,6 +269,8 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   # Make necessary adjustment for site-level covariates only
   if (nrow(X.p) == J) {
     X.p <- X.p[N.long.indx + 1, , drop = FALSE]
+    X.p.re <- X.p.re[N.long.indx + 1, , drop = FALSE]
+    X.p.random <- X.p.random[N.long.indx + 1, , drop = FALSE]
   }
   # Remove missing observations when the covariate data are available but
   # there are missing detection-nondetection data. 
@@ -801,6 +801,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     if (!sigma.sq.ig) {
       sigma.sq.tuning <- 1
     }
+    w.tuning <- rep(1, J)
   } else {
     names(tuning) <- tolower(names(tuning))
     # beta ---------------------------
@@ -1186,7 +1187,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     tmp <- tmp[order(ord), , ]
     out$X.p.re <- matrix(tmp, J * K.max, p.det.re)
     out$X.p.re <- out$X.p.re[apply(out$X.p.re, 1, function(a) sum(is.na(a))) == 0, , drop = FALSE]
-    colnames(out$X.p.re) <- x.p.re.names
+    colnames(out$X.p.re) <- colnames(X.p.re)
     tmp <- matrix(NA, J * K.max, p.det.re)
     tmp[names.long, ] <- X.p.random
     tmp <- array(tmp, dim = c(J, K.max, p.det.re))
@@ -1256,216 +1257,277 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     } else {
       out$muRE <- FALSE
     }
-    # TODO: needs updating. 
     # K-fold cross-validation -------
-    # if (!missing(k.fold)) {
-    #   if (verbose) {
-    #     cat("----------------------------------------\n");
-    #     cat("\tCross-validation\n");
-    #     cat("----------------------------------------\n");
-    #     message(paste("Performing ", k.fold, "-fold cross-validation using ", k.fold.threads,
-    #     	        " thread(s).", sep = ''))
-    #   }
-    #   set.seed(k.fold.seed)
-    #   # Number of sites in each hold out data set. 
-    #   sites.random <- sample(1:J)    
-    #   sites.k.fold <- split(sites.random, sites.random %% k.fold)
-    #   registerDoParallel(k.fold.threads)
-    #   model.deviance <- foreach (i = 1:k.fold, .combine = sum) %dopar% {
-    #     curr.set <- sort(sites.random[sites.k.fold[[i]]])
-    #     if (binom) {
-    #       y.indx <- !(1:J %in% curr.set)
-    #     } else {
-    #       y.indx <- !((z.long.indx + 1) %in% curr.set)
-    #     }
-    #     y.fit <- y[y.indx]
-    #     y.0 <- y[!y.indx]
-    #     y.big.fit <- y.big[-curr.set, , drop = FALSE]
-    #     y.big.0 <- y.big[curr.set, , drop = FALSE]
-    #     z.inits.fit <- z.inits[-curr.set]
-    #     X.p.fit <- X.p[y.indx, , drop = FALSE]
-    #     X.p.0 <- X.p[!y.indx, , drop = FALSE]
-    #     X.fit <- X[-curr.set, , drop = FALSE]
-    #     X.0 <- X[curr.set, , drop = FALSE]
-    #     J.fit <- nrow(X.fit)
-    #     J.0 <- nrow(X.0)
-    #     K.fit <- K[-curr.set]
-    #     K.0 <- K[curr.set]
-    #     n.obs.fit <- nrow(X.p.fit)
-    #     n.obs.0 <- nrow(X.p.0)
-    #     # Random Detection Effects
-    #     lambda.p.fit <- lambda.p[y.indx, , drop = FALSE]
-    #     lambda.p.0 <- lambda.p[!y.indx, , drop = FALSE]
-    #     X.p.re.fit <- X.p.re[y.indx, , drop = FALSE]
-    #     X.p.re.0 <- X.p.re[!y.indx, , drop = FALSE]
-    #     n.det.re.fit <- length(unique(c(X.p.re.fit)))
-    #     n.det.re.long.fit <- apply(X.p.re.fit, 2, function(a) length(unique(a)))
-    #     if (p.det.re > 0) {	
-    #       alpha.star.indx.fit <- rep(0:(p.det.re - 1), n.det.re.long.fit)
-    #       alpha.level.indx.fit <- sort(unique(c(X.p.re.fit)))
-    #       alpha.star.inits.fit <- rnorm(n.det.re.fit, 
-    #       			      sqrt(sigma.sq.p.inits[alpha.star.indx.fit + 1]))
-    #     } else {
-    #       alpha.star.indx.fit <- alpha.star.indx
-    #       alpha.level.indx.fit <- alpha.level.indx
-    #       alpha.star.inits.fit <- alpha.star.inits
-    #     }
-    #     # Random Occurrence Effects
-    #     X.re.fit <- X.re[-curr.set, , drop = FALSE]
-    #     X.re.0 <- X.re[curr.set, , drop = FALSE]
-    #     n.re.fit <- length(unique(c(X.re.fit)))
-    #     n.re.long.fit <- apply(X.re.fit, 2, function(a) length(unique(a)))
-    #     if (p.re > 0) {	
-    #       beta.star.indx.fit <- rep(0:(p.re - 1), n.re.long.fit)
-    #       beta.level.indx.fit <- sort(unique(c(X.re.fit)))
-    #       beta.star.inits.fit <- rnorm(n.re.fit, 
-    #       			      sqrt(sigma.sq.mu.inits[beta.star.indx.fit + 1]))
-    #       re.level.names.fit <- list()
-    #       for (t in 1:p.re) {
-    #         tmp.indx <- beta.level.indx.fit[beta.star.indx.fit == t - 1]
-    #         re.level.names.fit[[t]] <- unlist(re.level.names)[tmp.indx + 1]    
-    #       }
-    #     } else {
-    #       beta.star.indx.fit <- beta.star.indx
-    #       beta.level.indx.fit <- beta.level.indx
-    #       beta.star.inits.fit <- beta.star.inits
-    #       re.level.names.fit <- re.level.names
-    #   }
-    #     # Gotta be a better way, but will do for now. 
-    #     if (binom) {
-    #       z.long.indx.fit <- 0:(J.fit - 1)
-    #       z.0.long.indx <- 1:J.0
-    #     } else {
-    #       z.long.indx.fit <- matrix(NA, J.fit, max(K.fit))
-    #       for (j in 1:J.fit) {
-    #         z.long.indx.fit[j, 1:K.fit[j]] <- j  
-    #       }
-    #       z.long.indx.fit <- c(z.long.indx.fit)
-    #       z.long.indx.fit <- z.long.indx.fit[!is.na(z.long.indx.fit)] - 1
-    #       z.0.long.indx <- matrix(NA, nrow(X.0), max(K.0))
-    #       for (j in 1:nrow(X.0)) {
-    #         z.0.long.indx[j, 1:K.0[j]] <- j  
-    #       }
-    #       z.0.long.indx <- c(z.0.long.indx)
-    #       z.0.long.indx <- z.0.long.indx[!is.na(z.0.long.indx)] 
-    #     }
-    #     verbose.fit <- FALSE
-    #     n.omp.threads.fit <- 1
-    #     storage.mode(y.fit) <- "double"
-    #     storage.mode(z.inits.fit) <- "double"
-    #     storage.mode(X.p.fit) <- "double"
-    #     storage.mode(X.fit) <- "double"
-    #     storage.mode(K.fit) <- "double"
-    #     consts.fit <- c(J.fit, n.obs.fit, p, p.re, n.re.fit, 
-    #                     p.det, p.det.re, n.det.re.fit)
-    #     storage.mode(consts.fit) <- "integer"
-    #     storage.mode(z.long.indx.fit) <- "integer"
-    #     storage.mode(n.samples) <- "integer"
-    #     storage.mode(n.omp.threads.fit) <- "integer"
-    #     storage.mode(verbose.fit) <- "integer"
-    #     storage.mode(n.report) <- "integer"
-    #     storage.mode(X.p.re.fit) <- "integer"
-    #     storage.mode(n.det.re.long.fit) <- "integer"
-    #     storage.mode(alpha.star.inits.fit) <- "double"
-    #     storage.mode(alpha.star.indx.fit) <- "integer"
-    #     storage.mode(alpha.level.indx.fit) <- "integer"
-    #     storage.mode(X.re.fit) <- "integer"
-    #     storage.mode(n.re.long.fit) <- "integer"
-    #     storage.mode(beta.star.inits.fit) <- "double"
-    #     storage.mode(beta.star.indx.fit) <- "integer"
-    #     storage.mode(beta.level.indx.fit) <- "integer"
-    #     chain.info[1] <- 1
-    #     storage.mode(chain.info) <- "integer"
-    #     # Run the model in C
-    #     out.fit <- .Call("PGOcc", y.fit, X.fit, X.p.fit, X.re.fit, X.p.re.fit, consts.fit, 
-    #     		 K.fit, n.re.long.fit, n.det.re.long.fit, beta.inits, alpha.inits, 
-    #     		 sigma.sq.mu.inits, sigma.sq.p.inits, beta.star.inits.fit, 
-    #     		 alpha.star.inits.fit, z.inits.fit, z.long.indx.fit, beta.star.indx.fit, 
-    #     		 beta.level.indx.fit, alpha.star.indx.fit, alpha.level.indx.fit, mu.beta, 
-    #     		 mu.alpha, Sigma.beta, Sigma.alpha, sigma.sq.mu.a, sigma.sq.mu.b, 
-    #     		 sigma.sq.p.a, sigma.sq.p.b, n.samples, n.omp.threads.fit, verbose.fit, 
-    #     		 n.report, samples.info, chain.info)
-    #     out.fit$beta.samples <- mcmc(t(out.fit$beta.samples))
-    #     colnames(out.fit$beta.samples) <- x.names
-    #     out.fit$X <- X.fit
-    #     out.fit$y <- y.big.fit
-    #     out.fit$X.p <- X.p.fit
-    #     out.fit$call <- cl
-    #     out.fit$n.samples <- n.samples
-    #     out.fit$n.post <- n.post.samples
-    #     out.fit$n.thin <- n.thin
-    #     out.fit$n.burn <- n.burn
-    #     out.fit$n.chains <- 1
-    #     if (p.det.re > 0) {
-    #       out.fit$pRE <- TRUE
-    #     } else {
-    #       out.fit$pRE <- FALSE
-    #     }
-    #     if (p.re > 0) {
-    #       out.fit$sigma.sq.mu.samples <- mcmc(t(out.fit$sigma.sq.mu.samples))
-    #       colnames(out.fit$sigma.sq.mu.samples) <- x.re.names
-    #       out.fit$beta.star.samples <- mcmc(t(out.fit$beta.star.samples))
-    #       tmp.names <- unlist(re.level.names.fit)
-    #       beta.star.names <- paste(rep(x.re.names, n.re.long.fit), tmp.names, sep = '-')
-    #       colnames(out.fit$beta.star.samples) <- beta.star.names
-    #       out.fit$re.level.names <- re.level.names.fit
-    #       out.fit$X.re <- X.re.fit
-    #     }
-    #     if (p.re > 0) {
-    #       out.fit$psiRE <- TRUE
-    #     } else {
-    #       out.fit$psiRE <- FALSE	
-    #     }
-    #     class(out.fit) <- "PGOcc"
+    if (!missing(k.fold)) {
+      if (verbose) {
+        cat("----------------------------------------\n");
+        cat("\tCross-validation\n");
+        cat("----------------------------------------\n");
+        message(paste("Performing ", k.fold, "-fold cross-validation using ", k.fold.threads,
+        	        " thread(s).", sep = ''))
+      }
+      set.seed(k.fold.seed)
+      # Number of sites in each hold out data set. 
+      sites.random <- sample(1:J)    
+      sites.k.fold <- split(sites.random, sites.random %% k.fold)
+      registerDoParallel(k.fold.threads)
+      rmspe <- foreach (i = 1:k.fold, .combine = sum) %dopar% {
+        curr.set <- sort(sites.random[sites.k.fold[[i]]])
+        y.indx <- !((N.long.indx + 1) %in% curr.set)
+        y.fit <- y[y.indx]
+        y.0 <- y[!y.indx]
+        y.mat.fit <- y.mat[-curr.set, , drop = FALSE]
+        y.mat.0 <- y.mat[curr.set, , drop = FALSE]
+        y.max.fit <- y.max[-curr.set]
+        N.inits.fit <- N.inits[-curr.set]
+        X.p.fit <- X.p[y.indx, , drop = FALSE]
+        X.p.0 <- X.p[!y.indx, , drop = FALSE]
+        X.fit <- X[-curr.set, , drop = FALSE]
+        X.0 <- X[curr.set, , drop = FALSE]
+        coords.fit <- coords[-curr.set, , drop = FALSE]
+        coords.0 <- coords[curr.set, , drop = FALSE]
+        J.fit <- nrow(X.fit)
+        J.0 <- nrow(X.0)
+        K.fit <- K[-curr.set]
+        K.0 <- K[curr.set]
+        n.obs.fit <- nrow(X.p.fit)
+        n.obs.0 <- nrow(X.p.0)
+        # Random Detection Effects
+        X.p.re.fit <- X.p.re[y.indx, , drop = FALSE]
+        X.p.re.0 <- X.p.re[!y.indx, , drop = FALSE]
+        X.p.random.fit <- X.p.random[y.indx, , drop = FALSE]
+        X.p.random.0 <- X.p.random[!y.indx, , drop = FALSE]
+        n.det.re.fit <- length(unique(c(X.p.re.fit)))
+        n.det.re.long.fit <- apply(X.p.re.fit, 2, function(a) length(unique(a)))
+        if (p.det.re > 0) {	
+          alpha.star.indx.fit <- rep(0:(p.det.re - 1), n.det.re.long.fit)
+          alpha.level.indx.fit <- sort(unique(c(X.p.re.fit)))
+          alpha.star.inits.fit <- rnorm(n.det.re.fit, 
+          			      sqrt(sigma.sq.p.inits[alpha.star.indx.fit + 1]))
+          p.re.level.names.fit <- list()
+          for (t in 1:p.det.re) {
+            tmp.indx <- alpha.level.indx.fit[alpha.star.indx.fit == t - 1]
+            p.re.level.names.fit[[t]] <- unlist(p.re.level.names)[tmp.indx + 1]    
+          }
+        } else {
+          alpha.star.indx.fit <- alpha.star.indx
+          alpha.level.indx.fit <- alpha.level.indx
+          alpha.star.inits.fit <- alpha.star.inits
+	  p.re.level.names.fit <- p.re.level.names
+        }
+        # Random Occurrence Effects
+        X.re.fit <- X.re[-curr.set, , drop = FALSE]
+        X.re.0 <- X.re[curr.set, , drop = FALSE]
+        X.random.fit <- X.random[-curr.set, , drop = FALSE]
+        X.random.0 <- X.random[curr.set, , drop = FALSE]
+        n.abund.re.fit <- length(unique(c(X.re.fit)))
+        n.abund.re.long.fit <- apply(X.re.fit, 2, function(a) length(unique(a)))
+        if (p.abund.re > 0) {	
+          beta.star.indx.fit <- rep(0:(p.abund.re - 1), n.abund.re.long.fit)
+          beta.level.indx.fit <- sort(unique(c(X.re.fit)))
+          beta.star.inits.fit <- rnorm(n.abund.re.fit, 
+          			      sqrt(sigma.sq.mu.inits[beta.star.indx.fit + 1]))
+          re.level.names.fit <- list()
+          for (t in 1:p.abund.re) {
+            tmp.indx <- beta.level.indx.fit[beta.star.indx.fit == t - 1]
+            re.level.names.fit[[t]] <- unlist(re.level.names)[tmp.indx + 1]    
+          }
+        } else {
+          beta.star.indx.fit <- beta.star.indx
+          beta.level.indx.fit <- beta.level.indx
+          beta.star.inits.fit <- beta.star.inits
+          re.level.names.fit <- re.level.names
+        }
+        # Gotta be a better way, but will do for now. 
+        N.long.indx.fit <- matrix(NA, J.fit, max(K.fit))
+        for (j in 1:J.fit) {
+          N.long.indx.fit[j, 1:K.fit[j]] <- j  
+        }
+        N.long.indx.fit <- c(N.long.indx.fit)
+        N.long.indx.fit <- N.long.indx.fit[!is.na(N.long.indx.fit)] - 1
+        N.0.long.indx <- matrix(NA, nrow(X.0), max(K.0))
+        for (j in 1:nrow(X.0)) {
+          N.0.long.indx[j, 1:K.0[j]] <- j  
+        }
+        N.0.long.indx <- c(N.0.long.indx)
+        N.0.long.indx <- N.0.long.indx[!is.na(N.0.long.indx)] 
 
-    #     # Predict abundance at new sites
-    #     if (p.re > 0) {X.0 <- cbind(X.0, X.re.0)}
-    #     out.pred <- predict.PGOcc(out.fit, X.0)
+        # Nearest Neighbor Search ---
+	verbose.fit <- FALSE
+	n.omp.threads.fit <- 1
+        ## Indexes
+        if(search.type == "brute"){
+          indx <- mkNNIndx(coords.fit, n.neighbors, n.omp.threads.fit)
+        } else{
+          indx <- mkNNIndxCB(coords.fit, n.neighbors, n.omp.threads.fit)
+        }
+        
+        nn.indx.fit <- indx$nnIndx
+        nn.indx.lu.fit <- indx$nnIndxLU
+        
+        indx <- mkUIndx(J.fit, n.neighbors, nn.indx.fit, 
+      		  nn.indx.lu.fit, u.search.type)
+        
+        u.indx.fit <- indx$u.indx
+        u.indx.lu.fit <- indx$u.indx.lu
+        ui.indx.fit <- indx$ui.indx
 
-    #     # Get full random effects if certain levels aren't in the fitted values
-    #     if (p.det.re > 0) {
-    #       if (n.det.re.fit != n.det.re) {
-    #         tmp <- matrix(NA, n.det.re, n.post.samples)  
-    #         tmp[alpha.level.indx.fit + 1, ] <- out.fit$alpha.star.samples[1:n.det.re.fit, ]
-    #         out.fit$alpha.star.samples <- tmp
-    #       }
-    #       # Samples missing NA values
-    #       tmp.indx <- which(apply(out.fit$alpha.star.samples, 1, function(a) sum(is.na(a))) == n.post.samples)
-    #       for (l in tmp.indx) {
-    #         out.fit$alpha.star.samples[l, ] <- rnorm(n.post.samples, 0, 
-    #     					     sqrt(out.fit$sigma.sq.p.samples[alpha.star.indx[l] + 1, ]))
-    #       }
-    #     }
+        storage.mode(y.fit) <- "double"
+        storage.mode(N.inits.fit) <- "double"
+        storage.mode(X.p.fit) <- "double"
+        storage.mode(X.fit) <- "double"
+        storage.mode(coords.fit) <- "double"
+        storage.mode(nn.indx.fit) <- "integer"
+        storage.mode(nn.indx.lu.fit) <- "integer"
+        storage.mode(u.indx.fit) <- "integer"
+        storage.mode(u.indx.lu.fit) <- "integer"
+        storage.mode(ui.indx.fit) <- "integer"
+        storage.mode(K.fit) <- "double"
+	storage.mode(y.max.fit) <- "double"
+        consts.fit <- c(J.fit, n.obs.fit, p.abund, p.abund.re, n.abund.re.fit, 
+                        p.det, p.det.re, n.det.re.fit)
+        storage.mode(consts.fit) <- "integer"
+        storage.mode(N.long.indx.fit) <- "integer"
+        storage.mode(n.samples) <- "integer"
+        storage.mode(n.omp.threads.fit) <- "integer"
+        storage.mode(verbose.fit) <- "integer"
+        storage.mode(n.report) <- "integer"
+        storage.mode(X.p.re.fit) <- "integer"
+	storage.mode(X.p.random.fit) <- "double"
+        storage.mode(n.det.re.long.fit) <- "integer"
+        storage.mode(alpha.star.inits.fit) <- "double"
+        storage.mode(alpha.star.indx.fit) <- "integer"
+        storage.mode(alpha.level.indx.fit) <- "integer"
+        storage.mode(X.re.fit) <- "integer"
+	storage.mode(X.random.fit) <- "double"
+        storage.mode(n.abund.re.long.fit) <- "integer"
+        storage.mode(beta.star.inits.fit) <- "double"
+        storage.mode(beta.star.indx.fit) <- "integer"
+        storage.mode(beta.level.indx.fit) <- "integer"
+        chain.info[1] <- 1
+        storage.mode(chain.info) <- "integer"
+        # Run the model in C
+        out.fit <- .Call("spNMixNNGP", y.fit, X.fit, X.p.fit, coords.fit, 
+			 X.re.fit, X.p.re.fit, X.random.fit, X.p.random.fit, 
+			 y.max.fit, consts.fit, n.abund.re.long.fit, n.det.re.long.fit, 
+			 n.neighbors, nn.indx.fit, nn.indx.lu.fit, 
+			 u.indx.fit, u.indx.lu.fit, ui.indx.fit, beta.inits, alpha.inits, 
+			 kappa.inits, sigma.sq.mu.inits, sigma.sq.p.inits, 
+			 beta.star.inits.fit, alpha.star.inits.fit, N.inits.fit, 
+			 w.inits, phi.inits, sigma.sq.inits, nu.inits, 
+			 N.long.indx.fit, beta.star.indx.fit, 
+        		 beta.level.indx.fit, alpha.star.indx.fit, alpha.level.indx.fit, 
+			 mu.beta, Sigma.beta, mu.alpha, Sigma.alpha, phi.a, phi.b, 
+			 sigma.sq.a, sigma.sq.b, nu.a, nu.b, sigma.sq.mu.a, sigma.sq.mu.b, 
+        		 sigma.sq.p.a, sigma.sq.p.b, kappa.a, kappa.b, 
+        		 tuning.c, cov.model.indx, n.batch, batch.length, accept.rate, 
+        		 n.omp.threads.fit, verbose.fit, n.report, samples.info, chain.info, 
+			 sigma.sq.ig, family.c)
+        out.fit$beta.samples <- mcmc(t(out.fit$beta.samples))
+        colnames(out.fit$beta.samples) <- x.names
+        out.fit$alpha.samples <- mcmc(t(out.fit$alpha.samples))
+        if (family == 'NB') {
+          out.fit$kappa.samples <- mcmc(t(out.fit$kappa.samples))
+          colnames(out$kappa.samples) <- c("kappa")
+        }
+        out.fit$theta.samples <- mcmc(t(out.fit$theta.samples))
+        if (cov.model != 'matern') {
+          colnames(out.fit$theta.samples) <- c('sigma.sq', 'phi')
+        } else {
+          colnames(out.fit$theta.samples) <- c('sigma.sq', 'phi', 'nu')
+        }
+        out.fit$w.samples <- mcmc(t(out.fit$w.samples))
+        out.fit$X <- X.fit
+        out.fit$y <- y.mat.fit
+        out.fit$X.p <- X.p.fit
+	out.fit$coords <- coords.fit
+        out.fit$call <- cl
+        out.fit$n.samples <- n.samples
+        out.fit$n.post <- n.post.samples
+        out.fit$n.thin <- n.thin
+        out.fit$n.burn <- n.burn
+        out.fit$n.chains <- 1
+        out.fit$re.cols <- re.cols
+        out.fit$re.det.cols <- re.det.cols
+        out.fit$dist <- family 
+	out.fit$type <- 'NNGP'
+	out.fit$n.neighbors <- n.neighbors
+        out.fit$cov.model.indx <- cov.model.indx
+        if (p.det.re > 0) {
+          out.fit$pRE <- TRUE
+        } else {
+          out.fit$pRE <- FALSE
+        }
+        if (p.abund.re > 0) {
+          out.fit$sigma.sq.mu.samples <- mcmc(t(out.fit$sigma.sq.mu.samples))
+          colnames(out.fit$sigma.sq.mu.samples) <- x.re.names
+          out.fit$beta.star.samples <- mcmc(t(out.fit$beta.star.samples))
+          tmp.names <- unlist(re.level.names.fit)
+          beta.star.names <- paste(rep(x.re.names, n.abund.re.long.fit), tmp.names, sep = '-')
+          colnames(out.fit$beta.star.samples) <- beta.star.names
+          out.fit$re.level.names <- re.level.names.fit
+          out.fit$X.re <- X.re.fit
+        }
+        if (p.det.re > 0) {
+          out.fit$sigma.sq.p.samples <- mcmc(t(out.fit$sigma.sq.p.samples))
+          colnames(out.fit$sigma.sq.p.samples) <- x.p.re.names
+          out.fit$alpha.star.samples <- mcmc(t(out.fit$alpha.star.samples))
+          tmp.names <- unlist(p.re.level.names.fit)
+          alpha.star.names <- paste(rep(x.p.re.names, n.det.re.long.fit), tmp.names, sep = '-')
+          colnames(out.fit$alpha.star.samples) <- alpha.star.names
+          out.fit$p.re.level.names <- p.re.level.names.fit
+          out.fit$X.p.re <- X.p.re.fit
+        }
+        if (p.abund.re > 0) {
+          out.fit$muRE <- TRUE
+        } else {
+          out.fit$muRE <- FALSE	
+        }
+        class(out.fit) <- "spNMix"
 
-    #     # Detection 
-    #     if (p.det.re > 0) {
-    #       p.0.samples <- logit.inv(t(X.p.0 %*% out.fit$alpha.samples + 
-    #           		     lambda.p.0 %*% out.fit$alpha.star.samples))
-    #     } else {
-    #       p.0.samples <- logit.inv(t(X.p.0 %*% out.fit$alpha.samples))
-    #     }
-    #     if (binom) {
-    #       like.samples <- matrix(NA, nrow(y.big.0), ncol(y.big.0))
-    #       for (j in 1:nrow(X.p.0)) {
-    #         for (k in 1:K.0[j]) {
-    #           like.samples[j, k] <- mean(dbinom(y.big.0[j, k], 1,
-    #           			         p.0.samples[, j] * out.pred$z.0.samples[, z.0.long.indx[j]]))
-    #         }
-    #       }
-    #     } else {
-    #       like.samples <- rep(NA, nrow(X.p.0))
-    #       for (j in 1:nrow(X.p.0)) {
-    #         like.samples[j] <- mean(dbinom(y.0[j], 1, 
-    #     				   p.0.samples[, j] * out.pred$z.0.samples[, z.0.long.indx[j]]))
-    #       }
-    #     }
-    #     sum(log(like.samples), na.rm = TRUE)
-    #   }
-    #   model.deviance <- -2 * model.deviance
-    #   # Return objects from cross-validation
-    #   out$k.fold.deviance <- model.deviance
-    #   stopImplicitCluster()
-    # }
+        # Get RE levels correct for use in prediction code. 
+        if (p.abund.re > 0) {
+          tmp.2 <- colnames(X.re.0)
+          tmp <- unlist(re.level.names)
+          X.re.0 <- matrix(tmp[c(X.re.0 + 1)], nrow(X.re.0), ncol(X.re.0))
+          colnames(X.re.0) <- tmp.2
+        }
+
+        # Get unique factors for random effects
+        if (p.abund.re > 0) {
+          # Get unique factors for random effects.
+          tmp <- split(seq_along(colnames(X.re.0)), colnames(X.re.0))
+          tmp <- sapply(tmp, function(a) a[1])
+          X.re.0 <- X.re.0[, tmp, drop = FALSE]
+        }
+
+        # Predict abundance at new sites
+        if (p.abund.re > 0) {X.0 <- cbind(X.0, X.re.0)}
+        out.pred <- predict.spNMix(out.fit, X.0, coords.0, verbose = FALSE)
+
+        # Get unique factors for random effects
+        if (p.det.re > 0) {
+          # Get unique factors for random effects.
+          tmp <- split(seq_along(colnames(X.p.re.0)), colnames(X.p.re.0))
+          tmp <- sapply(tmp, function(a) a[1])
+          X.p.re.0 <- X.p.re.0[, tmp, drop = FALSE]
+        }
+        # Generate detection values
+        if (p.det.re > 0) {X.p.0 <- cbind(X.p.0, X.p.re.0)}
+        out.p.pred <- predict.NMix(out.fit, X.p.0, type = 'detection')
+
+        y.hat.samples <- matrix(NA, nrow(out.pred$N.0.samples), nrow(X.p.0))
+        for (j in 1:nrow(X.p.0)) {
+          y.hat.samples[, j] <- rbinom(nrow(out.pred$N.0.samples), out.pred$N.0.samples[, N.0.long.indx[j]],
+          			     out.p.pred$p.0.samples[, j])
+        }
+        rmspe.samples <- apply(y.hat.samples, 1, function(a) sqrt(mean(y.0 - a)^2))
+        mean(rmspe.samples, na.rm = TRUE) 
+      }
+      # Return objects from cross-validation
+      out$rmspe <- rmspe
+      stopImplicitCluster()
+    }
   }
   class(out) <- "spNMix"
   out$run.time <- proc.time() - ptm
