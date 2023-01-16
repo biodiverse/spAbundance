@@ -32,7 +32,7 @@ cat(
 devtools::install_github("doserjef/spAbundance")
 ```
 
-Note that because we implement the MCMC in C++, you will need a C++ compiler on your computer to install the package from GitHub, which may not work on certain machines. If you run into this problem and are interested in using the development version of the package, feel free to send me an email: doserjef@msu.edu.
+Note that because we implement the MCMC in C++, you will need a C++ compiler on your computer to install the package from GitHub. To compile C++ on Windows, you can install [`RTools`](https://cran.r-project.org/bin/windows/Rtools/). To compile C++ on a Mac, you can install `XCode` from the Mac app store.
 
 ## Functionality
 
