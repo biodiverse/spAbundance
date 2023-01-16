@@ -47,7 +47,7 @@ Below is a running list of currently implemented functionality, along with each 
 |`spAbund()`        | *stable* Single-species spatial abundance GLM                             |
 |`msAbund()`        | *stable* Multi-species abundance GLM                                      |
 |`sfMsAbund()`      | *experimental* Multi-species spatial abundance GLM                        |
-|`ppcAbund()`       | *stable *Posterior predictive check using Bayesian p-values               | 
+|`ppcAbund()`       | *stable* Posterior predictive check using Bayesian p-values               | 
 |`waicAbund()`      | *stable* Calculate Widely Applicable Information Criterion (WAIC)         |
 |`simNMix()`        | *stable* Simulate single-species repeated count data                      |
 |`simAbund()`       | *stable* Simulate single-species count data                               |

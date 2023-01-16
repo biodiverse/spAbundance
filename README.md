@@ -23,10 +23,10 @@ devtools::install_github("doserjef/spAbundance")
 ```
 
 Note that because we implement the MCMC in C++, you will need a C++
-compiler on your computer to install the package from GitHub, which may
-not work on certain machines. If you run into this problem and are
-interested in using the development version of the package, feel free to
-send me an email: <doserjef@msu.edu>.
+compiler on your computer to install the package from GitHub. To compile
+C++ on Windows, you can install
+[`RTools`](https://cran.r-project.org/bin/windows/Rtools/). To compile
+C++ on a Mac, you can install `XCode` from the Mac app store.
 
 ## Functionality
 
@@ -44,7 +44,7 @@ updated as new functionality is included
 | `spAbund()`            | *stable* Single-species spatial abundance GLM                     |
 | `msAbund()`            | *stable* Multi-species abundance GLM                              |
 | `sfMsAbund()`          | *experimental* Multi-species spatial abundance GLM                |
-| `ppcAbund()`           | *stable *Posterior predictive check using Bayesian p-values       |
+| `ppcAbund()`           | *stable* Posterior predictive check using Bayesian p-values       |
 | `waicAbund()`          | *stable* Calculate Widely Applicable Information Criterion (WAIC) |
 | `simNMix()`            | *stable* Simulate single-species repeated count data              |
 | `simAbund()`           | *stable* Simulate single-species count data                       |
