@@ -11,8 +11,8 @@ ppcAbund(object, fit.stat, group, ...)
 }
 
 \arguments{
-\item{object}{an object of class \code{NMix}, \code{spNMix}, \code{msNMix}, 
-\code{sfMsNMix}, \code{abund}, \code{spAbund}, \code{sfMsAbund}.}
+\item{object}{an object of class \code{NMix}, \code{spNMix}, 
+	\code{abund}, \code{spAbund}, \code{sfMsAbund}.}
 
 \item{fit.stat}{a quoted keyword that specifies the fit statistic
 to use in the posterior predictive check. Supported fit statistics are

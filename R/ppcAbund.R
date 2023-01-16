@@ -222,10 +222,10 @@ ppcAbund <- function(object, fit.stat, group, ...) {
       y.rep.samples <- fitted.msAbund(object)
     }
     if (is(object, 'spMsAbund')) {
-      y.rep.samples <- fitted.spMsAbund(object)
+      # y.rep.samples <- fitted.spMsAbund(object)
     }
     if (is(object, 'lfMsAbund')) {
-      y.rep.samples <- fitted.lfMsAbund(object)
+      # y.rep.samples <- fitted.lfMsAbund(object)
     }
     if (is(object, 'sfMsAbund')) {
       y.rep.samples <- fitted.sfMsAbund(object)

@@ -1082,7 +1082,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
         }
         kappa.inits <- runif(1, kappa.a, kappa.b)
 	if (!sigma.sq.ig) {
-          sigma.sq.inits <- runif(1, a, b)
+          sigma.sq.inits <- runif(1, sigma.sq.a, sigma.sq.b)
 	} else {
 	  sigma.sq.inits <- runif(1, 0.05, 3)
 	}

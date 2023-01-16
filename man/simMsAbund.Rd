@@ -9,7 +9,7 @@
 \usage{
 simMsAbund(J.x, J.y, n.rep, n.sp, beta, kappa, mu.RE = list(), 
           sp = FALSE, cov.model, 
-          sigma.sq, phi, nu, family = 'NB',
+          sigma.sq, phi, nu, family = 'Poisson',
           factor.model = FALSE, n.factors, ...)
 }
 

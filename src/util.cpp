@@ -517,3 +517,49 @@ void clearUT(double *m, int n){
   }
 }
 
+double halfNormal(double x, double sigma, int transect) {
+  double tmp = 0.0;
+  tmp = exp(-1.0 * (pow(x, 2) / (2.0 * pow(sigma, 2))));
+  if (transect == 1) {
+    tmp *= x;
+  }
+  return tmp;
+}
+
+double negExp(double x, double sigma, int transect) {
+  double tmp = 0.0;
+  tmp = exp(-1.0 * x / sigma);
+  if (transect == 1) {
+    tmp *= x;
+  }
+  return tmp;
+}
+
+double integrate(int detModel, double distStart, double distEnd, double sigma, int n, int transect) {
+    int i;
+    double step = (distEnd - distStart) / n;  // width of each small rectangle
+    // Make sure this doesn't truncate to an integer. It doesn't (Dec 19)
+    // Rprintf("step: %f\n", step);
+    double area = 0.0;  // area
+    for (i = 0; i < n; i ++) {
+      if (detModel == 0) {
+        // sum up each small rectangle
+        area += halfNormal(distStart + (i + 0.5) * step, sigma, transect) * step; 
+      }
+      if (detModel == 1) {
+	// sum up each small rectangle
+        area += negExp(distStart + (i + 0.5) * step, sigma, transect) * step; 
+      }
+    }
+    return area;  
+}
+
+double poisson_logpost(double N, double mu, double r) {
+  return N*(log(mu)+log(r))-exp(log(mu)+log(r)) - lgammafn(N + 1.0);
+}
+
+double nb_logpost(double kappa, double N, double mu, double r){
+  return lgammafn(N + kappa) - (lgammafn(kappa) + lgammafn(N + 1.0)) + kappa * (log(kappa) - log(mu * r + kappa)) + N * (log(mu * r) - log(mu * r + kappa));
+}
+
+

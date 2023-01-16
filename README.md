@@ -30,25 +30,30 @@ send me an email: <doserjef@msu.edu>.
 
 ## Functionality
 
-Below is a running list of currently implemented functionality. This
-will be updated as new functionality is included
+Below is a running list of currently implemented functionality, along
+with each function’s [lifecycle
+stage](https://lifecycle.r-lib.org/articles/stages.html). This will be
+updated as new functionality is included
 
-| `spAbundance` Function | Description                                                      |
-| ---------------------- | ---------------------------------------------------------------- |
-| `NMix()`               | Single-species N-mixture model                                   |
-| `spNMix()`             | Single-species spatial N-mixture model                           |
-| `abund()`              | Single-species abundance GLM without imperfect detection         |
-| `spAbund()`            | Single-species spatial abundance GLM without imperfect detection |
-| `msAbund()`            | Multi-species abundance GLM without imperfect detection          |
-| `ppcAbund()`           | Posterior predictive check using Bayesian p-values               |
-| `waicAbund()`          | Calculate Widely Applicable Information Criterion (WAIC)         |
-| `simNMix()`            | Simulate single-species repeated count data                      |
-| `simAbund()`           | Simulate single-species count data without imperfect detection   |
+| `spAbundance` Function | Description                                                       |
+| ---------------------- | ----------------------------------------------------------------- |
+| `NMix()`               | *experimental* Single-species N-mixture model                     |
+| `spNMix()`             | *experimental* Single-species spatial N-mixture model             |
+| `DS()`                 | *experimental* Single-species distance sampling model             |
+| `abund()`              | *stable* Single-species abundance GLM                             |
+| `spAbund()`            | *stable* Single-species spatial abundance GLM                     |
+| `msAbund()`            | *stable* Multi-species abundance GLM                              |
+| `sfMsAbund()`          | *experimental* Multi-species spatial abundance GLM                |
+| `ppcAbund()`           | *stable *Posterior predictive check using Bayesian p-values       |
+| `waicAbund()`          | *stable* Calculate Widely Applicable Information Criterion (WAIC) |
+| `simNMix()`            | *stable* Simulate single-species repeated count data              |
+| `simAbund()`           | *stable* Simulate single-species count data                       |
+| `simDS()`              | *experimental* Simulate single-species distance sampling data     |
 
 All model fitting functions allow for Poisson and negative binomial
 distributions for the abundance portion of the model.
 
-## Functionality to be included prior to first release
+## Functionality to be included prior to first release on CRAN
 
   - Single-species and multi-species spatial and non-spatial N-mixture
     models with Poisson and Negative Binomial distributions for latent
@@ -62,6 +67,14 @@ distributions for the abundance portion of the model.
   - Posterior predcitve checks for all model types.
   - Simulation functions for all model types.
   - WAIC and k-fold cross-validation for all model types.
+
+## Citing `spAbundance`
+
+Please cite `spAbundance` as:
+
+Doser, J. (2023). spAbundance: Single-species and multi-species
+spatially-explicit abundance models". R package version 0.1.0.
+<https://github.com/doserjef/spAbundance>
 
 ## References
 

@@ -15,8 +15,9 @@ waicAbund(object, N.max, ...)
   \item{object}{an object of class \code{NMix}, \code{spNMix}, \code{msNMix}, 
   \code{sfMsNMix}, \code{abund}, \code{spAbund}, \code{sfMsAbund}.}
   \item{N.max}{integer value indicating the upper limit on the latent abundance 
-  values when calculating WAIC for N-mixture models. Defaults to two times the 
-  largest abundance value in the posterior samples \code{object$N.samples}.}
+  values when calculating WAIC for N-mixture models or distance sampling models. 
+  Defaults to two times the largest abundance value in the posterior 
+  samples \code{object$N.samples}.}
 
 \item{...}{currently no additional arguments}
 
@@ -89,7 +90,6 @@ prior.list <- list(beta.normal = list(mean = 0, var = 100),
 inits.list <- list(beta = 0,
 		   kappa = kappa)
 
-tuning <- 0.3
 n.batch <- 5
 batch.length <- 25
 n.burn <- 0
@@ -101,7 +101,6 @@ out <- abund(formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3 + (1 | abund.fa
 	     n.batch = n.batch, 
 	     batch.length = batch.length, 
 	     inits = inits.list, 
-	     tuning = tuning,
 	     priors = prior.list, 
 	     accept.rate = 0.43, 
 	     n.omp.threads = 1, 

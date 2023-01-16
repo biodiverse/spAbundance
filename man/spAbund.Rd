@@ -10,7 +10,7 @@
 spAbund(formula, data, inits, priors, tuning,
        cov.model = 'exponential', NNGP = TRUE, 
        n.neighbors = 15, search.type = 'cb',
-       n.batch, batch.length, accept.rate = 0.43, family = 'NB',
+       n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
        n.omp.threads = 1, verbose = TRUE, n.report = 100, 
         n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
        n.chains = 1, k.fold, k.fold.threads = 1, k.fold.seed = 100, 
@@ -90,11 +90,11 @@ spAbund(formula, data, inits, priors, tuning,
     \code{"exponential"}, \code{"matern"}, \code{"spherical"}, and
     \code{"gaussian"}.}
 
-  \item{tuning}{a list with each tag corresponding to a parameter
-    name. Valid tags are \code{phi}, \code{nu}, and \code{kappa}. 
-    The value portion of each tag defines the initial variance of the 
-    Adaptive sampler. See Roberts and Rosenthal (2009) for details.}
-  
+  \item{tuning}{a single numeric value representing the initial variance of the
+  adaptive sampler for \code{beta}, \code{alpha}, \code{beta.star} (the abundance 
+  random effect values), \code{alpha.star} (the detection random effect values),
+  \code{kappa}, \code{phi}, and \code{nu}. See Roberts and Rosenthal (2009) for details.}
+
   \item{NNGP}{if \code{TRUE}, model is fit with an NNGP. If \code{FALSE}, 
     a full Gaussian process is used. See Datta et al. (2016) and 
     Finley et al. (2019) for more information. Currently only NNGP is supported,
@@ -318,7 +318,7 @@ inits.list <- list(beta = beta,
                    sigma.sq = sigma.sq,
                    phi = phi)
 
-tuning <- list(phi = 0.3, kappa = 0.05) 
+tuning <- list(phi = 0.3, kappa = 0.05, beta = 0.1, beta.star = 0.1, w = 0.1) 
 n.batch <- 4
 batch.length <- 25
 n.burn <- 20 

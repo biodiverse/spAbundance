@@ -9,7 +9,7 @@
 \usage{
 simAbund(J.x, J.y, n.rep, beta, kappa, mu.RE = list(), 
        sp = FALSE, cov.model, sigma.sq, phi, nu, 
-       family = 'NB', ...)
+       family = 'Poisson', ...)
 }
 
 \arguments{

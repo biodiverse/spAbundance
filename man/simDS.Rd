@@ -1,15 +1,15 @@
-\name{simNMix}
-\alias{simNMix}
-\title{Simulate Single-Species Count Data with Imperfect Detection}
+\name{simDS}
+\alias{simDS}
+\title{Simulate Single-Species Distance Sampling Data}
 
 \description{
-  The function \code{simNMix} simulates single-species count data for simulation studies, power assessments, or function testing. Data can be optionally simulated with a spatial Gaussian Process in the abundance portion of the model. Non-spatial random intercepts can also be included in the detection or abundance portions of the N-mixture model.
+  The function \code{simDS} simulates single-species distance sampling data for simulation studies, power assessments, or function testing. Data can be optionally simulated with a spatial Gaussian Process in the abundance portion of the model. Non-spatial random effects can also be included in the detection or abundance portions of the distance sampling.
 }
 
 \usage{
-simNMix(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(), 
-       p.RE = list(), sp = FALSE, cov.model, sigma.sq, phi, nu, 
-       family = 'Poisson', ...)
+simDS(J.x, J.y, n.bins, bin.width, beta, alpha, det.model, transect = 'line', 
+      kappa, mu.RE = list(), p.RE = list(), offset = 1, 
+      sp = FALSE, cov.model, sigma.sq, phi, nu, family = 'Poisson', ...)
 }
 
 \arguments{
@@ -17,17 +17,29 @@ simNMix(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(),
 
 \item{J.y}{a single numeric value indicating the number of sites to simulate count data along the vertical axis. Total number of sites with simulated data is \eqn{J.x \times J.y}{J.x x J.y}. }
 
-\item{n.rep}{a numeric vector of length \eqn{J = J.x \times J.y}{J = J.x x J.y} indicating the number of repeat visits at each of the \eqn{J}{J} sites.}
+\item{n.bins}{a single numeric value indicating the number of distance bins from which to generate data.}
 
-\item{beta}{a numeric vector containing the intercept and regression coefficient parameters for the abundance portion of the single-species N-mixture model.}
+\item{bin.width}{a vector of length \code{n.bins} indicating the length of each bin. Lengths can be different for each distance bin or the same across bins.}
 
-\item{alpha}{a numeric vector containing the intercept and regression coefficient parameters for the detection portion of the single-species N-mixture model.}
+\item{beta}{a numeric vector containing the intercept and regression coefficient parameters for the abundance portion of the single-species distance sampling model.}
+
+\item{alpha}{a numeric vector containing the intercept and regression coefficient parameters for the detection portion of the single-species distance sampling model.}
+
+\item{det.model}{the detection model used to describe how detection probability varies
+  with distance. In other software, this is often referred to as the key function. Currently
+  supports two functions: half normal (\code{'halfnormal'}) and negative exponential
+  (\code{'negexp'}).}
+
+\item{transect}{the type of transect. Currently supports line transects (\code{'line'}) or
+  circular transects (i.e., point counts; \code{'point'}).}
 
 \item{kappa}{a single numeric value containing the dispersion parameter for the abundance portion of the N-mixture model. Only relevant when \code{family = 'NB'}.}
 
 \item{mu.RE}{a list used to specify the non-spatial random intercepts included in the abundance portion of the model. The list must have two tags: \code{levels} and \code{sigma.sq.mu}. \code{levels} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the number of levels there are in each intercept. \code{sigma.sq.mu} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the variances for each random effect. If not specified, no random effects are included in the abundance portion of the model.}
 
 \item{p.RE}{a list used to specify the non-spatial random intercepts included in the detection portion of the model. The list must have two tags: \code{levels} and \code{sigma.sq.p}. \code{levels} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the number of levels there are in each intercept. \code{sigma.sq.p} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the variances for each random effect. If not specified, no random effects are included in the detection portion of the model.}
+
+\item{offset}{either a single numeric value or a vector of length \code{J} that contains the offset for each location in the data set.}
 
 \item{sp}{a logical value indicating whether to simulate a spatially-explicit N-mixture model with a Gaussian process. By default set to \code{FALSE}.}
 
@@ -54,35 +66,48 @@ simNMix(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(),
   A list comprised of: 
 
   \item{X}{a \eqn{J \times p.abund}{J x p.abund} numeric design matrix for the abundance portion of the model.}
-  \item{X.p}{a three-dimensional numeric array with dimensions corresponding to sites, repeat visits, and number of detection regression coefficients. This is the design matrix used for the detection portion of the N-mixture model.}
+  \item{X.p}{a \eqn{J \times p.abund}{J x p.det} numeric design matrix for the detection portion of the model.}
   \item{coords}{a \eqn{J \times 2}{J x 2} numeric matrix of coordinates of each site. Required for spatial models.}
   \item{w}{a \eqn{J \times 1}{J x 1} matrix of the spatial random effects. Only used to simulate data when \code{sp = TRUE}.}
   \item{mu}{a \eqn{J \times 1}{J x 1} matrix of the expected abundance values for each site.}
   \item{N}{a length \eqn{J}{J} vector of the latent abundances at each site.}
-  \item{p}{a \code{J x max(n.rep)} matrix of the detection probabilities for each site and replicate combination. Sites with fewer than \code{max(n.rep)} replicates will contain \code{NA} values.}
-  \item{y}{a \code{J x max(n.rep)} matrix of the raw count data for each site and replicate combination.}
-  \item{X.p.re}{a three-dimensional numeric array containing the levels of any detection random effect included in the model. Only relevant when detection random effects are specified in \code{p.RE}.}
+  \item{p}{ a length J vector of the detection probabilities at each site.}
+  \item{pi.full}{a \code{J x n.bins + 1} vector of the cell-specific detection probabilities for each site, where the last column indicates the probability of not detecting the individual at that site.}
+  \item{y}{a \code{J x max(n.bins)} matrix of the raw count data for each site and distance bin.}
+  \item{X.p.re}{a numeric matrix containing the levels of any detection random effect included in the model. Only relevant when detection random effects are specified in \code{p.RE}.}
   \item{X.re}{a numeric matrix containing the levels of any abundance random effect included in the model. Only relevant when abundance random effects are specified in \code{mu.RE}.}
   \item{alpha.star}{a numeric vector that contains the simulated detection random effects for each given level of the random effects included in the detection model. Only relevant when detection random effects are included in the model.}
   \item{beta.star}{a numeric vector that contains the simulated abundance random effects for each given level of the random effects included in the N-mixture model. Only relevant when abundance random effects are included in the model.}
 }
 
 \examples{
-set.seed(400)
+set.seed(110)
 J.x <- 10
-J.y <- 10
-n.rep <- rep(4, J.x * J.y)
-beta <- c(0.5, -0.15)
-alpha <- c(0.7, 0.4)
-kappa <- 0.5
-phi <- 3 / .6
-sigma.sq <- 2
-mu.RE <- list(levels = 10, 
-               sigma.sq.mu = 1.2)
-p.RE <- list(levels = 15, 
-             sigma.sq.p = 0.8)
-dat <- simNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta, alpha = alpha,
-	       kappa = kappa, mu.RE = mu.RE, p.RE = p.RE, sp = TRUE, 
-	       cov.model = 'spherical', sigma.sq = sigma.sq, phi = phi, 
-               family = 'NB')
+J.y <- 10 
+J <- J.x * J.y
+# Number of distance bins from which to simulate data. 
+n.bins <- 5
+# Length of each bin. This should be of length n.bins
+bin.width <- c(.10, .10, .20, .3, .1)
+# Abundance coefficients
+beta <- c(1.0, 0.2, 0.3, -0.2)
+p.abund <- length(beta)
+# Detection coefficients
+alpha <- c(-1.0, -0.3)
+p.det <- length(alpha)
+# Detection decay function
+det.model <- 'halfnormal'
+mu.RE <- list()
+p.RE <- list()
+sp <- FALSE 
+family <- 'NB'
+kappa <- 0.1
+offset <- 1.8
+transect <- 'point'
+
+dat <- simDS(J.x = J.x, J.y = J.y, n.bins = n.bins, bin.width = bin.width,
+	     beta = beta, alpha = alpha, det.model = det.model, kappa = kappa, 
+	     mu.RE = mu.RE, p.RE = p.RE, sp = sp,
+	     sigma.sq = sigma.sq, phi = phi, nu = nu, family = family, 
+             offset = offset, transect = transect)
 }

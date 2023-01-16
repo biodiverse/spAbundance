@@ -93,7 +93,6 @@ inits.list <- list(alpha = rep(0, p.det),
 		   kappa = 0.5,
                    N = apply(y, 1, max, na.rm = TRUE))
 
-tuning <- 0.05
 n.batch <- 10
 batch.length <- 25
 n.burn <- 0
@@ -104,7 +103,6 @@ out <- NMix(abund.formula = ~ abund.cov,
              det.formula = ~ det.cov,
              data = data.list, 
              inits = inits.list,
-	     tuning = tuning, 
 	     n.batch = n.batch, 
 	     batch.length = batch.length,
              priors = prior.list,

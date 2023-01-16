@@ -48,4 +48,11 @@
   double spCor(double &D, double &phi, double &nu, int &covModel, double *bk); 
   double spCor(double D, double *theta, std::string &covModel);
   void clearUT(double *m, int n);
+  double halfNormal(double x, double sigma, int transect);
+  double negExp(double x, double sigma, int transect); 
+  double integrate(int detModel, double distStart, double distEnd, double sigma, int n, int transect);
+  double poisson_logpost(double N, double mu, double r);
+  double nb_logpost(double kappa, double N, double mu, double r);
+
+
 

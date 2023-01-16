@@ -1,10 +1,11 @@
-\name{NMix}
-\alias{NMix}
-\title{Function for Fitting Single-Species N-mixture Models}
+\name{DS}
+\alias{DS}
+\title{Function for Fitting Single-Species Hierarchical Distance Sampling Models}
 
 \usage{
-NMix(abund.formula, det.formula, data, inits, priors, tuning,
+DS(abund.formula, det.formula, data, inits, priors, tuning,
      n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
+     transect = 'line', det.model = 'halfnormal',
      n.omp.threads = 1, verbose = TRUE,
      n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
      n.chains = 1, k.fold, k.fold.threads = 1, k.fold.seed = 100, 
@@ -12,34 +13,34 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
 }
 
 \description{
-  Function for fitting single-species N-mixture models 
+  Function for fitting single-sepcies hierarchical distance sampling models
 }
 
 \arguments{
 \item{abund.formula}{a symbolic description of the model to be fit
   for the abundance portion of the model using R's model syntax. Only
   right-hand side of formula is specified. See example below. Random intercepts
-  are allowed using lme4 syntax (Bates et al. 2015).}
+  and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
 \item{det.formula}{a symbolic description of the model to be fit
   for the detection portion of the model using R's model syntax. Only
   right-hand side of formula is specified. See example below. Random intercepts
-  are allowed using lme4 syntax (Bates et al. 2015).}
+  and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
 \item{data}{a list containing data necessary for model fitting.
-  Valid tags are \code{y}, \code{abund.covs}, and \code{det.covs}. \code{y}
+  Valid tags are \code{y}, \code{covs}, \code{dist.breaks}, and \code{offset}. \code{y}
   is a matrix or data frame of the observed count values, 
   with first dimension equal to the number of 
-  sites (\eqn{J}{J}) and second dimension equal to the maximum number of 
-  replicates at a given site. \code{abund.covs} is a matrix or data frame
-  containing the variables used in the abundance portion of the model, with
-  \eqn{J}{J} rows for each column (variable). \code{det.covs} is a list of
-  variables included in the detection portion of the model. Each list element
-  is a different detection covariate, which can be site-level or 
-  observational-level. Site-level covariates are specified as a vector 
-  of length \eqn{J}{J} while observation-level covariates are specified 
-  as a matrix or data frame with the number of rows equal to \eqn{J}{J} and 
-  number of columns equal to the maximum number of replicates at a given site.}
+  sites (\eqn{J}{J}) and second dimension equal to the number of 
+  distance bins. \code{covs} is a matrix or data frame
+  containing the variables used in the the abundance and/or the detection
+  portion of the model, with
+  \eqn{J}{J} rows for each column (variable). \code{dist.breaks} is a vector of 
+  distances that denote the breakpoints of the distance bands. \code{dist.breaks} should
+  have length equal to the number of columns in \code{y} plus one. \code{offset} is an 
+  offset that can be used to scale estimates from abundance per transect to density per 
+  some desired unit of measure. This can be either a single value or a vector with an offset
+  value for each site (e.g., if transects differ in length)}
 
 \item{inits}{a list with each tag corresponding to a parameter name.
   Valid tags are \code{N}, \code{beta}, \code{alpha}, \code{kappa}, 
@@ -63,8 +64,7 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
   and variance of the normal distribution, which are each specified as vectors of 
   length equal to the number of coefficients to be estimated or of length one
   if priors are the same for all coefficients. If not specified, prior means 
-  are set to 0 and prior variances set to 100 for the abundance coefficients
-  and 2.72 for the detection coefficients. \code{kappa} is the negative binomial 
+  are set to 0 and prior variances set to 100. \code{kappa} is the negative binomial 
   dispersion parameter and is assumed to follow a uniform distribution. The 
   hyperparameters of the uniform distribution are passed as a vector of length
   two with the first and second elements corresponding to the lower and upper
@@ -93,6 +93,14 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
 
 \item{family}{the distribution to use for the latent abundance process. Currently 
   supports \code{'NB'} (negative binomial) and \code{'Poisson'}.} 
+
+\item{transect}{the type of transect. Currently supports line transects (\code{'line'}) or
+  circular transects (i.e., point counts; \code{'point'}).}
+
+\item{det.model}{the detection model used to describe how detection probability varies
+  with distance. In other software, this is often referred to as the key function. Currently
+  supports two functions: half normal (\code{'halfnormal'}) and negative exponential
+  (\code{'negexp'}).}
 
 \item{n.omp.threads}{a positive integer indicating the number of threads
   to use for SMP parallel processing. The package must be compiled for 
@@ -143,37 +151,22 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
 \item{...}{currently no additional arguments}
 }
 
-\note{
- Some of the underlying code used for generating random numbers from the
- Polya-Gamma distribution is taken from the \pkg{pgdraw} package written
- by Daniel F. Schmidt and Enes Makalic. Their code implements Algorithm
- 6 in PhD thesis of Jesse Bennett Windle (2013) \url{https://repositories.lib.utexas.edu/handle/2152/21842}.
-}
-
 \references{
 
   Bates, Douglas, Martin Maechler, Ben Bolker, Steve Walker (2015).
   Fitting Linear Mixed-Effects Models Using lme4. Journal of
   Statistical Software, 67(1), 1-48. \doi{10.18637/jss.v067.i01}.
 
-  Hooten, M. B., and Hobbs, N. T. (2015). A guide to Bayesian model 
-  selection for ecologists. Ecological monographs, 85(1), 3-28.
-  
-  Polson, N.G., J.G. Scott, and J. Windle. (2013) Bayesian Inference for
-  Logistic Models Using Polya-Gamma Latent Variables. 
-  \emph{Journal of the American Statistical Association}, 108:1339-1349.
-
-  Royle, J. A. (2004). N‐mixture models for estimating population size 
-  from spatially replicated counts. Biometrics, 60(1), 108-115.
+  Royle, J. A., Dawson, D. K., & Bates, S. (2004). Modeling 
+  abundance effects in distance sampling. Ecology, 85(6), 1591-1597.
 }
 
 \author{
   Jeffrey W. Doser \email{doserjef@msu.edu}, \cr
-  Andrew O. Finley \email{finleya@msu.edu}
 }
 
 \value{
-  An object of class \code{NMix} that is a list comprised of: 
+  An object of class \code{DS} that is a list comprised of: 
 
   \item{beta.samples}{a \code{coda} object of posterior samples
     for the abundance regression coefficients.}
@@ -220,9 +213,6 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
 
   \item{run.time}{execution time reported using \code{proc.time()}.}
 
-  \item{k.fold.deviance}{scoring rule (deviance) from k-fold cross-validation. 
-    Only included if \code{k.fold} is specified in function call.}
-
   The return object will include additional objects used for 
   subsequent prediction and/or model fit evaluation. Note that detection
   probability estimated values are not included in the model object, but can be 
@@ -231,72 +221,82 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
 }
 
 \examples{
-set.seed(1010)
+set.seed(123)
 J.x <- 10
-J.y <- 10
+J.y <- 10 
 J <- J.x * J.y
-n.rep <- sample(3, J, replace = TRUE)
-beta <- c(0, -1.5)
+# Number of distance bins from which to simulate data. 
+n.bins <- 5
+# Length of each bin. This should be of length n.bins
+bin.width <- c(.10, .10, .20, .3, .1)
+# Abundance coefficients
+beta <- c(1.0, 0.2, 0.3, -0.2)
 p.abund <- length(beta)
-alpha <- c(0.5, 1.2, -0.5)
+# Detection coefficients
+alpha <- c(-1.0, -0.3)
 p.det <- length(alpha)
+# Detection decay function
+det.model <- 'halfnormal'
 mu.RE <- list()
 p.RE <- list()
-phi <- 3/.6
-sigma.sq <- 2
-kappa <- 0.3
 sp <- FALSE 
-cov.model <- 'exponential'
-dist <- 'NB'
-dat <- simNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta, alpha = alpha,
-	       kappa = kappa, mu.RE = mu.RE, p.RE = p.RE, sp = sp, 
-               phi = phi, sigma.sq = sigma.sq, cov.model = cov.model, 
-               family = 'NB')
+family <- 'NB'
+kappa <- 0.1
+offset <- 1.8
+transect <- 'point'
+
+dat <- simDS(J.x = J.x, J.y = J.y, n.bins = n.bins, bin.width = bin.width,
+             beta = beta, alpha = alpha, det.model = det.model, kappa = kappa, 
+             mu.RE = mu.RE, p.RE = p.RE, sp = sp,
+             sigma.sq = sigma.sq, phi = phi, nu = nu, family = family, 
+             offset = offset, transect = transect)
 
 y <- dat$y
 X <- dat$X
+X.re <- dat$X.re
 X.p <- dat$X.p
+X.p.re <- dat$X.p.re
+dist.breaks <- dat$dist.breaks
 
-abund.covs <- X
-colnames(abund.covs) <- c('int', 'abund.cov.1')
-
-det.covs <- list(det.cov.1 = X.p[, , 2], 
-		 det.cov.2 = X.p[, , 3])
+covs <- cbind(X, X.p)
+colnames(covs) <- c('int.abund', 'abund.cov.1', 'abund.cov.2', 'abund.cov.3', 
+		    'int.det', 'det.cov.1')
 
 data.list <- list(y = y, 
-		  abund.covs = abund.covs,
-		  det.covs = det.covs)
+                  covs = covs,
+                  dist.breaks = dist.breaks, 
+                  offset = offset)
 
 # Priors
-prior.list <- list(beta.normal = list(mean = rep(0, p.abund), 
-				      var = rep(100, p.abund)),
-		   alpha.normal = list(mean = rep(0, p.det),
-			               var = rep(2.72, p.det)), 
-                   kappa.unif = c(0, 10)) 
+prior.list <- list(beta.normal = list(mean = 0, var = 10),
+                   alpha.normal = list(mean = 0,
+                                       var = 10), 
+                   kappa.unif = c(0, 100)) 
 # Starting values
 inits.list <- list(alpha = 0,
-		   beta = 0,
-		   kappa = kappa, 
-		   N = apply(y, 1, max, na.rm = TRUE))
+                   beta = 0,
+                   kappa = 1)
+# Tuning values
+tuning <- list(beta = 0.1, alpha = 0.1, beta.star = 0.3, alpha.star = 0.1, 
+               kappa = 0.2) 
 
-n.batch <- 4
-batch.length <- 25
-n.burn <- 50
-n.thin <- 1
-n.chains <- 1
-
-out <- NMix(abund.formula = ~ abund.cov.1,
-	    det.formula = ~ det.cov.1 + det.cov.2, 
-	    data = data.list, 
-	    n.batch = n.batch, 
-	    batch.length = batch.length, 
-	    inits = inits.list, 
-	    priors = prior.list, 
-	    accept.rate = 0.43, 
-	    n.omp.threads = 1, 
-	    verbose = TRUE, 
-	    n.report = 1,
-	    n.burn = n.burn,
-	    n.thin = n.thin,
-	    n.chains = n.chains) 
+out <- DS(abund.formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3,
+          det.formula = ~ det.cov.1,
+          data = data.list, 
+          n.batch = 10, 
+          batch.length = 25, 
+          inits = inits.list, 
+          family = 'NB',
+          det.model = 'halfnormal', 
+          transect = 'point', 
+          tuning = tuning,
+          priors = prior.list, 
+          accept.rate = 0.43, 
+          n.omp.threads = 1, 
+          verbose = TRUE, 
+          n.report = 100,
+          n.burn = 100,
+          n.thin = 1,
+          n.chains = 1) 
+summary(out)
 }

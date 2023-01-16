@@ -84,7 +84,6 @@ prior.list <- list(beta.normal = list(mean = 0, var = 100),
 inits.list <- list(beta = 0,
 		   kappa = kappa)
 
-tuning <- 0.3
 n.batch <- 5
 batch.length <- 25
 n.burn <- 0
@@ -96,7 +95,6 @@ out <- abund(formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3,
 	     n.batch = n.batch, 
 	     batch.length = batch.length, 
 	     inits = inits.list, 
-	     tuning = tuning,
 	     priors = prior.list, 
 	     accept.rate = 0.43, 
 	     n.omp.threads = 1, 

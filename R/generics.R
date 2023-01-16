@@ -2137,3 +2137,16 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
 # fitted.sfMsNMix <- function(object, ...) {
 #   fitted.msNMix(object)
 # }
+
+# DS ----------------------------------------------------------------------
+summary.DS <- function(object,
+                       quantiles = c(0.025, 0.5, 0.975),
+                       digits = max(3L, getOption("digits") - 3L), ...) {
+  summary.NMix(object, quantiles, digits)
+}
+
+print.DS <- function(x, ...) {
+  cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)), 
+      "", sep = "\n")
+}
+
