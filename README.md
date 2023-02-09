@@ -37,8 +37,8 @@ updated as new functionality is included
 
 | `spAbundance` Function | Description                                                       |
 | ---------------------- | ----------------------------------------------------------------- |
-| `NMix()`               | *experimental* Single-species N-mixture model                     |
-| `spNMix()`             | *experimental* Single-species spatial N-mixture model             |
+| `NMix()`               | *stable* Single-species N-mixture model                           |
+| `spNMix()`             | *stable* Single-species spatial N-mixture model                   |
 | `DS()`                 | *experimental* Single-species distance sampling model             |
 | `abund()`              | *stable* Single-species abundance GLM                             |
 | `spAbund()`            | *stable* Single-species spatial abundance GLM                     |

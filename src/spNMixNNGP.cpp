@@ -199,7 +199,7 @@ extern "C" {
         Rprintf("Number of Chains: %i \n", nChain);
         Rprintf("Total Posterior Samples: %i \n\n", nPost * nChain); 
         Rprintf("Using the %s spatial correlation model.\n\n", corName.c_str());
-        Rprintf("Using %i nearest neighbors.\n\n", m);
+        Rprintf("Using %i nearest neighbors.\n", m);
 #ifdef _OPENMP
         Rprintf("\nSource compiled with OpenMP support and model fit using %i thread(s).\n\n", nThreads);
 #else

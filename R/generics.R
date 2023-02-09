@@ -1574,7 +1574,6 @@ fitted.spNMix <- function(object, ...) {
   fitted.NMix(object)
 }
 
-# spNMix ------------------------------------------------------------------
 predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1, 
 			   verbose = TRUE, n.report = 100, 
 			   ignore.RE = FALSE, type = 'abundance', ...) {
@@ -1677,7 +1676,7 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
       }
       indx <- unlist(indx)
       if (length(indx) == 0) {
-        stop("error: column names in X.0 must match variable names in data$occ.covs")
+        stop("error: column names in X.0 must match variable names in data$abund.covs")
       }
       n.abund.re <- length(indx)
       n.unique.abund.re <- length(unique(indx))

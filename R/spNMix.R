@@ -37,14 +37,14 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
 
   # Some initial checks -------------------------------------------------
   if (missing(data)) {
-    stop("error: data must be specified")
+    stop("data must be specified")
   }
   if (!is.list(data)) {
-    stop("error: data must be a list")
+    stop("data must be a list")
   }
   names(data) <- tolower(names(data))
   if (missing(abund.formula)) {
-    stop("error: abund.formula must be specified")
+    stop("abund.formula must be specified")
   }
   if (missing(det.formula)) {
     stop("error: det.formula must be specified")
@@ -935,6 +935,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
 
   if (!NNGP) {
+    # TODO: 
     stop("spNMix is currently only implemented with NNGPs. Please set NNGP = TRUE")
   } else {
     # Nearest Neighbor Search ---------------------------------------------
@@ -1237,7 +1238,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     out$n.samples <- n.samples
     out$call <- cl
     out$n.neighbors <- n.neighbors
-    out$coords <- coords
+    out$coords <- coords[order(ord), ]
     out$cov.model.indx <- cov.model.indx
     out$type <- "NNGP"
     out$n.post <- n.post.samples
@@ -1315,7 +1316,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
           alpha.star.inits.fit <- alpha.star.inits
 	  p.re.level.names.fit <- p.re.level.names
         }
-        # Random Occurrence Effects
+        # Random Abundance Effects
         X.re.fit <- X.re[-curr.set, , drop = FALSE]
         X.re.0 <- X.re[curr.set, , drop = FALSE]
         X.random.fit <- X.random[-curr.set, , drop = FALSE]
@@ -1483,6 +1484,11 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
         } else {
           out.fit$muRE <- FALSE	
         }
+        if (p.det.re > 0) {
+          out.fit$pRE <- TRUE
+        } else {
+          out.fit$pRE <- FALSE
+        }
         class(out.fit) <- "spNMix"
 
         # Get RE levels correct for use in prediction code. 
@@ -1505,6 +1511,14 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
         if (p.abund.re > 0) {X.0 <- cbind(X.0, X.re.0)}
         out.pred <- predict.spNMix(out.fit, X.0, coords.0, verbose = FALSE)
 
+        # Get RE levels correct for use in prediction code. 
+        if (p.det.re > 0) {
+          tmp.2 <- colnames(X.p.re.0)
+          tmp <- unlist(p.re.level.names)
+          X.p.re.0 <- matrix(tmp[c(X.p.re.0 + 1)], nrow(X.p.re.0), ncol(X.p.re.0))
+          colnames(X.p.re.0) <- tmp.2
+        }
+
         # Get unique factors for random effects
         if (p.det.re > 0) {
           # Get unique factors for random effects.
@@ -1512,6 +1526,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
           tmp <- sapply(tmp, function(a) a[1])
           X.p.re.0 <- X.p.re.0[, tmp, drop = FALSE]
         }
+
         # Generate detection values
         if (p.det.re > 0) {X.p.0 <- cbind(X.p.0, X.p.re.0)}
         out.p.pred <- predict.NMix(out.fit, X.p.0, type = 'detection')
