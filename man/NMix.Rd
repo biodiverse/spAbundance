@@ -12,19 +12,19 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
 }
 
 \description{
-  Function for fitting single-species N-mixture models 
+  Function for fitting single-species N-mixture models. 
 }
 
 \arguments{
 \item{abund.formula}{a symbolic description of the model to be fit
   for the abundance portion of the model using R's model syntax. Only
   right-hand side of formula is specified. See example below. Random intercepts
-  are allowed using lme4 syntax (Bates et al. 2015).}
+  and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
 \item{det.formula}{a symbolic description of the model to be fit
   for the detection portion of the model using R's model syntax. Only
   right-hand side of formula is specified. See example below. Random intercepts
-  are allowed using lme4 syntax (Bates et al. 2015).}
+  and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
 \item{data}{a list containing data necessary for model fitting.
   Valid tags are \code{y}, \code{abund.covs}, and \code{det.covs}. \code{y}
@@ -45,8 +45,8 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
   Valid tags are \code{N}, \code{beta}, \code{alpha}, \code{kappa}, 
   \code{sigma.sq.mu}, and \code{sigma.sq.p}. The value portion of each tag is the 
   parameter's initial value. \code{sigma.sq.mu} and \code{sigma.sq.p} are 
-  only relevant when including random effects in the occurrence and 
-  detection portion of the occupancy model, respectively. \code{kappa} is 
+  only relevant when including random effects in the abundance and 
+  detection portion of the model, respectively. \code{kappa} is 
   only relevant when \code{family = 'NB'}. See \code{priors} 
   description for definition of each parameter name.
   Additionally, the tag \code{fix} can be set to \code{TRUE} 
@@ -77,8 +77,9 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
   vectors of length equal to the number of random intercepts or of length one 
   if priors are the same for all random effect variances.}
 
-\item{tuning}{a single numeric value representing the initial variance of the
-  adaptive sampler for \code{beta}, \code{alpha}, \code{beta.star} (the abundance 
+\item{tuning}{a list with each tag corresponding to a parameter name, whose
+  whose value defines the initial variance of the adaptive sampler. 
+  Valid tags are \code{beta}, \code{alpha}, \code{beta.star} (the abundance 
   random effect values), \code{alpha.star} (the detection random effect values), and 
   \code{kappa}. See Roberts and Rosenthal (2009) for details.}
 
@@ -105,7 +106,7 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
   model specification, and progress of the sampler are printed to the screen. 
   Otherwise, no messages are printed.}
 
-\item{n.report}{the interval to report MCMC progress.}
+\item{n.report}{the interval to report Metropolis sampler acceptance and MCMC progress.}
 
 \item{n.burn}{the number of samples out of the total \code{n.samples} to 
   discard as burn-in for each chain. By default, the first 10\% of samples is discarded.}
@@ -123,10 +124,10 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
   partitioned into \emph{k} equal sized subsamples. Of the \emph{k} subsamples, 
   \emph{k} - 1 subsamples are used to fit the model and the remaining \emph{k}
   samples are used for prediction. The cross-validation process is repeated 
-  \emph{k} times (the folds). As a scoring rule, we use the model deviance 
-  as described in Hooten and Hobbs (2015). Cross-validation is performed
+  \emph{k} times (the folds). As a scoring rule, we use root mean squared 
+  prediction error. Cross-validation is performed
   after the full model is fit using all the data. Cross-validation results
-  are reported in the \code{k.fold.deviance} object in the return list.}
+  are reported in the \code{rmspe} object in the return list.}
 
 \item{k.fold.threads}{number of threads to use for cross-validation. If 
   \code{k.fold.threads > 1} parallel processing is accomplished using the 
@@ -138,16 +139,9 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
 
 \item{k.fold.only}{logical value indicating whether to only perform
   k-fold cross-validation. Setting this to \code{TRUE} will only return
-  the k-fold deviance.}
+  the rmspe.}
 
 \item{...}{currently no additional arguments}
-}
-
-\note{
- Some of the underlying code used for generating random numbers from the
- Polya-Gamma distribution is taken from the \pkg{pgdraw} package written
- by Daniel F. Schmidt and Enes Makalic. Their code implements Algorithm
- 6 in PhD thesis of Jesse Bennett Windle (2013) \url{https://repositories.lib.utexas.edu/handle/2152/21842}.
 }
 
 \references{
@@ -156,20 +150,16 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
   Fitting Linear Mixed-Effects Models Using lme4. Journal of
   Statistical Software, 67(1), 1-48. \doi{10.18637/jss.v067.i01}.
 
-  Hooten, M. B., and Hobbs, N. T. (2015). A guide to Bayesian model 
-  selection for ecologists. Ecological monographs, 85(1), 3-28.
-  
-  Polson, N.G., J.G. Scott, and J. Windle. (2013) Bayesian Inference for
-  Logistic Models Using Polya-Gamma Latent Variables. 
-  \emph{Journal of the American Statistical Association}, 108:1339-1349.
+  Roberts, G.O. and Rosenthal J.S. (2009) Examples  of adaptive MCMC. 
+  \emph{Journal of Computational and Graphical Statistics}, 18(2):349-367.
 
   Royle, J. A. (2004). N‐mixture models for estimating population size 
   from spatially replicated counts. Biometrics, 60(1), 108-115.
+  \doi{10.1111/j.0006-341X.2004.00142.x}.
 }
 
 \author{
   Jeffrey W. Doser \email{doserjef@msu.edu}, \cr
-  Andrew O. Finley \email{finleya@msu.edu}
 }
 
 \value{
@@ -192,21 +182,21 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
     for the latent expected abundance values}
 
   \item{sigma.sq.mu.samples}{a \code{coda} object of posterior samples
-    for variances of random intercepts included in the abundance portion
-    of the model. Only included if random intercepts are specified in 
+    for variances of random effects included in the abundance portion
+    of the model. Only included if random effects are specified in 
     \code{abund.formula}.}
 
   \item{sigma.sq.p.samples}{a \code{coda} object of posterior samples
-    for variances of random intercpets included in the detection portion 
-    of the model. Only included if random intercepts are specified in 
+    for variances of random effects included in the detection portion 
+    of the model. Only included if random effects are specified in 
     \code{det.formula}.}
 
   \item{beta.star.samples}{a \code{coda} object of posterior samples
-    for the abundance random effects. Only included if random intercepts
+    for the abundance random effects. Only included if random effects 
     are specified in \code{abund.formula}.}
 
   \item{alpha.star.samples}{a \code{coda} object of posterior samples
-    for the detection random effects. Only included if random intercepts 
+    for the detection random effects. Only included if random effects 
     are specified in \code{det.formula}.}
 
   \item{like.samples}{a \code{coda} object of posterior samples
@@ -220,7 +210,7 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
 
   \item{run.time}{execution time reported using \code{proc.time()}.}
 
-  \item{k.fold.deviance}{scoring rule (deviance) from k-fold cross-validation. 
+  \item{rmspe}{scoring rule (root mean squared prediction error) from k-fold cross-validation. 
     Only included if \code{k.fold} is specified in function call.}
 
   The return object will include additional objects used for 

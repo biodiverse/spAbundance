@@ -96,7 +96,7 @@ sfMsAbund <- function(formula, data, inits, priors,
     }
   }
   if (missing(n.factors)) {
-    stop("error: n.factors must be specified for a spatial factor N-mixture model")
+    stop("error: n.factors must be specified for a spatial factor GLMM")
   }
 
   # Neighbors and Ordering ----------------------------------------------
@@ -245,6 +245,8 @@ sfMsAbund <- function(formula, data, inits, priors,
   n.obs <- nrow(X)
 
   # Get random effect matrices all set ----------------------------------
+  # TODO: double check that this is right. 
+  X.re <- X.re - 1
   if (p.abund.re > 1) {
     for (j in 2:p.abund.re) {
       X.re[, j] <- X.re[, j] + max(X.re[, j - 1]) + 1
@@ -708,7 +710,12 @@ sfMsAbund <- function(formula, data, inits, priors,
     beta.star.tuning <- rep(1, n.abund.re * n.sp)
     kappa.tuning <- rep(1, n.sp)
     phi.tuning <- rep(1, q)
-    nu.tuning <- rep(1, q)
+    # TODO: check to make sure this works
+    if (cov.model == 'matern') {
+      nu.tuning <- rep(1, q)
+    } else {
+      nu.tuning <- NULL
+    }
     w.tuning <- rep(1, J * q)
     lambda.tuning <- rep(1, n.sp * q)
   } else {
@@ -1091,6 +1098,7 @@ sfMsAbund <- function(formula, data, inits, priors,
       if (p.abund.re > 0) {
         out$ESS$sigma.sq.mu <- effectiveSize(out$sigma.sq.mu.samples)
       }
+      # TODO: not sure if this is right since the covariates may vary across space + time.
       out$X.re <- X.re[order(ord), , drop = FALSE]
       out$X <- X[order(ord), , drop = FALSE]
       out$y <- y.mat[, order(ord), , drop = FALSE]

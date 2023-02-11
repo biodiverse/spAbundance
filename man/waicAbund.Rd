@@ -3,7 +3,7 @@
 \title{Compute Widely Applicable Information Criterion for spAbundance Model Objects}
 
 \usage{
-waicAbund(object, N.max, ...)
+waicAbund(object, N.max, by.species = FALSE, ...)
 }
 
 \description{
@@ -13,13 +13,18 @@ waicAbund(object, N.max, ...)
 
 \arguments{
   \item{object}{an object of class \code{NMix}, \code{spNMix}, \code{msNMix}, 
-  \code{sfMsNMix}, \code{abund}, \code{spAbund}, \code{sfMsAbund}.}
+  \code{lfMsNMix}, \code{sfMsNMix}, \code{abund}, \code{spAbund}, \code{sfMsAbund}.}
   \item{N.max}{integer value indicating the upper limit on the latent abundance 
   values when calculating WAIC for N-mixture models or distance sampling models. 
-  Defaults to two times the largest abundance value in the posterior 
+  Defaults to ten plus the largest abundance value in the posterior 
   samples \code{object$N.samples}.}
 
-\item{...}{currently no additional arguments}
+  \item{by.species}{a logical value indicating whether or not WAIC should be
+    reported individually for each species (\code{TRUE}) or summed across
+    the entire community (\code{FALSE}) for multi-species models. Ignored for 
+    single species models.}
+
+  \item{...}{currently no additional arguments}
 
 }
 
@@ -40,7 +45,6 @@ waicAbund(object, N.max, ...)
 
 \author{
   Jeffrey W. Doser \email{doserjef@msu.edu}, \cr
-  Andrew O. Finley \email{finleya@msu.edu}
 }
 
 \value{

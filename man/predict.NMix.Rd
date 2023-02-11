@@ -14,7 +14,7 @@
 
   \item{object}{an object of class NMix}
 
-  \item{X.0}{the design matrix of covariates at the prediction locations. This should include a column of 1s for the intercept if an intercept is included in the model. If random effects are included in the abundance (or detection if \code{type = 'detection'}) portion of the model, the levels of the random effects at the new locations should be included as a column in the design matrix. The ordering of the levels should match the ordering used to fit the data in \code{NMix}. Columns should correspond to the order of how covariates were specified in the corresponding formula argument of \code{NMix}. Column names of the random effects must match the name of the random effects, if specified in the corresponding formula argument of \code{NMix}.}
+  \item{X.0}{the design matrix of covariates at the prediction locations. This should include a column of 1s for the intercept if an intercept is included in the model. If random effects are included in the abundance (or detection if \code{type = 'detection'}) portion of the model, the levels of the random effects at the new locations should be included as a column in the design matrix. The ordering of the levels should match the ordering used to fit the data in \code{NMix}. Columns should correspond to the order of how covariates were specified in the corresponding formula argument of \code{NMix}. Column names of all variables must match the names of variables used when fitting the model (for the intercept, use \code{'(Intercept)'}).}
 
   \item{ignore.RE}{logical value that specifies whether or not to remove random abundance (or detection if \code{type = 'detection'}) effects from the subsequent predictions. If \code{TRUE}, random effects will be included. If \code{FALSE}, random effects will be set to 0 and predictions will only be generated from the fixed effects.}
 
@@ -29,14 +29,13 @@
 
 \author{
   Jeffrey W. Doser \email{doserjef@msu.edu}, \cr
-  Andrew O. Finley \email{finleya@msu.edu}
 }
 
 \value{
   A list object of class \code{predict.NMix}. When \code{type = 'abundance'}, the list consists of: 
 
   \item{mu.0.samples}{a \code{coda} object of posterior predictive samples for the
-    latent expected abundance values.}
+    expected abundance values.}
 
   \item{N.0.samples}{a \code{coda} object of posterior predictive samples for the
     latent abundance values.}
@@ -51,7 +50,7 @@
 }
 
 \examples{
-set.seed(400)
+set.seed(100)
 # Simulate Data -----------------------------------------------------------
 J.x <- 10
 J.y <- 10
@@ -61,9 +60,8 @@ beta <- c(0.5, 2)
 p.abund <- length(beta)
 alpha <- c(0, 1)
 p.det <- length(alpha)
-kappa <- 0.5
 dat <- simNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta, alpha = alpha,
-               sp = FALSE, kappa = kappa)
+               sp = FALSE)
 # Split into fitting and prediction data set
 pred.indx <- sample(1:J, round(J * .25), replace = FALSE)
 y <- dat$y[-pred.indx, ]
@@ -105,6 +103,7 @@ out <- NMix(abund.formula = ~ abund.cov,
              inits = inits.list,
 	     n.batch = n.batch, 
 	     batch.length = batch.length,
+	     family = 'Poisson',
              priors = prior.list,
              n.omp.threads = 1,
              verbose = TRUE,

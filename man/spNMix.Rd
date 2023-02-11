@@ -3,7 +3,7 @@
 \title{Function for Fitting Single-Species Spatial N-Mixture Models}
 
 \description{
-  The function \code{spNMix} fits single-species spatial N-mixture models. Models can be fit using either a full Gaussian process or a Nearest Neighbor Gaussian Process for large data sets. 
+  The function \code{spNMix} fits single-species spatial N-mixture models. Spatial models are fit using Nearest Neighbor Gaussian Processes. 
 }
 
 \usage{
@@ -12,7 +12,7 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
        n.neighbors = 15, search.type = 'cb',
        n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
        n.omp.threads = 1, verbose = TRUE, n.report = 100, 
-        n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
+       n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
        n.chains = 1, k.fold, k.fold.threads = 1, k.fold.seed = 100, 
        k.fold.only = FALSE, ...)
 }
@@ -22,12 +22,12 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
   \item{abund.formula}{a symbolic description of the model to be fit
     for the abundance portion of the model using R's model syntax. Only
     right-hand side of formula is specified. See example below. Random intercepts
-    are allowed using lme4 syntax (Bates et al. 2015).}
+    and random slopes are allowed using lme4 syntax (Bates et al. 2015).}
   
   \item{det.formula}{a symbolic description of the model to be fit
   for the detection portion of the model using R's model syntax. Only
   right-hand side of formula is specified. See example below. Random intercepts
-  are allowed using lme4 syntax (Bates et al. 2015).}
+  and random slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
   \item{data}{a list containing data necessary for model fitting.
     Valid tags are \code{y}, \code{abund.covs}, \code{det.covs}, and \code{coords}. 
@@ -51,8 +51,8 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
     Valid tags are \code{N}, \code{beta}, \code{alpha}, \code{sigma.sq}, 
     \code{phi}, \code{w}, \code{nu}, \code{kappa}, \code{sigma.sq.mu}, \code{sigma.sq.p}. 
     \code{nu} is only specified if \code{cov.model = "matern"}, \code{sigma.sq.p}
-    is only specified if there are random effects in \code{det.formula}, \code{sigma.sq.psi}
-    is only specified if there are random effects in \code{occ.formula}, and
+    is only specified if there are random effects in \code{det.formula}, \code{sigma.sq.mu}
+    is only specified if there are random effects in \code{abund.formula}, and
     \code{kappa} is only specified when \code{family = 'NB'}. 
     The value portion of each tag is the parameter's initial value. See \code{priors}
     description for definition of each parameter name.
@@ -63,7 +63,7 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
   \item{priors}{a list with each tag corresponding to a parameter name. 
     Valid tags are \code{beta.normal}, \code{alpha.normal}, \code{phi.unif}, 
     \code{sigma.sq.ig}, \code{nu.unif}, \code{kappa.unif},
-    \code{sigma.sq.psi.ig}, and \code{sigma.sq.p.ig}. Abundance 
+    \code{sigma.sq.mu.ig}, and \code{sigma.sq.p.ig}. Abundance 
     (\code{beta}) and detection (\code{alpha}) regression coefficients 
     are assumed to follow a normal distribution. The hyperparameters of the 
     normal distribution are passed as a list of length two with the first
@@ -82,8 +82,8 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
     elements corresponding to the \emph{shape} and \emph{scale}, respectively. 
     The hyperparameters of the Uniform are also passed as a vector of 
     length two with the first and second elements corresponding to 
-    the lower and upper support, respectively. \code{sigma.sq.psi} and 
-    \code{sigma.sq.p} are the random effect variances for any occurrence or 
+    the lower and upper support, respectively. \code{sigma.sq.mu} and 
+    \code{sigma.sq.p} are the random effect variances for any abundance or 
     detection random effects, respectively, and are assumed to follow an 
     inverse-Gamma distribution. The hyperparameters of
     the inverse-Gamma distribution are passed as a list of length two with the 
@@ -94,19 +94,18 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
  
   \item{cov.model}{a quoted keyword that specifies the covariance
     function used to model the spatial dependence structure among the
-    observations.  Supported covariance model key words are:
+    observations. Supported covariance model key words are:
     \code{"exponential"}, \code{"matern"}, \code{"spherical"}, and
     \code{"gaussian"}.}
 
   \item{tuning}{a single numeric value representing the initial variance of the
   adaptive sampler for \code{beta}, \code{alpha}, \code{beta.star} (the abundance 
   random effect values), \code{alpha.star} (the detection random effect values),
-  \code{kappa}, \code{phi}, and \code{nu}. See Roberts and Rosenthal (2009) for details.}
+  \code{kappa}, \code{phi}, \code{nu}, and \code{w}. See Roberts and Rosenthal (2009) for details.}
 
-  \item{NNGP}{if \code{TRUE}, model is fit with an NNGP. If \code{FALSE}, 
-    a full Gaussian process is used. See Datta et al. (2016) and 
+  \item{NNGP}{if \code{TRUE}, model is fit with an NNGP.  See Datta et al. (2016) and 
     Finley et al. (2019) for more information. Currently only NNGP is supported,
-    functionality for a full GP will be addded in future package development.}
+    functionality for a Gaussian Process be addded in future package development.}
   
   \item{n.neighbors}{number of neighbors used in the NNGP. Only used if 
   \code{NNGP = TRUE}. Datta et al. (2016) showed that 15 neighbors is usually 
@@ -125,7 +124,7 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
     However, if there are identical coordinate values on the axis used 
     for nearest neighbor ordering, then \code{"cb"} and \code{"brute"} 
     might produce different, but equally valid, neighbor sets, 
-    e.g., if data are on a grid. }
+    e.g., if data are on a grid.}
  
   \item{n.batch}{the number of MCMC batches in each chain to run for the Adaptive MCMC 
     sampler. See Roberts and Rosenthal (2009) for details.}
@@ -170,8 +169,8 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
     partitioned into \emph{k} equal sized subsamples. Of the \emph{k} subsamples, 
     \emph{k} - 1 subsamples are used to fit the model and the remaining \emph{k}
     samples are used for prediction. The cross-validation process is repeated 
-    \emph{k} times (the folds). As a scoring rule, we use the model deviance 
-    as described in Hooten and Hobbs (2015). Cross-validation is performed
+    \emph{k} times (the folds). As a scoring rule, we use the root 
+    mean squared prediction error. Cross-validation is performed
     after the full model is fit using all the data. Cross-validation results
     are reported in the \code{k.fold.deviance} object in the return list.}
   
@@ -205,16 +204,6 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
   S. Banerjee. (2019) Efficient algorithms for Bayesian Nearest Neighbor
   Gaussian Processes. \emph{Journal of Computational and Graphical
     Statistics}, \doi{10.1080/10618600.2018.1537924}.
-
-  Finley, A. O., Datta, A., and Banerjee, S. (2020). spNNGP R package 
-  for nearest neighbor Gaussian process models. \emph{arXiv} preprint arXiv:2001.09111.
-
-  Hooten, M. B., and Hobbs, N. T. (2015). A guide to Bayesian model 
-  selection for ecologists. \emph{Ecological Monographs}, 85(1), 3-28.
-
-  Polson, N.G., J.G. Scott, and J. Windle. (2013) Bayesian Inference for
-  Logistic Models Using Polya-Gamma Latent Variables. 
-  \emph{Journal of the American Statistical Association}, 108:1339-1349.
 
   Roberts, G.O. and Rosenthal J.S. (2009) Examples  of adaptive MCMC. 
   \emph{Journal of Computational and Graphical Statistics}, 18(2):349-367.
@@ -254,26 +243,22 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
     for latent spatial random effects.}
 
   \item{sigma.sq.mu.samples}{a \code{coda} object of posterior samples
-    for variances of random intercepts included in the abundance portion
-    of the model. Only included if random intercepts are specified in 
+    for variances of random intercepts/slopes included in the abundance portion
+    of the model. Only included if random effects are specified in 
     \code{abund.formula}.}
 
   \item{sigma.sq.p.samples}{a \code{coda} object of posterior samples
-    for variances of random intercpets included in the detection portion 
-    of the model. Only included if random intercepts are specified in 
+    for variances of random effects included in the detection portion 
+    of the model. Only included if random effects are specified in 
     \code{det.formula}.}
 
   \item{beta.star.samples}{a \code{coda} object of posterior samples
-    for the abundance random effects. Only included if random intercepts
+    for the abundance random effects. Only included if random effects 
     are specified in \code{abund.formula}.}
 
   \item{alpha.star.samples}{a \code{coda} object of posterior samples
-    for the detection random effects. Only included if random intercepts 
+    for the detection random effects. Only included if random effects 
     are specified in \code{det.formula}.}
-
-  \item{like.samples}{a \code{coda} object of posterior samples
-    for the likelihood value associated with each site. Used for calculating
-    WAIC.}
 
   \item{rhat}{a list of Gelman-Rubin diagnostic values for some of the model
     parameters.}
@@ -282,7 +267,7 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
 
   \item{run.time}{execution time reported using \code{proc.time()}.}
 
-  \item{k.fold.deviance}{soring rule (deviance) from k-fold cross-validation. 
+  \item{rmspe}{soring rule (root mean squared prediciton error) from k-fold cross-validation. 
     Only included if \code{k.fold} is specified in function call.}
 
   The return object will include additional objects used for 

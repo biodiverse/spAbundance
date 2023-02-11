@@ -22,7 +22,8 @@ summary.ppcAbund <- function(object, level = 'both',
     cat("Fit statistic: ", object$fit.stat, "\n")
   }
 
-  if (object$class %in% c('msAbund', 'spMsAbund', 'lfMsAbund', 'sfMsAbund')) {
+  if (object$class %in% c('msAbund', 'spMsAbund', 'lfMsAbund', 'sfMsAbund', 
+			  'msNMix', 'spMsNMix', 'lfMsNMix', 'sfMsNMix')) {
 
     if (tolower(level) == 'community') {
       cat("----------------------------------------\n");
@@ -217,7 +218,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, ...) {
     }
     indx <- unlist(indx)
     if (length(indx) == 0) {
-      stop("error: column names in X.0 must match variable names in data$occ.covs")
+      stop("error: column names in X.0 must match variable names in data$abund.covs")
     }
     n.re <- length(indx)
     n.unique.re <- length(unique(indx))
@@ -272,7 +273,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, ...) {
             beta.star.sites.0.samples[, j]
         } else {
           beta.star.sites.0.samples[, j] <- 
-            rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) + 
+            rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
             beta.star.sites.0.samples[, j]
         }
       } # j
@@ -547,7 +548,7 @@ predict.spAbund <- function(object, X.0, coords.0,
             beta.star.sites.0.samples[, j]
         } else {
           beta.star.sites.0.samples[, j] <- 
-            rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) + 
+            rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
             beta.star.sites.0.samples[, j]
         }
       } # j
@@ -889,7 +890,7 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, ...) {
               beta.star.sites.0.samples[, i, j]
           } else {
             beta.star.sites.0.samples[, i, j] <- 
-              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) + 
+              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
               beta.star.sites.0.samples[, i, j]
           }
         } # j
@@ -1253,7 +1254,7 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
               beta.star.sites.0.samples[, j]
           } else {
             beta.star.sites.0.samples[, j] <- 
-              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) + 
+              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
               beta.star.sites.0.samples[, j]
           }
         } # j
@@ -1367,7 +1368,7 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
               alpha.star.sites.0.samples[, j]
           } else {
             alpha.star.sites.0.samples[, j] <- 
-              rnorm(n.post, 0, sqrt(object$sigma.sq.p.samples[, t])) + 
+              rnorm(n.post, 0, sqrt(object$sigma.sq.p.samples[, t])) * X.random[j, t] + 
               alpha.star.sites.0.samples[, j]
           }
         } # j
@@ -1730,7 +1731,7 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
               beta.star.sites.0.samples[, j]
           } else {
             beta.star.sites.0.samples[, j] <- 
-              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) + 
+              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
               beta.star.sites.0.samples[, j]
           }
         } # j
@@ -1817,327 +1818,1144 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
 }
 
 # msNMix ------------------------------------------------------------------
-# print.msNMix <- function(x, ...) {
-#   cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)),
-#       "", sep = "\n")
-# }
-# 
-# summary.msNMix <- function(object,
-# 			   level = 'both',
-# 			   quantiles = c(0.025, 0.5, 0.975),
-# 			   digits = max(3L, getOption("digits") - 3L), ...) {
-# 
-#   print(object)
-# 
-#   n.post <- object$n.post
-#   n.samples <- object$n.samples
-#   n.burn <- object$n.burn
-#   n.thin <- object$n.thin
-#   n.chains <- object$n.chains
-#   run.time <- object$run.time[3] / 60 # minutes
-# 
-#   cat(paste("Samples per Chain: ", n.samples,"\n", sep=""))
-#   cat(paste("Burn-in: ", n.burn,"\n", sep=""))
-#   cat(paste("Thinning Rate: ",n.thin,"\n", sep=""))
-#   cat(paste("Number of Chains: ", n.chains, "\n", sep = ""))
-#   cat(paste("Total Posterior Samples: ",n.post * n.chains,"\n", sep=""))
-#   cat(paste("Run Time (min): ", round(run.time, digits), "\n\n", sep = ""))
-# 
-#   if (tolower(level) %in% c('community', 'both')) {
-# 
-#     cat("----------------------------------------\n");
-#     cat("\tCommunity Level\n");
-#     cat("----------------------------------------\n");
-# 
-#     # Abundance 
-#     cat("Abundance Means (log scale): \n")
-#     tmp.1 <- t(apply(object$beta.comm.samples, 2,
-#           	   function(x) c(mean(x), sd(x))))
-#     colnames(tmp.1) <- c("Mean", "SD")
-#     tmp <- t(apply(object$beta.comm.samples, 2,
-#           	 function(x) quantile(x, prob = quantiles)))
-#     diags <- matrix(c(object$rhat$beta.comm, round(object$ESS$beta.comm, 0)), ncol = 2)
-#     colnames(diags) <- c('Rhat', 'ESS')
-# 
-#     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-# 
-#     cat("\nAbundance Variances (log scale): \n")
-#     tmp.1 <- t(apply(object$tau.sq.beta.samples, 2,
-#           	   function(x) c(mean(x), sd(x))))
-#     colnames(tmp.1) <- c("Mean", "SD")
-#     tmp <- t(apply(object$tau.sq.beta.samples, 2,
-#           	 function(x) quantile(x, prob = quantiles)))
-#     diags <- matrix(c(object$rhat$tau.sq.beta, round(object$ESS$tau.sq.beta, 0)), ncol = 2)
-#     colnames(diags) <- c('Rhat', 'ESS')
-#     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-#     if (object$muRE) {
-#       cat("\n")
-#       cat("Abundance Random Effect Variances (log scale): \n")
-#       tmp.1 <- t(apply(object$sigma.sq.mu.samples, 2,
-#             	   function(x) c(mean(x), sd(x))))
-#       colnames(tmp.1) <- c("Mean", "SD")
-#       tmp <- t(apply(object$sigma.sq.mu.samples, 2,
-#             	 function(x) quantile(x, prob = quantiles)))
-#       diags <- matrix(c(object$rhat$sigma.sq.mu, round(object$ESS$sigma.sq.mu, 0)), ncol = 2)
-#       colnames(diags) <- c('Rhat', 'ESS')
-# 
-#       print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-#     }
-#     cat("\n")
-#     # Detection
-#     cat("Detection Means (logit scale): \n")
-#     tmp.1 <- t(apply(object$alpha.comm.samples, 2,
-#           	   function(x) c(mean(x), sd(x))))
-#     colnames(tmp.1) <- c("Mean", "SD")
-#     tmp <- t(apply(object$alpha.comm.samples, 2,
-#           	 function(x) quantile(x, prob = quantiles)))
-#     diags <- matrix(c(object$rhat$alpha.comm, round(object$ESS$alpha.comm, 0)), ncol = 2)
-#     colnames(diags) <- c('Rhat', 'ESS')
-# 
-#     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-#     cat("\nDetection Variances (logit scale): \n")
-#     tmp.1 <- t(apply(object$tau.sq.alpha.samples, 2,
-#           	   function(x) c(mean(x), sd(x))))
-#     colnames(tmp.1) <- c("Mean", "SD")
-#     tmp <- t(apply(object$tau.sq.alpha.samples, 2,
-#           	 function(x) quantile(x, prob = quantiles)))
-#     diags <- matrix(c(object$rhat$tau.sq.alpha, round(object$ESS$tau.sq.alpha, 0)), ncol = 2)
-#     colnames(diags) <- c('Rhat', 'ESS')
-# 
-#     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-#     if (object$pRE) {
-#       cat("\n")
-#       cat("Detection Random Effect Variances (logit scale): \n")
-#       tmp.1 <- t(apply(object$sigma.sq.p.samples, 2,
-#             	   function(x) c(mean(x), sd(x))))
-#       colnames(tmp.1) <- c("Mean", "SD")
-#       tmp <- t(apply(object$sigma.sq.p.samples, 2,
-#             	 function(x) quantile(x, prob = quantiles)))
-#       diags <- matrix(c(object$rhat$sigma.sq.p, round(object$ESS$sigma.sq.p, 0)), ncol = 2)
-#       colnames(diags) <- c('Rhat', 'ESS')
-# 
-#       print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-#     }
-#   }
-# 
-#   if (tolower(level) %in% c('species', 'both')) {
-#     if (tolower(level) == 'both') cat("\n")
-#     cat("----------------------------------------\n");
-#     cat("\tSpecies Level\n");
-#     cat("----------------------------------------\n");
-#     cat("Abundance (log scale): \n")
-#     tmp.1 <- t(apply(object$beta.samples, 2,
-#           	   function(x) c(mean(x), sd(x))))
-#     colnames(tmp.1) <- c("Mean", "SD")
-#     tmp <- t(apply(object$beta.samples, 2,
-#           	 function(x) quantile(x, prob = quantiles)))
-#     diags <- matrix(c(object$rhat$beta, round(object$ESS$beta, 0)), ncol = 2)
-#     colnames(diags) <- c('Rhat', 'ESS')
-# 
-#     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-#     cat("\n")
-#     # Detection
-#     cat("Detection (logit scale): \n")
-#     tmp.1 <- t(apply(object$alpha.samples, 2,
-#           	   function(x) c(mean(x), sd(x))))
-#     colnames(tmp.1) <- c("Mean", "SD")
-#     tmp <- t(apply(object$alpha.samples, 2,
-#           	 function(x) quantile(x, prob = quantiles)))
-#     diags <- matrix(c(object$rhat$alpha, round(object$ESS$alpha, 0)), ncol = 2)
-#     colnames(diags) <- c('Rhat', 'ESS')
-#     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-#     
-#     # NB Overdispersion
-#     if (object$dist == "NB") {
-#       cat("\n")
-#       cat("----------------------------------------\n");
-#       cat("\tNB overdispersion\n");
-#       cat("----------------------------------------\n");
-#       tmp.1 <- t(apply(object$kappa.samples, 2,
-#             	   function(x) c(mean(x), sd(x))))
-#       colnames(tmp.1) <- c("Mean", "SD")
-#       tmp <- t(apply(object$kappa.samples, 2,
-#             	 function(x) quantile(x, prob = quantiles)))
-#       diags <- matrix(c(object$rhat$kappa, round(object$ESS$kappa, 0)), ncol = 2)
-#       colnames(diags) <- c('Rhat', 'ESS')
-#       print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-#     }
-#   }
-# }
-# 
-# 
-# fitted.msNMix <- function(object, ...) {
-#   # TODO: need to update
-# }
-# 
-# # sfMsNMix ---------------------------------------------------------------
-# print.sfMsNMix <- function(x, ...) {
-#   cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)),
-#       "", sep = "\n")
-# }
-# 
-# summary.sfMsNMix <- function(object, level = 'both',
-#                              quantiles = c(0.025, 0.5, 0.975),
-#                              digits = max(3L, getOption("digits") - 3L), ...) {
-# 
-#   print(object)
-# 
-#   n.post <- object$n.post
-#   n.samples <- object$n.samples
-#   n.burn <- object$n.burn
-#   n.thin <- object$n.thin
-#   n.chains <- object$n.chains
-#   run.time <- object$run.time[3] / 60 # minutes
-# 
-#   cat(paste("Samples per Chain: ", n.samples,"\n", sep=""))
-#   cat(paste("Burn-in: ", n.burn,"\n", sep=""))
-#   cat(paste("Thinning Rate: ",n.thin,"\n", sep=""))
-#   cat(paste("Number of Chains: ", n.chains, "\n", sep = ""))
-#   cat(paste("Total Posterior Samples: ",n.post * n.chains,"\n", sep=""))
-#   cat(paste("Run Time (min): ", round(run.time, digits), "\n\n", sep = ""))
-# 
-#   if (tolower(level) %in% c('community', 'both')) {
-# 
-#     cat("----------------------------------------\n");
-#     cat("\tCommunity Level\n");
-#     cat("----------------------------------------\n");
-# 
-#     # Abundance 
-#     cat("Abundance Means (log scale): \n")
-#     tmp.1 <- t(apply(object$beta.comm.samples, 2,
-#           	   function(x) c(mean(x), sd(x))))
-#     colnames(tmp.1) <- c("Mean", "SD")
-#     tmp <- t(apply(object$beta.comm.samples, 2,
-#           	 function(x) quantile(x, prob = quantiles)))
-#     diags <- matrix(c(object$rhat$beta.comm, round(object$ESS$beta.comm, 0)), ncol = 2)
-#     colnames(diags) <- c('Rhat', 'ESS')
-# 
-#     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-# 
-#     cat("\nAbundance Variances (log scale): \n")
-#     tmp.1 <- t(apply(object$tau.sq.beta.samples, 2,
-#           	   function(x) c(mean(x), sd(x))))
-#     colnames(tmp.1) <- c("Mean", "SD")
-#     tmp <- t(apply(object$tau.sq.beta.samples, 2,
-#           	 function(x) quantile(x, prob = quantiles)))
-#     diags <- matrix(c(object$rhat$tau.sq.beta, round(object$ESS$tau.sq.beta, 0)), ncol = 2)
-#     colnames(diags) <- c('Rhat', 'ESS')
-#     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-# 
-#     if (object$muRE) {
-#       cat("\n")
-#       cat("Abundance Random Effect Variances (log scale): \n")
-#       tmp.1 <- t(apply(object$sigma.sq.mu.samples, 2,
-#             	   function(x) c(mean(x), sd(x))))
-#       colnames(tmp.1) <- c("Mean", "SD")
-#       tmp <- t(apply(object$sigma.sq.mu.samples, 2,
-#             	 function(x) quantile(x, prob = quantiles)))
-#       diags <- matrix(c(object$rhat$sigma.sq.mu, round(object$ESS$sigma.sq.mu, 0)), ncol = 2)
-#       colnames(diags) <- c('Rhat', 'ESS')
-# 
-#       print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-#     }
-#     cat("\n")
-#     # Detection
-#     cat("Detection Means (logit scale): \n")
-#     tmp.1 <- t(apply(object$alpha.comm.samples, 2,
-#           	   function(x) c(mean(x), sd(x))))
-#     colnames(tmp.1) <- c("Mean", "SD")
-#     tmp <- t(apply(object$alpha.comm.samples, 2,
-#           	 function(x) quantile(x, prob = quantiles)))
-#     diags <- matrix(c(object$rhat$alpha.comm, round(object$ESS$alpha.comm, 0)), ncol = 2)
-#     colnames(diags) <- c('Rhat', 'ESS')
-# 
-#     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-#     cat("\nDetection Variances (logit scale): \n")
-#     tmp.1 <- t(apply(object$tau.sq.alpha.samples, 2,
-#           	   function(x) c(mean(x), sd(x))))
-#     colnames(tmp.1) <- c("Mean", "SD")
-#     tmp <- t(apply(object$tau.sq.alpha.samples, 2,
-#           	 function(x) quantile(x, prob = quantiles)))
-#     diags <- matrix(c(object$rhat$tau.sq.alpha, round(object$ESS$tau.sq.alpha, 0)), ncol = 2)
-#     colnames(diags) <- c('Rhat', 'ESS')
-# 
-#     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-#     if (object$pRE) {
-#       cat("\n")
-#       cat("Detection Random Effect Variances (logit scale): \n")
-#       tmp.1 <- t(apply(object$sigma.sq.p.samples, 2,
-#             	   function(x) c(mean(x), sd(x))))
-#       colnames(tmp.1) <- c("Mean", "SD")
-#       tmp <- t(apply(object$sigma.sq.p.samples, 2,
-#             	 function(x) quantile(x, prob = quantiles)))
-#       diags <- matrix(c(object$rhat$sigma.sq.p, round(object$ESS$sigma.sq.p, 0)), ncol = 2)
-#       colnames(diags) <- c('Rhat', 'ESS')
-# 
-#       print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-#     }
-#   }
-# 
-#   if (tolower(level) %in% c('species', 'both')) {
-#     if (tolower(level) == 'both') cat("\n")
-#     cat("----------------------------------------\n");
-#     cat("\tSpecies Level\n");
-#     cat("----------------------------------------\n");
-#     cat("Abundance (log scale): \n")
-#     tmp.1 <- t(apply(object$beta.samples, 2,
-#           	   function(x) c(mean(x), sd(x))))
-#     colnames(tmp.1) <- c("Mean", "SD")
-#     tmp <- t(apply(object$beta.samples, 2,
-#           	 function(x) quantile(x, prob = quantiles)))
-#     diags <- matrix(c(object$rhat$beta, round(object$ESS$beta, 0)), ncol = 2)
-#     colnames(diags) <- c('Rhat', 'ESS')
-# 
-#     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-#     cat("\n")
-#     # Detection
-#     cat("Detection (logit scale): \n")
-#     tmp.1 <- t(apply(object$alpha.samples, 2,
-#           	   function(x) c(mean(x), sd(x))))
-#     colnames(tmp.1) <- c("Mean", "SD")
-#     tmp <- t(apply(object$alpha.samples, 2,
-#           	 function(x) quantile(x, prob = quantiles)))
-#     diags <- matrix(c(object$rhat$alpha, round(object$ESS$alpha, 0)), ncol = 2)
-#     colnames(diags) <- c('Rhat', 'ESS')
-#     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-# 
-#   }
-#     # Covariance
-#     cat("\n")
-#     cat("----------------------------------------\n");
-#     cat("\tSpatial Covariance\n");
-#     cat("----------------------------------------\n");
-#     tmp.1 <- t(apply(object$theta.samples, 2,
-#           	   function(x) c(mean(x), sd(x))))
-#     colnames(tmp.1) <- c("Mean", "SD")
-#     tmp <- t(apply(object$theta.samples, 2,
-#           	 function(x) quantile(x, prob = quantiles)))
-#     diags <- matrix(c(object$rhat$theta, round(object$ESS$theta, 0)), ncol = 2)
-#     colnames(diags) <- c('Rhat', 'ESS')
-#     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-# 
-#     # NB Overdispersion
-#     if (object$dist == "NB" & tolower(level) %in% c('species', 'both')) {
-#       cat("\n")
-#       cat("----------------------------------------\n");
-#       cat("\tNB overdispersion\n");
-#       cat("----------------------------------------\n");
-#       tmp.1 <- t(apply(object$kappa.samples, 2,
-#             	   function(x) c(mean(x), sd(x))))
-#       colnames(tmp.1) <- c("Mean", "SD")
-#       tmp <- t(apply(object$kappa.samples, 2,
-#             	 function(x) quantile(x, prob = quantiles)))
-#       diags <- matrix(c(object$rhat$kappa, round(object$ESS$kappa, 0)), ncol = 2)
-#       colnames(diags) <- c('Rhat', 'ESS')
-#       print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-#     }
-# }
-# 
-# fitted.sfMsNMix <- function(object, ...) {
-#   fitted.msNMix(object)
-# }
+print.msNMix <- function(x, ...) {
+  cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)),
+      "", sep = "\n")
+}
 
+summary.msNMix <- function(object,
+			   level = 'both',
+			   quantiles = c(0.025, 0.5, 0.975),
+			   digits = max(3L, getOption("digits") - 3L), ...) {
+
+  print(object)
+
+  n.post <- object$n.post
+  n.samples <- object$n.samples
+  n.burn <- object$n.burn
+  n.thin <- object$n.thin
+  n.chains <- object$n.chains
+  run.time <- object$run.time[3] / 60 # minutes
+
+  cat(paste("Samples per Chain: ", n.samples,"\n", sep=""))
+  cat(paste("Burn-in: ", n.burn,"\n", sep=""))
+  cat(paste("Thinning Rate: ",n.thin,"\n", sep=""))
+  cat(paste("Number of Chains: ", n.chains, "\n", sep = ""))
+  cat(paste("Total Posterior Samples: ",n.post * n.chains,"\n", sep=""))
+  cat(paste("Run Time (min): ", round(run.time, digits), "\n\n", sep = ""))
+
+  if (tolower(level) %in% c('community', 'both')) {
+
+    cat("----------------------------------------\n");
+    cat("\tCommunity Level\n");
+    cat("----------------------------------------\n");
+
+    # Abundance 
+    cat("Abundance Means (log scale): \n")
+    tmp.1 <- t(apply(object$beta.comm.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$beta.comm.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$beta.comm, round(object$ESS$beta.comm, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+
+    cat("\nAbundance Variances (log scale): \n")
+    tmp.1 <- t(apply(object$tau.sq.beta.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$tau.sq.beta.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$tau.sq.beta, round(object$ESS$tau.sq.beta, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    if (object$muRE) {
+      cat("\n")
+      cat("Abundance Random Effect Variances (log scale): \n")
+      tmp.1 <- t(apply(object$sigma.sq.mu.samples, 2,
+            	   function(x) c(mean(x), sd(x))))
+      colnames(tmp.1) <- c("Mean", "SD")
+      tmp <- t(apply(object$sigma.sq.mu.samples, 2,
+            	 function(x) quantile(x, prob = quantiles)))
+      diags <- matrix(c(object$rhat$sigma.sq.mu, round(object$ESS$sigma.sq.mu, 0)), ncol = 2)
+      colnames(diags) <- c('Rhat', 'ESS')
+
+      print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    }
+    cat("\n")
+    # Detection
+    cat("Detection Means (logit scale): \n")
+    tmp.1 <- t(apply(object$alpha.comm.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$alpha.comm.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$alpha.comm, round(object$ESS$alpha.comm, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    cat("\nDetection Variances (logit scale): \n")
+    tmp.1 <- t(apply(object$tau.sq.alpha.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$tau.sq.alpha.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$tau.sq.alpha, round(object$ESS$tau.sq.alpha, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    if (object$pRE) {
+      cat("\n")
+      cat("Detection Random Effect Variances (logit scale): \n")
+      tmp.1 <- t(apply(object$sigma.sq.p.samples, 2,
+            	   function(x) c(mean(x), sd(x))))
+      colnames(tmp.1) <- c("Mean", "SD")
+      tmp <- t(apply(object$sigma.sq.p.samples, 2,
+            	 function(x) quantile(x, prob = quantiles)))
+      diags <- matrix(c(object$rhat$sigma.sq.p, round(object$ESS$sigma.sq.p, 0)), ncol = 2)
+      colnames(diags) <- c('Rhat', 'ESS')
+
+      print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    }
+  }
+
+  if (tolower(level) %in% c('species', 'both')) {
+    if (tolower(level) == 'both') cat("\n")
+    cat("----------------------------------------\n");
+    cat("\tSpecies Level\n");
+    cat("----------------------------------------\n");
+    cat("Abundance (log scale): \n")
+    tmp.1 <- t(apply(object$beta.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$beta.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$beta, round(object$ESS$beta, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    cat("\n")
+    # Detection
+    cat("Detection (logit scale): \n")
+    tmp.1 <- t(apply(object$alpha.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$alpha.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$alpha, round(object$ESS$alpha, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    
+    # NB Overdispersion
+    if (object$dist == "NB") {
+      cat("\n")
+      cat("----------------------------------------\n");
+      cat("\tNB overdispersion\n");
+      cat("----------------------------------------\n");
+      tmp.1 <- t(apply(object$kappa.samples, 2,
+            	   function(x) c(mean(x), sd(x))))
+      colnames(tmp.1) <- c("Mean", "SD")
+      tmp <- t(apply(object$kappa.samples, 2,
+            	 function(x) quantile(x, prob = quantiles)))
+      diags <- matrix(c(object$rhat$kappa, round(object$ESS$kappa, 0)), ncol = 2)
+      colnames(diags) <- c('Rhat', 'ESS')
+      print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    }
+  }
+}
+
+
+fitted.msNMix <- function(object, ...) {
+  # Check for unused arguments ------------------------------------------
+  formal.args <- names(formals(sys.function(sys.parent())))
+  elip.args <- names(list(...))
+  for(i in elip.args){
+      if(! i %in% formal.args)
+          warning("'",i, "' is not an argument")
+  }
+  # Call ----------------------------------------------------------------
+  cl <- match.call()
+  # Functions -------------------------------------------------------------
+  logit <- function(theta, a = 0, b = 1) {log((theta-a)/(b-theta))}
+  logit.inv <- function(z, a = 0, b = 1) {b-(b-a)/(1+exp(z))}
+
+  # Some initial checks -------------------------------------------------
+  # Object ----------------------------
+  if (missing(object)) {
+    stop("error: object must be specified")
+  }
+  if (!(class(object) %in% c('msNMix', 'spMsNMix', 'lfMsNMix', 'sfMsNMix'))) {
+    stop("error: object must be of class msNMix, spMsNMix, lfMsNMix, or sfMsNMix\n")
+  }
+  n.post <- object$n.post * object$n.chains
+  X.p <- object$X.p
+  y <- object$y
+  n.rep <- apply(y[1, , , drop = FALSE], 2, function(a) sum(!is.na(a)))
+  K.max <- dim(y)[3]
+  J <- dim(y)[2]
+  n.sp <- dim(y)[1]
+  N.long.indx <- rep(1:J, dim(y)[3])
+  N.long.indx <- N.long.indx[!is.na(c(y[1, , ]))]
+  N.samples <- object$N.samples
+  alpha.samples <- object$alpha.samples
+  n.obs <- nrow(X.p)
+  det.prob.samples <- array(NA, dim = c(n.obs, n.sp, n.post))
+  sp.indx <- rep(1:n.sp, ncol(X.p))
+  y <- matrix(y, n.sp, J * K.max)
+  y <- y[, apply(y, 2, function(a) !sum(is.na(a)) > 0)]
+  for (i in 1:n.sp) {
+    if (object$pRE) {
+      sp.re.indx <- rep(1:n.sp, each = ncol(object$alpha.star.samples) / n.sp)
+      # Add 1 to get it to R indexing. 
+      X.p.re <- object$X.p.re + 1
+      X.p.random <- object$X.p.random
+      # tmp.samples <- matrix(0, n.post, n.obs)
+      tmp.alpha.star <- object$alpha.star.samples[, sp.re.indx == i]
+      for (j in 1:n.post) {
+        alpha.star.sum <- apply(apply(X.p.re, 2, function(a) tmp.alpha.star[j, a]) * X.p.random, 
+                               1, sum) 
+        det.prob.samples[, i, j] <- logit.inv(X.p %*% alpha.samples[j, sp.indx == i] + alpha.star.sum)
+      }
+    } else {
+      det.prob.samples[, i, ] <- logit.inv(X.p %*% t(alpha.samples[, sp.indx == i]))
+    }
+  }
+
+  out <- list()
+  # Get detection probability
+  # Need to be careful here that all arrays line up. 
+  det.prob.samples <- aperm(det.prob.samples, c(3, 2, 1))
+  tmp <- array(NA, dim = c(n.post, n.sp, J * K.max))
+  names.long <- which(!is.na(c(object$y[1, , ])))
+  tmp[, , names.long] <- det.prob.samples
+  p.samples <- array(tmp, dim = c(n.post, n.sp, J, K.max))
+  out$p.samples <- p.samples
+  # Get fitted values
+  y.rep.samples <- array(NA, dim = dim(det.prob.samples))
+  for (i in 1:n.sp) {
+    y.rep.samples[, i, ] <- rbinom(n.obs * n.post, N.samples[, i, N.long.indx], 
+				   det.prob.samples[, i, ])
+  }
+  tmp <- array(NA, dim = c(n.post, n.sp, J * K.max))
+  names.long <- which(!is.na(c(object$y[1, , ])))
+  tmp[, , names.long] <- y.rep.samples
+  y.rep.samples <- array(tmp, dim = c(n.post, n.sp, J, K.max))
+  out$y.rep.samples <- y.rep.samples
+  return(out)
+}
+
+predict.msNMix <- function(object, X.0, ignore.RE = FALSE, 
+			  type = 'abundance', ...) {
+  # Check for unused arguments ------------------------------------------
+  formal.args <- names(formals(sys.function(sys.parent())))
+  elip.args <- names(list(...))
+  for(i in elip.args){
+      if(! i %in% formal.args)
+          warning("'",i, "' is not an argument")
+  }
+  # Call ----------------------------------------------------------------
+  cl <- match.call()
+
+  # Functions ---------------------------------------------------------------
+  logit <- function(theta, a = 0, b = 1) {log((theta-a)/(b-theta))}
+  logit.inv <- function(z, a = 0, b = 1) {b-(b-a)/(1+exp(z))}
+
+  # Some initial checks ---------------------------------------------------
+  if (missing(object)) {
+    stop("error: predict expects object\n")
+  }
+
+  if (!(tolower(type) %in% c('abundance', 'detection'))) {
+    stop("error: prediction type must be either 'abundance' or 'detection'")
+  }
+
+  # Check X.0 -------------------------------------------------------------
+  if (missing(X.0)) {
+    stop("error: X.0 must be specified\n")
+  }
+  if (!any(is.data.frame(X.0), is.matrix(X.0))) {
+    stop("error: X.0 must be a data.frame or matrix\n")
+  }
+
+  # Abundance predictions ------------------------------------------------
+  if (tolower(type) == 'abundance') {
+    p.abund <- ncol(object$X)
+    # Composition sampling --------------------------------------------------
+    beta.samples <- as.matrix(object$beta.samples)
+    if (object$dist == 'NB') {
+      kappa.samples <- as.matrix(object$kappa.samples)
+    }
+    n.sp <- nrow(object$y)
+    sp.indx <- rep(1:n.sp, p.abund)
+    n.post <- object$n.post * object$n.chains
+    out <- list()
+    out$mu.0.samples <- array(NA, dim = c(n.post, n.sp, nrow(X.0)))
+    out$N.0.samples <- array(NA, dim = c(n.post, n.sp, nrow(X.0)))
+    if (object$muRE) {
+      p.abund.re <- length(object$re.level.names)
+    } else {
+      p.abund.re <- 0
+    }
+    re.cols <- object$re.cols
+
+    if (object$muRE & !ignore.RE) {
+      beta.star.samples <- object$beta.star.samples
+      re.level.names <- object$re.level.names
+      # Get columns in design matrix with random effects
+      x.re.names <- colnames(object$X.re)
+      x.0.names <- colnames(X.0)
+      re.long.indx <- sapply(re.cols, length)
+      tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
+      indx <- list()
+      for (i in 1:length(tmp)) {
+        indx[[i]] <- rep(tmp[i], re.long.indx[i])
+      }
+      indx <- unlist(indx)
+      if (length(indx) == 0) {
+        stop("error: column names in X.0 must match variable names in data$abund.covs")
+      }
+      n.abund.re <- length(indx)
+      n.unique.abund.re <- length(unique(indx))
+      # Check RE columns
+      for (i in 1:n.abund.re) {
+        if (is.character(re.cols[[i]])) {
+          # Check if all column names in svc are in occ.covs
+          if (!all(re.cols[[i]] %in% x.0.names)) {
+              missing.cols <- re.cols[[i]][!(re.cols[[i]] %in% x.0.names)]
+              stop(paste("error: variable name ", paste(missing.cols, collapse=" and "), " not in abundance covariates", sep=""))
+          }
+          # Convert desired column names into the numeric column index
+          re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
+          
+        } else if (is.numeric(re.cols[[i]])) {
+          # Check if all column indices are in 1:p.abund
+          if (!all(re.cols %in% 1:p.abund)) {
+              missing.cols <- re.cols[[i]][!(re.cols[[i]] %in% (1:p.abund))]
+              stop(paste("error: column index ", paste(missing.cols, collapse=" "), " not in design matrix columns", sep=""))
+          }
+        }
+      }
+      re.cols <- unlist(re.cols)
+      X.re <- as.matrix(X.0[, indx, drop = FALSE])
+      X.fix <- as.matrix(X.0[, -indx, drop = FALSE])
+      X.random <- as.matrix(X.0[, re.cols, drop = FALSE])
+      n.abund.re <- length(unlist(re.level.names))
+      X.re.ind <- matrix(NA, nrow(X.re), p.abund.re)
+      for (i in 1:p.abund.re) {
+        for (j in 1:nrow(X.re)) {
+          tmp <- which(re.level.names[[i]] == X.re[j, i])
+          if (length(tmp) > 0) {
+            X.re.ind[j, i] <- tmp 
+          }
+        }
+      }
+      if (p.abund.re > 1) {
+        for (j in 2:p.abund.re) {
+          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+        }
+      }
+      # Create the random effects corresponding to each 
+      # new location
+      # ORDER: ordered by site, then species within site.
+      beta.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.re))
+      for (i in 1:n.sp) {
+        for (t in 1:p.abund.re) {
+          for (j in 1:nrow(X.re)) {
+            if (!is.na(X.re.ind[j, t])) {
+              beta.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
+                beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] + 
+                beta.star.sites.0.samples[, (j - 1) * n.sp + i]
+            } else {
+              beta.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
+                rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+                beta.star.sites.0.samples[, (j - 1) * n.sp + i]
+            }
+          } # j
+        } # t
+      } # i 
+    } else {
+      X.fix <- X.0
+      beta.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.0))
+      p.abund.re <- 0
+    }
+    J.str <- nrow(X.0)
+    # Make predictions
+    for (i in 1:n.sp) {
+      for (j in 1:J.str) {
+        out$mu.0.samples[, i, j] <- exp(t(as.matrix(X.fix[j, ])) %*% 
+          				     t(beta.samples[, sp.indx == i]) + 
+                                               beta.star.sites.0.samples[, (j - 1) * n.sp + i])
+        if (object$dist == 'NB') {
+          out$N.0.samples[, i, j] <- rnbinom(n.post, kappa.samples[, i], 
+					     mu = out$mu.0.samples[, i, j])
+	} else {
+          out$N.0.samples[, i, j] <- rpois(n.post, out$mu.0.samples[, i, j]) 
+	}
+      } # j
+    } # i
+  } # abundance predictions
+  # Detection predictions -------------------------------------------------
+  if (tolower(type) == 'detection') {
+    p.det <- ncol(object$X.p)
+    re.det.cols <- object$re.det.cols
+    # Composition sampling --------------------------------------------------
+    alpha.samples <- as.matrix(object$alpha.samples)
+    n.sp <- dim(object$y)[1]
+    sp.indx <- rep(1:n.sp, p.det)
+    n.post <- object$n.post * object$n.chains
+    out <- list()
+    out$p.0.samples <- array(NA, dim = c(n.post, n.sp, nrow(X.0)))
+    if (object$pRE) {
+      p.det.re <- length(object$p.re.level.names)
+    } else {
+      p.det.re <- 0
+    }
+    if (object$pRE & !ignore.RE) {
+      alpha.star.samples <- object$alpha.star.samples
+      p.re.level.names <- object$p.re.level.names
+      # Get columns in design matrix with random effects
+      x.p.re.names <- colnames(object$X.p.re)
+      x.p.0.names <- colnames(X.0)
+      re.long.indx <- sapply(re.det.cols, length)
+      tmp <- sapply(x.p.re.names, function(a) which(colnames(X.0) %in% a))
+      indx <- list()
+      for (i in 1:length(tmp)) {
+        indx[[i]] <- rep(tmp[i], re.long.indx[i])
+      }
+      indx <- unlist(indx)
+      if (length(indx) == 0) {
+        stop("error: column names in X.0 must match variable names in data$det.covs")
+      }
+      n.det.re <- length(indx)
+      n.unique.det.re <- length(unique(indx))
+      # Check RE columns
+      for (i in 1:n.det.re) {
+        if (is.character(re.det.cols[[i]])) {
+          # Check if all column names in svc are in occ.covs
+          if (!all(re.det.cols[[i]] %in% x.p.0.names)) {
+              missing.cols <- re.det.cols[[i]][!(re.det.cols[[i]] %in% x.p.0.names)]
+              stop(paste("error: variable name ", paste(missing.cols, collapse=" and "), " not in detection covariates", sep=""))
+          }
+          # Convert desired column names into the numeric column index
+          re.det.cols[[i]] <- which(x.p.0.names %in% re.det.cols[[i]])
+          
+        } else if (is.numeric(re.det.cols[[i]])) {
+          # Check if all column indices are in 1:p.abund
+          if (!all(re.det.cols %in% 1:p.det)) {
+              missing.cols <- re.det.cols[[i]][!(re.det.cols[[i]] %in% (1:p.det))]
+              stop(paste("error: column index ", paste(missing.cols, collapse=" "), " not in design matrix columns", sep=""))
+          }
+        }
+      }
+      re.det.cols <- unlist(re.det.cols)
+      X.re <- as.matrix(X.0[, indx, drop = FALSE])
+      X.fix <- as.matrix(X.0[, -indx, drop = FALSE])
+      X.random <- as.matrix(X.0[, re.det.cols, drop = FALSE])
+      n.det.re <- length(unlist(p.re.level.names))
+      X.re.ind <- matrix(NA, nrow(X.re), p.det.re)
+      for (i in 1:p.det.re) {
+        for (j in 1:nrow(X.re)) {
+          tmp <- which(p.re.level.names[[i]] == X.re[j, i])
+          if (length(tmp) > 0) {
+            X.re.ind[j, i] <- tmp 
+          }
+        }
+      }
+      if (p.det.re > 1) {
+        for (j in 2:p.det.re) {
+          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+        }
+      }
+      # Create the random effects corresponding to each 
+      # new location
+      # ORDER: ordered by site, then species within site.
+      alpha.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.re))
+      for (i in 1:n.sp) {
+        for (t in 1:p.det.re) {
+          for (j in 1:nrow(X.re)) {
+            if (!is.na(X.re.ind[j, t])) {
+              alpha.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
+                alpha.star.samples[, (i - 1) * n.det.re + X.re.ind[j, t]] * X.random[j, t] + 
+                alpha.star.sites.0.samples[, (j - 1) * n.sp + i]
+            } else {
+              alpha.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
+                rnorm(n.post, 0, sqrt(object$sigma.sq.p.samples[, t])) * X.random[j, t] + 
+                alpha.star.sites.0.samples[, (j - 1) * n.sp + i]
+            }
+          } # j
+        } # t
+      } # i 
+    } else {
+      X.fix <- X.0
+      alpha.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.0))
+      p.det.re <- 0
+    }
+    J.str <- nrow(X.0)
+    # Make predictions
+    for (i in 1:n.sp) {
+      for (j in 1:J.str) {
+        out$p.0.samples[, i, j] <- logit.inv(t(as.matrix(X.fix[j, ])) %*% 
+          				     t(alpha.samples[, sp.indx == i]) + 
+                                               alpha.star.sites.0.samples[, (j - 1) * n.sp + i])
+      } # j
+    } # i
+
+  }
+  out$call <- cl
+
+  class(out) <- "predict.msNMix"
+  out
+}
+# sfMsNMix ---------------------------------------------------------------
+print.sfMsNMix <- function(x, ...) {
+  cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)),
+      "", sep = "\n")
+}
+
+summary.sfMsNMix <- function(object, level = 'both',
+                             quantiles = c(0.025, 0.5, 0.975),
+                             digits = max(3L, getOption("digits") - 3L), ...) {
+
+  print(object)
+
+  n.post <- object$n.post
+  n.samples <- object$n.samples
+  n.burn <- object$n.burn
+  n.thin <- object$n.thin
+  n.chains <- object$n.chains
+  run.time <- object$run.time[3] / 60 # minutes
+
+  cat(paste("Samples per Chain: ", n.samples,"\n", sep=""))
+  cat(paste("Burn-in: ", n.burn,"\n", sep=""))
+  cat(paste("Thinning Rate: ",n.thin,"\n", sep=""))
+  cat(paste("Number of Chains: ", n.chains, "\n", sep = ""))
+  cat(paste("Total Posterior Samples: ",n.post * n.chains,"\n", sep=""))
+  cat(paste("Run Time (min): ", round(run.time, digits), "\n\n", sep = ""))
+
+  if (tolower(level) %in% c('community', 'both')) {
+
+    cat("----------------------------------------\n");
+    cat("\tCommunity Level\n");
+    cat("----------------------------------------\n");
+
+    # Abundance 
+    cat("Abundance Means (log scale): \n")
+    tmp.1 <- t(apply(object$beta.comm.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$beta.comm.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$beta.comm, round(object$ESS$beta.comm, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+
+    cat("\nAbundance Variances (log scale): \n")
+    tmp.1 <- t(apply(object$tau.sq.beta.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$tau.sq.beta.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$tau.sq.beta, round(object$ESS$tau.sq.beta, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+
+    if (object$muRE) {
+      cat("\n")
+      cat("Abundance Random Effect Variances (log scale): \n")
+      tmp.1 <- t(apply(object$sigma.sq.mu.samples, 2,
+            	   function(x) c(mean(x), sd(x))))
+      colnames(tmp.1) <- c("Mean", "SD")
+      tmp <- t(apply(object$sigma.sq.mu.samples, 2,
+            	 function(x) quantile(x, prob = quantiles)))
+      diags <- matrix(c(object$rhat$sigma.sq.mu, round(object$ESS$sigma.sq.mu, 0)), ncol = 2)
+      colnames(diags) <- c('Rhat', 'ESS')
+
+      print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    }
+    cat("\n")
+    # Detection
+    cat("Detection Means (logit scale): \n")
+    tmp.1 <- t(apply(object$alpha.comm.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$alpha.comm.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$alpha.comm, round(object$ESS$alpha.comm, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    cat("\nDetection Variances (logit scale): \n")
+    tmp.1 <- t(apply(object$tau.sq.alpha.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$tau.sq.alpha.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$tau.sq.alpha, round(object$ESS$tau.sq.alpha, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    if (object$pRE) {
+      cat("\n")
+      cat("Detection Random Effect Variances (logit scale): \n")
+      tmp.1 <- t(apply(object$sigma.sq.p.samples, 2,
+            	   function(x) c(mean(x), sd(x))))
+      colnames(tmp.1) <- c("Mean", "SD")
+      tmp <- t(apply(object$sigma.sq.p.samples, 2,
+            	 function(x) quantile(x, prob = quantiles)))
+      diags <- matrix(c(object$rhat$sigma.sq.p, round(object$ESS$sigma.sq.p, 0)), ncol = 2)
+      colnames(diags) <- c('Rhat', 'ESS')
+
+      print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    }
+  }
+
+  if (tolower(level) %in% c('species', 'both')) {
+    if (tolower(level) == 'both') cat("\n")
+    cat("----------------------------------------\n");
+    cat("\tSpecies Level\n");
+    cat("----------------------------------------\n");
+    cat("Abundance (log scale): \n")
+    tmp.1 <- t(apply(object$beta.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$beta.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$beta, round(object$ESS$beta, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    cat("\n")
+    # Detection
+    cat("Detection (logit scale): \n")
+    tmp.1 <- t(apply(object$alpha.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$alpha.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$alpha, round(object$ESS$alpha, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+
+  }
+    # Covariance
+    cat("\n")
+    cat("----------------------------------------\n");
+    cat("\tSpatial Covariance\n");
+    cat("----------------------------------------\n");
+    tmp.1 <- t(apply(object$theta.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$theta.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$theta, round(object$ESS$theta, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+
+    # NB Overdispersion
+    if (object$dist == "NB" & tolower(level) %in% c('species', 'both')) {
+      cat("\n")
+      cat("----------------------------------------\n");
+      cat("\tNB overdispersion\n");
+      cat("----------------------------------------\n");
+      tmp.1 <- t(apply(object$kappa.samples, 2,
+            	   function(x) c(mean(x), sd(x))))
+      colnames(tmp.1) <- c("Mean", "SD")
+      tmp <- t(apply(object$kappa.samples, 2,
+            	 function(x) quantile(x, prob = quantiles)))
+      diags <- matrix(c(object$rhat$kappa, round(object$ESS$kappa, 0)), ncol = 2)
+      colnames(diags) <- c('Rhat', 'ESS')
+      print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    }
+}
+# 
+fitted.sfMsNMix <- function(object, ...) {
+  fitted.msNMix(object)
+}
+
+predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
+			      verbose = TRUE, n.report = 100,
+			      ignore.RE = FALSE, type = 'abundance', ...) {
+
+  # Check for unused arguments ------------------------------------------
+  formal.args <- names(formals(sys.function(sys.parent())))
+  elip.args <- names(list(...))
+  for(i in elip.args){
+      if(! i %in% formal.args)
+          warning("'",i, "' is not an argument")
+  }
+  # Call ----------------------------------------------------------------
+  cl <- match.call()
+
+  # Functions ---------------------------------------------------------------
+  logit <- function(theta, a = 0, b = 1) {log((theta-a)/(b-theta))}
+  logit.inv <- function(z, a = 0, b = 1) {b-(b-a)/(1+exp(z))}
+
+  # Some initial checks ---------------------------------------------------
+  if (missing(object)) {
+    stop("error: predict expects object\n")
+  }
+  if (!(class(object) %in% c('sfMsNMix'))) {
+    stop("error: requires an output object of class sfMsNMix\n")
+  }
+  if (!(tolower(type) %in% c('abundance', 'detection'))) {
+    stop("error: prediction type must be either 'abundance' or 'detection'")
+  }
+
+  # Check X.0 -------------------------------------------------------------
+  if (missing(X.0)) {
+    stop("error: X.0 must be specified\n")
+  }
+  if (!any(is.data.frame(X.0), is.matrix(X.0))) {
+    stop("error: X.0 must be a data.frame or matrix\n")
+  }
+
+  ptm <- proc.time()
+
+  # Abundance predictions ------------------------------------------------
+  if (tolower(type == 'abundance')) {
+    n.post <- object$n.post * object$n.chains
+    X <- object$X
+    y <- object$y
+    coords <- object$coords
+    J <- nrow(X)
+    n.sp <- dim(y)[1]
+    q <- object$q
+    p.abund <- ncol(X)
+    theta.samples <- object$theta.samples
+    beta.samples <- object$beta.samples
+    lambda.samples <- object$lambda.samples
+    w.samples <- object$w.samples
+    kappa.samples <- object$kappa.samples
+    n.neighbors <- object$n.neighbors
+    cov.model.indx <- object$cov.model.indx
+    family <- object$dist
+    family.c <- ifelse(family == 'NB', 1, 0)
+    sp.type <- object$type
+    if (object$muRE & !ignore.RE) {
+      p.abund.re <- length(object$re.level.names)
+    } else {
+      p.abund.re <- 0
+    }
+    re.cols <- object$re.cols
+
+    if (ncol(X.0) != p.abund + p.abund.re){
+      stop(paste("error: X.0 must have ", p.abund + p.abund.re," columns\n"))
+    }
+    X.0 <- as.matrix(X.0)
+
+    if (missing(coords.0)) {
+      stop("error: coords.0 must be specified\n")
+    }
+    if (!any(is.data.frame(coords.0), is.matrix(coords.0))) {
+      stop("error: coords.0 must be a data.frame or matrix\n")
+    }
+    if (!ncol(coords.0) == 2){
+      stop("error: coords.0 must have two columns\n")
+    }
+    coords.0 <- as.matrix(coords.0)
+
+    # Eliminate prediction sites that have already been sampled for now
+    match.indx <- match(do.call("paste", as.data.frame(coords.0)), do.call("paste", as.data.frame(coords)))
+    coords.0.indx <- which(is.na(match.indx))
+    coords.indx <- match.indx[!is.na(match.indx)]
+    coords.place.indx <- which(!is.na(match.indx))
+    coords.0.new <- coords.0[coords.0.indx, , drop = FALSE]
+    X.0.new <- X.0[coords.0.indx, , drop = FALSE]
+
+    if (length(coords.indx) == nrow(X.0)) {
+      stop("error: no new locations to predict at. See object$mu.samples for expected abundances at sampled sites.")
+    }
+
+    if (object$muRE & !ignore.RE) {
+      beta.star.samples <- object$beta.star.samples
+      re.level.names <- object$re.level.names
+      # Get columns in design matrix with random effects
+      x.re.names <- colnames(object$X.re)
+      x.0.names <- colnames(X.0.new)
+      re.long.indx <- sapply(re.cols, length)
+      tmp <- sapply(x.re.names, function(a) which(colnames(X.0.new) %in% a))
+      indx <- list()
+      for (i in 1:length(tmp)) {
+        indx[[i]] <- rep(tmp[i], re.long.indx[i])
+      }
+      indx <- unlist(indx)
+      if (length(indx) == 0) {
+        stop("error: column names in X.0 must match variable names in data$abund.covs")
+      }
+      n.abund.re <- length(indx)
+      n.unique.abund.re <- length(unique(indx))
+      # Check RE columns
+      for (i in 1:n.abund.re) {
+        if (is.character(re.cols[[i]])) {
+          # Check if all column names in svc are in occ.covs
+          if (!all(re.cols[[i]] %in% x.0.names)) {
+              missing.cols <- re.cols[[i]][!(re.cols[[i]] %in% x.0.names)]
+              stop(paste("error: variable name ", paste(missing.cols, collapse=" and "), " not in abundance covariates", sep=""))
+          }
+          # Convert desired column names into the numeric column index
+          re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
+          
+        } else if (is.numeric(re.cols[[i]])) {
+          # Check if all column indices are in 1:p.abund
+          if (!all(re.cols %in% 1:p.abund)) {
+              missing.cols <- re.cols[[i]][!(re.cols[[i]] %in% (1:p.abund))]
+              stop(paste("error: column index ", paste(missing.cols, collapse=" "), " not in design matrix columns", sep=""))
+          }
+        }
+      }
+      re.cols <- unlist(re.cols)
+      X.re <- as.matrix(X.0.new[, indx, drop = FALSE])
+      X.fix <- as.matrix(X.0.new[, -indx, drop = FALSE])
+      X.random <- as.matrix(X.0.new[, re.cols, drop = FALSE])
+      n.abund.re <- length(unlist(re.level.names))
+      X.re.ind <- matrix(NA, nrow(X.re), p.abund.re)
+      for (i in 1:p.abund.re) {
+        for (j in 1:nrow(X.re)) {
+          tmp <- which(re.level.names[[i]] == X.re[j, i])
+          if (length(tmp) > 0) {
+            X.re.ind[j, i] <- tmp 
+          }
+        }
+      }
+      if (p.abund.re > 1) {
+        for (j in 2:p.abund.re) {
+          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+        }
+      }
+      # Create the random effects corresponding to each 
+      # new location
+      # ORDER: ordered by site, then species within site.
+      beta.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.re))
+      for (i in 1:n.sp) {
+        for (t in 1:p.abund.re) {
+          for (j in 1:nrow(X.re)) {
+            if (!is.na(X.re.ind[j, t])) {
+              beta.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
+                beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] + 
+                beta.star.sites.0.samples[, (j - 1) * n.sp + i]
+            } else {
+              beta.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
+                rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+                beta.star.sites.0.samples[, (j - 1) * n.sp + i]
+            }
+          } # j
+        } # t
+      } # i 
+    } else {
+      X.fix <- X.0.new
+      beta.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.0.new))
+      p.abund.re <- 0
+    }
+
+    # Sub-sample previous
+    theta.samples <- t(theta.samples)
+    lambda.samples <- t(lambda.samples)
+    beta.samples <- t(beta.samples)
+    if (family == 'NB') {
+      kappa.samples <- t(kappa.samples)
+    }
+    w.samples <- aperm(w.samples, c(2, 3, 1))
+    beta.star.sites.0.samples <- t(beta.star.sites.0.samples)
+
+    J.str <- nrow(X.0.new)
+
+    if (sp.type == 'GP') {
+      # Not currently implemented or accessed.
+    } else {
+      # Get nearest neighbors
+      # nn2 is a function from RANN.
+      nn.indx.0 <- nn2(coords, coords.0.new, k=n.neighbors)$nn.idx-1
+
+      storage.mode(coords) <- "double"
+      storage.mode(n.sp) <- "integer"
+      storage.mode(J) <- "integer"
+      storage.mode(p.abund) <- "integer"
+      storage.mode(n.neighbors) <- "integer"
+      storage.mode(X.fix) <- "double"
+      storage.mode(coords.0.new) <- "double"
+      storage.mode(J.str) <- "integer"
+      storage.mode(q) <- "integer"
+      storage.mode(beta.samples) <- "double"
+      storage.mode(theta.samples) <- "double"
+      storage.mode(lambda.samples) <- "double"
+      storage.mode(kappa.samples) <- "double"
+      storage.mode(beta.star.sites.0.samples) <- "double"
+      storage.mode(w.samples) <- "double"
+      storage.mode(n.post) <- "integer"
+      storage.mode(cov.model.indx) <- "integer"
+      storage.mode(nn.indx.0) <- "integer"
+      storage.mode(n.omp.threads) <- "integer"
+      storage.mode(verbose) <- "integer"
+      storage.mode(n.report) <- "integer"
+      storage.mode(family.c) <- "integer"
+
+      out <- .Call("sfMsNMixNNGPPredict", coords, J, family.c, 
+		   n.sp, q, p.abund, n.neighbors,
+                   X.fix, coords.0.new, J.str, nn.indx.0, beta.samples,
+                   theta.samples, kappa.samples, lambda.samples, w.samples,
+          	   beta.star.sites.0.samples, n.post,
+                   cov.model.indx, n.omp.threads, verbose, n.report)
+    }
+    out$N.0.samples <- array(out$N.0.samples, dim = c(n.sp, J.str, n.post))
+    out$N.0.samples <- aperm(out$N.0.samples, c(3, 1, 2))
+    out$w.0.samples <- array(out$w.0.samples, dim = c(q, J.str, n.post))
+    out$w.0.samples <- aperm(out$w.0.samples, c(3, 1, 2))
+    out$mu.0.samples <- array(out$mu.0.samples, dim = c(n.sp, J.str, n.post))
+    out$mu.0.samples <- aperm(out$mu.0.samples, c(3, 1, 2))
+
+    # If some of the sites are sampled
+    if (nrow(X.0) != J.str) {
+      tmp <- array(NA, dim = c(n.post, n.sp, nrow(X.0)))
+      tmp[, , coords.0.indx] <- out$N.0.samples
+      tmp[, , coords.place.indx] <- object$N.samples[, , coords.indx]
+      out$N.0.samples <- tmp
+      tmp <- array(NA, dim = c(n.post, n.sp, nrow(X.0)))
+      tmp[, , coords.0.indx] <- out$mu.0.samples
+      tmp[, , coords.place.indx] <- object$mu.samples[, , coords.indx]
+      out$mu.0.samples <- tmp
+      tmp <- array(NA, dim = c(n.post, q, nrow(X.0)))
+      tmp[, , coords.0.indx] <- out$w.0.samples
+      tmp[, , coords.place.indx] <- object$w.samples[, , coords.indx]
+      out$w.0.samples <- tmp
+    }
+  } # occurrence predictions
+  # Detection predictions -------------------------------------------------
+  if (tolower(type) == 'detection') {
+    out <- predict.msNMix(object, X.0, ignore.RE, type)
+  }
+
+  out$run.time <- proc.time() - ptm
+  out$call <- cl
+  out$object.class <- class(object)
+
+  class(out) <- "predict.sfMsNMix"
+
+  out
+
+}
+
+# lfMsNMix ----------------------------------------------------------------
+print.lfMsNMix <- function(x, ...) {
+  cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)),
+      "", sep = "\n")
+}
+
+summary.lfMsNMix <- function(object,
+			     level = 'both',
+			     quantiles = c(0.025, 0.5, 0.975),
+			     digits = max(3L, getOption("digits") - 3L), ...) {
+  summary.msNMix(object, level, quantiles, digits)
+}
+
+fitted.lfMsNMix <- function(object, ...) {
+  fitted.msNMix(object)
+}
+predict.lfMsNMix <- function(object, X.0, coords.0, ignore.RE = FALSE, 
+			  type = 'abundance', ...) {
+  # Check for unused arguments ------------------------------------------
+  formal.args <- names(formals(sys.function(sys.parent())))
+  elip.args <- names(list(...))
+  for(i in elip.args){
+      if(! i %in% formal.args)
+          warning("'",i, "' is not an argument")
+  }
+  # Call ----------------------------------------------------------------
+  cl <- match.call()
+
+  # Functions ---------------------------------------------------------------
+  logit <- function(theta, a = 0, b = 1) {log((theta-a)/(b-theta))}
+  logit.inv <- function(z, a = 0, b = 1) {b-(b-a)/(1+exp(z))}
+
+  # Some initial checks ---------------------------------------------------
+  if (missing(object)) {
+    stop("error: predict expects object\n")
+  }
+
+  if (!(tolower(type) %in% c('abundance', 'detection'))) {
+    stop("error: prediction type must be either 'abundance' or 'detection'")
+  }
+
+  # Check X.0 -------------------------------------------------------------
+  if (missing(X.0)) {
+    stop("error: X.0 must be specified\n")
+  }
+  if (!any(is.data.frame(X.0), is.matrix(X.0))) {
+    stop("error: X.0 must be a data.frame or matrix\n")
+  }
+
+  # Abundance predictions ------------------------------------------------
+  if (tolower(type) == 'abundance') {
+    p.abund <- ncol(object$X)
+    # Composition sampling --------------------------------------------------
+    beta.samples <- as.matrix(object$beta.samples)
+    if (object$dist == 'NB') {
+      kappa.samples <- as.matrix(object$kappa.samples)
+    }
+    n.sp <- nrow(object$y)
+    J.0 <- nrow(X.0)
+    q <- object$q
+    sp.indx <- rep(1:n.sp, p.abund)
+    n.post <- object$n.post * object$n.chains
+    out <- list()
+    coords <- out$coords
+    out$mu.0.samples <- array(NA, dim = c(n.post, n.sp, nrow(X.0)))
+    out$N.0.samples <- array(NA, dim = c(n.post, n.sp, nrow(X.0)))
+    lambda.samples <- array(object$lambda.samples, dim = c(n.post, n.sp, q))
+    w.samples <- object$w.samples
+    if (object$muRE) {
+      p.abund.re <- length(object$re.level.names)
+    } else {
+      p.abund.re <- 0
+    }
+    re.cols <- object$re.cols
+
+    # Eliminate prediction sites that have already been sampled for now
+    match.indx <- match(do.call("paste", as.data.frame(coords.0)), 
+          	      do.call("paste", as.data.frame(coords)))
+    coords.0.indx <- which(is.na(match.indx))
+    coords.indx <- match.indx[!is.na(match.indx)]
+    coords.place.indx <- which(!is.na(match.indx))
+    coords.0.new <- coords.0[coords.0.indx, , drop = FALSE]
+    X.0.new <- X.0[coords.0.indx, , drop = FALSE]
+
+    if (length(coords.indx) == nrow(X.0)) {
+      stop("error: no new locations to predict at. See object$psi.samples for occurrence probabilities at sampled sites.")
+    }
+
+    if (object$muRE & !ignore.RE) {
+      beta.star.samples <- object$beta.star.samples
+      re.level.names <- object$re.level.names
+      # Get columns in design matrix with random effects
+      x.re.names <- colnames(object$X.re)
+      x.0.names <- colnames(X.0)
+      re.long.indx <- sapply(re.cols, length)
+      tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
+      indx <- list()
+      for (i in 1:length(tmp)) {
+        indx[[i]] <- rep(tmp[i], re.long.indx[i])
+      }
+      indx <- unlist(indx)
+      if (length(indx) == 0) {
+        stop("error: column names in X.0 must match variable names in data$abund.covs")
+      }
+      n.abund.re <- length(indx)
+      n.unique.abund.re <- length(unique(indx))
+      # Check RE columns
+      for (i in 1:n.abund.re) {
+        if (is.character(re.cols[[i]])) {
+          # Check if all column names in svc are in occ.covs
+          if (!all(re.cols[[i]] %in% x.0.names)) {
+              missing.cols <- re.cols[[i]][!(re.cols[[i]] %in% x.0.names)]
+              stop(paste("error: variable name ", paste(missing.cols, collapse=" and "), " not in abundance covariates", sep=""))
+          }
+          # Convert desired column names into the numeric column index
+          re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
+          
+        } else if (is.numeric(re.cols[[i]])) {
+          # Check if all column indices are in 1:p.abund
+          if (!all(re.cols %in% 1:p.abund)) {
+              missing.cols <- re.cols[[i]][!(re.cols[[i]] %in% (1:p.abund))]
+              stop(paste("error: column index ", paste(missing.cols, collapse=" "), " not in design matrix columns", sep=""))
+          }
+        }
+      }
+      re.cols <- unlist(re.cols)
+      X.re <- as.matrix(X.0[, indx, drop = FALSE])
+      X.fix <- as.matrix(X.0[, -indx, drop = FALSE])
+      X.random <- as.matrix(X.0[, re.cols, drop = FALSE])
+      n.abund.re <- length(unlist(re.level.names))
+      X.re.ind <- matrix(NA, nrow(X.re), p.abund.re)
+      for (i in 1:p.abund.re) {
+        for (j in 1:nrow(X.re)) {
+          tmp <- which(re.level.names[[i]] == X.re[j, i])
+          if (length(tmp) > 0) {
+            X.re.ind[j, i] <- tmp 
+          }
+        }
+      }
+      if (p.abund.re > 1) {
+        for (j in 2:p.abund.re) {
+          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+        }
+      }
+      # Create the random effects corresponding to each 
+      # new location
+      # ORDER: ordered by site, then species within site.
+      beta.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.re))
+      for (i in 1:n.sp) {
+        for (t in 1:p.abund.re) {
+          for (j in 1:nrow(X.re)) {
+            if (!is.na(X.re.ind[j, t])) {
+              beta.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
+                beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] + 
+                beta.star.sites.0.samples[, (j - 1) * n.sp + i]
+            } else {
+              beta.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
+                rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+                beta.star.sites.0.samples[, (j - 1) * n.sp + i]
+            }
+          } # j
+        } # t
+      } # i 
+    } else {
+      X.fix <- X.0
+      beta.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.0))
+      p.abund.re <- 0
+    }
+    J.str <- nrow(X.0.new)
+    # Create new random normal latent factors at unobserved sites. 
+    w.0.samples <- array(rnorm(n.post * q * J.str), dim = c(n.post, q, J.str))
+    w.star.0.samples <- array(NA, dim = c(n.post, n.sp, J.str))
+
+    for (i in 1:n.post) {
+      w.star.0.samples[i, , ] <- matrix(lambda.samples[i, , ], n.sp, q) %*%
+                               matrix(w.0.samples[i, , ], q, J.str)
+    }
+    # Make predictions
+    for (i in 1:n.sp) {
+      for (j in 1:J.str) {
+        out$mu.0.samples[, i, j] <- exp(t(as.matrix(X.fix[j, ])) %*% 
+          				     t(beta.samples[, sp.indx == i]) + 
+					     w.star.0.samples[, i, j] + 
+                                               beta.star.sites.0.samples[, (j - 1) * n.sp + i])
+        if (object$dist == 'NB') {
+          out$N.0.samples[, i, j] <- rnbinom(n.post, kappa.samples[, i], 
+					     mu = out$mu.0.samples[, i, j])
+	} else {
+          out$N.0.samples[, i, j] <- rpois(n.post, out$mu.0.samples[, i, j]) 
+	}
+      } # j
+    } # i
+
+    # If some of the sites are sampled
+    if (nrow(X.0) != J.str) {
+      tmp <- array(NA, dim = c(n.post, n.sp, nrow(X.0)))
+      tmp[, , coords.0.indx] <- out$N.0.samples
+      tmp[, , coords.place.indx] <- object$N.samples[, , coords.indx]
+      out$N.0.samples <- tmp
+      tmp <- array(NA, dim = c(n.post, n.sp, nrow(X.0)))
+      tmp[, , coords.0.indx] <- out$mu.0.samples
+      tmp[, , coords.place.indx] <- object$mu.samples[, , coords.indx]
+      out$mu.0.samples <- tmp
+    }
+  } # abundance predictions
+  # Detection predictions -------------------------------------------------
+  if (tolower(type) == 'detection') {
+    out <- predict.msNMix(object, X.0, ignore.RE, type)
+  }
+  out$call <- cl
+
+  class(out) <- "predict.lfMsNMix"
+  out
+}
 # DS ----------------------------------------------------------------------
+print.DS <- function(x, ...) {
+  cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)),
+      "", sep = "\n")
+}
 summary.DS <- function(object,
                        quantiles = c(0.025, 0.5, 0.975),
                        digits = max(3L, getOption("digits") - 3L), ...) {
