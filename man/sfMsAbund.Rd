@@ -22,16 +22,16 @@ sfMsAbund(formula, data, inits, priors,
   \item{formula}{a symbolic description of the model to be fit
   for the model using R's model syntax. Only
   right-hand side of formula is specified. See example below. Random intercepts
-  are allowed using lme4 syntax (Bates et al. 2015).}
+  and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
   \item{data}{a list containing data necessary for model fitting.
-    Valid tags are \code{y}, \code{abund.covs}, \code{coords}. 
+    Valid tags are \code{y}, \code{covs}, \code{coords}. 
     \code{y} is a two or three-dimensional array of observed count data. The
     first dimension of the array is equal to the 
     number of species and the second dimension is equal to the number of sites. If
     specified as a three-dimensional array, the third dimension corresponds to 
     replicate observations at each site (e.g., sub-samples, repeated sampling 
-    over multiple seasons). \code{abund.covs} is a list 
+    over multiple seasons). \code{covs} is a list 
     containing the variables used in the model. Each list element is a different
     covariate, which can be site-level or observation-level. Site-level covariates
     are specified as a vector of length \eqn{J}{J}, while observation-level covariates
@@ -100,8 +100,8 @@ sfMsAbund(formula, data, inits, priors,
 
 \item{tuning}{a single numeric value representing the initial variance of the
   adaptive sampler for \code{beta}, \code{alpha}, \code{beta.star} (the abundance 
-  random effect values), \code{alpha.star} (the detection random effect values), 
-  \code{kappa}, \code{phi}, \code{lambda}. See Roberts and Rosenthal (2009) for details.}
+  random effect values), \code{kappa}, \code{phi}, \code{lambda}. 
+  See Roberts and Rosenthal (2009) for details.}
 
   \item{cov.model}{a quoted keyword that specifies the covariance
     function used to model the spatial dependence structure among the
@@ -137,7 +137,7 @@ sfMsAbund(formula, data, inits, priors,
     Typically, the number of factors is set to be small (e.g., 4-5) relative to the 
     total number of species in the community, which will lead to substantial 
     decreases in computation time. However, the value can be anywhere 
-    between 1 and I (the number of species in the community).}
+    between 1 and the number of species in the modeled community.}
 
   \item{n.batch}{the number of MCMC batches  in each chain to run for the Adaptive MCMC 
     sampler. See Roberts and Rosenthal (2009) for details.}
@@ -148,7 +148,7 @@ sfMsAbund(formula, data, inits, priors,
   \item{accept.rate}{target acceptance rate for Adaptive MCMC. Defaul is 
     0.43. See Roberts and Rosenthal (2009) for details.}
 
-  \item{family}{the distribution to use for the latent abundance process. Currently 
+  \item{family}{the distribution to use for the abundance. Currently 
     supports \code{'NB'} (negative binomial) and \code{'Poisson'}.}
   
   \item{n.omp.threads}{a positive integer indicating
@@ -182,8 +182,8 @@ sfMsAbund(formula, data, inits, priors,
     partitioned into \emph{k} equal sized subsamples. Of the \emph{k} subsamples, 
     \emph{k} - 1 subsamples are used to fit the model and the remaining \emph{k}
     samples are used for prediction. The cross-validation process is repeated 
-    \emph{k} times (the folds). As a scoring rule, we use the model deviance 
-    as described in Hooten and Hobbs (2015). Cross-validation is performed
+    \emph{k} times (the folds). As a scoring rule, we use the root mean 
+    squared prediction error. Cross-validation is performed
     after the full model is fit using all the data. Cross-validation results
     are reported in the \code{k.fold.deviance} object in the return list.}
   
@@ -202,13 +202,6 @@ sfMsAbund(formula, data, inits, priors,
   \item{...}{currently no additional arguments}
 }
 
-\note{
- Some of the underlying code used for generating random numbers from the
- Polya-Gamma distribution is taken from the \pkg{pgdraw} package written
- by Daniel F. Schmidt and Enes Makalic. Their code implements Algorithm
- 6 in PhD thesis of Jesse Bennett Windle (2013) \url{https://repositories.lib.utexas.edu/handle/2152/21842}.
-}
-
 \references{
   Datta, A., S. Banerjee, A.O. Finley, and A.E. Gelfand. (2016)
   Hierarchical Nearest-Neighbor Gaussian process models for large
@@ -220,22 +213,12 @@ sfMsAbund(formula, data, inits, priors,
   Gaussian Processes. \emph{Journal of Computational and Graphical
     Statistics}, \doi{10.1080/10618600.2018.1537924}.
 
-  Finley, A. O., Datta, A., and Banerjee, S. (2020). spNNGP R package 
-  for nearest neighbor Gaussian process models. \emph{arXiv} preprint arXiv:2001.09111.
-
-  Polson, N.G., J.G. Scott, and J. Windle. (2013) Bayesian Inference for
-  Logistic Models Using Polya-Gamma Latent Variables.
-  \emph{Journal of the American Statistical Association}, 108:1339-1349.
-
   Roberts, G.O. and Rosenthal J.S. (2009) Examples  of adaptive MCMC.
   \emph{Journal of Computational and Graphical Statistics}, 18(2):349-367.
 
   Bates, Douglas, Martin Maechler, Ben Bolker, Steve Walker (2015).
   Fitting Linear Mixed-Effects Models Using lme4. Journal of
   Statistical Software, 67(1), 1-48. \doi{10.18637/jss.v067.i01}.
-
-  Hooten, M. B., and Hobbs, N. T. (2015). A guide to Bayesian model 
-  selection for ecologists. \emph{Ecological Monographs}, 85(1), 3-28.
 
   Christensen, W. F., and Amemiya, Y. (2002). Latent variable analysis 
   of multivariate spatial data. \emph{Journal of the American Statistical Association}, 
@@ -282,12 +265,12 @@ sfMsAbund(formula, data, inits, priors,
     the latent spatial random effects for each latent factor.}
 
   \item{sigma.sq.mu.samples}{a \code{coda} object of posterior samples
-    for variances of random intercepts included in the abundance portion
-    of the model. Only included if random intercepts are specified in 
+    for variances of random effects included in the abundance portion
+    of the model. Only included if random effects are specified in 
     \code{abund.formula}.}
 
   \item{beta.star.samples}{a \code{coda} object of posterior samples
-    for the abundance random effects. Only included if random intercepts
+    for the abundance random effects. Only included if random effects 
     are specified in \code{abund.formula}.}
 
   \item{like.samples}{a three-dimensional array of posterior samples
@@ -301,14 +284,12 @@ sfMsAbund(formula, data, inits, priors,
 
   \item{run.time}{MCMC sampler execution time reported using \code{proc.time()}.}
 
-  \item{k.fold.deviance}{vector of scoring rules (deviance) from k-fold cross-validation. 
-    A separate value is reported for each species. 
+  \item{rmspe}{vector of scoring rules (root mean squared prediction error) 
+    from k-fold cross-validation. A separate value is reported for each species. 
     Only included if \code{k.fold} is specified in function call.}
 
   The return object will include additional objects used for 
-  subsequent prediction and/or model fit evaluation. Note that detection 
-  probability estimated values are not included in the model object, but can
-  be extracted using \code{fitted()}.
+  subsequent prediction and/or model fit evaluation. 
 }
 
 \examples{
@@ -347,12 +328,12 @@ X.re <- dat$X.re
 coords <- dat$coords
 
 # Package all data into a list
-abund.covs <- list(int = X[, , 1],
+covs <- list(int = X[, , 1],
 		   abund.cov.1 = X[, , 2],
 		   abund.factor.1 = X.re[, , 1],
 		   abund.factor.2 = X.re[, , 2])
 data.list <- list(y = y,
-		  covs = abund.covs,
+		  covs = covs,
                   coords = coords)
 prior.list <- list(beta.comm.normal = list(mean = 0, var = 100),
                    kappa.unif = list(a = 0, b = 10),
@@ -387,5 +368,6 @@ out <- sfMsAbund(formula = ~ abund.cov.1 + (1 | abund.factor.1) + (1 | abund.fac
 	         n.burn = n.burn,
 	         n.thin = n.thin,
 	         n.chains = n.chains)
+summary(out)
 
 }

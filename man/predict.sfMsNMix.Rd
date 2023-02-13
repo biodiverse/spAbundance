@@ -47,6 +47,7 @@
 
 \author{
   Jeffrey W. Doser \email{doserjef@msu.edu}, \cr
+  Andrew O. Finley \email{finleya@msu.edu}
 }
 
 \value{

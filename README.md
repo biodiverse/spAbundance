@@ -46,11 +46,13 @@ updated as new functionality is included
 | `abund()`              | *stable* Single-species abundance GLM                                    |
 | `spAbund()`            | *stable* Single-species spatial abundance GLM                            |
 | `msAbund()`            | *stable* Multi-species abundance GLM                                     |
-| `sfMsAbund()`          | *experimental* Multi-species spatial abundance GLM                       |
+| `lfMsAbund()`          | *stable* Multi-species abundance GLM with species correlations           |
+| `sfMsAbund()`          | *stable* Multi-species spatial abundance GLM with species correlations   |
 | `ppcAbund()`           | *stable* Posterior predictive check using Bayesian p-values              |
 | `waicAbund()`          | *stable* Calculate Widely Applicable Information Criterion (WAIC)        |
 | `simNMix()`            | *stable* Simulate single-species repeated count data                     |
 | `simAbund()`           | *stable* Simulate single-species count data                              |
+| `simMsAbund()`         | *stable* Simulate multi-species count data                               |
 | `simMsNMix()`          | *stable* Simulate multi-species repeated count data                      |
 | `simDS()`              | *experimental* Simulate single-species distance sampling data            |
 
@@ -62,7 +64,7 @@ distributions for the abundance portion of the model.
   - [x] Single-species and multi-species spatial and non-spatial
     N-mixture models with Poisson and Negative Binomial distributions
     for latent abundance.
-  - [ ] Single-species and multi-species spatial and non-spatial
+  - [x] Single-species and multi-species spatial and non-spatial
     abundance GLMS without imperfect detection with Poisson and Negative
     Binomial likelihoods.
   - [ ] Single-species and multi-species spatial and non-spatial

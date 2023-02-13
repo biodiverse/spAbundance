@@ -17,7 +17,7 @@
 
   \item{X.0}{the design matrix of covariates at the prediction locations. This should include a column of 1s for the intercept if an intercept is included in the model. If random effects are included in the abundance (or detection if \code{type = 'detection'}) portion of the model, the levels of the random effects at the new locations should be included as a column in the design matrix. The ordering of the levels should match the ordering used to fit the data in \code{spNMix}. Columns should correspond to the order of how covariates were specified in the corresponding formula argument of \code{spNMix}. Column names of all variables must match the names of variables used when fitting the model (for the intercept, use \code{'(Intercept)'}).}
 
-  \item{coords.0}{the spatial coordinates corresponding to \code{X.0}. Note that \code{spOccupancy} assumes coordinates are specified 
+  \item{coords.0}{the spatial coordinates corresponding to \code{X.0}. Note that \code{spAbundance} assumes coordinates are specified 
   in a projected coordinate system.}
 
    \item{n.omp.threads}{a positive integer indicating

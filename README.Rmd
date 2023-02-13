@@ -49,12 +49,14 @@ Below is a running list of currently implemented functionality, along with each 
 |`abund()`          | *stable* Single-species abundance GLM                                     |
 |`spAbund()`        | *stable* Single-species spatial abundance GLM                             |
 |`msAbund()`        | *stable* Multi-species abundance GLM                                      |
-|`sfMsAbund()`      | *experimental* Multi-species spatial abundance GLM                        |
+|`lfMsAbund()`      | *stable* Multi-species abundance GLM with species correlations            |
+|`sfMsAbund()`      | *stable* Multi-species spatial abundance GLM with species correlations    |
 |`ppcAbund()`       | *stable* Posterior predictive check using Bayesian p-values               | 
 |`waicAbund()`      | *stable* Calculate Widely Applicable Information Criterion (WAIC)         |
 |`simNMix()`        | *stable* Simulate single-species repeated count data                      |
 |`simAbund()`       | *stable* Simulate single-species count data                               |
-| `simMsNMix()`     | *stable* Simulate multi-species repeated count data                       |
+|`simMsAbund()`     | *stable* Simulate multi-species count data                                |
+|`simMsNMix()`      | *stable* Simulate multi-species repeated count data                       |
 |`simDS()`          | *experimental* Simulate single-species distance sampling data             |
 
 All model fitting functions allow for Poisson and negative binomial distributions for the abundance portion of the model. 
@@ -62,7 +64,7 @@ All model fitting functions allow for Poisson and negative binomial distribution
 ## Functionality to be included prior to first release on CRAN
 
 - [x] Single-species and multi-species spatial and non-spatial N-mixture models with Poisson and Negative Binomial distributions for latent abundance.
-- [ ] Single-species and multi-species spatial and non-spatial abundance GLMS without imperfect detection with Poisson and Negative Binomial likelihoods.
+- [x] Single-species and multi-species spatial and non-spatial abundance GLMS without imperfect detection with Poisson and Negative Binomial likelihoods.
 - [ ] Single-species and multi-species spatial and non-spatial distance sampling models with Poisson and Negative Binomial distributions for latent abundance.
 - [x] Posterior predcitve checks for all model types.
 - [ ] Simulation functions for all model types.

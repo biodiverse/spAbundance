@@ -2,7 +2,8 @@ lfMsAbund <- function(formula, data, inits, priors,
                       tuning, n.factors, n.batch, batch.length, 
 		      accept.rate = 0.43, family = 'Poisson',
                       n.omp.threads = 1, verbose = TRUE, n.report = 100, 
-                      n.burn = round(.10 * n.samples), n.thin = 1, n.chains = 1,
+                      n.burn = round(.10 * n.batch * batch.length), 
+		      n.thin = 1, n.chains = 1,
                       k.fold, k.fold.threads = 1, k.fold.seed = 100, 
                       k.fold.only = FALSE, ...){
 

@@ -22,14 +22,14 @@ abund(formula, data, inits, priors, tuning,
   and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
 \item{data}{a list containing data necessary for model fitting.
-  Valid tags are \code{y} and \code{abund.covs}. \code{y}
+  Valid tags are \code{y} and \code{covs}. \code{y}
   is a vector, matrix, or data frame of the observed count values. If a vector, 
   the values represent the observed counts at each site. If multiple replicate
   observations are obtained at the sites (e.g., sub-samples, repeated sampling over
   multiple seasons), \code{y} can be specified as a matrix or data frame 
   with first dimension equal to the number of 
   sites (\eqn{J}{J}) and second dimension equal to the maximum number of 
-  replicates at a given site. \code{abund.covs} is a list 
+  replicates at a given site. \code{covs} is a list 
   containing the variables used in the model. Each list element is a different
   covariate, which can be site-level or observation-level. Site-level covariates
   are specified as a vector of length \eqn{J}{J}, while observation-level covariates
@@ -69,9 +69,10 @@ abund(formula, data, inits, priors, tuning,
   vectors of length equal to the number of random intercepts or of length one 
   if priors are the same for all random effect variances.}
 
-\item{tuning}{a single numeric value representing the initial tuning variance of the
-  adaptive sampler for \code{kappa}, the negative binomial dispersion parameter. 
-  name. See Roberts and Rosenthal (2009) for details.}
+\item{tuning}{a list with each tag corresponding to a parameter name, whose
+  whose value defines the initial variance of the adaptive sampler.
+  Valid tags are \code{beta}, \code{beta.star} (the abundance
+  random effect values), and \code{kappa}. See Roberts and Rosenthal (2009) for details.}
 
 \item{n.batch}{the number of MCMC batches in each chain to run for the Adaptive MCMC 
   sampler. See Roberts and Rosenthal (2009) for details.}
@@ -90,7 +91,7 @@ abund(formula, data, inits, priors, tuning,
   OpenMP support. For most Intel-based machines, we recommend setting 
   \code{n.omp.threads} up to the number of hypterthreaded cores. Note, 
   \code{n.omp.threads} > 1 might not work on some systems. Currently only 
-  relevant for spatial models.}
+  relevant for spatially-explicit models.}
 
 \item{verbose}{if \code{TRUE}, messages about data preparation, 
   model specification, and progress of the sampler are printed to the screen. 
@@ -114,10 +115,10 @@ abund(formula, data, inits, priors, tuning,
   partitioned into \emph{k} equal sized subsamples. Of the \emph{k} subsamples, 
   \emph{k} - 1 subsamples are used to fit the model and the remaining \emph{k}
   samples are used for prediction. The cross-validation process is repeated 
-  \emph{k} times (the folds). As a scoring rule, we use the model deviance 
-  as described in Hooten and Hobbs (2015). Cross-validation is performed
+  \emph{k} times (the folds). As a scoring rule, we use root mean
+  squared prediction error. Cross-validation is performed
   after the full model is fit using all the data. Cross-validation results
-  are reported in the \code{k.fold.deviance} object in the return list.}
+  are reported in the \code{rmspe} object in the return list.}
 
 \item{k.fold.threads}{number of threads to use for cross-validation. If 
   \code{k.fold.threads > 1} parallel processing is accomplished using the 
@@ -134,28 +135,16 @@ abund(formula, data, inits, priors, tuning,
 \item{...}{currently no additional arguments}
 }
 
-\note{
- Some of the underlying code used for generating random numbers from the
- Polya-Gamma distribution is taken from the \pkg{pgdraw} package written
- by Daniel F. Schmidt and Enes Makalic. Their code implements Algorithm
- 6 in PhD thesis of Jesse Bennett Windle (2013) \url{https://repositories.lib.utexas.edu/handle/2152/21842}.
-}
-
 \references{
 
   Bates, Douglas, Martin Maechler, Ben Bolker, Steve Walker (2015).
   Fitting Linear Mixed-Effects Models Using lme4. Journal of
   Statistical Software, 67(1), 1-48. \doi{10.18637/jss.v067.i01}.
 
-  Polson, N.G., J.G. Scott, and J. Windle. (2013) Bayesian Inference for
-  Logistic Models Using Polya-Gamma Latent Variables. 
-  \emph{Journal of the American Statistical Association}, 108:1339-1349.
-
 }
 
 \author{
   Jeffrey W. Doser \email{doserjef@msu.edu}, \cr
-  Andrew O. Finley \email{finleya@msu.edu}
 }
 
 \value{
@@ -177,12 +166,11 @@ abund(formula, data, inits, priors, tuning,
     to MCMC samples, site, and replicate.}
 
   \item{sigma.sq.mu.samples}{a \code{coda} object of posterior samples
-    for variances of random intercepts included in the abundance portion
-    of the model. Only included if random intercepts are specified in 
-    \code{formula}.}
+    for variances of random effects included in the model. 
+    Only included if random effects are specified in \code{formula}.}
 
   \item{beta.star.samples}{a \code{coda} object of posterior samples
-    for the random effects. Only included if random intercepts
+    for the random effects. Only included if random effects 
     are specified in \code{formula}.}
 
   \item{like.samples}{a \code{coda} object of posterior samples
@@ -196,13 +184,11 @@ abund(formula, data, inits, priors, tuning,
 
   \item{run.time}{execution time reported using \code{proc.time()}.}
 
-  \item{k.fold.deviance}{scoring rule (deviance) from k-fold cross-validation. 
+  \item{rmspe}{scoring rule (root mean squared prediction errror) from k-fold cross-validation. 
     Only included if \code{k.fold} is specified in function call.}
 
   The return object will include additional objects used for 
-  subsequent prediction and/or model fit evaluation. Note that detection
-  probability estimated values are not included in the model object, but can be 
-  extracted using \code{fitted()}. 
+  subsequent prediction and/or model fit evaluation.
 
 }
 
@@ -226,14 +212,14 @@ y <- dat$y
 X <- dat$X
 X.re <- dat$X.re
 
-abund.covs <- list(int = X[, , 1], 
+covs <- list(int = X[, , 1], 
 		   abund.cov.1 = X[, , 2], 
 		   abund.cov.2 = X[, , 3], 
 		   abund.cov.3 = X[, , 4],
 		   abund.factor.1 = X.re[, , 1])
 
 data.list <- list(y = y, 
-		  covs = abund.covs)
+		  covs = covs)
 
 # Priors
 prior.list <- list(beta.normal = list(mean = 0, var = 100),
@@ -263,4 +249,5 @@ out <- abund(formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3 + (1 | abund.fa
 	     n.burn = n.burn,
 	     n.thin = n.thin,
 	     n.chains = n.chains) 
+summary(out)
 }

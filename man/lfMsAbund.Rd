@@ -1,18 +1,20 @@
-\name{msAbund}
-\alias{msAbund}
-\title{Function for Fitting Multi-Species Abundance GLMs}
+\name{lfMsAbund}
+\alias{lfMsAbund}
+\title{Function for Fitting Latent Factor Multi-Species Abundance GLMs}
 
 \description{
-  The function \code{msAbund} fits multi-species abundance GLMs. 
+  Function for fitting multi-species generalized linear (mixed) models with species
+  correlations (i.e., an abundance-based joint species distribution model). We 
+  use a factor modeling approach for dimension reduction.
 }
 
 \usage{
-msAbund(formula, data, inits, priors, tuning, 
-        n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
-	n.omp.threads = 1, verbose = TRUE, n.report = 100, 
-        n.burn = round(.10 * n.batch * batch.length), n.thin = 1, n.chains = 1,
-        k.fold, k.fold.threads = 1, k.fold.seed = 100, 
-        k.fold.only = FALSE, ...)
+lfMsAbund(formula, data, inits, priors, tuning, n.factors,
+          n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
+          n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+          n.burn = round(.10 * n.batch * batch.length), n.thin = 1, n.chains = 1,
+          k.fold, k.fold.threads = 1, k.fold.seed = 100, 
+          k.fold.only = FALSE, ...)
 }
 
 \arguments{
@@ -23,7 +25,7 @@ msAbund(formula, data, inits, priors, tuning,
   and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
   \item{data}{a list containing data necessary for model fitting.
-    Valid tags are \code{y} and \code{covs}. 
+    Valid tags are \code{y}, \code{covs}, and \code{coords}. 
     \code{y} is a two or three-dimensional array of observed count data. The
     first dimension of the array is equal to the 
     number of species and the second dimension is equal to the number of sites. If
@@ -35,11 +37,14 @@ msAbund(formula, data, inits, priors, tuning,
     are specified as a vector of length \eqn{J}{J}, while observation-level covariates
     are specified as a matrix or data frame with the number of rows equal to \eqn{J}{J}
     and number of columns equal to the maximum number of replicate observations at a 
-    given site.}
+    given site. \code{coords} is a matrix or data frame with two 
+    columns that contain the spatial coordinates of each 
+    site. Note that \code{spAbundance} assumes coordinates are specified 
+    in a projected coordinate system.}
 
   \item{inits}{a list with each tag corresponding to a parameter name.
     Valid tags are \code{beta.comm}, \code{beta}, 
-    \code{tau.sq.beta}, \code{sigma.sq.mu}, and \code{kappa}. 
+    \code{tau.sq.beta}, \code{sigma.sq.mu}, \code{kappa}, \code{lambda}, and \code{w}. 
     \code{kappa} is only specified if \code{family = 'NB'}
     and \code{sigma.sq.mu} is only specified if random effects are included in \code{formula}. 
     The value portion of each tag is 
@@ -83,7 +88,14 @@ msAbund(formula, data, inits, priors, tuning,
 \item{tuning}{a list with each tag corresponding to a parameter name, whose
   whose value defines the initial variance of the adaptive sampler.
   Valid tags are \code{beta}, \code{beta.star} (the abundance
-  random effect values), and \code{kappa}. See Roberts and Rosenthal (2009) for details.}
+  random effect values), \code{kappa}, \code{lambda} (the latent factor loadings), 
+  and \code{w} (the latent factors). See Roberts and Rosenthal (2009) for details.}
+
+\item{n.factors}{the number of factors to use in the latent factor model approach.
+    Typically, the number of factors is set to be small (e.g., 4-5) relative to the
+    total number of species in the community, which will lead to substantial
+    decreases in computation time. However, the value can be anywhere
+    between 1 and N (the number of species in the community).}
 
   \item{n.batch}{the number of MCMC batches  in each chain to run for the Adaptive MCMC 
     sampler. See Roberts and Rosenthal (2009) for details.}
@@ -162,7 +174,7 @@ msAbund(formula, data, inits, priors, tuning,
 }
 
 \value{
-  An object of class \code{msAbund} that is a list comprised of: 
+  An object of class \code{lfMsAbund} that is a list comprised of: 
 
   \item{beta.comm.samples}{a \code{coda} object of posterior samples
     for the community level regression coefficients.}
@@ -176,6 +188,12 @@ msAbund(formula, data, inits, priors, tuning,
   \item{kappa.samples}{a \code{coda} object of posterior samples
     for the species level abundance dispersion parameters. Only included
     when \code{family = 'NB'}.}
+
+  \item{lambda.samples}{a \code{coda} object of posterior samples
+    for the latent factor loadings.}
+
+  \item{w.samples}{a three-dimensional array of posterior samples for 
+    the latent effects for each latent factor.}
 
   \item{y.rep.samples}{a four-dimensional array of posterior samples for
     the fitted (replicate) values for each species with dimensions corresponding
@@ -234,6 +252,8 @@ for (i in 1:p.abund) {
 }
 sp <- FALSE
 kappa <- runif(n.sp, 0.1, 1)
+factor.model <- TRUE
+n.factors <- 3
 
 dat <- simMsAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta,
 	          mu.RE = mu.RE, sp = sp, kappa = kappa, family = 'NB')
@@ -241,6 +261,7 @@ dat <- simMsAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta,
 y <- dat$y
 X <- dat$X
 X.re <- dat$X.re
+coords <- dat$coords
 
 # Package all data into a list
 covs <- list(int = X[, , 1],
@@ -248,7 +269,8 @@ covs <- list(int = X[, , 1],
 		   abund.factor.1 = X.re[, , 1],
 		   abund.factor.2 = X.re[, , 2])
 data.list <- list(y = y,
-		  covs = covs)
+		  covs = covs, 
+                  coords = coords)
 prior.list <- list(beta.comm.normal = list(mean = 0, var = 100),
                    kappa.unif = list(a = 0, b = 10),
                    tau.sq.beta.ig = list(a = .1, b = .1))
@@ -256,7 +278,8 @@ inits.list <- list(beta.comm = 0,
 		   beta = 0,
 		   kappa = 0.5,
 		   tau.sq.beta = 1)
-tuning.list <- list(kappa = 0.3, beta = 0.1, beta.star = 0.1)
+tuning.list <- list(kappa = 0.3, beta = 0.1, beta.star = 0.1, 
+                    lambda = 0.5, w = 0.5)
 
 # Small
 n.batch <- 2
@@ -265,13 +288,14 @@ n.burn <- 20
 n.thin <- 1
 n.chains <- 1
 
-out <- msAbund(formula = ~ abund.cov.1 + (1 | abund.factor.1) + (1 | abund.factor.2),
+out <- lfMsAbund(formula = ~ abund.cov.1 + (1 | abund.factor.1) + (1 | abund.factor.2),
 	         data = data.list,
 	         n.batch = n.batch,
 	         inits = inits.list,
 	         priors = prior.list,
 	         tuning = tuning.list,
 	         batch.length = batch.length,
+		 n.factors = n.factors,
 	         n.omp.threads = 3,
 	         verbose = TRUE,
 	         n.report = 1,

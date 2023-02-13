@@ -13,7 +13,8 @@ ppcAbund(object, fit.stat, group, ...)
 \arguments{
 \item{object}{an object of class \code{NMix}, \code{spNMix}, 
 	\code{msNMix}, \code{lfMsNMix}, \code{sfMsNMix},
-	\code{abund}, \code{spAbund}, \code{sfMsAbund}.}
+	\code{abund}, \code{spAbund}, \code{msAbund}, 
+	\code{lfMsAbund}, \code{sfMsAbund}.}
 
 \item{fit.stat}{a quoted keyword that specifies the fit statistic
 to use in the posterior predictive check. Supported fit statistics are
@@ -39,7 +40,8 @@ column (replicate).}
   \item{fit.y}{a numeric vector of posterior samples for the 
   fit statistic calculated on the observed data when \code{object} is 
   of class \code{NMix}, \code{spNMix}, \code{abund}, or \code{spAbund}. 
-  When \code{object} is of class \code{msNMix}, \code{lfMsNMix}, \code{sfMsNMix} 
+  When \code{object} is of class \code{msNMix}, \code{lfMsNMix}, \code{sfMsNMix},
+  \code{msAbund}, \code{lfMsAbund}, \code{sfMsAbund}, 
   this is a numeric matrix with rows corresponding to posterior samples
   and columns corresponding to species.}
 
@@ -47,7 +49,8 @@ column (replicate).}
   fit statistic calculated on a replicate data set generated from the 
   model when \code{object} is of class \code{NMix}, \code{spNMix}, \code{abund}, 
   \code{spAbund}. When \code{object} is of 
-  class \code{msNMix}, \code{lfMsNMix}, \code{sfMsNMix}, 
+  class \code{msNMix}, \code{lfMsNMix}, \code{sfMsNMix}, \code{msAbund}, 
+  \code{lfMsAbund}, \code{sfMsAbund},
   this is a numeric matrix with rows corresponding to posterior samples
   and columns corresponding to species.}
 
@@ -56,7 +59,8 @@ column (replicate).}
   the fit statistic is calculated for (i.e., observations when group = 0, sites when group = 1,
   replicates when group = 2) when \code{object} is of class \code{NMix}, \code{spNMix}, 
   \code{abund}, or \code{spAbund}. 
-  When \code{object} is of class \code{msNMix} or \code{sfMsNMix}, this is a three-dimensional
+  When \code{object} is of class \code{msNMix}, \code{lfMsNMix}, \code{sfMsNMix}, 
+  \code{msAbund}, \code{lfMsAbund}, \code{sfMsAbund}, this is a three-dimensional
   array with the additional dimension corresponding to species.}
 
   \item{fit.y.rep.group.quants}{a matrix consisting of posterior quantiles
@@ -64,7 +68,8 @@ column (replicate).}
   the fit statistic is calculated for (i.e., observations when group = 0, sites when group = 1, 
   replicates when group = 2) when \code{object} is of class \code{NMix}, \code{spNMix}, 
   \code{abund}, or \code{spAbund}. 
-  When \code{object} is of class \code{msNMix} or \code{sfMsNMix}, this is a three-dimensional
+  When \code{object} is of class \code{msNMix}, \code{sfMsNMix}, \code{msAbund}, 
+  \code{lfMsAbund}, \code{sfMsAbund}, this is a three-dimensional
   array with the additional dimension corresponding to species.}
 
   The return object will include additional objects used for 

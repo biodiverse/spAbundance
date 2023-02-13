@@ -6,14 +6,20 @@
 
 static const R_CallMethodDef CallEntries[] = {
     {"abund", (DL_FUNC) &abund, 30},
-    {"DS", (DL_FUNC) &DS, 49},
-    {"msAbund", (DL_FUNC) &msAbund, 33},
-    {"NMix", (DL_FUNC) &NMix, 45},
-    {"sfMsAbundNNGP", (DL_FUNC) &sfMsAbundNNGP, 49},
     {"spAbundNNGP", (DL_FUNC) &spAbundNNGP, 48},
     {"spAbundNNGPPredict", (DL_FUNC) &spAbundNNGPPredict, 24},
+    {"msAbund", (DL_FUNC) &msAbund, 33},
+    {"lfMsAbund", (DL_FUNC) &lfMsAbund, 35},
+    {"sfMsAbundNNGP", (DL_FUNC) &sfMsAbundNNGP, 49},
+    {"sfMsAbundNNGPPredict", (DL_FUNC) &sfMsAbundNNGPPredict, 27},
+    {"NMix", (DL_FUNC) &NMix, 45},
     {"spNMixNNGP", (DL_FUNC) &spNMixNNGP, 63},
     {"spNMixNNGPPredict", (DL_FUNC) &spNMixNNGPPredict, 19},
+    {"msNMix", (DL_FUNC) &msNMix, 52},
+    {"lfMsNMix", (DL_FUNC) &lfMsNMix, 54},
+    {"sfMsNMixNNGP", (DL_FUNC) &sfMsNMixNNGP, 65},
+    {"sfMsNMixNNGPPredict", (DL_FUNC) &sfMsNMixNNGPPredict, 22},
+    {"DS", (DL_FUNC) &DS, 49},
     {"waicAbund", (DL_FUNC) &waicAbund, 13},
     {NULL, NULL, 0}
 };

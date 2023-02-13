@@ -25,14 +25,14 @@ spAbund(formula, data, inits, priors, tuning,
     and slopes are allowed using lme4 syntax (Bates et al. 2015).}
   
   \item{data}{a list containing data necessary for model fitting.
-    Valid tags are \code{y} and \code{abund.covs}. \code{y}
+    Valid tags are \code{y} and \code{covs}. \code{y}
     is a vector, matrix, or data frame of the observed count values. If a vector, 
     the values represent the observed counts at each site. If multiple replicate
     observations are obtained at the sites (e.g., sub-samples, repeated sampling over
     multiple seasons), \code{y} can be specified as a matrix or data frame 
     with first dimension equal to the number of 
     sites (\eqn{J}{J}) and second dimension equal to the maximum number of 
-    replicates at a given site. \code{abund.covs} is a list 
+    replicates at a given site. \code{covs} is a list 
     containing the variables used in the model. Each list element is a different
     covariate, which can be site-level or observation-level. Site-level covariates
     are specified as a vector of length \eqn{J}{J}, while observation-level covariates
@@ -57,8 +57,7 @@ spAbund(formula, data, inits, priors, tuning,
   \item{priors}{a list with each tag corresponding to a parameter name. 
     Valid tags are \code{beta.normal}, \code{phi.unif}, 
     \code{sigma.sq.ig}, \code{nu.unif}, \code{kappa.unif},
-    \code{sigma.sq.mu.ig}. Abundance 
-    (\code{beta}) regression coefficients 
+    \code{sigma.sq.mu.ig}. Abundance (\code{beta}) regression coefficients 
     are assumed to follow a normal distribution. The hyperparameters of the 
     normal distribution are passed as a list of length two with the first
     and second elements corresponding to the mean and variance of the normal
@@ -81,7 +80,7 @@ spAbund(formula, data, inits, priors, tuning,
     the inverse-Gamma distribution are passed as a list of length two with the 
     first and second elements corresponding to the shape and scale parameters, 
     respectively, which are each specified as vectors of length equal to the 
-    number of random intercepts or of length one if priors are the same for all
+    number of random effects or of length one if priors are the same for all
     random effect variances.}
  
   \item{cov.model}{a quoted keyword that specifies the covariance
@@ -95,10 +94,9 @@ spAbund(formula, data, inits, priors, tuning,
   random effect values), \code{alpha.star} (the detection random effect values),
   \code{kappa}, \code{phi}, and \code{nu}. See Roberts and Rosenthal (2009) for details.}
 
-  \item{NNGP}{if \code{TRUE}, model is fit with an NNGP. If \code{FALSE}, 
-    a full Gaussian process is used. See Datta et al. (2016) and 
+  \item{NNGP}{if \code{TRUE}, model is fit with an NNGP. See Datta et al. (2016) and 
     Finley et al. (2019) for more information. Currently only NNGP is supported,
-    functionality for a full GP will be addded in future package development.}
+    functionality for a full GP may be addded in future package development.}
   
   \item{n.neighbors}{number of neighbors used in the NNGP. Only used if 
   \code{NNGP = TRUE}. Datta et al. (2016) showed that 15 neighbors is usually 
@@ -128,7 +126,7 @@ spAbund(formula, data, inits, priors, tuning,
   \item{accept.rate}{target acceptance rate for Adaptive MCMC. Default is 
     0.43. See Roberts and Rosenthal (2009) for details.}
 
-  \item{family}{the distribution to use for the latent abundance process. Currently 
+  \item{family}{the distribution to use for abundance. Currently 
     supports \code{'NB'} (negative binomial) and \code{'Poisson'}.}
   
   \item{n.omp.threads}{a positive integer indicating
@@ -162,10 +160,10 @@ spAbund(formula, data, inits, priors, tuning,
     partitioned into \emph{k} equal sized subsamples. Of the \emph{k} subsamples, 
     \emph{k} - 1 subsamples are used to fit the model and the remaining \emph{k}
     samples are used for prediction. The cross-validation process is repeated 
-    \emph{k} times (the folds). As a scoring rule, we use the model deviance 
-    as described in Hooten and Hobbs (2015). Cross-validation is performed
+    \emph{k} times (the folds). As a scoring rule, the root mean
+    squared prediction error. Cross-validation is performed
     after the full model is fit using all the data. Cross-validation results
-    are reported in the \code{k.fold.deviance} object in the return list.}
+    are reported in the \code{rmspe} object in the return list.}
   
   \item{k.fold.threads}{number of threads to use for cross-validation. If 
     \code{k.fold.threads > 1} parallel processing is accomplished using the 
@@ -197,16 +195,6 @@ spAbund(formula, data, inits, priors, tuning,
   S. Banerjee. (2019) Efficient algorithms for Bayesian Nearest Neighbor
   Gaussian Processes. \emph{Journal of Computational and Graphical
     Statistics}, \doi{10.1080/10618600.2018.1537924}.
-
-  Finley, A. O., Datta, A., and Banerjee, S. (2020). spNNGP R package 
-  for nearest neighbor Gaussian process models. \emph{arXiv} preprint arXiv:2001.09111.
-
-  Hooten, M. B., and Hobbs, N. T. (2015). A guide to Bayesian model 
-  selection for ecologists. \emph{Ecological Monographs}, 85(1), 3-28.
-
-  Polson, N.G., J.G. Scott, and J. Windle. (2013) Bayesian Inference for
-  Logistic Models Using Polya-Gamma Latent Variables. 
-  \emph{Journal of the American Statistical Association}, 108:1339-1349.
 
   Roberts, G.O. and Rosenthal J.S. (2009) Examples  of adaptive MCMC. 
   \emph{Journal of Computational and Graphical Statistics}, 18(2):349-367.
@@ -242,12 +230,12 @@ spAbund(formula, data, inits, priors, tuning,
     for latent spatial random effects.}
 
   \item{sigma.sq.mu.samples}{a \code{coda} object of posterior samples
-    for variances of random intercepts included in the model. 
-    Only included if random intercepts are specified in 
+    for variances of random effects included in the model. 
+    Only included if random effects are specified in 
     \code{formula}.}
 
   \item{beta.star.samples}{a \code{coda} object of posterior samples
-    for the abundance random effects. Only included if random intercepts
+    for the abundance random effects. Only included if random effects 
     are specified in \code{formula}.}
 
   \item{like.samples}{a \code{coda} object of posterior samples
@@ -261,13 +249,11 @@ spAbund(formula, data, inits, priors, tuning,
 
   \item{run.time}{execution time reported using \code{proc.time()}.}
 
-  \item{k.fold.deviance}{soring rule (deviance) from k-fold cross-validation. 
+  \item{rmspe}{soring rule (root mean squared prediction error) from k-fold cross-validation. 
     Only included if \code{k.fold} is specified in function call.}
 
   The return object will include additional objects used for 
-  subsequent prediction and/or model fit evaluation. Note that detection
-  probability values are not included in the model object, but can be 
-  extracted using \code{fitted()}.
+  subsequent prediction and/or model fit evaluation. 
 }
 
 \examples{
@@ -296,7 +282,7 @@ X <- dat$X
 X.re <- dat$X.re
 coords <- dat$coords
 
-abund.covs <- list(int = X[, , 1], 
+covs <- list(int = X[, , 1], 
 		   abund.cov.1 = X[, , 2], 
 		   abund.cov.2 = X[, , 3], 
 		   abund.cov.3 = X[, , 4],
@@ -304,7 +290,7 @@ abund.covs <- list(int = X[, , 1],
 		   abund.factor.2 = X.re[, , 2])
 
 data.list <- list(y = y, 
-		  covs = abund.covs, 
+		  covs = covs, 
                   coords = coords)
 
 # Priors
@@ -344,4 +330,5 @@ out <- spAbund(formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3 +
 	       n.burn = n.burn,
 	       n.thin = n.thin,
 	       n.chains = n.chains) 
+summary(out)
 }

@@ -6,7 +6,7 @@
 \title{Methods for abund Object}
 
 \description{
-  Methods for extracting information from fitted abundance GLMs (\code{abund}) without imperfect detection.
+  Methods for extracting information from fitted abundance GLMs (\code{abund}).
 }
 
 \usage{
@@ -30,6 +30,5 @@
 \value{
   No return value, called to display summary information of a \code{abund} object.
 }
-
 
 \keyword{model}

@@ -6,7 +6,7 @@
 \title{Methods for spAbund Object}
 
 \description{
-  Methods for extracting information from fitted abundance GLMs (\code{spAbund}) without imperfect detection.
+  Methods for extracting information from fitted spatially-explicit abundance GLMs (\code{spAbund}).
 }
 
 \usage{

@@ -105,7 +105,7 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
 
   \item{NNGP}{if \code{TRUE}, model is fit with an NNGP.  See Datta et al. (2016) and 
     Finley et al. (2019) for more information. Currently only NNGP is supported,
-    functionality for a Gaussian Process be addded in future package development.}
+    functionality for a Gaussian Process may be addded in future package development.}
   
   \item{n.neighbors}{number of neighbors used in the NNGP. Only used if 
   \code{NNGP = TRUE}. Datta et al. (2016) showed that 15 neighbors is usually 

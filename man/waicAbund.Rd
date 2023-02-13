@@ -13,7 +13,9 @@ waicAbund(object, N.max, by.species = FALSE, ...)
 
 \arguments{
   \item{object}{an object of class \code{NMix}, \code{spNMix}, \code{msNMix}, 
-  \code{lfMsNMix}, \code{sfMsNMix}, \code{abund}, \code{spAbund}, \code{sfMsAbund}.}
+  \code{lfMsNMix}, \code{sfMsNMix}, \code{abund}, \code{spAbund}, 
+  \code{msAbund}, \code{lfMsAbund}, \code{sfMsAbund}.}
+
   \item{N.max}{integer value indicating the upper limit on the latent abundance 
   values when calculating WAIC for N-mixture models or distance sampling models. 
   Defaults to ten plus the largest abundance value in the posterior 

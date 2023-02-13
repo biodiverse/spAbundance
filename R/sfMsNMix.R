@@ -1333,7 +1333,7 @@ sfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
           }
         }
         storage.mode(chain.info) <- "integer"
-        out.tmp[[i]] <- .Call("sfMsNMix", y, X, X.p, coords, X.re, X.p.re, 
+        out.tmp[[i]] <- .Call("sfMsNMixNNGP", y, X, X.p, coords, X.re, X.p.re, 
             		    X.random, X.p.random, y.max, consts, 
         	                    n.abund.re.long, n.det.re.long, 
             	            n.neighbors, nn.indx, nn.indx.lu, u.indx, u.indx.lu, ui.indx,
@@ -1718,7 +1718,7 @@ sfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
         chain.info[1] <- 1
         storage.mode(chain.info) <- "integer"
       
-        out.fit <- .Call("sfMsNMix", y.fit, X.fit, X.p.fit, coords.fit, X.re.fit, X.p.re.fit, 
+        out.fit <- .Call("sfMsNMixNNGP", y.fit, X.fit, X.p.fit, coords.fit, X.re.fit, X.p.re.fit, 
           	         X.random.fit, X.p.random.fit, y.max.fit, consts.fit, 
       	                 n.abund.re.long.fit, n.det.re.long.fit,
         	         n.neighbors, nn.indx.fit, nn.indx.lu.fit, u.indx.fit, 
