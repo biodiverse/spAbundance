@@ -451,7 +451,6 @@ predict.spAbund <- function(object, X.0, coords.0,
   coords <- object$coords
   n.obs <- sum(!is.na(object$y))
   J <- nrow(coords)
-  n.years.max <- dim(X.0)[2]
   p.abund <- dim(X)[3]
   theta.samples <- object$theta.samples
   beta.samples <- object$beta.samples
@@ -1052,6 +1051,283 @@ fitted.sfMsAbund <- function(object, ...) {
   return(object$y.rep.samples)
 }
 
+
+predict.sfMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
+			      verbose = TRUE, n.report = 100,
+			      ignore.RE = FALSE, ...) {
+
+  ptm <- proc.time()
+  # Check for unused arguments ------------------------------------------
+  formal.args <- names(formals(sys.function(sys.parent())))
+  elip.args <- names(list(...))
+  for(i in elip.args){
+      if(! i %in% formal.args)
+          warning("'",i, "' is not an argument")
+  }
+  # Call ----------------------------------------------------------------
+  cl <- match.call()
+
+  # Functions ---------------------------------------------------------------
+  logit <- function(theta, a = 0, b = 1) {log((theta-a)/(b-theta))}
+  logit.inv <- function(z, a = 0, b = 1) {b-(b-a)/(1+exp(z))}
+
+  # Some initial checks ---------------------------------------------------
+  if (missing(object)) {
+    stop("error: predict expects object\n")
+  }
+  if (!(class(object) %in% c('sfMsAbund'))) {
+    stop("error: requires an output object of class sfMsAbund\n")
+  }
+
+  # Check X.0 -------------------------------------------------------------
+  if (missing(X.0)) {
+    stop("error: X.0 must be specified\n")
+  }
+  if (!(length(dim(X.0)) %in% c(2, 3))) {
+    stop("error: X.0 must be a matrix with two columns corresponding to site and covariate or a three-dimensional array with dimensions corresponding to site, replicate, and covariate")
+  }
+  if (length(dim(X.0)) == 2) {
+    tmp <- colnames(X.0) 
+    X.0 <- array(X.0, dim = c(nrow(X.0), 1, ncol(X.0)))
+    dimnames(X.0)[[3]] <- tmp
+  }
+  if (missing(coords.0)) {
+    stop("error: coords.0 must be specified\n")
+  }
+  if (!any(is.data.frame(coords.0), is.matrix(coords.0))) {
+    stop("error: coords.0 must be a data.frame or matrix\n")
+  }
+  if (!ncol(coords.0) == 2){
+    stop("error: coords.0 must have two columns\n")
+  }
+  coords.0 <- as.matrix(coords.0)
+  sites.0.indx <- rep(0:(nrow(X.0) - 1), times = ncol(X.0))
+  K.max.0 <- ncol(X.0)
+
+  # Get X.0 in long format. 
+  tmp.names <- dimnames(X.0)[[3]]
+  X.0 <- matrix(X.0, nrow = nrow(X.0) * ncol(X.0), ncol = dim(X.0)[3])
+  colnames(X.0) <- tmp.names
+  missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) > 0))
+  non.missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) == 0))
+  X.0 <- X.0[non.missing.indx, , drop = FALSE]
+
+  # Abundance predictions ------------------------------------------------
+  n.post <- object$n.post * object$n.chains
+  X <- object$X
+  y <- object$y
+  coords <- object$coords
+  J <- nrow(coords)
+  n.obs <- sum(!is.na(object$y[1, , ]))
+  n.sp <- dim(y)[1]
+  q <- object$q
+  p.abund <- dim(X)[3]
+  theta.samples <- object$theta.samples
+  beta.samples <- object$beta.samples
+  lambda.samples <- object$lambda.samples
+  w.samples <- object$w.samples
+  kappa.samples <- object$kappa.samples
+  n.neighbors <- object$n.neighbors
+  cov.model.indx <- object$cov.model.indx
+  family <- object$dist
+  family.c <- ifelse(family == 'NB', 1, 0)
+  sp.type <- object$type
+  if (object$muRE & !ignore.RE) {
+    p.abund.re <- length(object$re.level.names)
+  } else {
+    p.abund.re <- 0
+  }
+  re.cols <- object$re.cols
+
+  if (ncol(X.0) != p.abund + p.abund.re){
+    stop(paste("error: X.0 must have ", p.abund + p.abund.re," columns\n"))
+  }
+  X.0 <- as.matrix(X.0)
+
+  if (missing(coords.0)) {
+    stop("error: coords.0 must be specified\n")
+  }
+  if (!any(is.data.frame(coords.0), is.matrix(coords.0))) {
+    stop("error: coords.0 must be a data.frame or matrix\n")
+  }
+  if (!ncol(coords.0) == 2){
+    stop("error: coords.0 must have two columns\n")
+  }
+  coords.0 <- as.matrix(coords.0)
+
+  re.cols <- object$re.cols
+
+  if (object$muRE & !ignore.RE) {
+    beta.star.samples <- object$beta.star.samples
+    re.level.names <- object$re.level.names
+    # Get columns in design matrix with random effects
+    x.re.names <- dimnames(object$X.re)[[3]]
+    x.0.names <- colnames(X.0)
+    # Get the number of times each factor is used. 
+    re.long.indx <- sapply(re.cols, length)
+    tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
+    indx <- list()
+    for (i in 1:length(tmp)) {
+      indx[[i]] <- rep(tmp[i], re.long.indx[i])
+    }
+    indx <- unlist(indx)
+    if (length(indx) == 0) {
+      stop("error: column names in X.0 must match variable names in data$occ.covs")
+    }
+    n.re <- length(indx)
+    n.unique.re <- length(unique(indx))
+    # Check RE columns
+    for (i in 1:n.re) {
+      if (is.character(re.cols[[i]])) {
+        # Check if all column names in svc are in occ.covs
+        if (!all(re.cols[[i]] %in% x.0.names)) {
+            missing.cols <- re.cols[[i]][!(re.cols[[i]] %in% x.0.names)]
+            stop(paste("error: variable name ", paste(missing.cols, collapse=" and "), " not in occurrence covariates", sep=""))
+        }
+        # Convert desired column names into the numeric column index
+        re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
+        
+      } else if (is.numeric(re.cols[[i]])) {
+        # Check if all column indices are in 1:p.abund
+        if (!all(re.cols %in% 1:p.abund)) {
+            missing.cols <- re.cols[[i]][!(re.cols[[i]] %in% (1:p.abund))]
+            stop(paste("error: column index ", paste(missing.cols, collapse=" "), " not in design matrix columns", sep=""))
+        }
+      }
+    }
+    re.cols <- unlist(re.cols)
+    X.re <- as.matrix(X.0[, indx, drop = FALSE])
+    X.fix <- as.matrix(X.0[, -indx, drop = FALSE])
+    X.random <- as.matrix(X.0[, re.cols, drop = FALSE])
+    n.abund.re <- length(unlist(re.level.names))
+    X.re.ind <- matrix(NA, nrow(X.re), p.abund.re)
+
+    for (i in 1:p.abund.re) {
+      for (j in 1:nrow(X.re)) {
+        tmp <- which(re.level.names[[i]] == X.re[j, i])
+        if (length(tmp) > 0) {
+          X.re.ind[j, i] <- tmp 
+        }
+      }
+    }
+    if (p.abund.re > 1) {
+      for (j in 2:p.abund.re) {
+        X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+      }
+    }
+    # Create the random effects corresponding to each 
+    # new location
+    beta.star.sites.0.samples <- array(0, dim = c(n.post, n.sp, nrow(X.re)))
+    for (i in 1:n.sp) {
+      for (t in 1:p.abund.re) {
+        for (j in 1:nrow(X.re)) {
+          if (!is.na(X.re.ind[j, t])) {
+            beta.star.sites.0.samples[, i, j] <- 
+              beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] + 
+              beta.star.sites.0.samples[, i, j]
+          } else {
+            beta.star.sites.0.samples[, i, j] <- 
+              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+              beta.star.sites.0.samples[, i, j]
+          }
+        } # j
+      } # t
+    }
+  } else {
+    X.fix <- X.0
+    beta.star.sites.0.samples <- array(0, dim = c(n.post, n.sp, nrow(X.0)))
+    p.abund.re <- 0
+  }
+
+  # Sub-sample previous
+  theta.samples <- t(theta.samples)
+  lambda.samples <- t(lambda.samples)
+  beta.samples <- t(beta.samples)
+  if (family == 'NB') {
+    kappa.samples <- t(kappa.samples)
+  } else {
+    kappa.samples <- matrix(0, n.sp, n.post)
+  }
+  w.samples <- aperm(w.samples, c(2, 3, 1))
+  beta.star.sites.0.samples <- aperm(beta.star.sites.0.samples, c(2, 3, 1))
+
+  n.obs.0 <- nrow(X.fix)
+  J.0 <- length(unique(sites.0.indx))
+
+  match.indx <- match(do.call("paste", as.data.frame(coords.0)), do.call("paste", as.data.frame(coords)))
+  coords.0.indx <- which(is.na(match.indx))
+  coords.indx <- match.indx[!is.na(match.indx)]
+  coords.place.indx <- which(!is.na(match.indx))
+  # Indicates whether a site has been sampled. 1 = sampled
+  sites.0.sampled <- ifelse(!is.na(match.indx), 1, 0)
+  sites.link <- rep(NA, J.0)
+  sites.link[which(!is.na(match.indx))] <- coords.indx
+  # For C
+  sites.link <- sites.link - 1
+
+  if (sp.type == 'GP') {
+    # Not currently implemented or accessed.
+  } else {
+    # Get nearest neighbors
+    # nn2 is a function from RANN.
+    # TODO: a place to check if you run into problems.
+    nn.indx.0 <- nn2(coords, coords.0, k=n.neighbors)$nn.idx-1
+
+    storage.mode(coords) <- "double"
+    storage.mode(n.sp) <- "integer"
+    storage.mode(J) <- "integer"
+    storage.mode(n.obs) <- 'integer'
+    storage.mode(p.abund) <- "integer"
+    storage.mode(n.neighbors) <- "integer"
+    storage.mode(X.fix) <- "double"
+    storage.mode(coords.0) <- "double"
+    storage.mode(J.0) <- "integer"
+    storage.mode(n.obs.0) <- "integer"
+    storage.mode(q) <- "integer"
+    storage.mode(sites.link) <- "integer"
+    storage.mode(sites.0.sampled) <- "integer"
+    storage.mode(sites.0.indx) <- "integer"
+    storage.mode(beta.samples) <- "double"
+    storage.mode(theta.samples) <- "double"
+    storage.mode(lambda.samples) <- "double"
+    storage.mode(kappa.samples) <- "double"
+    storage.mode(beta.star.sites.0.samples) <- "double"
+    storage.mode(w.samples) <- "double"
+    storage.mode(n.post) <- "integer"
+    storage.mode(cov.model.indx) <- "integer"
+    storage.mode(nn.indx.0) <- "integer"
+    storage.mode(n.omp.threads) <- "integer"
+    storage.mode(verbose) <- "integer"
+    storage.mode(n.report) <- "integer"
+    storage.mode(family.c) <- "integer"
+
+    out <- .Call("sfMsAbundNNGPPredict", coords, J, n.obs, family.c, 
+      	         n.sp, q, p.abund, n.neighbors,
+                 X.fix, coords.0, J.0, n.obs.0, sites.link, sites.0.sampled, 
+		 sites.0.indx, nn.indx.0, beta.samples,
+                 theta.samples, kappa.samples, lambda.samples, w.samples,
+        	 beta.star.sites.0.samples, n.post,
+                 cov.model.indx, n.omp.threads, verbose, n.report)
+  }
+  out$y.0.samples <- array(out$y.0.samples, dim = c(n.sp, n.obs.0, n.post))
+  out$y.0.samples <- aperm(out$y.0.samples, c(3, 1, 2))
+  out$w.0.samples <- array(out$w.0.samples, dim = c(q, J.0, n.post))
+  out$w.0.samples <- aperm(out$w.0.samples, c(3, 1, 2))
+  out$mu.0.samples <- array(out$mu.0.samples, dim = c(n.sp, n.obs.0, n.post))
+  out$mu.0.samples <- aperm(out$mu.0.samples, c(3, 1, 2))
+
+  tmp <- array(NA, dim = c(n.post, n.sp, length(c(missing.indx, non.missing.indx))))
+  tmp[, , non.missing.indx] <- out$y.0.samples
+  out$y.0.samples <- array(tmp, dim = c(n.post, n.sp, J.0, K.max.0))
+  tmp <- array(NA, dim = c(n.post, n.sp, length(c(missing.indx, non.missing.indx))))
+  tmp[, , non.missing.indx] <- out$mu.0.samples
+  out$mu.0.samples <- array(tmp, dim = c(n.post, n.sp, J.0, K.max.0))
+  out$run.time <- proc.time() - ptm
+  out$call <- cl
+  out$object.class <- class(object)
+  class(out) <- "predict.sfMsAbund"
+  out
+}
 
 # NMix --------------------------------------------------------------------
 print.NMix <- function(x, ...) {
@@ -2949,6 +3225,240 @@ predict.lfMsNMix <- function(object, X.0, coords.0, ignore.RE = FALSE,
   out$call <- cl
 
   class(out) <- "predict.lfMsNMix"
+  out
+}
+
+# lfMsAbund ----------------------------------------------------------------
+print.lfMsAbund <- function(x, ...) {
+  cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)),
+      "", sep = "\n")
+}
+
+summary.lfMsAbund <- function(object,
+			     level = 'both',
+			     quantiles = c(0.025, 0.5, 0.975),
+			     digits = max(3L, getOption("digits") - 3L), ...) {
+  summary.msAbund(object, level, quantiles, digits)
+}
+
+fitted.lfMsAbund <- function(object, ...) {
+  return(object$y.rep.samples)
+}
+
+predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE, ...) {
+  # Check for unused arguments ------------------------------------------
+  formal.args <- names(formals(sys.function(sys.parent())))
+  elip.args <- names(list(...))
+  for(i in elip.args){
+      if(! i %in% formal.args)
+          warning("'",i, "' is not an argument")
+  }
+  # Call ----------------------------------------------------------------
+  cl <- match.call()
+
+  # Functions ---------------------------------------------------------------
+  logit <- function(theta, a = 0, b = 1) {log((theta-a)/(b-theta))}
+  logit.inv <- function(z, a = 0, b = 1) {b-(b-a)/(1+exp(z))}
+
+  # Some initial checks ---------------------------------------------------
+  if (missing(object)) {
+    stop("error: predict expects object\n")
+  }
+  if (!is(object, "lfMsAbund")) {
+    stop("error: requires an output object of class lfMsAbund\n")
+  }
+
+  # Check X.0 -------------------------------------------------------------
+  if (missing(X.0)) {
+    stop("error: X.0 must be specified\n")
+  }
+  if (!(length(dim(X.0)) %in% c(2, 3))) {
+    stop("error: X.0 must be a matrix with two columns corresponding to site and covariate or a three-dimensional array with dimensions corresponding to site, replicate, and covariate")
+  }
+  if (length(dim(X.0)) == 2) {
+    tmp <- colnames(X.0) 
+    X.0 <- array(X.0, dim = c(nrow(X.0), 1, ncol(X.0)))
+    dimnames(X.0)[[3]] <- tmp
+  }
+  # Predictions -----------------------------------------------------------
+  p.abund <- dim(object$X)[3]
+  J.0 <- nrow(X.0)
+  K.max.0 <- ncol(X.0)
+  n.sp <- dim(object$y)[1]
+  q <- object$q
+  n.post <- object$n.post * object$n.chains
+  if (missing(coords.0)) {
+    stop("error: coords.0 must be specified\n")
+  }
+  if (!any(is.data.frame(coords.0), is.matrix(coords.0))) {
+    stop("error: coords.0 must be a data.frame or matrix\n")
+  }
+  if (!ncol(coords.0) == 2){
+    stop("error: coords.0 must have two columns\n")
+  }
+  coords.0 <- as.matrix(coords.0)
+  sites.0.indx <- rep(1:(nrow(X.0)), times = ncol(X.0))
+
+  # Composition sampling --------------------------------------------------
+  re.cols <- object$re.cols
+  beta.samples <- as.matrix(object$beta.samples)
+  if (object$dist == 'NB') {
+    kappa.samples <- as.matrix(object$kappa.samples)
+  }
+  lambda.samples <- array(object$lambda.samples, dim = c(n.post, n.sp, q))
+  w.samples <- object$w.samples
+  out <- list()
+  if (object$muRE) {
+    p.abund.re <- length(object$re.level.names)
+  } else {
+    p.abund.re <- 0
+  }
+
+  # Get X.0 in long format. 
+  tmp.names <- dimnames(X.0)[[3]]
+  X.0 <- matrix(X.0, nrow = nrow(X.0) * ncol(X.0), ncol = dim(X.0)[3])
+  colnames(X.0) <- tmp.names
+  missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) > 0))
+  non.missing.indx <- which(apply(X.0, 1, function(a) sum(is.na(a)) == 0))
+  X.0 <- X.0[non.missing.indx, , drop = FALSE]
+  sites.0.indx <- sites.0.indx[non.missing.indx]
+
+  if (object$muRE & !ignore.RE) {
+    beta.star.samples <- object$beta.star.samples
+    re.level.names <- object$re.level.names
+    # Get columns in design matrix with random effects
+    x.re.names <- dimnames(object$X.re)[[3]]
+    x.0.names <- colnames(X.0)
+    # Get the number of times each factor is used. 
+    re.long.indx <- sapply(re.cols, length)
+    tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
+    indx <- list()
+    for (i in 1:length(tmp)) {
+      indx[[i]] <- rep(tmp[i], re.long.indx[i])
+    }
+    indx <- unlist(indx)
+    if (length(indx) == 0) {
+      stop("error: column names in X.0 must match variable names in data$occ.covs")
+    }
+    n.re <- length(indx)
+    n.unique.re <- length(unique(indx))
+    # Check RE columns
+    for (i in 1:n.re) {
+      if (is.character(re.cols[[i]])) {
+        # Check if all column names in svc are in occ.covs
+        if (!all(re.cols[[i]] %in% x.0.names)) {
+            missing.cols <- re.cols[[i]][!(re.cols[[i]] %in% x.0.names)]
+            stop(paste("error: variable name ", paste(missing.cols, collapse=" and "), " not in occurrence covariates", sep=""))
+        }
+        # Convert desired column names into the numeric column index
+        re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
+        
+      } else if (is.numeric(re.cols[[i]])) {
+        # Check if all column indices are in 1:p.abund
+        if (!all(re.cols %in% 1:p.abund)) {
+            missing.cols <- re.cols[[i]][!(re.cols[[i]] %in% (1:p.abund))]
+            stop(paste("error: column index ", paste(missing.cols, collapse=" "), " not in design matrix columns", sep=""))
+        }
+      }
+    }
+    re.cols <- unlist(re.cols)
+    X.re <- as.matrix(X.0[, indx, drop = FALSE])
+    X.fix <- as.matrix(X.0[, -indx, drop = FALSE])
+    X.random <- as.matrix(X.0[, re.cols, drop = FALSE])
+    n.abund.re <- length(unlist(re.level.names))
+    X.re.ind <- matrix(NA, nrow(X.re), p.abund.re)
+
+    for (i in 1:p.abund.re) {
+      for (j in 1:nrow(X.re)) {
+        tmp <- which(re.level.names[[i]] == X.re[j, i])
+        if (length(tmp) > 0) {
+          X.re.ind[j, i] <- tmp 
+        }
+      }
+    }
+    if (p.abund.re > 1) {
+      for (j in 2:p.abund.re) {
+        X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+      }
+    }
+    # Create the random effects corresponding to each 
+    # new location
+    beta.star.sites.0.samples <- array(0, dim = c(n.post, n.sp, nrow(X.re)))
+    for (i in 1:n.sp) {
+      for (t in 1:p.abund.re) {
+        for (j in 1:nrow(X.re)) {
+          if (!is.na(X.re.ind[j, t])) {
+            beta.star.sites.0.samples[, i, j] <- 
+              beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] + 
+              beta.star.sites.0.samples[, i, j]
+          } else {
+            beta.star.sites.0.samples[, i, j] <- 
+              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+              beta.star.sites.0.samples[, i, j]
+          }
+        } # j
+      } # t
+    }
+  } else {
+    X.fix <- X.0
+    beta.star.sites.0.samples <- array(0, dim = c(n.post, n.sp, nrow(X.0)))
+    p.abund.re <- 0
+  }
+
+  coords <- object$coords
+  match.indx <- match(do.call("paste", as.data.frame(coords.0)), do.call("paste", as.data.frame(coords)))
+  coords.0.indx <- which(is.na(match.indx))
+  coords.indx <- match.indx[!is.na(match.indx)]
+  coords.place.indx <- which(!is.na(match.indx))
+  # Indicates whether a site has been sampled. 1 = sampled
+  sites.0.sampled <- ifelse(!is.na(match.indx), 1, 0)
+  sites.link <- rep(NA, J.0)
+  sites.link[which(!is.na(match.indx))] <- coords.indx
+
+  # Create new random normal latent factors at all sites.
+  w.0.samples <- array(rnorm(n.post * q * J.0), dim = c(n.post, q, J.0))
+  # Replace already sampled sites with values from model fit.
+  for (j in 1:J.0) {
+    if (sites.0.sampled[j] == 1) {
+      w.0.samples[, , j] <- w.samples[, , sites.link[j]]
+    }
+  }
+  w.star.0.samples <- array(NA, dim = c(n.post, n.sp, J.0))
+
+  for (i in 1:n.post) {
+    w.star.0.samples[i, , ] <- matrix(lambda.samples[i, , ], n.sp, q) %*%
+                             matrix(w.0.samples[i, , ], q, J.0)
+  }
+
+  tmp <- matrix(NA, n.post, length(c(missing.indx, non.missing.indx)))
+  sp.indx <- rep(1:n.sp, p.abund)
+  out$mu.0.samples <- array(NA, dim = c(n.post, n.sp, J.0, K.max.0))
+  mu.long <- array(NA, dim = c(n.post, n.sp, nrow(X.fix)))
+  for (i in 1:n.sp) {
+    mu.long[, i, ] <- exp(t(X.fix %*% t(beta.samples[, sp.indx == i]) + 
+	                  t(beta.star.sites.0.samples[, i, ]) + 
+                          t(w.star.0.samples[, i, sites.0.indx])))
+    tmp[, non.missing.indx] <- mu.long[, i, ]
+    out$mu.0.samples[, i, , ] <- array(tmp, dim = c(n.post, J.0, K.max.0))
+  }
+  K <- apply(out$mu.0.samples[1, 1, , , drop = FALSE], 3, function(a) sum(!is.na(a)))
+  out$y.0.samples <- array(NA, dim(out$mu.0.samples))
+  for (i in 1:n.sp) {
+    for (j in 1:J.0) {
+      for (k in 1:K[j]) {
+        if (object$dist == 'NB') {
+          out$y.0.samples[, i, j, k] <- rnbinom(n.post, kappa.samples[, i], 
+          				        mu = out$mu.0.samples[, i, j, k])
+        } else {
+          out$y.0.samples[, i, j, k] <- rpois(n.post, out$mu.0.samples[, i, j, k])
+        }
+      }
+    }
+  }
+  out$w.0.samples <- w.0.samples
+  out$call <- cl
+
+  class(out) <- "predict.lfMsAbund"
   out
 }
 # DS ----------------------------------------------------------------------

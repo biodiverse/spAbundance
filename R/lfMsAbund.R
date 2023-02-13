@@ -1,9 +1,10 @@
-msAbund <- function(formula, data, inits, priors, tuning, 
-		    n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
-		    n.omp.threads = 1, verbose = TRUE, n.report = 100, 
-		    n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
-		    n.chains = 1, k.fold, k.fold.threads = 1, k.fold.seed = 100, 
-		    k.fold.only = FALSE, ...){
+lfMsAbund <- function(formula, data, inits, priors,  
+                      tuning, n.factors, n.batch, batch.length, 
+		      accept.rate = 0.43, family = 'Poisson',
+                      n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+                      n.burn = round(.10 * n.samples), n.thin = 1, n.chains = 1,
+                      k.fold, k.fold.threads = 1, k.fold.seed = 100, 
+                      k.fold.only = FALSE, ...){
 
   ptm <- proc.time()
 
@@ -64,6 +65,13 @@ msAbund <- function(formula, data, inits, priors, tuning,
   if (!is.list(data$covs)) {
     stop("error: covs must be a list of matrices, data frames, and/or vectors")
   }
+  if (!'coords' %in% names(data)) {
+    stop("error: coords must be specified in data for a spatial abundance model.")
+  }
+  if (!is.matrix(data$coords) & !is.data.frame(data$coords)) {
+    stop("error: coords must be a matrix or data frame")
+  }
+  coords <- as.matrix(data$coords)
   if (missing(n.batch)) {
     stop("error: must specify number of MCMC batches")
   }
@@ -82,6 +90,10 @@ msAbund <- function(formula, data, inits, priors, tuning,
       stop("error: k.fold must be a single integer value >= 2")  
     }
   }
+  if (missing(n.factors)) {
+    stop("error: n.factors must be specified for a spatial factor GLMM")
+  }
+
   # For later
   y.mat <- y
 
@@ -91,13 +103,13 @@ msAbund <- function(formula, data, inits, priors, tuning,
   data$covs <- data$covs[names(data$covs) %in% all.vars(formula)]
   # Null model support
   if (length(data$covs) == 0) {
-    data$covs <- list(int = array(1, dim = c(dim(y)[2], dim(y)[3])))
+    data$covs <- list(int = matrix(1, nrow = dim(y)[2], ncol = dim(y)[3]))
   }
   # Ordered by rep, then site within rep
   data$covs <- data.frame(lapply(data$covs, function(a) unlist(c(a))))
   # Check if only site-level covariates are included
-  if (nrow(data$covs) == dim(y)[2]) {
-    data$covs <- as.data.frame(mapply(rep, data$covs, dim(y)[3]))
+  if (nrow(data$covs) == dim(y)[1]) {
+    data$covs <- as.data.frame(mapply(rep, data$covs, dim(y)[2]))
   }
 
   # Check whether random effects are sent in as numeric, and
@@ -116,6 +128,8 @@ msAbund <- function(formula, data, inits, priors, tuning,
   }
 
   # Checking missing values ---------------------------------------------
+  # TODO: I believe these checks will fail if only site-level covariates on 
+  #       abundance
   # y -------------------------------
   y.na.test <- apply(y.mat, c(1, 2), function(a) sum(!is.na(a)))
   if (sum(y.na.test == 0) > 0) {
@@ -140,13 +154,17 @@ msAbund <- function(formula, data, inits, priors, tuning,
       data$covs[y.missing, i] <- NA
     }
   }
+
   # Remove missing values from covs in order to ensure formula parsing
   # works when random slopes are provided.
   tmp <- apply(data$covs, 1, function (a) sum(is.na(a)))
   data$covs <- as.data.frame(data$covs[tmp == 0, , drop = FALSE])
 
   # Formula -------------------------------------------------------------
-  # Abundance -------------------------
+  # Abundance -----------------------
+  if (missing(formula)) {
+    stop("error: formula must be specified")
+  }
   if (is(formula, 'formula')) {
     tmp <- parseFormula(formula, data$covs)
     X <- as.matrix(tmp[[1]])
@@ -163,9 +181,12 @@ msAbund <- function(formula, data, inits, priors, tuning,
       		     function (a) sort(unique(a)))
   x.re.names <- x.random.names
 
+
   # Extract data from inputs --------------------------------------------
   # Number of species 
   n.sp <- dim(y)[1]
+  # Number of latent factors
+  q <- n.factors
   # Number of abundance parameters 
   p.abund <- ncol(X)
   # Number of abundance random effect parameters
@@ -174,7 +195,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
   n.abund.re <- length(unlist(apply(X.re, 2, unique)))
   n.abund.re.long <- apply(X.re, 2, function(a) length(unique(a)))
   # Number of sites
-  J <- ncol(y)
+  J <- nrow(coords)
   # Number of replicate surveys
   # Note this assumes equivalent detection histories for all species. 
   # May want to change this at some point. 
@@ -498,6 +519,53 @@ msAbund <- function(formula, data, inits, priors, tuning,
   } else {
     kappa.inits <- rep(0, n.sp)
   }
+  # lambda ----------------------------
+  # ORDER: an n.sp x q matrix sent in as a column-major vector, which is ordered by 
+  #        factor, then species within factor. 
+  if ("lambda" %in% names(inits)) {
+    lambda.inits <- inits[["lambda"]]
+    if (!is.matrix(lambda.inits)) {
+      stop(paste("error: initial values for lambda must be a matrix with dimensions ",
+		 n.sp, " x ", q, sep = ""))
+    }
+    if (nrow(lambda.inits) != n.sp | ncol(lambda.inits) != q) {
+      stop(paste("error: initial values for lambda must be a matrix with dimensions ",
+		 n.sp, " x ", q, sep = ""))
+    }
+    if (!all.equal(diag(lambda.inits), rep(1, q))) {
+      stop("error: diagonal of inits$lambda matrix must be all 1s")
+    }
+    if (sum(lambda.inits[upper.tri(lambda.inits)]) != 0) {
+      stop("error: upper triangle of inits$lambda must be all 0s")
+    }
+  } else {
+    lambda.inits <- matrix(0, n.sp, q)
+    diag(lambda.inits) <- 1
+    lambda.inits[lower.tri(lambda.inits)] <- 0
+    if (verbose) {
+      message("lambda is not specified in initial values.\nSetting initial values of the lower triangle to 0\n")
+    }
+    # lambda.inits are organized by factor, then by species. This is necessary for working
+    # with dgemv.  
+    lambda.inits <- c(lambda.inits)
+  }
+  # w -----------------------------
+  if ("w" %in% names(inits)) {
+    w.inits <- inits[["w"]]
+    if (!is.matrix(w.inits)) {
+      stop(paste("error: initial values for w must be a matrix with dimensions ",
+      	   q, " x ", J, sep = ""))
+    }
+    if (nrow(w.inits) != q | ncol(w.inits) != J) {
+      stop(paste("error: initial values for w must be a matrix with dimensions ",
+      	   q, " x ", J, sep = ""))
+    }
+  } else {
+    w.inits <- matrix(0, q, J)
+    if (verbose) {
+      message("w is not specified in initial values.\nSetting initial value to 0\n")
+    }
+  }
   # Should initial values be fixed --
   if ("fix" %in% names(inits)) {
     fix.inits <- inits[["fix"]]
@@ -516,6 +584,8 @@ msAbund <- function(formula, data, inits, priors, tuning,
     beta.tuning <- rep(1, p.abund * n.sp)
     beta.star.tuning <- rep(1, n.abund.re * n.sp)
     kappa.tuning <- rep(1, n.sp)
+    w.tuning <- rep(1, J * q)
+    lambda.tuning <- rep(1, n.sp * q)
   } else {
     names(tuning) <- tolower(names(tuning))
     # beta ---------------------------
@@ -558,8 +628,33 @@ msAbund <- function(formula, data, inits, priors, tuning,
     } else {
       kappa.tuning <- NULL
     }
+    # w ---------------------------
+    if(!"w" %in% names(tuning)) {
+      stop("error: w must be specified in tuning value list")
+    }
+    w.tuning <- tuning$w
+    if (length(w.tuning) != 1 & length(w.tuning) != J * q) {
+      stop(paste("error: w tuning must be a single value or a vector of length ", 
+        	 J * q, sep = ''))
+    } 
+    if (length(w.tuning) == 1) {
+      w.tuning <- rep(w.tuning, J * q)
+    }
+    # lambda ---------------------------
+    if(!"lambda" %in% names(tuning)) {
+      stop("error: lambda must be specified in tuning value list")
+    }
+    lambda.tuning <- tuning$lambda
+    if (length(lambda.tuning) != 1 & length(lambda.tuning) != n.sp * q) {
+      stop(paste("error: lambda tuning must be a single value or a vector of length ", 
+        	 n.sp * q, sep = ''))
+    } 
+    if (length(lambda.tuning) == 1) {
+      lambda.tuning <- rep(lambda.tuning, n.sp * q)
+    }
   }
-  tuning.c <- log(c(beta.tuning, beta.star.tuning, kappa.tuning))
+  tuning.c <- log(c(beta.tuning, lambda.tuning, w.tuning, 
+		    beta.star.tuning, kappa.tuning))
 
   # Other miscellaneous ---------------------------------------------------
   # For prediction with random slopes
@@ -573,15 +668,19 @@ msAbund <- function(formula, data, inits, priors, tuning,
   }
 
   curr.chain <- 1
+
   # Set storage for all variables ---------------------------------------
   storage.mode(y) <- "double"
   storage.mode(X) <- "double"
-  consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re)
+  storage.mode(coords) <- "double"
+  consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re, q)
   storage.mode(consts) <- "integer"
   storage.mode(beta.inits) <- "double"
   storage.mode(kappa.inits) <- "double"
   storage.mode(beta.comm.inits) <- "double"
   storage.mode(tau.sq.beta.inits) <- "double"
+  storage.mode(lambda.inits) <- "double"
+  storage.mode(w.inits) <- "double"
   storage.mode(site.indx) <- "integer"
   storage.mode(mu.beta.comm) <- "double"
   storage.mode(Sigma.beta.comm) <- "double"
@@ -629,9 +728,13 @@ msAbund <- function(formula, data, inits, priors, tuning,
         tau.sq.beta.inits <- runif(p.abund, 0.05, 1)
         beta.inits <- matrix(rnorm(n.sp * p.abund, beta.comm.inits, 
               		     sqrt(tau.sq.beta.inits)), n.sp, p.abund)
-	if (family == 'NB') {
+        if (family == 'NB') {
           kappa.inits <- runif(n.sp, kappa.a, kappa.b)
-	}
+        }
+        lambda.inits <- matrix(0, n.sp, q)
+        diag(lambda.inits) <- 1
+        lambda.inits[lower.tri(lambda.inits)] <- rnorm(sum(lower.tri(lambda.inits)))
+        lambda.inits <- c(lambda.inits)
         if (p.abund.re > 0) {
           sigma.sq.mu.inits <- runif(p.abund.re, 0.05, 1)
           beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
@@ -640,15 +743,18 @@ msAbund <- function(formula, data, inits, priors, tuning,
       }
 
       storage.mode(chain.info) <- "integer"
-      out.tmp[[i]] <- .Call("msAbund", y, X, X.re, X.random, consts, n.abund.re.long, 
-        		    beta.inits, kappa.inits, beta.comm.inits, 
-        	            tau.sq.beta.inits, sigma.sq.mu.inits, beta.star.inits, site.indx, 
-        		    beta.star.indx, beta.level.indx,  
-        		    mu.beta.comm, Sigma.beta.comm, kappa.a, 
-          		    kappa.b, tau.sq.beta.a, tau.sq.beta.b,  
-        		    sigma.sq.mu.a, sigma.sq.mu.b,
-      	                    tuning.c, n.batch, batch.length, accept.rate, n.omp.threads, 
-      	                    verbose, n.report, samples.info, chain.info, family.c)
+      out.tmp[[i]] <- .Call("lfMsAbund", y, X, X.re, X.random, 
+                            consts, n.abund.re.long, 
+                            beta.inits, kappa.inits, beta.comm.inits, 
+                            tau.sq.beta.inits, 
+                            lambda.inits, w.inits,
+                            sigma.sq.mu.inits, beta.star.inits,site.indx, 
+                            beta.star.indx, beta.level.indx,  
+                            mu.beta.comm, Sigma.beta.comm, kappa.a, 
+                            kappa.b, tau.sq.beta.a, tau.sq.beta.b,  
+                            sigma.sq.mu.a, sigma.sq.mu.b, tuning.c,  
+                            n.batch, batch.length, accept.rate, n.omp.threads, 
+                            verbose, n.report, samples.info, chain.info, family.c)
       chain.info[1] <- chain.info[1] + 1
     }
     # Calculate R-Hat ---------------
@@ -670,6 +776,10 @@ msAbund <- function(formula, data, inits, priors, tuning,
       					      mcmc(t(a$kappa.samples)))), 
       			     autoburnin = FALSE)$psrf[, 2])
       }
+      lambda.mat <- matrix(lambda.inits, n.sp, q)
+      out$rhat$lambda.lower.tri <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
+        					       mcmc(t(a$lambda.samples[c(lower.tri(lambda.mat)), ])))), 
+        					       autoburnin = FALSE)$psrf[, 2])
       if (p.abund.re > 0) {
         out$rhat$sigma.sq.mu <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
         					      mcmc(t(a$sigma.sq.mu.samples)))), 
@@ -701,6 +811,9 @@ msAbund <- function(formula, data, inits, priors, tuning,
       out$kappa.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$kappa.samples))))
       colnames(out$kappa.samples) <- paste('kappa', 1:n.sp, sep = '') 
     }
+    loadings.names <- paste(rep(sp.names, times = n.factors), rep(1:n.factors, each = n.sp), sep = '-')
+    out$lambda.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$lambda.samples))))
+    colnames(out$lambda.samples) <- loadings.names
     y.non.miss.indx <- which(!is.na(y.mat), arr.ind = TRUE)
     out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
       								dim = c(n.sp * n.obs, n.post.samples))))
@@ -726,6 +839,9 @@ msAbund <- function(formula, data, inits, priors, tuning,
       tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$like.samples[j, ]
     }
     out$like.samples <- tmp
+    out$w.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$w.samples, 
+      								dim = c(q, J, n.post.samples * n.chains))))
+    out$w.samples <- aperm(out$w.samples, c(3, 1, 2))
     if (p.abund.re > 0) {
       out$sigma.sq.mu.samples <- mcmc(
         do.call(rbind, lapply(out.tmp, function(a) t(a$sigma.sq.mu.samples))))
@@ -746,6 +862,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
     if (family == 'NB') {
       out$ESS$kappa <- effectiveSize(out$kappa.samples)
     }
+    out$ESS$lambda <- effectiveSize(out$lambda.samples)
     if (p.abund.re > 0) {
       out$ESS$sigma.sq.mu <- effectiveSize(out$sigma.sq.mu.samples)
     }
@@ -771,8 +888,10 @@ msAbund <- function(formula, data, inits, priors, tuning,
     out$n.thin <- n.thin
     out$n.burn <- n.burn
     out$n.chains <- n.chains
+    out$coords <- coords
     out$dist <- family 
     out$re.cols <- re.cols
+    out$q <- q
     if (p.abund.re > 0) {
       out$muRE <- TRUE
     } else {
@@ -805,6 +924,8 @@ msAbund <- function(formula, data, inits, priors, tuning,
       y.0 <- y.0[!is.na(y.0)]
       X.fit <- X[y.indx, , drop = FALSE]
       X.0 <- X[!y.indx, , drop = FALSE]
+      coords.fit <- coords[-curr.set, , drop = FALSE]
+      coords.0 <- coords[curr.set, , drop = FALSE]
       J.fit <- ncol(y.mat.fit)
       J.0 <- ncol(y.mat.0)
       K.fit <- K[-curr.set]
@@ -851,17 +972,19 @@ msAbund <- function(formula, data, inits, priors, tuning,
 
       # Readjust the tuning values. For non-spatial random effects
       # just use the first value and repeat it.  
-      tuning.c.fit <- log(c(beta.tuning, rep(beta.star.tuning[1], n.abund.re.fit * n.sp), 
-			  kappa.tuning))
-
+      tuning.c.fit <- log(c(beta.tuning, lambda.tuning, rep(w.tuning[1], J.fit * q), 
+      		            rep(beta.star.tuning[1], n.abund.re.fit * n.sp), 
+        		    kappa.tuning))
       verbose.fit <- FALSE
       n.omp.threads.fit <- 1
+
       storage.mode(y.fit) <- "double"
       storage.mode(X.fit) <- "double"
       storage.mode(K.fit) <- "double"
-      consts.fit <- c(n.sp, J.fit, n.obs.fit, p.abund, p.abund.re, n.abund.re.fit)
+      consts.fit <- c(n.sp, J.fit, n.obs.fit, p.abund, p.abund.re, n.abund.re.fit, q)
       storage.mode(consts.fit) <- "integer"
       storage.mode(beta.inits) <- "double"
+      storage.mode(coords.fit) <- "double"
       storage.mode(site.indx.fit) <- "integer"
       storage.mode(n.samples) <- "integer"
       storage.mode(n.omp.threads.fit) <- "integer"
@@ -876,23 +999,23 @@ msAbund <- function(formula, data, inits, priors, tuning,
       chain.info[1] <- 1
       storage.mode(chain.info) <- "integer"
 
-      out.fit <- .Call("msAbund", y.fit, X.fit, X.re.fit, X.random.fit, consts.fit, 
-    	               n.abund.re.long.fit, beta.inits, kappa.inits, beta.comm.inits, 
-      	               tau.sq.beta.inits, sigma.sq.mu.inits, beta.star.inits.fit, 
-		       site.indx.fit, beta.star.indx.fit, beta.level.indx.fit, 
-		       mu.beta.comm, Sigma.beta.comm, kappa.a, kappa.b,
-      	               tau.sq.beta.a, tau.sq.beta.b, sigma.sq.mu.a, sigma.sq.mu.b, 
-    	               tuning.c, n.batch, batch.length, accept.rate, n.omp.threads.fit, 
-      	               verbose.fit, n.report, samples.info, chain.info, family.c)
+      out.fit <- .Call("lfMsAbund", y.fit, X.fit, X.re.fit, 
+      		 X.random.fit, consts.fit, n.abund.re.long.fit, 
+      		 beta.inits, kappa.inits, beta.comm.inits, 
+      	         tau.sq.beta.inits, lambda.inits,  
+      		 w.inits, sigma.sq.mu.inits, beta.star.inits.fit, 
+        	         site.indx.fit, beta.star.indx.fit, beta.level.indx.fit, 
+        	         mu.beta.comm, Sigma.beta.comm, kappa.a, kappa.b,
+      	         tau.sq.beta.a, tau.sq.beta.b, 
+      		 sigma.sq.mu.a, sigma.sq.mu.b, tuning.c.fit,
+      		 n.batch, batch.length, accept.rate, n.omp.threads.fit, 
+      	         verbose.fit, n.report, samples.info, chain.info, family.c)
 
       if (is.null(sp.names)) {
         sp.names <- paste('sp', 1:n.sp, sep = '')
       }
       coef.names <- paste(rep(x.names, each = n.sp), sp.names, sep = '-')
       out.fit$beta.samples <- mcmc(t(out.fit$beta.samples))
-      if (family == 'NB') {
-        out.fit$kappa.samples <- mcmc(t(out.fit$kappa.samples))
-      }
       colnames(out.fit$beta.samples) <- coef.names
       X.fit.new <- array(NA, dim = c(J.fit, dim(y.mat.fit)[3], p.abund))
       tmp <- as.matrix(y.mat.fit[1, , ])
@@ -902,6 +1025,11 @@ msAbund <- function(formula, data, inits, priors, tuning,
         X.fit.new[curr.indx[1], curr.indx[2], ] <- X.fit[j, ]
       }
       dimnames(X.fit.new)[[3]] <- x.names
+      if (family == 'NB') {
+        out.fit$kappa.samples <- mcmc(t(out.fit$kappa.samples))
+      }
+      out.fit$w.samples <- array(out.fit$w.samples, dim = c(q, J, n.post.samples))
+      out.fit$w.samples <- aperm(out.fit$w.samples, c(3, 1, 2))
       out.fit$X <- X.fit.new
       out.fit$y <- y.mat.fit
       out.fit$call <- cl
@@ -912,6 +1040,8 @@ msAbund <- function(formula, data, inits, priors, tuning,
       out.fit$n.chains <- 1
       out.fit$dist <- family
       out.fit$re.cols <- re.cols
+      out.fit$q <- q
+      out.fit$coords <- coords.fit
       if (p.abund.re > 0) {
         out.fit$sigma.sq.mu.samples <- mcmc(t(out.fit$sigma.sq.mu.samples))
         colnames(out.fit$sigma.sq.mu.samples) <- x.re.names
@@ -935,7 +1065,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
       } else {
         out.fit$muRE <- FALSE	
       }
-      class(out.fit) <- "msAbund"
+      class(out.fit) <- "lfMsAbund"
 
       # Get RE levels correct for use in prediction code. 
       if (p.abund.re > 0) {
@@ -959,6 +1089,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
       }
       dimnames(X.0.new)[[3]] <- x.names
       dimnames(X.re.0.new)[[3]] <- colnames(X.re.0)
+
       # Get unique factors for random effects
       if (p.abund.re > 0) {
         # Get unique factors for random effects.
@@ -967,14 +1098,14 @@ msAbund <- function(formula, data, inits, priors, tuning,
         X.re.0.new <- X.re.0.new[, , tmp, drop = FALSE]
       }
       if (p.abund.re > 0) {X.0.new <- abind(X.0.new, X.re.0.new, along = 3)}
-      out.pred <- predict.msAbund(out.fit, X.0.new)
+      out.pred <- predict.lfMsAbund(out.fit, X.0.new, coords.0)
 
       rmspe.samples <- matrix(NA, nrow(out.pred$y.0.samples), n.sp)
       for (j in 1:n.sp) {
         tmp <- array(out.pred$y.0.samples[, j, , ], 
-		     dim = dim(out.pred$y.0.samples)[c(1, 3, 4)])
+        	     dim = dim(out.pred$y.0.samples)[c(1, 3, 4)])
         rmspe.samples[, j] <- apply(out.pred$y.0.samples[, j, , ], 1, 
-				    function(a) sqrt(mean(y.mat.0[j, , ] - a, na.rm = TRUE)^2))
+        			    function(a) sqrt(mean(y.mat.0[j, , ] - a, na.rm = TRUE)^2))
       }
       apply(rmspe.samples, 2, mean, na.rm = TRUE)
     }
@@ -982,7 +1113,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
     out$rmspe <- rmspe
     stopImplicitCluster()
   }
-  class(out) <- "msAbund"
+  class(out) <- "lfMsAbund"
   out$run.time <- proc.time() - ptm
   out
 }

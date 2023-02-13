@@ -19,8 +19,9 @@ ppcAbund <- function(object, fit.stat, group, ...) {
   #   stop("error: ppcOcc is not implemented for lfCount and sfCount")
   # }
   if (!(class(object) %in% c('NMix', 'spNMix', 'abund', 'spAbund', 
-			     'msAbund', 'sfMsAbund', 'msNMix', 'spNMix', 'lfMsNMix', 'sfMsNMix'))) {
-    stop("error: object must be one of the following classes: NMix, spNMix, abund, spAbund, msAbund, sfMsAbund, msNMix")
+			     'msAbund', 'lfMsAbund', 'sfMsAbund', 
+			     'msNMix', 'spNMix', 'lfMsNMix', 'sfMsNMix'))) {
+    stop("error: object must be one of the following classes: NMix, spNMix, abund, spAbund, msAbund, lfMsAbund, sfMsAbund, msNMix")
   }
   # Fit statistic ---------------------
   if (missing(fit.stat)) {
@@ -37,7 +38,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
   if (!(group %in% c(0, 1, 2))) {
     stop("error: group must be 0 (raw data), 1 (sites), or 2 (replicates)")
   }
-  if (group != 0 & class(object) %in% c('abund', 'spAbund', 'msAbund')) {
+  if (group != 0 & class(object) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund')) {
     stop("error: group must be 0 (raw data) for abundance GLM models")
   }
 
@@ -214,22 +215,12 @@ ppcAbund <- function(object, fit.stat, group, ...) {
   } 
 
   # Multi-species abundance models ----------------------------------------
-  if (class(object) %in% c('msAbund', 'spMsAbund', 'lfMsAbund', 'sfMsAbund')) {
+  if (class(object) %in% c('msAbund', 'lfMsAbund', 'sfMsAbund')) {
     y <- object$y
     J <- dim(y)[2] 
     n.sp <- dim(y)[1]
-    if (is(object, 'msAbund')) {
-      y.rep.samples <- fitted.msAbund(object)
-    }
-    if (is(object, 'spMsAbund')) {
-      # y.rep.samples <- fitted.spMsAbund(object)
-    }
-    if (is(object, 'lfMsAbund')) {
-      # y.rep.samples <- fitted.lfMsAbund(object)
-    }
-    if (is(object, 'sfMsAbund')) {
-      y.rep.samples <- fitted.sfMsAbund(object)
-    }
+    # Can just use msAbund since they are all the same. 
+    y.rep.samples <- fitted.msAbund(object)
     mu.samples <- object$mu.samples
     n.samples <- object$n.post * object$n.chains
     fit.y <- matrix(NA, n.samples, n.sp)
@@ -284,7 +275,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
   }
 
   # Multi-species N-mixture models ----------------------------------------
-  if (class(object) %in% c('msNMix', 'spMsNMix', 'lfMsNMix', 'sfMsNMix')) {
+  if (class(object) %in% c('msNMix', 'lfMsNMix', 'sfMsNMix')) {
     y <- object$y
     J <- dim(y)[2]
     n.sp <- dim(y)[1]

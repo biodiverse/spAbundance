@@ -878,7 +878,6 @@ lfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
 
   # Get tuning values ---------------------------------------------------
   # Keep this just for consistency
-  sigma.sq.tuning <- rep(0, q)
   if (missing(tuning)) {
     beta.tuning <- rep(1, p.abund * n.sp)
     beta.star.tuning <- rep(1, n.abund.re * n.sp)
@@ -980,8 +979,7 @@ lfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
     }
   }
   tuning.c <- log(c(beta.tuning, alpha.tuning, beta.star.tuning, 
-		    alpha.star.tuning, sigma.sq.tuning,  
-		    lambda.tuning, w.tuning, kappa.tuning))
+		    alpha.star.tuning, lambda.tuning, w.tuning, kappa.tuning))
 
   # Get max y values for N update -----------------------------------------
   y.max <- apply(y.mat, c(1, 2), max, na.rm = TRUE)

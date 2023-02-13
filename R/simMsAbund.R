@@ -124,6 +124,12 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, mu.RE = list(),
     if (!'levels' %in% names(mu.RE)) {
       stop("error: levels must be a tag in mu.RE with the number of random effect levels for each abundance random intercept.")
     }
+    if (!'beta.indx' %in% names(mu.RE)) {
+      mu.RE$beta.indx <- list()
+      for (i in 1:length(mu.RE$sigma.sq.mu)) {
+        mu.RE$beta.indx[[i]] <- 1
+      }
+    }
   }
 
   # Subroutines -----------------------------------------------------------
@@ -159,7 +165,7 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, mu.RE = list(),
   coords <- as.matrix(expand.grid(s.x, s.y))
   w.star <- matrix(0, nrow = n.sp, ncol = J)
   if (factor.model) {
-    lambda <- matrix(rnorm(n.sp * n.factors, 0, 1), n.sp, n.factors) 
+    lambda <- matrix(rnorm(n.sp * n.factors, 0, 0.25), n.sp, n.factors) 
     # Set diagonals to 1
     diag(lambda) <- 1
     # Set upper tri to 0
@@ -207,31 +213,44 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, mu.RE = list(),
 
   # Random effects --------------------------------------------------------
   if (length(mu.RE) > 0) {
-    # TODO: this does not currently simulate random slopes.
-    p.abund.re <- length(mu.RE$levels)
-    sigma.sq.mu <- rep(NA, p.abund.re)
-    n.abund.re.long <- mu.RE$levels
+    p.abund.re <- length(unlist(mu.RE$beta.indx))
+    tmp <- sapply(mu.RE$beta.indx, length)
+    re.col.indx <- unlist(lapply(1:length(mu.RE$beta.indx), function(a) rep(a, tmp[a])))
+    sigma.sq.mu <- mu.RE$sigma.sq.mu[re.col.indx]
+    n.abund.re.long <- mu.RE$levels[re.col.indx]
     n.abund.re <- sum(n.abund.re.long)
     beta.star.indx <- rep(1:p.abund.re, n.abund.re.long)
     beta.star <- matrix(0, n.sp, n.abund.re)
+    X.random <- X[, , unlist(mu.RE$beta.indx), drop = FALSE]
     X.re <- array(NA, dim = c(J, max(n.rep), p.abund.re))
     for (l in 1:p.abund.re) {
-      for (j in 1:J) {
-        X.re[j, 1:n.rep[j], l] <- sample(1:mu.RE$levels[l], n.rep[j], replace = TRUE)         
-      }
+      X.re[, , l] <- matrix(sample(1:mu.RE$levels[l], J * max(n.rep), replace = TRUE), 
+		              J, max(n.rep))	      
       for (i in 1:n.sp) {
-        beta.star[i, which(beta.star.indx == l)] <- rnorm(mu.RE$levels[l], 0, 
-							  sqrt(mu.RE$sigma.sq.mu[l]))
+        beta.star[i, which(beta.star.indx == l)] <- rnorm(mu.RE$levels[l], 0, sqrt(mu.RE$sigma.sq[l]))
+      }
+    }
+    for (j in 1:J) {
+      X.re[j, -(1:n.rep[j]), ] <- NA
+    }
+    indx.mat <- X.re[, , re.col.indx, drop = FALSE]
+    if (p.abund.re > 1) {
+      for (j in 2:p.abund.re) {
+        X.re[, , j] <- X.re[, , j] + max(X.re[, , j - 1], na.rm = TRUE) 
       }
     }
     if (p.abund.re > 1) {
       for (j in 2:p.abund.re) {
-        X.re[, , j] <- X.re[, , j] + max(X.re[, , j - 1], na.rm = TRUE)
+        indx.mat[, , j] <- indx.mat[, , j] + max(indx.mat[, , j - 1], na.rm = TRUE) 
       }
-    } 
-    beta.star.sites <- array(NA, dim = c(n.sp, J, max(n.rep)))
+    }
+    beta.star.sites <- array(NA, c(n.sp, J, max(n.rep)))
     for (i in 1:n.sp) {
-      beta.star.sites[i, , ] <- apply(X.re, c(1, 2), function(a) sum(beta.star[i, a]))
+      for (j in 1:J) {
+        for (k in 1:n.rep[j]) {
+          beta.star.sites[i, j, k] <- beta.star[i, indx.mat[j, k, ]] %*% X.random[j, k,] 
+	}
+      }
     }
   } else {
     X.re <- NA

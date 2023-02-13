@@ -253,35 +253,6 @@ simMsNMix <- function(J.x, J.y, n.rep, n.sp, beta, alpha, kappa, mu.RE = list(),
   }
 
   # Random effects --------------------------------------------------------
-  # if (length(mu.RE) > 0) {
-  #   # TODO: this does not currently simulate random slopes
-  #   p.abund.re <- length(mu.RE$levels)
-  #   sigma.sq.mu <- rep(NA, p.abund.re)
-  #   n.abund.re.long <- mu.RE$levels
-  #   n.abund.re <- sum(n.abund.re.long)
-  #   beta.star.indx <- rep(1:p.abund.re, n.abund.re.long)
-  #   beta.star <- matrix(0, n.sp, n.abund.re)
-  #   X.re <- matrix(NA, J, p.abund.re)
-  #   for (l in 1:p.abund.re) {
-  #     X.re[, l] <- sample(1:mu.RE$levels[l], J, replace = TRUE)         
-  #     for (i in 1:n.sp) {
-  #       beta.star[i, which(beta.star.indx == l)] <- rnorm(mu.RE$levels[l], 0, 
-  #       						  sqrt(mu.RE$sigma.sq.mu[l]))
-  #     }
-  #   }
-  #   if (p.abund.re > 1) {
-  #     for (j in 2:p.abund.re) {
-  #       X.re[, j] <- X.re[, j] + max(X.re[, j - 1], na.rm = TRUE)
-  #     }
-  #   } 
-  #   beta.star.sites <- matrix(NA, n.sp, J)
-  #   for (i in 1:n.sp) {
-  #     beta.star.sites[i, ] <- apply(X.re, 1, function(a) sum(beta.star[i, a]))
-  #   }
-  # } else {
-  #   X.re <- NA
-  #   beta.star <- NA
-  # }
   if (length(mu.RE) > 0) {
     p.abund.re <- length(unlist(mu.RE$beta.indx))
     tmp <- sapply(mu.RE$beta.indx, length)

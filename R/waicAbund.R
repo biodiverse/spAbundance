@@ -16,12 +16,13 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
     stop("error: object must be specified")
   }
   if (!(class(object) %in% c('NMix', 'spNMix', 'abund', 'spAbund', 
-			     'msAbund', 'sfMsAbund', 'msNMix', 'spMsNMix', 
+			     'msAbund', 'lfMsAbund', 
+			     'sfMsAbund', 'msNMix', 'spMsNMix', 
 			     'lfMsNMix', 'sfMsNMix'))) {
-    stop("error: object must be one of the following classes: abund, spAbund, NMix, spNMix, msAbund, sfMsAbund, msNMix, spMsNMix, lfMsNMix, sfMsNMix\n")
+    stop("error: object must be one of the following classes: abund, spAbund, NMix, spNMix, msAbund, lfMsAbund, sfMsAbund, msNMix, spMsNMix, lfMsNMix, sfMsNMix\n")
   }
 
-  if (!(class(object) %in% c('abund', 'spAbund', 'msAbund', 'sfMsAbund'))) {
+  if (!(class(object) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund', 'sfMsAbund'))) {
     if (missing(N.max)) {
       message("N.max not specified. Setting upper index of integration of\nN to 10 plus the largest estimated abundance value in object$N.samples")
       if (class(object) %in% c('msNMix', 'spMsNMix', 'lfMsNMix', 'sfMsNMix')) {
@@ -50,11 +51,21 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
   }
 
   # Multi-species abundance GLMs ------------------------------------------
-  if (class(object) %in% c('msAbund', 'sfMsAbund')) {
-    elpd <- sum(apply(object$like.samples, c(2, 3, 4), function(a) log(mean(a))), na.rm = TRUE)
-    pD <- sum(apply(object$like.samples, c(2, 3, 4), function(a) var(log(a))), na.rm = TRUE)
-    out <- c(elpd, pD, -2 * (elpd - pD))
-    names(out) <- c("elpd", "pD", "WAIC")
+  if (class(object) %in% c('msAbund', 'lfMsAbund', 'sfMsAbund')) {
+    if (by.species) {
+      elpd <- apply(apply(object$like.samples, c(2, 3, 4), function(a) log(mean(a))), 
+                    1, sum, na.rm = TRUE) 
+      pD <- apply(apply(object$like.samples, c(2, 3, 4), function(a) var(log(a))), 
+                  1, sum, na.rm = TRUE)
+      out <- data.frame(elpd = elpd, 
+			pD = pD, 
+			WAIC = -2 * (elpd - pD))
+    } else {
+      elpd <- sum(apply(object$like.samples, c(2, 3, 4), function(a) log(mean(a))), na.rm = TRUE)
+      pD <- sum(apply(object$like.samples, c(2, 3, 4), function(a) var(log(a))), na.rm = TRUE)
+      out <- c(elpd, pD, -2 * (elpd - pD))
+      names(out) <- c("elpd", "pD", "WAIC")
+    }
   }
 
   # Single-species N-mixture models ---------------------------------------

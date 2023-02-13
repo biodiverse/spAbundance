@@ -498,7 +498,7 @@ extern "C" {
               mu[j * nSp + i] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, &beta[i], &nSp) + 
                                     betaStarSites[i * nObs + j]);
               yRep[j * nSp + i] = rpois(mu[j * nSp + i]);
-              like[j * nSp + i] = dpois(y[j], mu[j], 0);
+              like[j * nSp + i] = dpois(y[j * nSp + i], mu[j * nSp + i], 0);
 	    } else {
               yRep[j * nSp + i] = rnbinom_mu(kappa[i], mu[j * nSp + i]);
               like[j * nSp + i] = dnbinom_mu(y[j * nSp + i], kappa[i], mu[j * nSp + i], 0);
