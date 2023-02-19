@@ -42,7 +42,8 @@ updated as new functionality is included
 | `msNMix()`             | *stable* Multi-species N-mixture model                                   |
 | `lfMsNMix()`           | *stable* Multi-species N-mixture model with species correlations         |
 | `sfMsNMix()`           | *stable* Multi-species spatial N-mixture model with species correlations |
-| `DS()`                 | *experimental* Single-species distance sampling model                    |
+| `DS()`                 | *stable* Single-species distance sampling model                          |
+| `spDS()`               | *stable* Single-species spatial distance sampling model                  |
 | `abund()`              | *stable* Single-species abundance GLM                                    |
 | `spAbund()`            | *stable* Single-species spatial abundance GLM                            |
 | `msAbund()`            | *stable* Multi-species abundance GLM                                     |
@@ -54,7 +55,7 @@ updated as new functionality is included
 | `simAbund()`           | *stable* Simulate single-species count data                              |
 | `simMsAbund()`         | *stable* Simulate multi-species count data                               |
 | `simMsNMix()`          | *stable* Simulate multi-species repeated count data                      |
-| `simDS()`              | *experimental* Simulate single-species distance sampling data            |
+| `simDS()`              | *stable* Simulate single-species distance sampling data                  |
 
 All model fitting functions allow for Poisson and negative binomial
 distributions for the abundance portion of the model.

@@ -552,7 +552,7 @@ extern "C" {
         }
 
         /********************************************************************
-         *Update detection  random effects variance
+         *Update detection random effects variance
          *******************************************************************/
         for (l = 0; l < pDetRE; l++) {
           tmp_0 = F77_NAME(ddot)(&nDetRELong[l], &alphaStar[alphaStarStart[l]], &inc, &alphaStar[alphaStarStart[l]], &inc); 

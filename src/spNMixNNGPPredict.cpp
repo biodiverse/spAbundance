@@ -20,10 +20,11 @@ extern "C" {
 
   SEXP spNMixNNGPPredict(SEXP coords_r, SEXP J_r, SEXP family_r,
 		         SEXP pAbund_r, SEXP m_r, SEXP X0_r, SEXP coords0_r, 
-			 SEXP J0_r, SEXP nnIndx0_r, SEXP betaSamples_r, 
+			 SEXP offset0_r, SEXP J0_r, SEXP nnIndx0_r, SEXP betaSamples_r, 
 			 SEXP thetaSamples_r, SEXP kappaSamples_r, SEXP wSamples_r, 
-			 SEXP betaStarSiteSamples_r, SEXP nSamples_r, 
-			 SEXP covModel_r, SEXP nThreads_r, SEXP verbose_r, 
+			 SEXP betaStarSiteSamples_r, 
+                         SEXP sitesLink_r, SEXP sites0Sampled_r, SEXP sites0_r,
+			 SEXP nSamples_r, SEXP covModel_r, SEXP nThreads_r, SEXP verbose_r, 
 			 SEXP nReport_r){
 
     int i, k, l, s, info, nProtect=0;
@@ -39,9 +40,13 @@ extern "C" {
 
     double *X0 = REAL(X0_r);
     double *coords0 = REAL(coords0_r);
+    double *offset0 = REAL(offset0_r);
     int J0 = INTEGER(J0_r)[0];
     int m = INTEGER(m_r)[0]; 
     int mm = m * m; 
+    int *sitesLink = INTEGER(sitesLink_r);
+    int *sites0Sampled = INTEGER(sites0Sampled_r);
+    int *sites0 = INTEGER(sites0_r);
 
     int *nnIndx0 = INTEGER(nnIndx0_r);        
     double *beta = REAL(betaSamples_r);
@@ -150,43 +155,46 @@ extern "C" {
 #ifdef _OPENMP
 	threadID = omp_get_thread_num();
 #endif 	
-	phi = theta[s*nTheta+phiIndx];
-	if(corName == "matern"){
-	  nu = theta[s*nTheta+nuIndx];
-	}
-	sigmaSq = theta[s*nTheta+sigmaSqIndx];
-
-	for(k = 0; k < m; k++){
-	  d = dist2(coords[nnIndx0[i+J0*k]], coords[J+nnIndx0[i+J0*k]], coords0[i], coords0[J0+i]);
-	  c[threadID*m+k] = sigmaSq*spCor(d, phi, nu, covModel, &bk[threadID*nb]);
-	  for(l = 0; l < m; l++){
-	    d = dist2(coords[nnIndx0[i+J0*k]], coords[J+nnIndx0[i+J0*k]], coords[nnIndx0[i+J0*l]], coords[J+nnIndx0[i+J0*l]]);
-	    C[threadID*mm+l*m+k] = sigmaSq*spCor(d, phi, nu, covModel, &bk[threadID*nb]);
+        if (sites0Sampled[i] == 1) {
+          w0[s * J0 + i] = w[s * J + sitesLink[i]];
+        } else {
+	  phi = theta[s*nTheta+phiIndx];
+	  if(corName == "matern"){
+	    nu = theta[s*nTheta+nuIndx];
 	  }
+	  sigmaSq = theta[s*nTheta+sigmaSqIndx];
+
+	  for(k = 0; k < m; k++){
+	    d = dist2(coords[nnIndx0[i+J0*k]], coords[J+nnIndx0[i+J0*k]], coords0[i], coords0[J0+i]);
+	    c[threadID*m+k] = sigmaSq*spCor(d, phi, nu, covModel, &bk[threadID*nb]);
+	    for(l = 0; l < m; l++){
+	      d = dist2(coords[nnIndx0[i+J0*k]], coords[J+nnIndx0[i+J0*k]], coords[nnIndx0[i+J0*l]], coords[J+nnIndx0[i+J0*l]]);
+	      C[threadID*mm+l*m+k] = sigmaSq*spCor(d, phi, nu, covModel, &bk[threadID*nb]);
+	    }
+	  }
+
+	  F77_NAME(dpotrf)(lower, &m, &C[threadID*mm], &m, &info FCONE); 
+	  if(info != 0){error("c++ error: dpotrf failed\n");}
+	  F77_NAME(dpotri)(lower, &m, &C[threadID*mm], &m, &info FCONE); 
+	  if(info != 0){error("c++ error: dpotri failed\n");}
+
+	  F77_NAME(dsymv)(lower, &m, &one, &C[threadID*mm], &m, &c[threadID*m], &inc, &zero, &tmp_m[threadID*m], &inc FCONE);
+
+	  d = 0;
+	  for(k = 0; k < m; k++){
+	    d += tmp_m[threadID*m+k]*w[s*J+nnIndx0[i+J0*k]];
+	  }
+
+	  #ifdef _OPENMP
+          #pragma omp atomic
+          #endif   
+	  vIndx++;
+	  
+	  w0[s*J0+i] = sqrt(sigmaSq - F77_NAME(ddot)(&m, &tmp_m[threadID*m], &inc, &c[threadID*m], &inc))*wV[vIndx] + d;
 	}
-
-	F77_NAME(dpotrf)(lower, &m, &C[threadID*mm], &m, &info FCONE); 
-	if(info != 0){error("c++ error: dpotrf failed\n");}
-	F77_NAME(dpotri)(lower, &m, &C[threadID*mm], &m, &info FCONE); 
-	if(info != 0){error("c++ error: dpotri failed\n");}
-
-	F77_NAME(dsymv)(lower, &m, &one, &C[threadID*mm], &m, &c[threadID*m], &inc, &zero, &tmp_m[threadID*m], &inc FCONE);
-
-	d = 0;
-	for(k = 0; k < m; k++){
-	  d += tmp_m[threadID*m+k]*w[s*J+nnIndx0[i+J0*k]];
-	}
-
-	#ifdef _OPENMP
-        #pragma omp atomic
-        #endif   
-	vIndx++;
-	
-	w0[s*J0+i] = sqrt(sigmaSq - F77_NAME(ddot)(&m, &tmp_m[threadID*m], &inc, &c[threadID*m], &inc))*wV[vIndx] + d;
-
 	mu0[s*J0+i] = exp(F77_NAME(ddot)(&pAbund, &X0[i], &J0, &beta[s*pAbund], &inc) + 
-			  w0[s*J0+i] + 
-			  betaStarSite[s * J0 + i]);
+                          w0[s*J0+i] + 
+                          betaStarSite[s * J0 + i]);
       }
       
       if(verbose){
@@ -217,9 +225,9 @@ extern "C" {
     for(i = 0; i < J0; i++){
       for(s = 0; s < nSamples; s++){
         if (family == 1) {   
-          N0[s * J0 + i] = rnbinom_mu(kappa[s], mu0[s * J0 + i]);
+          N0[s * J0 + i] = rnbinom_mu(kappa[s], mu0[s * J0 + i] * offset0[i]);
 	} else {
-          N0[s * J0 + i] = rpois(mu0[s * J0 + i]);
+          N0[s * J0 + i] = rpois(mu0[s * J0 + i] * offset0[i]);
 	}
       } // s
     } // i

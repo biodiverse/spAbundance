@@ -21,6 +21,22 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   rigamma <- function(n, a, b){
     1/rgamma(n = n, shape = a, rate = b)
   }
+  # Half-normal detection function
+  halfNormal <- function(x, sigma, transect) {
+    if (transect == 'line') {
+      exp(-x^2 / (2 * sigma^2))
+    } else {
+      exp(-x^2 / (2 * sigma^2)) * x
+    }
+  }
+  # Negative exponential detection function
+  negExp <- function(x, sigma, transect) {
+    if (transect == 'line') {
+      exp(-x / sigma)
+    } else {
+      exp(-x / sigma) * x
+    }
+  }
 
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -839,6 +855,14 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
   out$N.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$N.samples))))
   out$mu.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$mu.samples))))
+  out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
+									c(K + 1, J, n.post.samples))))
+  out$y.rep.samples <- aperm(out$y.rep.samples, c(3, 2, 1))
+  out$y.rep.samples <- out$y.rep.samples[, , -c(K + 1)]
+  out$pi.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$pi.samples, 
+									c(K + 1, J, n.post.samples))))
+  out$pi.samples <- aperm(out$pi.samples, c(3, 2, 1))
+  out$pi.samples <- out$pi.samples[, , -c(K + 1)]
   if (p.abund.re > 0) {
     out$sigma.sq.mu.samples <- mcmc(
       do.call(rbind, lapply(out.tmp, function(a) t(a$sigma.sq.mu.samples))))
@@ -880,6 +904,7 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   out$X.p.re <- X.p.re
   out$X.p.random <- X.p.random
   out$y <- y.mat
+  out$offset <- offset
   out$n.samples <- n.samples
   out$call <- cl
   out$n.post <- n.post.samples
@@ -888,7 +913,10 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   out$n.chains <- n.chains
   out$re.cols <- re.cols
   out$re.det.cols <- re.det.cols
+  out$det.model <- det.model
+  out$dist.breaks <- dist.breaks
   out$dist <- family 
+  out$transect <- transect
   if (p.det.re > 0) {
     out$pRE <- TRUE
   } else {
@@ -922,21 +950,23 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       y.mat.0 <- y.mat[curr.set, , drop = FALSE]
       N.inits.fit <- N.inits[-curr.set]
       y.max.fit <- y.max[-curr.set]
-      X.p.fit <- X.p[y.indx, , drop = FALSE]
-      X.p.0 <- X.p[!y.indx, , drop = FALSE]
+      X.p.fit <- X.p[-curr.set, , drop = FALSE]
+      X.p.0 <- X.p[curr.set, , drop = FALSE]
       X.fit <- X[-curr.set, , drop = FALSE]
       X.0 <- X[curr.set, , drop = FALSE]
+      offset.fit <- offset[-curr.set]
+      offset.0 <- offset[curr.set]
       J.fit <- nrow(X.fit)
       J.0 <- nrow(X.0)
-      K.fit <- K[-curr.set]
-      K.0 <- K[curr.set]
-      n.obs.fit <- nrow(X.p.fit)
-      n.obs.0 <- nrow(X.p.0)
+      K.fit <- K
+      K.0 <- K
+      n.obs.fit <- K.fit * J.fit
+      n.obs.0 <- K.0 * J.0
       # Random Detection Effects
-      X.p.re.fit <- X.p.re[y.indx, , drop = FALSE]
-      X.p.re.0 <- X.p.re[!y.indx, , drop = FALSE]
-      X.p.random.fit <- X.p.random[y.indx, , drop = FALSE]
-      X.p.random.0 <- X.p.random[!y.indx, , drop = FALSE]
+      X.p.re.fit <- X.p.re[-curr.set, , drop = FALSE]
+      X.p.re.0 <- X.p.re[curr.set, , drop = FALSE]
+      X.p.random.fit <- X.p.random[-curr.set, , drop = FALSE]
+      X.p.random.0 <- X.p.random[curr.set, , drop = FALSE]
       n.det.re.fit <- length(unique(c(X.p.re.fit)))
       n.det.re.long.fit <- apply(X.p.re.fit, 2, function(a) length(unique(a)))
       if (p.det.re > 0) {	
@@ -981,13 +1011,13 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       # Gotta be a better way, but will do for now. 
       N.long.indx.fit <- matrix(NA, J.fit, max(K.fit))
       for (j in 1:J.fit) {
-        N.long.indx.fit[j, 1:K.fit[j]] <- j  
+        N.long.indx.fit[j, 1:K.fit] <- j  
       }
       N.long.indx.fit <- c(N.long.indx.fit)
       N.long.indx.fit <- N.long.indx.fit[!is.na(N.long.indx.fit)] - 1
       N.0.long.indx <- matrix(NA, nrow(X.0), max(K.0))
       for (j in 1:nrow(X.0)) {
-        N.0.long.indx[j, 1:K.0[j]] <- j  
+        N.0.long.indx[j, 1:K.0] <- j  
       }
       N.0.long.indx <- c(N.0.long.indx)
       N.0.long.indx <- N.0.long.indx[!is.na(N.0.long.indx)] 
@@ -999,11 +1029,12 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       storage.mode(X.fit) <- "double"
       storage.mode(K.fit) <- "double"
       storage.mode(y.max.fit) <- "double"
+      storage.mode(offset.fit) <- "double"
       consts.fit <- c(J.fit, n.obs.fit, p.abund, p.abund.re, n.abund.re.fit, 
                       p.det, p.det.re, n.det.re.fit)
       storage.mode(consts.fit) <- "integer"
+      storage.mode(K.fit) <- "integer"
       storage.mode(N.long.indx.fit) <- "integer"
-      storage.mode(n.samples) <- "integer"
       storage.mode(n.omp.threads.fit) <- "integer"
       storage.mode(verbose.fit) <- "integer"
       storage.mode(n.report) <- "integer"
@@ -1022,8 +1053,8 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       chain.info[1] <- 1
       storage.mode(chain.info) <- "integer"
       # Run the model in C
-      out.fit <- .Call("NMix", y.fit, X.fit, X.p.fit, X.re.fit, X.p.re.fit,
-		       X.random.fit, X.p.random.fit, y.max.fit, consts.fit, 
+      out.fit <- .Call("DS", y.fit, X.fit, X.p.fit, X.re.fit, X.p.re.fit,
+		       X.random.fit, X.p.random.fit, y.max.fit, offset.fit, consts.fit, 
       		       K.fit, n.abund.re.long.fit, n.det.re.long.fit, 
 		       beta.inits, alpha.inits, kappa.inits,
       		       sigma.sq.mu.inits, sigma.sq.p.inits, beta.star.inits.fit, 
@@ -1031,6 +1062,7 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       		       beta.level.indx.fit, alpha.star.indx.fit, alpha.level.indx.fit, mu.beta, 
 		       Sigma.beta, mu.alpha, Sigma.alpha, sigma.sq.mu.a, sigma.sq.mu.b, 
       		       sigma.sq.p.a, sigma.sq.p.b, kappa.a, kappa.b, 
+		       det.model.indx, transect.c, dist.breaks,
 		       tuning.c, n.batch, batch.length, accept.rate, n.omp.threads.fit, 
 		       verbose.fit, n.report, samples.info, chain.info, family.c)
       out.fit$beta.samples <- mcmc(t(out.fit$beta.samples))
@@ -1052,6 +1084,10 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       out.fit$re.cols <- re.cols
       out.fit$re.det.cols <- re.det.cols
       out.fit$dist <- family 
+      out.fit$det.model <- det.model
+      out.fit$dist.breaks <- dist.breaks
+      out.fit$transect <- transect
+      out.fit$offset <- offset.fit
       if (p.det.re > 0) {
         out.fit$RE <- TRUE
       } else {
@@ -1087,7 +1123,7 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       } else {
         out.fit$pRE <- FALSE
       }
-      class(out.fit) <- "NMix"
+      class(out.fit) <- "DS"
 
       # Get RE levels correct for use in prediction code. 
       if (p.abund.re > 0) {
@@ -1106,7 +1142,7 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       }
       # Predict abundance at new sites
       if (p.abund.re > 0) {X.0 <- cbind(X.0, X.re.0)}
-      out.pred <- predict.NMix(out.fit, X.0)
+      out.pred <- predict.DS(out.fit, X.0, offset = offset.0)
 
       # Get RE levels correct for use in prediction code. 
       if (p.det.re > 0) {
@@ -1125,14 +1161,54 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       }
       # Generate detection values
       if (p.det.re > 0) {X.p.0 <- cbind(X.p.0, X.p.re.0)}
-      out.p.pred <- predict.NMix(out.fit, X.p.0, type = 'detection')
+      out.p.pred <- predict.DS(out.fit, X.p.0, type = 'detection')
 
-      y.hat.samples <- matrix(NA, nrow(out.pred$N.0.samples), nrow(X.p.0))
-      for (j in 1:nrow(X.p.0)) {
-        y.hat.samples[, j] <- rbinom(nrow(out.pred$N.0.samples), out.pred$N.0.samples[, N.0.long.indx[j]],
-				     out.p.pred$p.0.samples[, j])
+      # Generate cell probabilities and predicted y values from sigma predictions. 
+      y.hat.samples <- array(NA, dim = c(nrow(out.pred$N.0.samples), 
+					     J.0, K.0 + 1))
+      p <- array(NA, dim = c(J.0, K.0))
+      strip.width <- sum(diff(dist.breaks))
+      psi <- rep(NA, K.0)
+      # Get correlation function
+      if (det.model == 'halfnormal') {
+        curr.function <- halfNormal
       }
-      rmspe.samples <- apply(y.hat.samples, 1, function(a) sqrt(mean(y.0 - a)^2))
+      if (det.model == 'negexp') {
+        curr.function <- negExp
+      }
+      for (t in 1:nrow(out.pred$N.0.samples)) {
+        for (j in 1:J.0) {
+          for (k in 1:K.0) {
+            p[j, k] <- integrate(curr.function, dist.breaks[k], 
+              		   dist.breaks[k + 1], 
+            		   sig = out.p.pred$sigma.0.samples[t, j], 
+			   transect = transect)$value
+            if (transect == 'line') {
+              p[j, k] <- p[j, k] / (dist.breaks[k + 1] - dist.breaks[k])
+            } else {
+              p[j, k] <- p[j, k] * 2 / (dist.breaks[k + 1]^2 - dist.breaks[k]^2)
+            }
+          }
+        }
+        # Probability an individual occurs in each interval.
+        bin.width <- diff(dist.breaks)
+        for (k in 1:K.0) {
+          if (transect == 'line') {
+            psi[k] <- bin.width[k] / strip.width
+          } else {
+            psi[k] <- (dist.breaks[k + 1]^2 - dist.breaks[k]^2) / strip.width^2
+          }
+        }
+        # Multinomial cell probability
+        pi.obs <- t(apply(p,  1, function(a) a * psi))
+        pi.full <- cbind(pi.obs, 1 - apply(pi.obs, 1, sum))
+
+        for (j in 1:J.0) {
+          y.hat.samples[t, j, ] <- rmultinom(1, out.pred$N.0.samples[t, j], pi.full[j, ])
+        }
+      }
+      rmspe.samples <- apply(y.hat.samples[, , -(K.0 + 1)], 1, 
+			     function(a) sqrt(mean(y.mat.0 - a)^2))
       mean(rmspe.samples, na.rm = TRUE) 
     }
     # Return objects from cross-validation

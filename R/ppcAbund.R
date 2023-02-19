@@ -20,8 +20,9 @@ ppcAbund <- function(object, fit.stat, group, ...) {
   # }
   if (!(class(object) %in% c('NMix', 'spNMix', 'abund', 'spAbund', 
 			     'msAbund', 'lfMsAbund', 'sfMsAbund', 
-			     'msNMix', 'spNMix', 'lfMsNMix', 'sfMsNMix'))) {
-    stop("error: object must be one of the following classes: NMix, spNMix, abund, spAbund, msAbund, lfMsAbund, sfMsAbund, msNMix")
+			     'msNMix', 'spNMix', 'lfMsNMix', 'sfMsNMix', 
+			     'DS'))) {
+    stop("error: object must be one of the following classes: NMix, spNMix, abund, spAbund, msAbund, lfMsAbund, sfMsAbund, msNMix, lfMsNMix, sfMsNMix")
   }
   # Fit statistic ---------------------
   if (missing(fit.stat)) {
@@ -40,6 +41,10 @@ ppcAbund <- function(object, fit.stat, group, ...) {
   }
   if (group != 0 & class(object) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund')) {
     stop("error: group must be 0 (raw data) for abundance GLM models")
+  }
+  
+  if (group == 2 & class(object) %in% c('DS', 'spDS', 'msDS', 'lfMsDS', 'sfMsDS')) {
+    stop("group must be 0 (raw data) or 1 (sites) for distance sampling models")
   }
 
   out <- list()
@@ -127,6 +132,91 @@ ppcAbund <- function(object, fit.stat, group, ...) {
       } else if (fit.stat == 'freeman-tukey') {
         for (i in 1:n.samples) {
           E.grouped <- apply(det.prob[i, , , drop = FALSE] * N.samples[i, ], 3, sum, na.rm = TRUE)
+          fit.big.y[, i] <- (sqrt(y.grouped) - sqrt(E.grouped))^2 
+          fit.y[i] <- sum(fit.big.y[, i])
+	  fit.big.y.rep[, i] <- (sqrt(y.rep.grouped[i,]) - sqrt(E.grouped))^2 
+          fit.y.rep[i] <- sum(fit.big.y.rep[, i])
+        }
+      }
+    }
+    out$fit.y <- fit.y
+    out$fit.y.rep <- fit.y.rep
+    if (group != 0) {
+      out$fit.y.group.quants <- apply(fit.big.y, 1, quantile, c(0.025, 0.25, 0.5, 0.75, 0.975))
+      out$fit.y.rep.group.quants <- apply(fit.big.y.rep, 1, quantile, c(0.025, 0.25, 0.5, 0.75, 0.975))
+    } else {
+      out$fit.y.group.quants <- apply(fit.big.y, c(1, 2), quantile, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm = TRUE)
+      out$fit.y.rep.group.quants <- apply(fit.big.y.rep, c(1, 2), quantile, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm = TRUE)
+    }
+    # For summaries
+    out$group <- group
+    out$fit.stat <- fit.stat
+    out$class <- class(object)
+    out$call <- cl
+    out$n.samples <- object$n.samples
+    out$n.burn <- object$n.burn
+    out$n.thin <- object$n.thin
+    out$n.post <- object$n.post
+    out$n.chains <- object$n.chains
+  } 
+ 
+  # Single-species distance sampling models ------------------------------- 
+  if (class(object) %in% c('DS', 'spDS')) {
+    y <- object$y
+    J <- nrow(y)
+    N.samples <- object$N.samples
+    y.rep.samples <- object$y.rep.samples
+    pi.samples <- object$pi.samples
+    n.samples <- object$n.post * object$n.chains
+    fit.y <- rep(NA, n.samples)
+    fit.y.rep <- rep(NA, n.samples)
+    K <- dim(y)[2]
+    e <- 0.0001
+    if (group == 0) {
+      if (fit.stat %in% c('chi-squared', 'chi-square')) {
+        fit.big.y.rep <- array(NA, dim = c(J, K, n.samples))
+        fit.big.y <- array(NA, dim = c(J, K, n.samples))
+        for (i in 1:n.samples) {
+	  for (j in 1:J) {
+            E <- pi.samples[i, j, ] * N.samples[i, j]
+	    fit.big.y.rep[j, , i] <- (y.rep.samples[i, j, ] - E)^2 / (E + e)
+	    fit.big.y[j, , i] <- (y[j, ] - E)^2 / (E + e)
+	  } # j
+	  fit.y[i] <- sum(fit.big.y[, , i], na.rm = TRUE)
+	  fit.y.rep[i] <- sum(fit.big.y.rep[, , i], na.rm = TRUE)
+	} # i
+      } else if (fit.stat == 'freeman-tukey') {
+        fit.big.y.rep <- array(NA, dim = c(J, K, n.samples))
+        fit.big.y <- array(NA, dim = c(J, K, n.samples))
+        for (i in 1:n.samples) {
+	  for (j in 1:J) {
+            E <- pi.samples[i, j, ] * N.samples[i, j]
+	    fit.big.y.rep[j, , i] <- (y.rep.samples[i, j, ] - E)^2 / (E + e)
+	    fit.big.y.rep[j, , i] <- (sqrt(y.rep.samples[i, j, ]) - sqrt(E))^2
+	    fit.big.y[j, , i] <- (sqrt(y[j, ]) - sqrt(E))^2
+	  } # j
+	  fit.y[i] <- sum(fit.big.y[, , i], na.rm = TRUE)
+	  fit.y.rep[i] <- sum(fit.big.y.rep[, , i], na.rm = TRUE)
+	} # i
+      }
+    }
+    # Do the stuff 
+    if (group == 1) {
+      y.grouped <- apply(y, 1, sum, na.rm = TRUE)
+      y.rep.grouped <- apply(y.rep.samples, c(1, 2), sum, na.rm = TRUE)
+      fit.big.y.rep <- matrix(NA, length(y.grouped), n.samples)
+      fit.big.y <- matrix(NA, length(y.grouped), n.samples)
+      if (fit.stat %in% c('chi-squared', 'chi-square')) {
+        for (i in 1:n.samples) {
+          E.grouped <- apply(pi.samples[i, , , drop = FALSE] * N.samples[i, ], 2, sum, na.rm = TRUE)
+          fit.big.y[, i] <- (y.grouped - E.grouped)^2 / (E.grouped + e)
+          fit.y[i] <- sum(fit.big.y[, i])
+	  fit.big.y.rep[, i] <- (y.rep.grouped[i,] - E.grouped)^2 / (E.grouped + e)
+          fit.y.rep[i] <- sum(fit.big.y.rep[, i])
+        }
+      } else if (fit.stat == 'freeman-tukey') {
+        for (i in 1:n.samples) {
+          E.grouped <- apply(pi.samples[i, , , drop = FALSE] * N.samples[i, ], 2, sum, na.rm = TRUE)
           fit.big.y[, i] <- (sqrt(y.grouped) - sqrt(E.grouped))^2 
           fit.y[i] <- sum(fit.big.y[, i])
 	  fit.big.y.rep[, i] <- (sqrt(y.rep.grouped[i,]) - sqrt(E.grouped))^2 

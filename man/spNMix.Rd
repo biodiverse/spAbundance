@@ -172,7 +172,7 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
     \emph{k} times (the folds). As a scoring rule, we use the root 
     mean squared prediction error. Cross-validation is performed
     after the full model is fit using all the data. Cross-validation results
-    are reported in the \code{k.fold.deviance} object in the return list.}
+    are reported in the \code{rmspe} object in the return list.}
   
   \item{k.fold.threads}{number of threads to use for cross-validation. If 
     \code{k.fold.threads > 1} parallel processing is accomplished using the 
@@ -184,7 +184,7 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
 
   \item{k.fold.only}{logical value indicating whether to only perform
   k-fold cross-validation. Setting this to \code{TRUE} will only return
-  the k-fold deviance.}
+  the k-fold rmspe.}
   
   \item{...}{currently no additional arguments}
 }
@@ -267,7 +267,7 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
 
   \item{run.time}{execution time reported using \code{proc.time()}.}
 
-  \item{rmspe}{soring rule (root mean squared prediciton error) from k-fold cross-validation. 
+  \item{rmspe}{scoring rule (root mean squared prediciton error) from k-fold cross-validation. 
     Only included if \code{k.fold} is specified in function call.}
 
   The return object will include additional objects used for 

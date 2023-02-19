@@ -66,35 +66,61 @@ extern "C" {
      * Calculate WAIC
      *********************************************************************/
     GetRNGstate(); 
-    for (i = 0; i < nSamples; i++) {
-      // Rprintf("Sample: %i\n", i);
-      zeros(like, J);
-      for (j = 0; j < J; j++) {
-        for (t = yMax[j]; t < NMax; t++) {
-          yProd = 1.0;
-          for (k = 0; k < K[j]; k++) {
-            // Rprintf("pCurr[%i]: %f\n",             
-            yProd *= dbinom(y[k * J + j], t, pSamples[k * JnSamples + j * nSamples + i], 0);
-	  } // k (replicate)
-          if (dist == 1) {
-            tmp_NMax[t] = dnbinom_mu(t, kappaSamples[i], muSamples[j * nSamples + i], 0);
-	  } else {
-            tmp_NMax[t] = dpois(t, muSamples[j * nSamples + i], 0);
-	  }
-	  // if (yProd == 1.0) {
-          //   Rprintf("j: %i\n", j);
-	  // }
-	  // if (yProd == 1.0) {
-	  //   Rprintf("tmp_Nmax[%i]: %f\n", t, tmp_NMax[t]);
-	  //   Rprintf("yProd: %f\n", yProd);
-	  // }
-	  like[j] += tmp_NMax[t] * yProd;
-        } // t (NMax)
-	like[j] = like[j];
-      } // j (site)
-      F77_NAME(dcopy)(&J, like, &inc, &REAL(likeSamples_r)[i*J], &inc);
-      R_CheckUserInterrupt();
-    } // i (nSamples)
+    /**********************************
+     * N-mixture models 
+     **********************************/
+    if (modelType == 0) {
+      for (i = 0; i < nSamples; i++) {
+        // Rprintf("Sample: %i\n", i);
+        zeros(like, J);
+        for (j = 0; j < J; j++) {
+          for (t = yMax[j]; t < NMax; t++) {
+            yProd = 1.0;
+            for (k = 0; k < K[j]; k++) {
+              // Rprintf("pCurr[%i]: %f\n",             
+              yProd *= dbinom(y[k * J + j], t, pSamples[k * JnSamples + j * nSamples + i], 0);
+            } // k (replicate)
+            if (dist == 1) {
+              tmp_NMax[t] = dnbinom_mu(t, kappaSamples[i], muSamples[j * nSamples + i], 0);
+            } else {
+              tmp_NMax[t] = dpois(t, muSamples[j * nSamples + i], 0);
+            }
+            like[j] += tmp_NMax[t] * yProd;
+          } // t (NMax)
+          like[j] = like[j];
+        } // j (site)
+        F77_NAME(dcopy)(&J, like, &inc, &REAL(likeSamples_r)[i*J], &inc);
+        R_CheckUserInterrupt();
+      } // i (nSamples)
+    }
+    /**********************************
+     * Distance sampling
+     **********************************/
+    if (modelType == 1) {
+      for (i = 0; i < nSamples; i++) {
+        zeros(like, J);
+        for (j = 0; j < J; j++) {
+          for (t = yMax[j]; t < NMax; t++) {
+            yProd = 0.0;
+            for (k = 0; k < K[j]; k++) {
+	      yProd -= lgammafn(y[k * J + j] + 1.0); 
+	      yProd += log(pSamples[k * JnSamples + j * nSamples + i]) * y[k * J + j];
+            } // k (replicate)
+	    yProd += ((t - yMax[j]) * log(pSamples[K[j] * JnSamples + j * nSamples + i])) +
+                     lgammafn(t + 1.0) - lgammafn(t - yMax[j] + 1.0);
+            if (dist == 1) {
+              tmp_NMax[t] = dnbinom_mu(t, kappaSamples[i], muSamples[j * nSamples + i], 0);
+            } else {
+              tmp_NMax[t] = dpois(t, muSamples[j * nSamples + i], 0);
+            }
+            like[j] += tmp_NMax[t] * exp(yProd);
+          } // t (NMax)
+          like[j] = like[j];
+        } // j (site)
+        F77_NAME(dcopy)(&J, like, &inc, &REAL(likeSamples_r)[i*J], &inc);
+        R_CheckUserInterrupt();
+      } // i (nSamples)
+    }
     PutRNGstate();
 
     SEXP result_r, resultName_r;

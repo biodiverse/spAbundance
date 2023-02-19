@@ -17,15 +17,15 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
   }
   if (!(class(object) %in% c('NMix', 'spNMix', 'abund', 'spAbund', 
 			     'msAbund', 'lfMsAbund', 
-			     'sfMsAbund', 'msNMix', 'spMsNMix', 
-			     'lfMsNMix', 'sfMsNMix'))) {
-    stop("error: object must be one of the following classes: abund, spAbund, NMix, spNMix, msAbund, lfMsAbund, sfMsAbund, msNMix, spMsNMix, lfMsNMix, sfMsNMix\n")
+			     'sfMsAbund', 'msNMix', 
+			     'lfMsNMix', 'sfMsNMix', 'DS', 'spDS'))) {
+    stop("error: object must be one of the following classes: abund, spAbund, NMix, spNMix, msAbund, lfMsAbund, sfMsAbund, msNMix, lfMsNMix, sfMsNMix, DS, spDS\n")
   }
 
   if (!(class(object) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund', 'sfMsAbund'))) {
     if (missing(N.max)) {
       message("N.max not specified. Setting upper index of integration of\nN to 10 plus the largest estimated abundance value in object$N.samples")
-      if (class(object) %in% c('msNMix', 'spMsNMix', 'lfMsNMix', 'sfMsNMix')) {
+      if (class(object) %in% c('msNMix', 'lfMsNMix', 'sfMsNMix')) {
         N.max <- apply(object$N.samples, 2, max) + 10
       } else {
         N.max <- max(object$N.samples) + 10 
@@ -176,6 +176,55 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
     }
   }
 
+  # Single-species distance sampling --------------------------------------
+  if (class(object) %in% c('DS', 'spDS')) {
+    N.samples <- object$N.samples
+    n.samples <- object$n.post * object$n.chains
+    kappa.samples <- object$kappa.samples
+    y <- object$y
+    J <- nrow(y)
+    y.sum <- apply(y, 1, sum, na.rm = TRUE)
+    # TODO: 
+    # y.max <- ifelse(y.max == 0, 1, y.max)
+    # The number of distance bins
+    K <- apply(y, 1, function(a) sum(!is.na(a)))
+    K.max <- max(K)
+    mu.samples <- t(apply(object$mu.samples, 1, function(a) a * object$offset))
+    pi.samples <- object$pi.samples
+    pi.samples <- array(NA, dim = c(n.samples, J, K.max + 1))
+    pi.samples[, , 1:K.max] <- object$pi.samples
+    pi.samples[, , K.max + 1] <- apply(object$pi.samples, c(1, 2),
+				       function(a) 1 - sum(a))
+    # dist == 1 for NB, 0 for Poisson
+    dist <- object$dist
+    dist <- ifelse(dist == 'NB', 1, 0)
+    # Model Type: 0 = single-species N-mixture, 
+    #             1 = single-species distance sampling
+    model.type <- 1
+
+    storage.mode(J) <- "integer"
+    storage.mode(N.samples) <- "double"
+    storage.mode(n.samples) <- "integer"
+    storage.mode(kappa.samples) <- "double"
+    storage.mode(y) <- "double"
+    storage.mode(K) <- "integer"
+    storage.mode(mu.samples) <- "double"
+    storage.mode(pi.samples) <- "double"
+    storage.mode(dist) <- "integer"
+    storage.mode(model.type) <- "integer"
+    storage.mode(N.max) <- "integer"
+    storage.mode(K.max) <- "integer"
+    storage.mode(y.sum) <- "integer"
+
+    tmp <- .Call("waicAbund", J, K, dist, model.type, 
+		 y, n.samples, N.samples, 
+		 kappa.samples, mu.samples, pi.samples, 
+		 N.max, K.max, y.sum)
+    elpd <- sum(apply(tmp$like.samples, 1, function(a) log(mean(a))), na.rm = TRUE)
+    pD <- sum(apply(tmp$like.samples, 1, function(a) var(log(a))), na.rm = TRUE)
+    out <- c(elpd, pD, -2 * (elpd - pD))
+    names(out) <- c("elpd", "pD", "WAIC")
+  }
   return(out)
 
 }

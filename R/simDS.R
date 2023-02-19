@@ -261,21 +261,21 @@ simDS <- function(J.x, J.y, n.bins, bin.width, beta, alpha, det.model, transect 
   # Latent abundance process ----------------------------------------------
   if (sp) {
     if (length(mu.RE) > 0) {
-      mu <- offset * exp(X %*% as.matrix(beta) + w + beta.star.sites)
+      mu <- exp(X %*% as.matrix(beta) + w + beta.star.sites)
     } else {
-      mu <- offset * exp(X %*% as.matrix(beta) + w)
+      mu <- exp(X %*% as.matrix(beta) + w)
     }
   } else {
     if (length(mu.RE) > 0) {
-      mu <- offset * exp(X %*% as.matrix(beta) + beta.star.sites)
+      mu <- exp(X %*% as.matrix(beta) + beta.star.sites)
     } else {
-      mu <- offset * exp(X %*% as.matrix(beta))
+      mu <- exp(X %*% as.matrix(beta))
     }
   }
   if (family == 'NB') {
-    N <- rnbinom(J, size = kappa, mu = mu)
+    N <- rnbinom(J, size = kappa, mu = mu * offset)
   } else {
-    N <- rpois(J, lambda = mu)
+    N <- rpois(J, lambda = mu * offset)
   }
 
   # Data Formation --------------------------------------------------------
