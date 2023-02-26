@@ -41,10 +41,9 @@ extern "C" {
     double *kappaSamples = REAL(kappaSamples_r);
     double *muSamples = REAL(muSamples_r);
     double *pSamples = REAL(pSamples_r);
-    int NMax = INTEGER(NMax_r)[0];
+    int *NMax = INTEGER(NMax_r);
     int KMax = INTEGER(KMax_r)[0];
     int *yMax = INTEGER(yMax_r);
-
 
     /**********************************************************************
      * Return stuff
@@ -56,8 +55,7 @@ extern "C" {
      * Other set up
      *********************************************************************/
     double *like = (double *) R_alloc(J, sizeof(double)); zeros(like, J);
-    double *tmp_NMax = (double *) R_alloc(NMax, sizeof(double)); 
-    zeros(tmp_NMax, NMax);
+    double tmp_0 = 0.0; 
     double yProd = 1.0;
     int JnSamples = J * nSamples;
 
@@ -74,18 +72,18 @@ extern "C" {
         // Rprintf("Sample: %i\n", i);
         zeros(like, J);
         for (j = 0; j < J; j++) {
-          for (t = yMax[j]; t < NMax; t++) {
+          for (t = yMax[j]; t < NMax[j]; t++) {
             yProd = 1.0;
             for (k = 0; k < K[j]; k++) {
               // Rprintf("pCurr[%i]: %f\n",             
               yProd *= dbinom(y[k * J + j], t, pSamples[k * JnSamples + j * nSamples + i], 0);
             } // k (replicate)
             if (dist == 1) {
-              tmp_NMax[t] = dnbinom_mu(t, kappaSamples[i], muSamples[j * nSamples + i], 0);
+              tmp_0 = dnbinom_mu(t, kappaSamples[i], muSamples[j * nSamples + i], 0);
             } else {
-              tmp_NMax[t] = dpois(t, muSamples[j * nSamples + i], 0);
+              tmp_0 = dpois(t, muSamples[j * nSamples + i], 0);
             }
-            like[j] += tmp_NMax[t] * yProd;
+            like[j] += tmp_0 * yProd;
           } // t (NMax)
           like[j] = like[j];
         } // j (site)
@@ -100,7 +98,7 @@ extern "C" {
       for (i = 0; i < nSamples; i++) {
         zeros(like, J);
         for (j = 0; j < J; j++) {
-          for (t = yMax[j]; t < NMax; t++) {
+          for (t = yMax[j]; t < NMax[j]; t++) {
             yProd = 0.0;
             for (k = 0; k < K[j]; k++) {
 	      yProd -= lgammafn(y[k * J + j] + 1.0); 
@@ -109,11 +107,11 @@ extern "C" {
 	    yProd += ((t - yMax[j]) * log(pSamples[K[j] * JnSamples + j * nSamples + i])) +
                      lgammafn(t + 1.0) - lgammafn(t - yMax[j] + 1.0);
             if (dist == 1) {
-              tmp_NMax[t] = dnbinom_mu(t, kappaSamples[i], muSamples[j * nSamples + i], 0);
+              tmp_0 = dnbinom_mu(t, kappaSamples[i], muSamples[j * nSamples + i], 0);
             } else {
-              tmp_NMax[t] = dpois(t, muSamples[j * nSamples + i], 0);
+              tmp_0 = dpois(t, muSamples[j * nSamples + i], 0);
             }
-            like[j] += tmp_NMax[t] * exp(yProd);
+            like[j] += tmp_0 * exp(yProd);
           } // t (NMax)
           like[j] = like[j];
         } // j (site)

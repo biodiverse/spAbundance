@@ -16,10 +16,14 @@ waicAbund(object, N.max, by.species = FALSE, ...)
   \code{lfMsNMix}, \code{sfMsNMix}, \code{abund}, \code{spAbund}, 
   \code{msAbund}, \code{lfMsAbund}, \code{sfMsAbund}, \code{DS}, \code{spDS}.}
 
-  \item{N.max}{integer value indicating the upper limit on the latent abundance 
+  \item{N.max}{values indicating the upper limit on the latent abundance 
   values when calculating WAIC for N-mixture models or distance sampling models. 
-  Defaults to ten plus the largest abundance value in the posterior 
-  samples \code{object$N.samples}.}
+  For single-species models, this can be a single value or a vector of 
+  different values for each site. For multi-species models, this can be a 
+  single value, a vector of values for each species, or a species by site matrix
+  for a separate value for each species/site combination. 
+  Defaults to ten plus the largest abundance value for each site/species 
+  in the posterior samples \code{object$N.samples}.}
 
   \item{by.species}{a logical value indicating whether or not WAIC should be
     reported individually for each species (\code{TRUE}) or summed across

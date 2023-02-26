@@ -7,8 +7,9 @@
 }
 
 \usage{
-\method{predict}{spDS}(object, X.0, coords.0, n.omp.threads = 1, verbose = TRUE, 
-                 n.report = 100, ignore.RE = FALSE, offset, type = 'abundance', ...)
+\method{predict}{spDS}(object, X.0, coords.0, n.omp.threads = 1, 
+                       verbose = TRUE, n.report = 100, ignore.RE = FALSE, 
+                       k.fold.offset, type = 'abundance', ...)
 }
 
 \arguments{
@@ -36,7 +37,7 @@
 
   \item{type}{a quoted keyword indicating what type of prediction to produce. Valid keywords are 'abundance' to predict latent abundance and expected abundance values (this is the default), or 'detection' to predict detection probability given new values of detection covariates.}
 
-  \item{offset}{a single value or numeric vector containing an offset for each of the prediction sites. If supplied, the \code{N.0.samples} object will consist of transect-level estimates of latent abundance, while the \code{mu.0.samples} object will consist of expected abundance per unit area (i.e., density).} 
+  \item{k.fold.offset}{offset used when performing cross-validation. This should not be specified by the user.} 
 
   \item{...}{currently no additional arguments}
 }
@@ -58,8 +59,7 @@
     when an offset was used when fitting the model with \code{spDS()}.}
 
   \item{N.0.samples}{a \code{coda} object of posterior predictive samples for the
-    latent abundance values. If \code{offset} is specified, these will be transect-level
-    estimates of abundance.}
+    latent abundance values. These will be in the same units as \code{mu.0.samples}}
 
   \item{w.0.samples}{a \code{coda} object of posterior predictive samples 
     for the latent spatial random effects.}

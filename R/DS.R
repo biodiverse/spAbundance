@@ -1142,7 +1142,7 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       }
       # Predict abundance at new sites
       if (p.abund.re > 0) {X.0 <- cbind(X.0, X.re.0)}
-      out.pred <- predict.DS(out.fit, X.0, offset = offset.0)
+      out.pred <- predict.DS(out.fit, X.0, k.fold.offset = offset.0)
 
       # Get RE levels correct for use in prediction code. 
       if (p.det.re > 0) {

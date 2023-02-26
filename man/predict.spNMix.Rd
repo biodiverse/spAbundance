@@ -7,8 +7,9 @@
 }
 
 \usage{
-\method{predict}{spNMix}(object, X.0, coords.0, n.omp.threads = 1, verbose = TRUE,
-                 n.report = 100, ignore.RE = FALSE, offset, type = 'abundance', ...)
+\method{predict}{spNMix}(object, X.0, coords.0, n.omp.threads = 1, 
+                         verbose = TRUE, n.report = 100, ignore.RE = FALSE, 
+                         k.fold.offset, type = 'abundance', ...)
 }
 
 \arguments{
@@ -36,7 +37,7 @@
 
   \item{type}{a quoted keyword indicating what type of prediction to produce. Valid keywords are 'abundance' to predict latent abundance and expected abundance values (this is the default), or 'detection' to predict detection probability given new values of detection covariates.}
 
-  \item{offset}{a single value or numeric vector containing an offset for each of the prediction sites. Currently not supported for N-mixture models.}
+  \item{k.fold.offset}{offset used when performing cross-validation. This should not be specified by the user.} 
 
   \item{...}{currently no additional arguments}
 }

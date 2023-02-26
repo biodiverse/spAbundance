@@ -1709,7 +1709,11 @@ summary.NMix <- function(object,
   }
   cat("\n")
   # Detection
-  cat("Detection (logit scale): \n")
+  if (is(object, 'NMix')) {
+    cat("Detection (logit scale): \n")
+  } else if (is(object, 'DS')) {
+    cat("Detection (log scale): \n")
+  }
   tmp.1 <- t(apply(object$alpha.samples, 2,
 		   function(x) c(mean(x), sd(x))))
   colnames(tmp.1) <- c("Mean", "SD")
@@ -1720,7 +1724,11 @@ summary.NMix <- function(object,
   print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
   if (object$pRE) {
     cat("\n")
-    cat("Detection Random Effect Variances (logit scale): \n")
+    if (is(object, 'NMix')) {
+      cat("Detection Random Effect Variances (logit scale): \n")
+    } else if (is(object, 'DS')) {
+      cat("Detection Random Effect Variances (log scale): \n")
+    }
     tmp.1 <- t(apply(object$sigma.sq.p.samples, 2,
           	   function(x) c(mean(x), sd(x))))
     colnames(tmp.1) <- c("Mean", "SD")
@@ -1798,7 +1806,11 @@ summary.spNMix <- function(object,
   }
   cat("\n")
   # Detection
-  cat("Detection (logit scale): \n")
+  if (is(object, 'spNMix')) {
+    cat("Detection (logit scale): \n")
+  } else if (is(object, 'spDS')) {
+    cat("Detection (log scale): \n")
+  }
   tmp.1 <- t(apply(object$alpha.samples, 2,
 		   function(x) c(mean(x), sd(x))))
   colnames(tmp.1) <- c("Mean", "SD")
@@ -1809,7 +1821,11 @@ summary.spNMix <- function(object,
   print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
   if (object$pRE) {
     cat("\n")
-    cat("Detection Random Effect Variances (logit scale): \n")
+    if (is(object, 'spNMix')) {
+      cat("Detection Random Effect Variances (logit scale): \n")
+    } else if (is(object, 'spDS')) {
+      cat("Detection Random Effect Variances (log scale): \n")
+    }
     tmp.1 <- t(apply(object$sigma.sq.p.samples, 2,
           	   function(x) c(mean(x), sd(x))))
     colnames(tmp.1) <- c("Mean", "SD")
@@ -1853,7 +1869,7 @@ fitted.spNMix <- function(object, ...) {
 
 predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1, 
 			   verbose = TRUE, n.report = 100, 
-			   ignore.RE = FALSE, offset, 
+			   ignore.RE = FALSE, k.fold.offset, 
 			   type = 'abundance', ...) {
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -1898,7 +1914,7 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
     }
     coords.0 <- as.matrix(coords.0)
     
-    if (missing(offset)) {
+    if (missing(k.fold.offset)) {
       offset <- rep(1, nrow(X.0))
     }
     if (length(offset) == 1) {
@@ -3475,7 +3491,7 @@ summary.DS <- function(object,
 }
 
 predict.DS <- function(object, X.0, ignore.RE = FALSE, 
-			  type = 'abundance', offset, ...) {
+			  type = 'abundance', k.fold.offset, ...) {
 
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -3509,7 +3525,7 @@ predict.DS <- function(object, X.0, ignore.RE = FALSE,
 
   # Abundance predictions ------------------------------------------------- 
   if (tolower(type) == 'abundance') {
-    if (missing(offset)) {
+    if (missing(k.fold.offset)) {
       offset <- rep(1, nrow(X.0))
     }
     if (length(offset) == 1) {
@@ -3765,14 +3781,14 @@ fitted.spDS <- function(object, ...) {
 
 predict.spDS <- function(object, X.0, coords.0, n.omp.threads = 1, 
 			   verbose = TRUE, n.report = 100, 
-			   ignore.RE = FALSE, offset, 
+			   ignore.RE = FALSE, k.fold.offset, 
 			   type = 'abundance', ...) {
   if (tolower(type) == 'abundance') {
     out <- predict.spNMix(object, X.0, coords.0, n.omp.threads, 
                           verbose, n.report, 
-                          ignore.RE, offset, type, ...)  
+                          ignore.RE, k.fold.offset, type, ...)  
   } else {
-    out <- predict.DS(object, X.0, ignore.RE, type, offset)
+    out <- predict.DS(object, X.0, ignore.RE, type)
   }
   return(out)
 }

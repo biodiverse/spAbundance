@@ -24,12 +24,36 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
 
   if (!(class(object) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund', 'sfMsAbund'))) {
     if (missing(N.max)) {
-      message("N.max not specified. Setting upper index of integration of\nN to 10 plus the largest estimated abundance value in object$N.samples")
+      message("N.max not specified. Setting upper index of integration of N to 10 plus\nthe largest estimated abundance value at each site in object$N.samples")
       if (class(object) %in% c('msNMix', 'lfMsNMix', 'sfMsNMix')) {
-        N.max <- apply(object$N.samples, 2, max) + 10
+        N.max <- apply(object$N.samples, c(2, 3), max) + 10
       } else {
-        N.max <- max(object$N.samples) + 10 
+        N.max <- apply(object$N.samples, 2, max) + 10 
       }
+    }
+  }
+
+  if (class(object) %in% c('NMix', 'spNMix', 'DS', 'spDS')) {
+    if (!(length(N.max) %in% c(1, nrow(object$y)))) {
+      stop(paste("N.max must be of length 1 or ", nrow(object$y), sep = ''))
+    }
+    if (length(N.max) == 1) {
+      N.max <- rep(N.max, nrow(object$y))
+    }
+  }
+  
+  if (class(object) %in% c('msNMix', 'lfMsNMix', 'sfMsNMix', 
+			   'msDS', 'lfMsDS', 'sfMsDS')) {
+    if (is.null(dim(N.max))) {
+      if (length(N.max) == 1) {
+        N.max <- matrix(N.max, nrow(object$y), ncol(object$y))
+      } else if (length(N.max) == nrow(object$y)) {
+        N.max <- matrix(N.max, nrow(object$y), ncol(object$y))
+      } else {
+        stop("N.max is not correctly specified.")
+      }
+    } else if (length(dim(N.max)) != 2) {
+      stop("N.max is not correctly specified.")
     }
   }
 
@@ -143,7 +167,7 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
       dist <- object$dist
       dist <- ifelse(dist == 'NB', 1, 0)
       J <- nrow(y)
-      N.max.curr <- N.max[i]
+      N.max.curr <- N.max[i, ]
       # Model Type: 0 = single-species N-mixture
       model.type <- 0
 
