@@ -23,7 +23,8 @@ summary.ppcAbund <- function(object, level = 'both',
   }
 
   if (object$class %in% c('msAbund', 'spMsAbund', 'lfMsAbund', 'sfMsAbund', 
-			  'msNMix', 'spMsNMix', 'lfMsNMix', 'sfMsNMix')) {
+			  'msNMix', 'spMsNMix', 'lfMsNMix', 'sfMsNMix', 
+			  'msDS', 'lfMsDS', 'sfMsDS')) {
 
     if (tolower(level) == 'community') {
       cat("----------------------------------------\n");
@@ -1652,7 +1653,7 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
     } else {
       X.fix <- X.0
       alpha.star.sites.0.samples <- matrix(0, n.post, nrow(X.0))
-      p.et.re <- 0
+      p.det.re <- 0
     }
     out$p.0.samples <- mcmc(logit.inv(t(X.fix %*% t(alpha.samples) + 
           				t(alpha.star.sites.0.samples))))
@@ -1916,6 +1917,8 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
     
     if (missing(k.fold.offset)) {
       offset <- rep(1, nrow(X.0))
+    } else {
+      offset <- k.fold.offset
     }
     if (length(offset) == 1) {
       offset <- rep(offset, nrow(X.0))
@@ -2180,7 +2183,11 @@ summary.msNMix <- function(object,
     }
     cat("\n")
     # Detection
-    cat("Detection Means (logit scale): \n")
+    if (is(object, 'msNMix')) {
+      cat("Detection Means (logit scale): \n")
+    } else if (is(object, 'msDS')) {
+      cat("Detection Means (log scale): \n")
+    }
     tmp.1 <- t(apply(object$alpha.comm.samples, 2,
           	   function(x) c(mean(x), sd(x))))
     colnames(tmp.1) <- c("Mean", "SD")
@@ -2190,7 +2197,11 @@ summary.msNMix <- function(object,
     colnames(diags) <- c('Rhat', 'ESS')
 
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-    cat("\nDetection Variances (logit scale): \n")
+    if (is(object, 'msNMix')) {
+      cat("Detection Variances (logit scale): \n")
+    } else if (is(object, 'msDS')) {
+      cat("Detection Variances (log scale): \n")
+    }
     tmp.1 <- t(apply(object$tau.sq.alpha.samples, 2,
           	   function(x) c(mean(x), sd(x))))
     colnames(tmp.1) <- c("Mean", "SD")
@@ -2202,7 +2213,11 @@ summary.msNMix <- function(object,
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
     if (object$pRE) {
       cat("\n")
-      cat("Detection Random Effect Variances (logit scale): \n")
+      if (is(object, 'msNMix')) {
+        cat("Detection Random Effect Variances (logit scale): \n")
+      } else if (is(object, 'msDS')) {
+        cat("Detection Random Effect Variances (log scale): \n")
+      }
       tmp.1 <- t(apply(object$sigma.sq.p.samples, 2,
             	   function(x) c(mean(x), sd(x))))
       colnames(tmp.1) <- c("Mean", "SD")
@@ -2232,7 +2247,11 @@ summary.msNMix <- function(object,
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
     cat("\n")
     # Detection
-    cat("Detection (logit scale): \n")
+    if (is(object, 'msNMix')) {
+      cat("Detection (logit scale): \n")
+    } else if (is(object, 'msDS')) {
+      cat("Detection (log scale): \n")
+    }
     tmp.1 <- t(apply(object$alpha.samples, 2,
           	   function(x) c(mean(x), sd(x))))
     colnames(tmp.1) <- c("Mean", "SD")
@@ -2341,7 +2360,7 @@ fitted.msNMix <- function(object, ...) {
 }
 
 predict.msNMix <- function(object, X.0, ignore.RE = FALSE, 
-			  type = 'abundance', ...) {
+			  type = 'abundance', k.fold.offset, ...) {
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
   elip.args <- names(list(...))
@@ -2375,6 +2394,17 @@ predict.msNMix <- function(object, X.0, ignore.RE = FALSE,
 
   # Abundance predictions ------------------------------------------------
   if (tolower(type) == 'abundance') {
+    if (missing(k.fold.offset)) {
+      offset <- rep(1, nrow(X.0))
+    } else {
+      offset <- k.fold.offset
+    }
+    if (length(offset) == 1) {
+      offset <- rep(offset, nrow(X.0))
+    }
+    if (length(offset) != nrow(X.0)) {
+      stop(paste("offset must be of length 1 or ", nrow(X.0), sep = ''))
+    }
     p.abund <- ncol(object$X)
     # Composition sampling --------------------------------------------------
     beta.samples <- as.matrix(object$beta.samples)
@@ -2483,9 +2513,9 @@ predict.msNMix <- function(object, X.0, ignore.RE = FALSE,
                                                beta.star.sites.0.samples[, (j - 1) * n.sp + i])
         if (object$dist == 'NB') {
           out$N.0.samples[, i, j] <- rnbinom(n.post, kappa.samples[, i], 
-					     mu = out$mu.0.samples[, i, j])
+					     mu = out$mu.0.samples[, i, j] * offset[j])
 	} else {
-          out$N.0.samples[, i, j] <- rpois(n.post, out$mu.0.samples[, i, j]) 
+          out$N.0.samples[, i, j] <- rpois(n.post, out$mu.0.samples[, i, j] * offset[j]) 
 	}
       } # j
     } # i
@@ -2671,7 +2701,11 @@ summary.sfMsNMix <- function(object, level = 'both',
     }
     cat("\n")
     # Detection
-    cat("Detection Means (logit scale): \n")
+    if (is(object, 'sfMsNMix')) {
+      cat("Detection Means (logit scale): \n")
+    } else if (is(object, 'sfMsDS')) {
+      cat("Detection Means (log scale): \n")
+    }
     tmp.1 <- t(apply(object$alpha.comm.samples, 2,
           	   function(x) c(mean(x), sd(x))))
     colnames(tmp.1) <- c("Mean", "SD")
@@ -2681,7 +2715,11 @@ summary.sfMsNMix <- function(object, level = 'both',
     colnames(diags) <- c('Rhat', 'ESS')
 
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-    cat("\nDetection Variances (logit scale): \n")
+    if (is(object, 'sfMsNMix')) {
+      cat("Detection Variances (logit scale): \n")
+    } else if (is(object, 'sfMsDS')) {
+      cat("Detection Variances (log scale): \n")
+    }
     tmp.1 <- t(apply(object$tau.sq.alpha.samples, 2,
           	   function(x) c(mean(x), sd(x))))
     colnames(tmp.1) <- c("Mean", "SD")
@@ -2693,7 +2731,11 @@ summary.sfMsNMix <- function(object, level = 'both',
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
     if (object$pRE) {
       cat("\n")
-      cat("Detection Random Effect Variances (logit scale): \n")
+      if (is(object, 'sfMsNMix')) {
+        cat("Detection Random Effect Variances (logit scale): \n")
+      } else if (is(object, 'sfMsDS')) {
+        cat("Detection Random Effect Variances (log scale): \n")
+      }
       tmp.1 <- t(apply(object$sigma.sq.p.samples, 2,
             	   function(x) c(mean(x), sd(x))))
       colnames(tmp.1) <- c("Mean", "SD")
@@ -2723,7 +2765,11 @@ summary.sfMsNMix <- function(object, level = 'both',
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
     cat("\n")
     # Detection
-    cat("Detection (logit scale): \n")
+    if (is(object, 'sfMsNMix')) {
+      cat("Detection (logit scale): \n")
+    } else if (is(object, 'sfMsDS')) {
+      cat("Detection (log scale): \n")
+    }
     tmp.1 <- t(apply(object$alpha.samples, 2,
           	   function(x) c(mean(x), sd(x))))
     colnames(tmp.1) <- c("Mean", "SD")
@@ -2771,7 +2817,8 @@ fitted.sfMsNMix <- function(object, ...) {
 
 predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
 			      verbose = TRUE, n.report = 100,
-			      ignore.RE = FALSE, type = 'abundance', ...) {
+			      ignore.RE = FALSE, type = 'abundance', 
+			      k.fold.offset, ...) {
 
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -2791,9 +2838,6 @@ predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
   if (missing(object)) {
     stop("error: predict expects object\n")
   }
-  if (!(class(object) %in% c('sfMsNMix'))) {
-    stop("error: requires an output object of class sfMsNMix\n")
-  }
   if (!(tolower(type) %in% c('abundance', 'detection'))) {
     stop("error: prediction type must be either 'abundance' or 'detection'")
   }
@@ -2810,6 +2854,17 @@ predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
 
   # Abundance predictions ------------------------------------------------
   if (tolower(type == 'abundance')) {
+    if (missing(k.fold.offset)) {
+      offset <- rep(1, nrow(X.0))
+    } else {
+      offset <- k.fold.offset
+    }
+    if (length(offset) == 1) {
+      offset <- rep(offset, nrow(X.0))
+    }
+    if (length(offset) != nrow(X.0)) {
+      stop(paste("offset must be of length 1 or ", nrow(X.0), sep = ''))
+    }
     n.post <- object$n.post * object$n.chains
     X <- object$X
     y <- object$y
@@ -2858,6 +2913,7 @@ predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
     coords.place.indx <- which(!is.na(match.indx))
     coords.0.new <- coords.0[coords.0.indx, , drop = FALSE]
     X.0.new <- X.0[coords.0.indx, , drop = FALSE]
+    offset.new <- offset[coords.0.indx]
 
     if (length(coords.indx) == nrow(X.0)) {
       stop("error: no new locations to predict at. See object$mu.samples for expected abundances at sampled sites.")
@@ -2970,6 +3026,7 @@ predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
       storage.mode(n.neighbors) <- "integer"
       storage.mode(X.fix) <- "double"
       storage.mode(coords.0.new) <- "double"
+      storage.mode(offset.new)
       storage.mode(J.str) <- "integer"
       storage.mode(q) <- "integer"
       storage.mode(beta.samples) <- "double"
@@ -2987,7 +3044,7 @@ predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
       storage.mode(family.c) <- "integer"
 
       out <- .Call("sfMsNMixNNGPPredict", coords, J, family.c, 
-		   n.sp, q, p.abund, n.neighbors,
+		   n.sp, q, p.abund, n.neighbors, offset.new,
                    X.fix, coords.0.new, J.str, nn.indx.0, beta.samples,
                    theta.samples, kappa.samples, lambda.samples, w.samples,
           	   beta.star.sites.0.samples, n.post,
@@ -3048,7 +3105,7 @@ fitted.lfMsNMix <- function(object, ...) {
   fitted.msNMix(object)
 }
 predict.lfMsNMix <- function(object, X.0, coords.0, ignore.RE = FALSE, 
-			  type = 'abundance', ...) {
+			  type = 'abundance', k.fold.offset, ...) {
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
   elip.args <- names(list(...))
@@ -3082,6 +3139,17 @@ predict.lfMsNMix <- function(object, X.0, coords.0, ignore.RE = FALSE,
 
   # Abundance predictions ------------------------------------------------
   if (tolower(type) == 'abundance') {
+    if (missing(k.fold.offset)) {
+      offset <- rep(1, nrow(X.0))
+    } else {
+      offset <- k.fold.offset
+    }
+    if (length(offset) == 1) {
+      offset <- rep(offset, nrow(X.0))
+    }
+    if (length(offset) != nrow(X.0)) {
+      stop(paste("offset must be of length 1 or ", nrow(X.0), sep = ''))
+    }
     p.abund <- ncol(object$X)
     # Composition sampling --------------------------------------------------
     beta.samples <- as.matrix(object$beta.samples)
@@ -3217,9 +3285,9 @@ predict.lfMsNMix <- function(object, X.0, coords.0, ignore.RE = FALSE,
                                                beta.star.sites.0.samples[, (j - 1) * n.sp + i])
         if (object$dist == 'NB') {
           out$N.0.samples[, i, j] <- rnbinom(n.post, kappa.samples[, i], 
-					     mu = out$mu.0.samples[, i, j])
+					     mu = out$mu.0.samples[, i, j] * offset[j])
 	} else {
-          out$N.0.samples[, i, j] <- rpois(n.post, out$mu.0.samples[, i, j]) 
+          out$N.0.samples[, i, j] <- rpois(n.post, out$mu.0.samples[, i, j] * offset[j]) 
 	}
       } # j
     } # i
@@ -3527,6 +3595,8 @@ predict.DS <- function(object, X.0, ignore.RE = FALSE,
   if (tolower(type) == 'abundance') {
     if (missing(k.fold.offset)) {
       offset <- rep(1, nrow(X.0))
+    } else {
+      offset <- k.fold.offset
     }
     if (length(offset) == 1) {
       offset <- rep(offset, nrow(X.0))
@@ -3744,7 +3814,7 @@ predict.DS <- function(object, X.0, ignore.RE = FALSE,
     } else {
       X.fix <- X.0
       alpha.star.sites.0.samples <- matrix(0, n.post, nrow(X.0))
-      p.et.re <- 0
+      p.det.re <- 0
     }
     out$sigma.0.samples <- mcmc(exp(t(X.fix %*% t(alpha.samples) + 
                                 t(alpha.star.sites.0.samples))))
@@ -3790,5 +3860,237 @@ predict.spDS <- function(object, X.0, coords.0, n.omp.threads = 1,
   } else {
     out <- predict.DS(object, X.0, ignore.RE, type)
   }
+  class(out) <- 'spDS'
   return(out)
 }
+
+# msDS --------------------------------------------------------------------
+print.msDS <- function(x, ...) {
+  cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)),
+      "", sep = "\n")
+}
+summary.msDS <- function(object,
+			 level = 'both',
+			 quantiles = c(0.025, 0.5, 0.975),
+			 digits = max(3L, getOption("digits") - 3L), ...) {
+  summary.msNMix(object, level, quantiles, digits)
+}
+
+fitted.msDS <- function(object, ...) {
+  out <- list()
+  out$y.rep.samples <- object$y.rep.samples
+  out$pi.samples <- object$pi.samples
+  return(out)
+}
+
+predict.msDS <- function(object, X.0, ignore.RE = FALSE, 
+                         type = 'abundance', k.fold.offset, ...) {
+
+  # Check for unused arguments ------------------------------------------
+  formal.args <- names(formals(sys.function(sys.parent())))
+  elip.args <- names(list(...))
+  for(i in elip.args){
+      if(! i %in% formal.args)
+          warning("'",i, "' is not an argument")
+  }
+  # Call ----------------------------------------------------------------
+  cl <- match.call()
+
+  # Functions ---------------------------------------------------------------
+  logit <- function(theta, a = 0, b = 1) {log((theta-a)/(b-theta))}
+  logit.inv <- function(z, a = 0, b = 1) {b-(b-a)/(1+exp(z))}
+
+  # Some initial checks ---------------------------------------------------
+  if (missing(object)) {
+    stop("error: predict expects object\n")
+  }
+  if (!(tolower(type) %in% c('abundance', 'detection'))) {
+    stop("error: prediction type must be either 'abundance' or 'detection'")
+  }
+
+  # Check X.0 -------------------------------------------------------------
+  if (missing(X.0)) {
+    stop("error: X.0 must be specified\n")
+  }
+  if (!any(is.data.frame(X.0), is.matrix(X.0))) {
+    stop("error: X.0 must be a data.frame or matrix\n")
+  }
+  # Abundance predictions ------------------------------------------------- 
+  if (tolower(type) == 'abundance') {
+    out <- predict.msNMix(object, X.0, ignore.RE, type, k.fold.offset)
+  }
+  # Detection predictions -------------------------------------------------
+  if (tolower(type) == 'detection') {
+    p.det <- ncol(object$X.p)
+    re.det.cols <- object$re.det.cols
+    # Composition sampling --------------------------------------------------
+    alpha.samples <- as.matrix(object$alpha.samples)
+    n.sp <- dim(object$y)[1]
+    sp.indx <- rep(1:n.sp, p.det)
+    n.post <- object$n.post * object$n.chains
+    out <- list()
+    out$sigma.0.samples <- array(NA, dim = c(n.post, n.sp, nrow(X.0)))
+    if (object$pRE) {
+      p.det.re <- length(object$p.re.level.names)
+    } else {
+      p.det.re <- 0
+    }
+    if (object$pRE & !ignore.RE) {
+      alpha.star.samples <- object$alpha.star.samples
+      p.re.level.names <- object$p.re.level.names
+      # Get columns in design matrix with random effects
+      x.p.re.names <- colnames(object$X.p.re)
+      x.p.0.names <- colnames(X.0)
+      re.long.indx <- sapply(re.det.cols, length)
+      tmp <- sapply(x.p.re.names, function(a) which(colnames(X.0) %in% a))
+      indx <- list()
+      for (i in 1:length(tmp)) {
+        indx[[i]] <- rep(tmp[i], re.long.indx[i])
+      }
+      indx <- unlist(indx)
+      if (length(indx) == 0) {
+        stop("error: column names in X.0 must match variable names in data$det.covs")
+      }
+      n.det.re <- length(indx)
+      n.unique.det.re <- length(unique(indx))
+      # Check RE columns
+      for (i in 1:n.det.re) {
+        if (is.character(re.det.cols[[i]])) {
+          # Check if all column names in svc are in occ.covs
+          if (!all(re.det.cols[[i]] %in% x.p.0.names)) {
+              missing.cols <- re.det.cols[[i]][!(re.det.cols[[i]] %in% x.p.0.names)]
+              stop(paste("error: variable name ", paste(missing.cols, collapse=" and "), " not in detection covariates", sep=""))
+          }
+          # Convert desired column names into the numeric column index
+          re.det.cols[[i]] <- which(x.p.0.names %in% re.det.cols[[i]])
+          
+        } else if (is.numeric(re.det.cols[[i]])) {
+          # Check if all column indices are in 1:p.abund
+          if (!all(re.det.cols %in% 1:p.det)) {
+              missing.cols <- re.det.cols[[i]][!(re.det.cols[[i]] %in% (1:p.det))]
+              stop(paste("error: column index ", paste(missing.cols, collapse=" "), " not in design matrix columns", sep=""))
+          }
+        }
+      }
+      re.det.cols <- unlist(re.det.cols)
+      X.re <- as.matrix(X.0[, indx, drop = FALSE])
+      X.fix <- as.matrix(X.0[, -indx, drop = FALSE])
+      X.random <- as.matrix(X.0[, re.det.cols, drop = FALSE])
+      n.det.re <- length(unlist(p.re.level.names))
+      X.re.ind <- matrix(NA, nrow(X.re), p.det.re)
+      for (i in 1:p.det.re) {
+        for (j in 1:nrow(X.re)) {
+          tmp <- which(p.re.level.names[[i]] == X.re[j, i])
+          if (length(tmp) > 0) {
+            X.re.ind[j, i] <- tmp 
+          }
+        }
+      }
+      if (p.det.re > 1) {
+        for (j in 2:p.det.re) {
+          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+        }
+      }
+      # Create the random effects corresponding to each 
+      # new location
+      # ORDER: ordered by site, then species within site.
+      alpha.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.re))
+      for (i in 1:n.sp) {
+        for (t in 1:p.det.re) {
+          for (j in 1:nrow(X.re)) {
+            if (!is.na(X.re.ind[j, t])) {
+              alpha.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
+                alpha.star.samples[, (i - 1) * n.det.re + X.re.ind[j, t]] * X.random[j, t] + 
+                alpha.star.sites.0.samples[, (j - 1) * n.sp + i]
+            } else {
+              alpha.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
+                rnorm(n.post, 0, sqrt(object$sigma.sq.p.samples[, t])) * X.random[j, t] + 
+                alpha.star.sites.0.samples[, (j - 1) * n.sp + i]
+            }
+          } # j
+        } # t
+      } # i 
+    } else {
+      X.fix <- X.0
+      alpha.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.0))
+      p.det.re <- 0
+    }
+    J.str <- nrow(X.0)
+    # Make predictions
+    for (i in 1:n.sp) {
+      for (j in 1:J.str) {
+        out$sigma.0.samples[, i, j] <- exp(t(as.matrix(X.fix[j, ])) %*% 
+                                           t(alpha.samples[, sp.indx == i]) + 
+                                           alpha.star.sites.0.samples[, (j - 1) * n.sp + i])
+      } # j
+    } # i
+  }
+  class(out) <- 'predict.msDS'
+  out
+}
+
+# lfMsDS ----------------------------------------------------------------
+print.lfMsDS <- function(x, ...) {
+  cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)),
+      "", sep = "\n")
+}
+
+summary.lfMsDS <- function(object,
+			     level = 'both',
+			     quantiles = c(0.025, 0.5, 0.975),
+			     digits = max(3L, getOption("digits") - 3L), ...) {
+  summary.msDS(object, level, quantiles, digits)
+}
+
+fitted.lfMsDS <- function(object, ...) {
+  fitted.msDS(object)
+}
+
+predict.lfMsDS <- function(object, X.0, coords.0, ignore.RE = FALSE,
+                         type = 'abundance', k.fold.offset, ...) {
+
+  # Abundance predictions ------------------------------------------------- 
+  if (tolower(type) == 'abundance') {
+    out <- predict.lfMsNMix(object, X.0, coords.0, ignore.RE, type = 'abundance', k.fold.offset)
+  }
+  # Detection predictions -------------------------------------------------
+  if (tolower(type) == 'detection') {
+    out <- predict.msDS(object, X.0, ignore.RE, type = 'detection')
+  }
+
+  class(out) <- "predict.lfMsDS"
+  out
+}
+
+# sfMsDS ----------------------------------------------------------------
+print.sfMsDS <- function(x, ...) {
+  cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)),
+      "", sep = "\n")
+}
+
+summary.sfMsDS <- function(object,
+			     level = 'both',
+			     quantiles = c(0.025, 0.5, 0.975),
+			     digits = max(3L, getOption("digits") - 3L), ...) {
+  summary.sfMsNMix(object, level, quantiles, digits)
+}
+
+fitted.sfMsDS <- function(object, ...) {
+  fitted.msDS(object)
+}
+
+predict.sfMsDS <- function(object, X.0, coords.0, n.omp.threads = 1,
+			   verbose = TRUE, n.report = 100,
+			   ignore.RE = FALSE, type = 'abundance', 
+			   k.fold.offset, ...) {
+  if (tolower(type) == 'abundance') {
+    out <- predict.sfMsNMix(object, X.0, coords.0, n.omp.threads,
+                            verbose, n.report,
+                            ignore.RE, type = 'abundance', k.fold.offset, ...)
+  } else {
+    out <- predict.msDS(object, X.0, ignore.RE, type = 'detection')
+  }
+  class(out) <- 'predict.sfMsDS'
+  return(out)
+}
+

@@ -551,7 +551,6 @@ extern "C" {
           sigmaSqP[l] = rigamma(sigmaSqPA[l] + nDetRELong[l] * nSp / 2.0, sigmaSqPB[l] + tmp_0);
         }
 
-         
         /**********************************************************************
          *Species specific variables  
          *********************************************************************/

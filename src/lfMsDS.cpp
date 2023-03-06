@@ -18,32 +18,33 @@
 #endif
 
 extern "C" {
-  SEXP lfMsNMix(SEXP y_r, SEXP X_r, SEXP Xp_r, SEXP XRE_r, SEXP XpRE_r, 
-                SEXP XRandom_r, SEXP XpRandom_r, SEXP yMax_r, 
-	        SEXP consts_r, SEXP nAbundRELong_r, SEXP nDetRELong_r, 
-	        SEXP betaStarting_r, SEXP alphaStarting_r, 
-		SEXP kappaStarting_r, SEXP NStarting_r, 
-	        SEXP betaCommStarting_r, SEXP alphaCommStarting_r, 
-		SEXP lambdaStarting_r, SEXP wStarting_r,
-	        SEXP tauSqBetaStarting_r, SEXP tauSqAlphaStarting_r, 
-	        SEXP sigmaSqMuStarting_r, SEXP sigmaSqPStarting_r, 
-	        SEXP betaStarStarting_r, SEXP alphaStarStarting_r, 
-	        SEXP NLongIndx_r, SEXP betaStarIndx_r, SEXP betaLevelIndx_r, 
-	        SEXP alphaStarIndx_r, SEXP alphaLevelIndx_r, 
-	        SEXP muBetaComm_r, SEXP muAlphaComm_r, 
-	        SEXP SigmaBetaComm_r, SEXP SigmaAlphaComm_r, SEXP kappaA_r, 
-	        SEXP kappaB_r, SEXP tauSqBetaA_r, 
-	        SEXP tauSqBetaB_r, SEXP tauSqAlphaA_r, SEXP tauSqAlphaB_r, 
-	        SEXP sigmaSqMuA_r, SEXP sigmaSqMuB_r, 
-	        SEXP sigmaSqPA_r, SEXP sigmaSqPB_r, SEXP tuning_r, 
-		SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r,
-	        SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r, 
-	        SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r){
+  SEXP lfMsDS(SEXP y_r, SEXP X_r, SEXP Xp_r, SEXP XRE_r, SEXP XpRE_r, 
+              SEXP XRandom_r, SEXP XpRandom_r, SEXP yMax_r, SEXP offset_r,
+              SEXP consts_r, SEXP K_r, SEXP nAbundRELong_r, SEXP nDetRELong_r,
+              SEXP betaStarting_r, SEXP alphaStarting_r, SEXP kappaStarting_r,
+              SEXP NStarting_r, SEXP betaCommStarting_r, SEXP alphaCommStarting_r,
+	      SEXP lambdaStarting_r, SEXP wStarting_r,
+	      SEXP tauSqBetaStarting_r, SEXP tauSqAlphaStarting_r,
+              SEXP sigmaSqMuStarting_r, SEXP sigmaSqPStarting_r,
+              SEXP betaStarStarting_r, SEXP alphaStarStarting_r, 
+              SEXP NLongIndx_r, SEXP betaStarIndx_r, SEXP betaLevelIndx_r, 
+              SEXP alphaStarIndx_r, SEXP alphaLevelIndx_r,
+              SEXP muBetaComm_r, SEXP SigmaBetaComm_r, 
+              SEXP muAlphaComm_r, SEXP SigmaAlphaComm_r, 
+              SEXP sigmaSqMuA_r, SEXP sigmaSqMuB_r, 
+              SEXP sigmaSqPA_r, SEXP sigmaSqPB_r, 
+              SEXP kappaA_r, SEXP kappaB_r, 
+	      SEXP tauSqBetaA_r, SEXP tauSqBetaB_r, 
+	      SEXP tauSqAlphaA_r, SEXP tauSqAlphaB_r, SEXP detModel_r, 
+	      SEXP transect_r, SEXP distBreaks_r, SEXP tuning_r,
+              SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r, SEXP nThreads_r, 
+              SEXP verbose_r, SEXP nReport_r, SEXP samplesInfo_r,
+              SEXP chainInfo_r, SEXP family_r){
    
     /**********************************************************************
      * Initial constants
      * *******************************************************************/
-    int i, j, k, s, t, ll, g, l, r, ii, jj, info, nProtect=0;
+    int i, g, t, j, s, r, l, k, ll, ii, info, nProtect=0;
     const int inc = 1;
     const double one = 1.0;
     const double zero = 0.0;
@@ -57,15 +58,16 @@ extern "C" {
     double *y = REAL(y_r);
     double *X = REAL(X_r);
     double *Xp = REAL(Xp_r);
-    int *XRE = INTEGER(XRE_r); 
-    double *XRandom = REAL(XRandom_r);
-    int *XpRE = INTEGER(XpRE_r); 
-    double *XpRandom = REAL(XpRandom_r);
     double *yMax = REAL(yMax_r);
+    double *offset = REAL(offset_r);
+    int *XRE = INTEGER(XRE_r); 
+    int *XpRE = INTEGER(XpRE_r);
+    double *XRandom = REAL(XRandom_r);
+    double *XpRandom = REAL(XpRandom_r);
     // Load constants
     int nSp = INTEGER(consts_r)[0]; 
     int J = INTEGER(consts_r)[1];
-    int nObs = INTEGER(consts_r)[2]; 
+    int nObs = INTEGER(consts_r)[2];
     int pAbund = INTEGER(consts_r)[3];
     int pAbundRE = INTEGER(consts_r)[4];
     int nAbundRE = INTEGER(consts_r)[5];
@@ -93,29 +95,34 @@ extern "C" {
     double *kappaB = REAL(kappaB_r); 
     int *nAbundRELong = INTEGER(nAbundRELong_r); 
     int *nDetRELong = INTEGER(nDetRELong_r); 
+    int K = INTEGER(K_r)[0]; 
     int *NLongIndx = INTEGER(NLongIndx_r); 
-    int *betaStarIndx = INTEGER(betaStarIndx_r);
-    int *betaLevelIndx = INTEGER(betaLevelIndx_r);
     int *alphaStarIndx = INTEGER(alphaStarIndx_r); 
     int *alphaLevelIndx = INTEGER(alphaLevelIndx_r);
+    int *betaStarIndx = INTEGER(betaStarIndx_r); 
+    int *betaLevelIndx = INTEGER(betaLevelIndx_r);
     int nBatch = INTEGER(nBatch_r)[0]; 
     int batchLength = INTEGER(batchLength_r)[0]; 
-    double acceptRate = REAL(acceptRate_r)[0];
     int nSamples = nBatch * batchLength; 
-    double *tuning = REAL(tuning_r);
-    int nThreads = INTEGER(nThreads_r)[0];
-    int verbose = INTEGER(verbose_r)[0];
-    int nReport = INTEGER(nReport_r)[0];
     int nBurn = INTEGER(samplesInfo_r)[0]; 
     int nThin = INTEGER(samplesInfo_r)[1];
     int nPost = INTEGER(samplesInfo_r)[2]; 
     int currChain = INTEGER(chainInfo_r)[0];
+    double acceptRate = REAL(acceptRate_r)[0];
+    double *tuning = REAL(tuning_r);
     int nChain = INTEGER(chainInfo_r)[1];
+    int nThreads = INTEGER(nThreads_r)[0];
+    int verbose = INTEGER(verbose_r)[0];
+    int nReport = INTEGER(nReport_r)[0];
     int status = 0; 
     int thinIndx = 0;
     int sPost = 0;  
     // NB = 1, Poisson = 0;
     int family = INTEGER(family_r)[0];
+    // DS stuff
+    int detModel = INTEGER(detModel_r)[0];
+    int transect = INTEGER(transect_r)[0];
+    double *distBreaks = REAL(distBreaks_r);
 
 #ifdef _OPENMP
     omp_set_num_threads(nThreads);
@@ -135,18 +142,18 @@ extern "C" {
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
 	if (family == 1) {
-          Rprintf("Latent Factor Multispecies Negative Binomial N-Mixture model fit with %i sites and %i species.\n\n", J, nSp);
+          Rprintf("Latent Factor Multi-species Negative Binomial Distance Sampling model with %i sites and %i species.\n\n", J, nSp);
 	} else {
-          Rprintf("Latent Factor Multispecies Poisson N-Mixture model fit with %i sites and %i species.\n\n", J, nSp);
+          Rprintf("Latent Factor Multi-species Poisson Distance Sampling model with %i sites and %i species.\n\n", J, nSp);
 	}
-        Rprintf("Samples per Chain: %i \n", nSamples);
+        Rprintf("Samples per Chain: %i (%i batches of length %i)\n", nSamples, nBatch, batchLength);
         Rprintf("Burn-in: %i \n", nBurn); 
         Rprintf("Thinning Rate: %i \n", nThin); 
-	Rprintf("Number of Chains: %i \n", nChain);
+        Rprintf("Number of Chains: %i \n", nChain);
         Rprintf("Total Posterior Samples: %i \n\n", nPost * nChain); 
         Rprintf("Using %i latent factors.\n\n", q);
 #ifdef _OPENMP
-        Rprintf("\nSource compiled with OpenMP support and model fit using %i thread(s).\n\n", nThreads);
+        Rprintf("Source compiled with OpenMP support and model fit using %i thread(s).\n\n", nThreads);
 #else
         Rprintf("Source not compiled with OpenMP support.\n\n");
 #endif
@@ -161,19 +168,23 @@ extern "C" {
       #endif
     }
 
-    /**********************************************************************
-       Some constants and temporary variables to be used later
-     * *******************************************************************/
+    /********************************************************************
+      Some constants and temporary variables to be used later
+    ********************************************************************/
     int pAbundnSp = pAbund * nSp; 
     int pDetnSp = pDet * nSp; 
     int nObsnSp = nObs * nSp; 
     int nAbundREnSp = nAbundRE * nSp; 
     int nDetREnSp = nDetRE * nSp; 
     int JnSp = J * nSp;
-    int JpAbund = J * pAbund; 
+    int JpAbund = J * pAbund;
     int JpAbundRE = J * pAbundRE;
+    int JpDetRE = J * pDetRE;
     int nObspDet = nObs * pDet;
     int nObspDetRE = nObs * pDetRE;
+    int KFull = K + 1;
+    int nObsFull = KFull * J;
+    int nObsFullnSp = nObsFull * nSp;
     int Jq = J * q;
     int qq = q * q;
     int nSpq = nSp * q;
@@ -183,21 +194,20 @@ extern "C" {
     double *tmp_ppAbund = (double *) R_alloc(ppAbund, sizeof(double)); 
     double *tmp_pDet = (double *) R_alloc(pDet, sizeof(double));
     double *tmp_pAbund = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_beta = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_alpha = (double *) R_alloc(pDet, sizeof(double));
     double *tmp_pDet2 = (double *) R_alloc(pDet, sizeof(double));
     double *tmp_pAbund2 = (double *) R_alloc(pAbund, sizeof(double));
-    int *tmp_JInt = (int *) R_alloc(J, sizeof(int));
-    for (j = 0; j < J; j++) {
-      tmp_JInt[j] = 0; 
-    }
     double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
     double *tmp_JpAbund = (double *) R_alloc(JpAbund, sizeof(double));
     double *tmp_nObspDet = (double *) R_alloc(nObspDet, sizeof(double));
     double *tmp_J = (double *) R_alloc(J, sizeof(double));
-    zeros(tmp_J, J);
     double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
-    double *tmp_nSp = (double *) R_alloc(nSp, sizeof(double));
+    double *tmp_KFull = (double *) R_alloc(KFull, sizeof(double));
+    int *tmp_KFullInt = (int *) R_alloc(KFull, sizeof(int));
+   
+    // For latent abundance
+    double muNum; 
+    double *mu = (double *) R_alloc(JnSp, sizeof(double)); 
+    zeros(mu, JnSp); 
 
     /**********************************************************************
      * Parameters
@@ -223,7 +233,7 @@ extern "C" {
     // Abundance random effect variances
     double *sigmaSqMu = (double *) R_alloc(pAbundRE, sizeof(double)); 
     F77_NAME(dcopy)(&pAbundRE, REAL(sigmaSqMuStarting_r), &inc, sigmaSqMu, &inc); 
-    // Latent occupancy random effects
+    // Latent random effects
     double *betaStar = (double *) R_alloc(nAbundREnSp, sizeof(double)); 
     F77_NAME(dcopy)(&nAbundREnSp, REAL(betaStarStarting_r), &inc, betaStar, &inc); 
     // Detection random effect variances
@@ -232,7 +242,7 @@ extern "C" {
     // Latent detection random effects
     double *alphaStar = (double *) R_alloc(nDetREnSp, sizeof(double)); 
     F77_NAME(dcopy)(&nDetREnSp, REAL(alphaStarStarting_r), &inc, alphaStar, &inc); 
-    // Overdispersion parameter
+    // Size parameter
     double *kappa = (double *) R_alloc(nSp, sizeof(double)); 
     F77_NAME(dcopy)(&nSp, REAL(kappaStarting_r), &inc, kappa, &inc); 
     // Latent Abundance
@@ -283,14 +293,14 @@ extern "C" {
     if (family == 1) {
       PROTECT(kappaSamples_r = allocMatrix(REALSXP, nSp, nPost)); nProtect++;
     }
-    
+    SEXP yRepSamples_r; 
+    PROTECT(yRepSamples_r = allocMatrix(INTSXP, nObsFullnSp, nPost)); nProtect++; 
+    SEXP piFullSamples_r; 
+    PROTECT(piFullSamples_r = allocMatrix(REALSXP, nObsFullnSp, nPost)); nProtect++; 
+
     /**********************************************************************
      * Additional Sampler Prep
      * *******************************************************************/
-    double *detProb = (double *) R_alloc(nObsnSp, sizeof(double)); 
-    double *mu = (double *) R_alloc(JnSp, sizeof(double)); 
-    zeros(mu, JnSp); 
-
     // For normal priors
     F77_NAME(dpotrf)(lower, &pAbund, SigmaBetaCommInv, &pAbund, &info FCONE); 
     if(info != 0){error("c++ error: dpotrf SigmaBetaCommInv failed\n");}
@@ -325,50 +335,6 @@ extern "C" {
     if(info != 0){error("c++ error: dpotrf TauAlphaInv failed\n");}
     F77_NAME(dpotri)(lower, &pDet, TauAlphaInv, &pDet, &info FCONE); 
     if(info != 0){error("c++ error: dpotri TauAlphaInv failed\n");}
-
-    /**********************************************************************
-     * Prep for random effects
-     * *******************************************************************/
-    // Site-level sums of the abundance random effects
-    double *betaStarSites = (double *) R_alloc(JnSp, sizeof(double)); 
-    double *betaStarSitesCand = (double *) R_alloc(JnSp, sizeof(double));
-    zeros(betaStarSites, JnSp); 
-    int *betaStarLongIndx = (int *) R_alloc(JpAbundRE, sizeof(int));
-    // Initial sums
-    for (j = 0; j < J; j++) {
-      for (l = 0; l < pAbundRE; l++) {
-        betaStarLongIndx[l * J + j] = which(XRE[l * J + j], betaLevelIndx, nAbundRE);
-        for (i = 0; i < nSp; i++) {
-          betaStarSites[i * J + j] += betaStar[i * nAbundRE + betaStarLongIndx[l * J + j]] * XRandom[l * J + j];
-	  betaStarSitesCand[i * J + j] = betaStarSites[i * J + j];
-        }
-      }
-    }
-    // Observation-level sums of the detection random effects
-    double *alphaStarObs = (double *) R_alloc(nObsnSp, sizeof(double)); 
-    double *alphaStarObsCand = (double *) R_alloc(nObsnSp, sizeof(double)); 
-    zeros(alphaStarObs, nObsnSp); 
-    int *alphaStarLongIndx = (int *) R_alloc(nObspDetRE, sizeof(int));
-    // Get sums of the current REs for each site/visit combo for all species
-    for (r = 0; r < nObs; r++) {
-      for (l = 0; l < pDetRE; l++) {
-        alphaStarLongIndx[l * nObs + r] = which(XpRE[l * nObs + r], alphaLevelIndx, nDetRE);
-        for (i = 0; i < nSp; i++) {
-          alphaStarObs[i * nObs + r] += alphaStar[i * nDetRE + alphaStarLongIndx[l * nObs + r]] * XpRandom[l * nObs + r];
-	  alphaStarObsCand[i * nObs + r] = alphaStarObs[i * nObs + r];
-        }
-      }
-    }
-    // Starting index for abundance random effects
-    int *betaStarStart = (int *) R_alloc(pAbundRE, sizeof(int)); 
-    for (l = 0; l < pAbundRE; l++) {
-      betaStarStart[l] = which(l, betaStarIndx, nAbundRE); 
-    }
-    // Starting index for detection random effects
-    int *alphaStarStart = (int *) R_alloc(pDetRE, sizeof(int)); 
-    for (l = 0; l < pDetRE; l++) {
-      alphaStarStart[l] = which(l, alphaStarIndx, nDetRE); 
-    }
 
     /**********************************************************************
      Set up factor stuff
@@ -492,18 +458,87 @@ extern "C" {
     for (j = 0; j < J; j++) {
       NCand[j] = N[j];
     }
-    // TODO: will likely want to eliminate these and just overwrite them, 
-    //       since tuning w and lambda can actually make this quite large.
     SEXP acceptSamples_r; 
     PROTECT(acceptSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
     SEXP tuningSamples_r; 
     PROTECT(tuningSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
 
-    GetRNGstate();
-
     /**********************************************************************
-     Start sampling
-     ********************************************************************/
+     * Prep for random effects
+     * *******************************************************************/
+    // Site-level sums of the abundance random effects
+    double *betaStarSites = (double *) R_alloc(JnSp, sizeof(double)); 
+    double *betaStarSitesCand = (double *) R_alloc(JnSp, sizeof(double));
+    zeros(betaStarSites, JnSp); 
+    int *betaStarLongIndx = (int *) R_alloc(JpAbundRE, sizeof(int));
+    // Initial sums
+    for (j = 0; j < J; j++) {
+      for (l = 0; l < pAbundRE; l++) {
+        betaStarLongIndx[l * J + j] = which(XRE[l * J + j], betaLevelIndx, nAbundRE);
+        for (i = 0; i < nSp; i++) {
+          betaStarSites[i * J + j] += betaStar[i * nAbundRE + betaStarLongIndx[l * J + j]] * XRandom[l * J + j];
+	  betaStarSitesCand[i * J + j] = betaStarSites[i * J + j];
+        }
+      }
+    }
+    // Observation-level sums of the detection random effects
+    double *alphaStarSites = (double *) R_alloc(JnSp, sizeof(double)); 
+    double *alphaStarSitesCand = (double *) R_alloc(JnSp, sizeof(double)); 
+    zeros(alphaStarSites, JnSp); 
+    int *alphaStarLongIndx = (int *) R_alloc(JpDetRE, sizeof(int));
+    // Get sums of the current REs for each site/visit combo for all species
+    for (r = 0; r < J; r++) {
+      for (l = 0; l < pDetRE; l++) {
+        alphaStarLongIndx[l * J + r] = which(XpRE[l * J + r], alphaLevelIndx, nDetRE);
+        for (i = 0; i < nSp; i++) {
+          alphaStarSites[i * J + r] += alphaStar[i * nDetRE + alphaStarLongIndx[l * J + r]] * XpRandom[l * J + r];
+	  alphaStarSitesCand[i * J + r] = alphaStarSites[i * J + r];
+        }
+      }
+    }
+    // Starting index for abundance random effects
+    int *betaStarStart = (int *) R_alloc(pAbundRE, sizeof(int)); 
+    for (l = 0; l < pAbundRE; l++) {
+      betaStarStart[l] = which(l, betaStarIndx, nAbundRE); 
+    }
+    // Starting index for detection random effects
+    int *alphaStarStart = (int *) R_alloc(pDetRE, sizeof(int)); 
+    for (l = 0; l < pDetRE; l++) {
+      alphaStarStart[l] = which(l, alphaStarIndx, nDetRE); 
+    }
+    
+    /**********************************************************************
+     * DS Prep 
+     * *******************************************************************/
+    double *sigma = (double *) R_alloc(J, sizeof(double));
+    double *p = (double *) R_alloc(nObs, sizeof(double)); zeros(p, nObs);
+    // Number of break points for integration
+    // TODO: may want to make this be an argument eventually. The smaller it is 
+    // the faster the code, but the worse the approximation. Note that this is the
+    // number of break points for integration within each bin. 
+    int nInt = 5;
+    double *binWidth = (double *) R_alloc(K, sizeof(double));
+    double stripWidth = 0.0;
+    double *psi = (double *) R_alloc(K, sizeof(double));
+    for (k = 0; k < K; k++) {
+      binWidth[k] = distBreaks[k + 1] - distBreaks[k];
+      stripWidth += binWidth[k];
+    }
+    for (k = 0; k < K; k++) {
+      if (transect == 0) {
+        psi[k] = binWidth[k] / stripWidth;
+      } else {
+        psi[k] = (pow(distBreaks[k + 1], 2) - pow(distBreaks[k], 2)) / pow(stripWidth, 2);
+      }
+    }
+    double *piFull = (double *) R_alloc(nObsFullnSp, sizeof(double)); 
+    zeros(piFull, nObsFullnSp);
+    double *piFullCand = (double *) R_alloc(nObsFullnSp, sizeof(double)); 
+    zeros(piFullCand, nObsFullnSp);
+    double likeVal = 0.0;
+
+    GetRNGstate(); 
+
     for (s = 0, g = 0; s < nBatch; s++) {
       for (t = 0; t < batchLength; t++, g++) {
         /********************************************************************
@@ -593,7 +628,7 @@ extern "C" {
         } // ll 
         for (ll = 0; ll < pDet; ll++) {
           TauAlphaInv[ll * pDet + ll] = tauSqAlpha[ll]; 
-        } // ll
+        } // ll 
         F77_NAME(dpotrf)(lower, &pDet, TauAlphaInv, &pDet, &info FCONE); 
         if(info != 0){error("c++ error: dpotrf TauAlphaInv failed\n");}
         F77_NAME(dpotri)(lower, &pDet, TauAlphaInv, &pDet, &info FCONE); 
@@ -623,11 +658,10 @@ extern "C" {
           sigmaSqP[l] = rigamma(sigmaSqPA[l] + nDetRELong[l] * nSp / 2.0, sigmaSqPB[l] + tmp_0);
         }
 
-         
         /**********************************************************************
          *Species specific variables  
          *********************************************************************/
-        for (i = 0; i < nSp; i++) {  
+        for (i = 0; i < nSp; i++) { 
           // beta is ordered by parameter, then species. 
           /********************************************************************
            *Update Abundance Regression Coefficients
@@ -643,16 +677,17 @@ extern "C" {
               tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &betaCand[i], &nSp) + 
                                 betaStarSites[i * J + j] + wStar[j * nSp + i]);
 	      if (family == 1) {
-                logPostBetaCand += dnbinom_mu(N[j * nSp + i], kappa[i], tmp_J[j], 1);
+                logPostBetaCand += nb_logpost(kappa[i], N[j * nSp + i], 
+                                              tmp_J[j], offset[j]);
 	      } else {
-                logPostBetaCand += dpois(N[j * nSp + i], tmp_J[j], 1);
+                logPostBetaCand += poisson_logpost(N[j * nSp + i], tmp_J[j], offset[j]);
 	      }
               tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
                                 betaStarSites[i * J + j] + wStar[j * nSp + i]);
 	      if (family == 1) {
-                logPostBetaCurr += dnbinom_mu(N[j * nSp + i], kappa[i], tmp_J[j], 1);
+                logPostBetaCurr += nb_logpost(kappa[i], N[j * nSp + i], tmp_J[j], offset[j]);
 	      } else {
-                logPostBetaCurr += dpois(N[j * nSp + i], tmp_J[j], 1);
+                logPostBetaCurr += poisson_logpost(N[j * nSp + i], tmp_J[j], offset[j]);
 	      }
             }
             if (runif(0.0, 1.0) <= exp(logPostBetaCand - logPostBetaCurr)) {
@@ -666,35 +701,72 @@ extern "C" {
 	  /********************************************************************
            *Update Detection Regression Coefficients
            *******************************************************************/
+	  // alpha is ordered by parameter, then species
           // Proposal
-          zeros(tmp_nObs, nObs);
-          for (k = 0; k < pDet; k++) {
+	  for (l = 0; l < pDet; l++) {
             logPostAlphaCand = 0.0;
 	    logPostAlphaCurr = 0.0;
-            alphaCand[k * nSp + i] = rnorm(alpha[k * nSp + i], 
-			                   exp(tuning[alphaAMCMCIndx + k * nSp + i]));
-            logPostAlphaCand += dnorm(alphaCand[k * nSp + i], alphaComm[k], 
-			              sqrt(tauSqAlpha[k]), 1);
-	    logPostAlphaCurr += dnorm(alpha[k * nSp + i], alphaComm[k], 
-                                      sqrt(tauSqAlpha[k]), 1);
-            for (r = 0; r < nObs; r++) {
-              if (N[NLongIndx[r] * nSp + i] > 0.0) {
-                tmp_nObs[r] = logitInv(F77_NAME(ddot)(&pDet, &Xp[r], &nObs, &alphaCand[i], &nSp) + 
-	  		             alphaStarObs[i * nObs + r], zero, one);
-                logPostAlphaCand += dbinom(y[r * nSp + i], N[NLongIndx[r] * nSp + i], tmp_nObs[r], 1);	     
-                tmp_nObs[r] = logitInv(F77_NAME(ddot)(&pDet, &Xp[r], &nObs, &alpha[i], &nSp) + 
-	  		             alphaStarObs[i * nObs + r], zero, one);
-                logPostAlphaCurr += dbinom(y[r * nSp + i], N[NLongIndx[r] * nSp + i], tmp_nObs[r], 1);	     
-	      }
-            }
+            alphaCand[l * nSp + i] = rnorm(alpha[l * nSp + i], 
+                                 exp(tuning[alphaAMCMCIndx + l * nSp + i]));
+            logPostAlphaCand += dnorm(alphaCand[l * nSp + i], alphaComm[l], 
+			              sqrt(tauSqAlpha[l]), 1);
+	    logPostAlphaCurr += dnorm(alpha[l * nSp + i], alphaComm[l], 
+                                      sqrt(tauSqAlpha[l]), 1);
+	    for (j = 0; j < J; j++) {
+              /********************************
+               * Candidate 
+               *******************************/
+              tmp_0 = 0.0; 
+	      likeVal = 0.0;
+              sigma[j] = exp(F77_NAME(ddot)(&pDet, &Xp[j], &J, &alphaCand[i], &nSp) +
+                             alphaStarSites[i * J + j]);
+              for (k = 0; k < K; k++) {
+                p[k * J + j] = integrate(detModel, distBreaks[k], distBreaks[k + 1], sigma[j], 
+                                         nInt, transect); 
+	        if (transect == 0) {
+                  p[k * J + j] /= (distBreaks[k + 1] - distBreaks[k]);
+	        } else {
+                  p[k * J + j] = p[k * J + j] * 2.0 / (pow(distBreaks[k + 1], 2) - pow(distBreaks[k], 2));
+	        }
+	        piFullCand[k * JnSp + j * nSp + i] = p[k * J + j] * psi[k];
+	        tmp_0 += piFullCand[k * JnSp + j * nSp + i];
+	        likeVal += y[k * JnSp + j * nSp + i] * log(piFullCand[k * JnSp + j * nSp + i]);
+	      } // k (bins)
+	      piFullCand[k * JnSp + j * nSp + i] = 1.0 - tmp_0;
+	      likeVal += (N[j * nSp + i] - yMax[j * nSp + i]) * log(piFullCand[K * JnSp + j * nSp + i]);
+	      logPostAlphaCand += likeVal;
+              /********************************
+               * Current 
+               *******************************/
+              tmp_0 = 0.0; 
+	      likeVal = 0.0;
+              sigma[j] = exp(F77_NAME(ddot)(&pDet, &Xp[j], &J, &alpha[i], &nSp) + 
+                             alphaStarSites[i * J + j]);
+              for (k = 0; k < K; k++) {
+                p[k * J + j] = integrate(detModel, distBreaks[k], distBreaks[k + 1], sigma[j], 
+                                         nInt, transect); 
+	        if (transect == 0) {
+                  p[k * J + j] /= (distBreaks[k + 1] - distBreaks[k]);
+	        } else {
+                  p[k * J + j] = p[k * J + j] * 2.0 / (pow(distBreaks[k + 1], 2) - pow(distBreaks[k], 2));
+	        }
+	        piFull[k * JnSp + j * nSp + i] = p[k * J + j] * psi[k];
+	        tmp_0 += piFull[k * JnSp + j * nSp + i];
+	        likeVal += y[k * JnSp + j * nSp + i] * log(piFull[k * JnSp + j * nSp + i]);
+	      } // k (bins)
+	      piFull[k * JnSp + j * nSp + i] = 1.0 - tmp_0;
+	      likeVal += (N[j * nSp + i] - yMax[j * nSp + i]) * log(piFull[K * JnSp + j * nSp + i]);
+	      logPostAlphaCurr += likeVal;
+	    } // j (sites)
             if (runif(0.0, 1.0) <= exp(logPostAlphaCand - logPostAlphaCurr)) {
-              alpha[k * nSp + i] = alphaCand[k * nSp + i];
-              accept[alphaAMCMCIndx + k * nSp + i]++;
+              alpha[l * nSp + i] = alphaCand[l * nSp + i];
+              accept[alphaAMCMCIndx + l * nSp + i]++;
+	      F77_NAME(dcopy)(&nObsFullnSp, piFullCand, &inc, piFull, &inc);
             } else {
-              alphaCand[k * nSp + i] = alpha[k * nSp + i];
+              alphaCand[l * nSp + i] = alpha[l * nSp + i];
+	      F77_NAME(dcopy)(&nObsFullnSp, piFull, &inc, piFullCand, &inc);
 	    }
-          }
-
+	  }
           /********************************************************************
            *Update abundance random effects
            *******************************************************************/
@@ -717,10 +789,11 @@ extern "C" {
                   tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
 	  			  betaStarSitesCand[i * J + j] + wStar[j * nSp + i]);
                   if (family == 1) {
-	  	    logPostBetaStarCand[l] += dnbinom_mu(N[j * nSp + i], kappa[i], 
-                                                         tmp_J[j], 1);
+	            logPostBetaStarCand[l] += nb_logpost(kappa[i], N[j * nSp + i], 
+                                                         tmp_J[j], offset[j]); 	         
 	  	  } else {
-	  	    logPostBetaStarCand[l] += dpois(N[j * nSp + i], tmp_J[j], 1);
+	            logPostBetaStarCand[l] += poisson_logpost(N[j * nSp + i], tmp_J[j],
+                                                              offset[j]); 
 	  	  }
 	  	  // Current
                     betaStarSites[i * J + j] = 0.0;
@@ -730,11 +803,12 @@ extern "C" {
                     }
                     tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
 	  	  		  betaStarSites[i * J + j] + wStar[j * nSp + i]);
-                    if (family == 1) {
-	  	    logPostBetaStarCurr[l] += dnbinom_mu(N[j * nSp + i], kappa[i], 
-                                                         tmp_J[j], 1);
+                  if (family == 1) {
+	            logPostBetaStarCurr[l] += nb_logpost(kappa[i], N[j * nSp + i], 
+                                                         tmp_J[j], offset[j]); 	         
 	  	  } else {
-	  	    logPostBetaStarCurr[l] += dpois(N[j * nSp + i], tmp_J[j], 1);
+	            logPostBetaStarCurr[l] += poisson_logpost(N[j * nSp + i], tmp_J[j], 
+				                              offset[j]); 
 	  	  }
 	        }
 	      }
@@ -748,7 +822,6 @@ extern "C" {
 	      }
 	    }
 	  }
-
           /********************************************************************
            *Update detection random effects
            *******************************************************************/
@@ -760,40 +833,77 @@ extern "C" {
 	  		                   sqrt(sigmaSqP[alphaStarIndx[l]]), 1);
               logPostAlphaStarCurr[l] = dnorm(alphaStar[i * nDetRE + l], 0.0, 
 	  		                   sqrt(sigmaSqP[alphaStarIndx[l]]), 1);
-              zeros(tmp_nObs, nObs);
-	      for (r = 0; r < nObs; r++) {
-                if ((N[NLongIndx[r] * nSp + i] > 0) && (XpRE[alphaStarIndx[l] * nObs + r] == alphaLevelIndx[l])) {
-                  // Candidate
-                  alphaStarObsCand[i * nObs + r] = 0.0;
+	      for (j = 0; j < J; j++) {
+                likeVal = 0.0;
+                tmp_0 = 0.0; 
+                if ((XpRE[alphaStarIndx[l] * J + j] == alphaLevelIndx[l])) {
+                  /********************************
+                   * Candidate 
+                   *******************************/
+                  alphaStarSitesCand[i * J + j] = 0.0;
                   for (ll = 0; ll < pDetRE; ll++) {
-                    alphaStarObsCand[i * nObs + r] += alphaStarCand[i * nDetRE + alphaStarLongIndx[ll * nObs + r]] * 
-	                                XpRandom[ll * nObs + r];
+                    alphaStarSitesCand[i * J + j] += alphaStarCand[i * nDetRE + alphaStarLongIndx[ll * J + j]] * 
+	                                XpRandom[ll * J + j];
                   }
-                  tmp_nObs[r] = logitInv(F77_NAME(ddot)(&pDet, &Xp[r], &nObs, &alpha[i], &nSp) + 
-	  		               alphaStarObsCand[i * nObs + r], zero, one);
-                  logPostAlphaStarCand[l] += dbinom(y[r * nSp + i], N[NLongIndx[r] * nSp + i], tmp_nObs[r], 1);	     
-	  	  // Current
-                  alphaStarObs[i * nObs + r] = 0.0;
+                  sigma[j] = exp(F77_NAME(ddot)(&pDet, &Xp[j], &J, &alpha[i], &nSp) + 
+                                 alphaStarSitesCand[i * J + j]);
+                  for (k = 0; k < K; k++) {
+                    p[k * J + j] = integrate(detModel, distBreaks[k], distBreaks[k + 1], sigma[j], 
+                                             nInt, transect); 
+	            if (transect == 0) {
+                      p[k * J + j] /= (distBreaks[k + 1] - distBreaks[k]);
+	            } else {
+                      p[k * J + j] = p[k * J + j] * 2.0 / (pow(distBreaks[k + 1], 2) - pow(distBreaks[k], 2));
+	            }
+	            piFullCand[k * JnSp + j * nSp + i] = p[k * J + j] * psi[k];
+	            tmp_0 += piFullCand[k * JnSp + j * nSp + i];
+	            likeVal += y[k * JnSp + j * nSp + i] * log(piFullCand[k * JnSp + j * nSp + i]);
+	          } // k (bins)
+	          piFullCand[k * JnSp + j * nSp + i] = 1.0 - tmp_0;
+	          likeVal += (N[j * nSp + i] - yMax[j * nSp + i]) * log(piFullCand[K * JnSp + j * nSp + i]);
+	          logPostAlphaStarCand[l] += likeVal;
+                  /********************************
+                   * Current
+                   *******************************/
+	  	  likeVal = 0.0;
+	  	  tmp_0 = 0.0;
+                  alphaStarSites[i * J + j] = 0.0;
                   for (ll = 0; ll < pDetRE; ll++) {
-                    alphaStarObs[i * nObs + r] += alphaStar[i * nDetRE + alphaStarLongIndx[ll * nObs + r]] * 
-	                                XpRandom[ll * nObs + r];
+                    alphaStarSites[i * J + j] += alphaStar[i * nDetRE + alphaStarLongIndx[ll * J + j]] * 
+	                                XpRandom[ll * J + j];
                   }
-                  tmp_nObs[r] = logitInv(F77_NAME(ddot)(&pDet, &Xp[r], &nObs, &alpha[i], &nSp) + 
-	  		               alphaStarObs[i * nObs + r], zero, one);
-                  logPostAlphaStarCurr[l] += dbinom(y[r * nSp + i], N[NLongIndx[r] * nSp + i], tmp_nObs[r], 1);	     
+                  sigma[j] = exp(F77_NAME(ddot)(&pDet, &Xp[j], &J, &alpha[i], &nSp) + 
+                                 alphaStarSites[i * J + j]);
+                  for (k = 0; k < K; k++) {
+                    p[k * J + j] = integrate(detModel, distBreaks[k], distBreaks[k + 1], sigma[j], 
+                                             nInt, transect); 
+	            if (transect == 0) {
+                      p[k * J + j] /= (distBreaks[k + 1] - distBreaks[k]);
+	            } else {
+                      p[k * J + j] = p[k * J + j] * 2.0 / (pow(distBreaks[k + 1], 2) - pow(distBreaks[k], 2));
+	            }
+	            piFull[k * JnSp + j * nSp + i] = p[k * J + j] * psi[k];
+	            tmp_0 += piFull[k * JnSp + j * nSp + i];
+	            likeVal += y[k * JnSp + j * nSp + i] * log(piFull[k * JnSp + j * nSp + i]);
+	          } // k (bins)
+	          piFull[k * JnSp + j * nSp + i] = 1.0 - tmp_0;
+	          likeVal += (N[j * nSp + i] - yMax[j * nSp + i]) * log(piFull[K * JnSp + j * nSp + i]);
+	  	  logPostAlphaStarCurr[l] += likeVal;
 	        }
 	      }
 	      if (runif (0.0, 1.0) <= exp(logPostAlphaStarCand[l] - logPostAlphaStarCurr[l])) {
                 alphaStar[i * nDetRE + l] = alphaStarCand[i * nDetRE + l];
-	        F77_NAME(dcopy)(&nObsnSp, alphaStarObsCand, &inc, alphaStarObs, &inc);
+	        F77_NAME(dcopy)(&JnSp, alphaStarSitesCand, &inc, alphaStarSites, &inc);
 	        accept[alphaStarAMCMCIndx + i * nDetRE + l]++;
+	        F77_NAME(dcopy)(&nObsFullnSp, piFullCand, &inc, piFull, &inc);
 	      } else {
                 alphaStarCand[i * nDetRE + l] = alphaStar[i * nDetRE + l];
-	        F77_NAME(dcopy)(&nObsnSp, alphaStarObs, &inc, alphaStarObsCand, &inc);
+	        F77_NAME(dcopy)(&JnSp, alphaStarSites, &inc, alphaStarSitesCand, &inc);
+	        F77_NAME(dcopy)(&nObsFullnSp, piFull, &inc, piFullCand, &inc);
 	      }
 	    }
 	  }
-	} // species loop
+	} // i (species)
 
         /********************************************************************
          *Update Latent Factors (w)
@@ -824,11 +934,13 @@ extern "C" {
                *****************************/
               tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
                                 betaStarSites[i * J + j] + wStarCand[j * nSp + i]);
+
 	      if (family == 1) {
-                logPostWCand[j * q + ll] += dnbinom_mu(N[j * nSp + i], kappa[i], 
-	            	                          tmp_J[j], 1);
+		logPostWCand[j * q + ll] += nb_logpost(kappa[i], N[j * nSp + i], tmp_J[j], 
+				                       offset[j]);
 	      } else {
-                logPostWCand[j * q + ll] += dpois(N[j * nSp + i], tmp_J[j], 1);
+		logPostWCand[j * q + ll] += poisson_logpost(N[j * nSp + i], tmp_J[j], 
+                                                            offset[j]);
 	      }
               /*****************************
 	       *Current
@@ -836,10 +948,11 @@ extern "C" {
               tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
                                 betaStarSites[i * J + j] + wStar[j * nSp + i]);
 	      if (family == 1) {
-                logPostWCurr[j * q + ll] += dnbinom_mu(N[j * nSp + i], kappa[i], 
-	            	                          tmp_J[j], 1);
+		logPostWCurr[j * q + ll] += nb_logpost(kappa[i], N[j * nSp + i], tmp_J[j], 
+				                       offset[j]);
 	      } else {
-                logPostWCurr[j * q + ll] += dpois(N[j * nSp + i], tmp_J[j], 1);
+		logPostWCurr[j * q + ll] += poisson_logpost(N[j * nSp + i], tmp_J[j], 
+                                                            offset[j]);
 	      }
 	    } // i
 	    if (runif(0.0, 1.0) <= exp(logPostWCand[j * q + ll] - logPostWCurr[j * q + ll])) {
@@ -877,19 +990,21 @@ extern "C" {
                 tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
                                   betaStarSites[i * J + j] + wStarCand[j * nSp + i]);
 	        if (family == 1) {
-                  logPostLambdaCand[ll * nSp + i] += dnbinom_mu(N[j * nSp + i], kappa[i], 
-	      		                                        tmp_J[j], 1);
+                  logPostLambdaCand[ll * nSp + i] += nb_logpost(kappa[i], N[j * nSp + i],  
+	      		                                        tmp_J[j], offset[j]);
 	        } else {
-                  logPostLambdaCand[ll * nSp + i] += dpois(N[j * nSp + i], tmp_J[j], 1);
+                  logPostLambdaCand[ll * nSp + i] += poisson_logpost(N[j * nSp + i], tmp_J[j], 
+                                                                     offset[j]);
 	        }
 		// Current
                 tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
                                betaStarSites[i * J + j] + wStar[j * nSp + i]);
 	        if (family == 1) {
-                  logPostLambdaCurr[ll * nSp + i] += dnbinom_mu(N[j * nSp + i], kappa[i], 
-	      		                                        tmp_J[j], 1);
+                  logPostLambdaCurr[ll * nSp + i] += nb_logpost(kappa[i], N[j * nSp + i], 
+	      		                                        tmp_J[j], offset[j]);
 	        } else {
-                  logPostLambdaCurr[ll * nSp + i] += dpois(N[j * nSp + i], tmp_J[j], 1);
+                  logPostLambdaCurr[ll * nSp + i] += poisson_logpost(N[j * nSp + i], tmp_J[j], 
+                                                                     offset[j]);
 	        }
 	      } // j
               if (runif(0.0, 1.0) <= exp(logPostLambdaCand[ll * nSp + i] - 
@@ -916,15 +1031,17 @@ extern "C" {
            *******************************************************************/
 	  if (family == 1) {
             kappaCand = logitInv(rnorm(logit(kappa[i], kappaA[i], kappaB[i]), 
-				       exp(tuning[kappaAMCMCIndx + i])), 
+	        		       exp(tuning[kappaAMCMCIndx + i])), 
 	  		         kappaA[i], kappaB[i]);
 	    logPostKappaCurr = 0.0;
 	    logPostKappaCand = 0.0;
 	    for (j = 0; j < J; j++) {
               mu[j * nSp + i] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
                           betaStarSites[i * J + j] + wStar[j * nSp + i]);
-              logPostKappaCurr += dnbinom_mu(N[j * nSp + i], kappa[i], mu[j * nSp + i], 1);
-	      logPostKappaCand += dnbinom_mu(N[j * nSp + i], kappaCand, mu[j * nSp + i], 1);
+	      logPostKappaCurr += nb_logpost(kappa[i], N[j * nSp + i], mu[j * nSp + i],
+			                     offset[j]);
+	      logPostKappaCand += nb_logpost(kappaCand, N[j * nSp + i], mu[j * nSp + i], 
+			                     offset[j]);
 	    }
 	    // Jacobian adjustment
 	    logPostKappaCurr += log(kappa[i] - kappaA[i]) + log(kappaB[i] - kappa[i]);
@@ -934,9 +1051,8 @@ extern "C" {
 	      accept[kappaAMCMCIndx + i]++;
 	    }
 	  }
-
           /********************************************************************
-           *Update Latent Abundance
+           *Update Latent Abundance 
            *******************************************************************/
 	  zeros(logPostCurrN, J);
 	  zeros(logPostCandN, J);
@@ -946,51 +1062,54 @@ extern "C" {
 	    // Only calculate if Poisson since its already calculated in kappa update
 	    if (family == 0) {
               mu[j * nSp + i] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
-                          betaStarSites[i * J + j] + wStar[j * nSp + i]);
+                                    betaStarSites[i * J + j] + wStar[j * nSp + i]);
 	    }
-	  }
-	  // Likelihood contribution to Metropolis ratios
-	  for (r = 0; r < nObs; r++) {
-            detProb[r * nSp + i] = logitInv(F77_NAME(ddot)(&pDet, &Xp[r], &nObs, &alpha[i], &nSp) + 
-	  		        alphaStarObs[i * nObs + r], zero, one);
-            logPostCurrN[NLongIndx[r]] += dbinom(y[r * nSp + i], N[NLongIndx[r] * nSp + i], 
-	        	                         detProb[r * nSp + i], 1);
-	    logPostCandN[NLongIndx[r]] += dbinom(y[r * nSp + i], NCand[NLongIndx[r]], 
-	        	                  detProb[r * nSp + i], 1);
-	  }
-          for (j = 0; j < J; j++) {
+	    // Likelihood contribution
 	    if (NCand[j] >= yMax[j * nSp + i]) {
+	      likeVal = 0.0;
+	      tmp_0 = 0.0;
+	      for (k = 0; k < K; k++) {
+                likeVal += y[k * JnSp + j * nSp + i] * log(piFull[k * JnSp + j * nSp + i]);  
+	      }
               /********************************
                * Current
                *******************************/
+	      logPostCurrN[j] += likeVal + 
+                                 ((N[j * nSp + i] - yMax[j * nSp + i]) * log(piFull[K * JnSp + j * nSp + i])) + 
+                                 lgammafn(N[j * nSp + i] + 1.0) -
+	  		       lgammafn(N[j * nSp + i] - yMax[j * nSp + i] + 1.0);
 	      // Contribution from NB or Poisson
 	      if (family == 0) {
-	        logPostCurrN[j] += dpois(N[j * nSp + i], mu[j * nSp + i], 1);
+                logPostCurrN[j] += poisson_logpost(N[j * nSp + i], mu[j * nSp + i], offset[j]);
 	      } else {
-	        logPostCurrN[j] += dnbinom_mu(N[j * nSp + i], kappa[i], mu[j * nSp + i], 1);
+	        logPostCurrN[j] += nb_logpost(kappa[i], N[j * nSp + i], mu[j * nSp + i], offset[j]);
 	      }
 	      // MH contribution for assymetric proposal distribution.
 	      logPostCurrN[j] += dpois(NCand[j], N[j * nSp + i] + epsilon, 1);
               /********************************
                * Candidate
                *******************************/
+	      logPostCandN[j] += likeVal + 
+                                 ((NCand[j] - yMax[j * nSp + i]) * log(piFull[K * JnSp + j * nSp + i])) + 
+                                 lgammafn(NCand[j] + 1.0) -
+	  		       lgammafn(NCand[j] - yMax[j * nSp + i] + 1.0);
 	      if (family == 0) {
-                logPostCandN[j] += dpois(NCand[j], mu[j * nSp + i], 1);
+                logPostCandN[j] += poisson_logpost(NCand[j], mu[j * nSp + i], offset[j]);
 	      } else {
-                logPostCandN[j] += dnbinom_mu(NCand[j], kappa[i], mu[j * nSp + i], 1);
+	        logPostCandN[j] += nb_logpost(kappa[i], NCand[j], mu[j * nSp + i], offset[j]);
 	      }
-	      // MH contribution for assymetric proposal distribution
+	      // MH contribution for assymetric proposal distribution.
 	      logPostCandN[j] += dpois(N[j * nSp + i], NCand[j] + epsilon, 1);
               if (runif(0.0,1.0) <= exp(logPostCandN[j] - logPostCurrN[j])) {
                 N[j * nSp + i] = NCand[j];
               }
 	    }
 	  }
-	} // i (species)
+	}
 
         /********************************************************************
          *Save samples
-        *******************************************************************/
+         *******************************************************************/
         if (g >= nBurn) {
           thinIndx++; 
           if (thinIndx == nThin) {
@@ -999,7 +1118,7 @@ extern "C" {
             F77_NAME(dcopy)(&pAbund, tauSqBeta, &inc, &REAL(tauSqBetaSamples_r)[sPost*pAbund], &inc);
             F77_NAME(dcopy)(&pDet, tauSqAlpha, &inc, &REAL(tauSqAlphaSamples_r)[sPost*pDet], &inc);
             F77_NAME(dcopy)(&pAbundnSp, beta, &inc, &REAL(betaSamples_r)[sPost*pAbundnSp], &inc); 
-            F77_NAME(dcopy)(&pDetnSp, alpha, &inc, &REAL(alphaSamples_r)[sPost*pDetnSp], &inc);
+            F77_NAME(dcopy)(&pDetnSp, alpha, &inc, &REAL(alphaSamples_r)[sPost*pDetnSp], &inc); 
             F77_NAME(dcopy)(&Jq, w, &inc, &REAL(wSamples_r)[sPost*Jq], &inc); 
             F77_NAME(dcopy)(&nSpq, lambda, &inc, &REAL(lambdaSamples_r)[sPost*nSpq], &inc); 
 	    if (family == 1) {
@@ -1007,6 +1126,19 @@ extern "C" {
 	    }
             F77_NAME(dcopy)(&JnSp, N, &inc, &REAL(NSamples_r)[sPost*JnSp], &inc); 
             F77_NAME(dcopy)(&JnSp, mu, &inc, &REAL(muSamples_r)[sPost*JnSp], &inc); 
+	    // Generate and save replicate values. 
+	    for (i = 0; i < nSp; i++) {
+	      for (j = 0; j < J; j++) { 
+                for (k = 0; k < KFull; k++) {
+                  tmp_KFull[k] = piFull[k * JnSp + j * nSp + i];
+	          REAL(piFullSamples_r)[sPost * nObsFullnSp + k * JnSp + j * nSp + i] = piFull[k * JnSp + j * nSp + i];
+	        } 
+	        rmultinom(N[j * nSp + i], tmp_KFull, KFull, tmp_KFullInt);
+		for (k = 0; k < KFull; k++) {
+                  INTEGER(yRepSamples_r)[sPost * nObsFullnSp + k * JnSp + j * nSp + i] = tmp_KFullInt[k];
+		}
+	      }
+	    }
             if (pDetRE > 0) {
               F77_NAME(dcopy)(&pDetRE, sigmaSqP, &inc, &REAL(sigmaSqPSamples_r)[sPost*pDetRE], &inc);
               F77_NAME(dcopy)(&nDetREnSp, alphaStar, &inc, &REAL(alphaStarSamples_r)[sPost*nDetREnSp], &inc);
@@ -1034,6 +1166,7 @@ extern "C" {
           }
         accept[j] = 0;
       }
+
       /********************************************************************
        *Report 
        *******************************************************************/
@@ -1050,12 +1183,12 @@ extern "C" {
 	      Rprintf("\t%i\tkappa\t\t%3.1f\t\t%1.5f\n", i + 1, 100.0*REAL(acceptSamples_r)[s * nAMCMC + kappaAMCMCIndx + i], exp(tuning[kappaAMCMCIndx + i]));
 	    } // i
 	  }
-	  Rprintf("-------------------------------------------------\n");
+          Rprintf("-------------------------------------------------\n");
           #ifdef Win32
-	  R_FlushConsole();
+          R_FlushConsole();
           #endif
-	  status = 0;
-	}
+          status = 0;
+        }
       } 
       status++;        
 
@@ -1066,7 +1199,7 @@ extern "C" {
     PutRNGstate();
 
     SEXP result_r, resultName_r;
-    int nResultListObjs = 10;
+    int nResultListObjs = 13;
     if (pDetRE > 0) {
       nResultListObjs += 2; 
     }
@@ -1080,26 +1213,30 @@ extern "C" {
     PROTECT(result_r = allocVector(VECSXP, nResultListObjs)); nProtect++;
     PROTECT(resultName_r = allocVector(VECSXP, nResultListObjs)); nProtect++;
 
+    // Setting the components of the output list.
     SET_VECTOR_ELT(result_r, 0, betaCommSamples_r);
     SET_VECTOR_ELT(result_r, 1, alphaCommSamples_r);
     SET_VECTOR_ELT(result_r, 2, tauSqBetaSamples_r);
     SET_VECTOR_ELT(result_r, 3, tauSqAlphaSamples_r);
     SET_VECTOR_ELT(result_r, 4, betaSamples_r);
     SET_VECTOR_ELT(result_r, 5, alphaSamples_r);
-    SET_VECTOR_ELT(result_r, 6, NSamples_r);
+    SET_VECTOR_ELT(result_r, 6, NSamples_r); 
     SET_VECTOR_ELT(result_r, 7, muSamples_r);
-    SET_VECTOR_ELT(result_r, 8, lambdaSamples_r);
-    SET_VECTOR_ELT(result_r, 9, wSamples_r); 
+    SET_VECTOR_ELT(result_r, 8, tuningSamples_r);
+    SET_VECTOR_ELT(result_r, 9, yRepSamples_r);
+    SET_VECTOR_ELT(result_r, 10, piFullSamples_r);
+    SET_VECTOR_ELT(result_r, 11, lambdaSamples_r);
+    SET_VECTOR_ELT(result_r, 12, wSamples_r); 
     if (pDetRE > 0) {
-      tmp_0 = 10; // Needed to make tracking kappa easier. 
-      SET_VECTOR_ELT(result_r, 10, sigmaSqPSamples_r);
-      SET_VECTOR_ELT(result_r, 11, alphaStarSamples_r);
+      tmp_0 = 13; // Needed to make tracking kappa easier. 
+      SET_VECTOR_ELT(result_r, 13, sigmaSqPSamples_r);
+      SET_VECTOR_ELT(result_r, 14, alphaStarSamples_r);
     }
     if (pAbundRE > 0) {
       if (pDetRE > 0) {
-        tmp_0 = 12;
+        tmp_0 = 15;
       } else {
-        tmp_0 = 10;
+        tmp_0 = 13;
       }
       SET_VECTOR_ELT(result_r, tmp_0, sigmaSqMuSamples_r);
       SET_VECTOR_ELT(result_r, tmp_0 + 1, betaStarSamples_r);
@@ -1108,7 +1245,7 @@ extern "C" {
       if ((pDetRE > 0) || (pAbundRE > 0)) {
         tmp_02 = tmp_0 + 2;
       } else {
-        tmp_02 = 10;
+        tmp_02 = 13;
       }  
       SET_VECTOR_ELT(result_r, tmp_02, kappaSamples_r);
     }
@@ -1120,12 +1257,15 @@ extern "C" {
     SET_VECTOR_ELT(resultName_r, 4, mkChar("beta.samples")); 
     SET_VECTOR_ELT(resultName_r, 5, mkChar("alpha.samples")); 
     SET_VECTOR_ELT(resultName_r, 6, mkChar("N.samples")); 
-    SET_VECTOR_ELT(resultName_r, 7, mkChar("mu.samples")); 
-    SET_VECTOR_ELT(resultName_r, 8, mkChar("lambda.samples")); 
-    SET_VECTOR_ELT(resultName_r, 9, mkChar("w.samples")); 
+    SET_VECTOR_ELT(resultName_r, 7, mkChar("mu.samples"));
+    SET_VECTOR_ELT(resultName_r, 8, mkChar("tuning.samples"));
+    SET_VECTOR_ELT(resultName_r, 9, mkChar("y.rep.samples"));
+    SET_VECTOR_ELT(resultName_r, 10, mkChar("pi.samples"));
+    SET_VECTOR_ELT(resultName_r, 11, mkChar("lambda.samples")); 
+    SET_VECTOR_ELT(resultName_r, 12, mkChar("w.samples")); 
     if (pDetRE > 0) {
-      SET_VECTOR_ELT(resultName_r, 10, mkChar("sigma.sq.p.samples")); 
-      SET_VECTOR_ELT(resultName_r, 11, mkChar("alpha.star.samples")); 
+      SET_VECTOR_ELT(resultName_r, 13, mkChar("sigma.sq.p.samples")); 
+      SET_VECTOR_ELT(resultName_r, 14, mkChar("alpha.star.samples")); 
     }
     if (pAbundRE > 0) {
       SET_VECTOR_ELT(resultName_r, tmp_0, mkChar("sigma.sq.mu.samples")); 
@@ -1142,5 +1282,4 @@ extern "C" {
     return(result_r);
   }
 }
-
 

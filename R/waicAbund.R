@@ -18,14 +18,16 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
   if (!(class(object) %in% c('NMix', 'spNMix', 'abund', 'spAbund', 
 			     'msAbund', 'lfMsAbund', 
 			     'sfMsAbund', 'msNMix', 
-			     'lfMsNMix', 'sfMsNMix', 'DS', 'spDS'))) {
-    stop("error: object must be one of the following classes: abund, spAbund, NMix, spNMix, msAbund, lfMsAbund, sfMsAbund, msNMix, lfMsNMix, sfMsNMix, DS, spDS\n")
+			     'lfMsNMix', 'sfMsNMix', 'DS', 'spDS', 
+			     'msDS', 'lfMsDS', 'sfMsDS'))) {
+    stop("error: object must be one of the following classes: abund, spAbund, NMix, spNMix, msAbund, lfMsAbund, sfMsAbund, msNMix, lfMsNMix, sfMsNMix, DS, spDS, msDS, lfMsDS, sfMsDS\n")
   }
 
   if (!(class(object) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund', 'sfMsAbund'))) {
     if (missing(N.max)) {
       message("N.max not specified. Setting upper index of integration of N to 10 plus\nthe largest estimated abundance value at each site in object$N.samples")
-      if (class(object) %in% c('msNMix', 'lfMsNMix', 'sfMsNMix')) {
+      if (class(object) %in% c('msNMix', 'lfMsNMix', 'sfMsNMix', 
+			       'msDS', 'lfMsDS', 'sfMsDS')) {
         N.max <- apply(object$N.samples, c(2, 3), max) + 10
       } else {
         N.max <- apply(object$N.samples, 2, max) + 10 
@@ -248,6 +250,69 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
     pD <- sum(apply(tmp$like.samples, 1, function(a) var(log(a))), na.rm = TRUE)
     out <- c(elpd, pD, -2 * (elpd - pD))
     names(out) <- c("elpd", "pD", "WAIC")
+  }
+ 
+  # Multi-species distance sampling --------------------------------------- 
+  if (class(object) %in% c('msDS', 'sfMsDS', 'lfMsDS')) {
+    n.sp <- nrow(object$y)
+    elpd <- rep(NA, n.sp)
+    pD <- rep(NA, n.sp)
+    # TODO: you can probably parallelize this.
+    for (i in 1:n.sp) {
+      message(noquote(paste("Currently on species ", i, " out of ", n.sp, sep = '')))
+      N.samples <- object$N.samples[, i, ]
+      n.samples <- object$n.post * object$n.chains
+      kappa.samples <- object$kappa.samples
+      y <- object$y[i, , ]
+      if (length(dim(y)) == 1) {
+        y <- as.matrix(y)
+      }
+      y.max <- apply(y, 1, max, na.rm = TRUE)
+      # TODO: 
+      # y.max <- ifelse(y.max == 0, 1, y.max)
+      K <- apply(y, 1, function(a) sum(!is.na(a)))
+      K.max <- max(K)
+      pi.samples <- array(NA, dim = c(n.samples, J, K.max + 1))
+      pi.samples[, , 1:K.max] <- object$pi.samples[, i, , ]
+      pi.samples[, , K.max + 1] <- apply(pi.samples[, , 1:K.max], c(1, 2),
+				       function(a) 1 - sum(a))
+      mu.samples <- object$mu.samples[, i, ]
+      # dist == 1 for NB, 0 for Poisson
+      dist <- object$dist
+      dist <- ifelse(dist == 'NB', 1, 0)
+      J <- nrow(y)
+      N.max.curr <- N.max[i, ]
+      # Model Type: 0 = single-species N-mixture, 
+      #             1 = single-species distance sampling
+      model.type <- 1
+
+      storage.mode(J) <- "integer"
+      storage.mode(N.samples) <- "double"
+      storage.mode(n.samples) <- "integer"
+      storage.mode(kappa.samples) <- "double"
+      storage.mode(y) <- "double"
+      storage.mode(K) <- "integer"
+      storage.mode(mu.samples) <- "double"
+      storage.mode(pi.samples) <- "double"
+      storage.mode(dist) <- "integer"
+      storage.mode(model.type) <- "integer"
+      storage.mode(N.max.curr) <- "integer"
+      storage.mode(K.max) <- "integer"
+      storage.mode(y.max) <- "integer"
+
+      tmp <- .Call("waicAbund", J, K, dist, model.type, 
+          	 y, n.samples, N.samples, 
+          	 kappa.samples, mu.samples, pi.samples, 
+          	 N.max.curr, K.max, y.max)
+      elpd[i] <- sum(apply(tmp$like.samples, 1, function(a) log(mean(a))), na.rm = TRUE)
+      pD[i] <- sum(apply(tmp$like.samples, 1, function(a) var(log(a))), na.rm = TRUE)
+    }
+    if (by.species == FALSE) {
+      out <- c(sum(elpd), sum(pD), -2 * (sum(elpd) - sum(pD)))
+      names(out) <- c("elpd", "pD", "WAIC")
+    } else {
+      out <- data.frame(elpd = elpd, pD = pD, WAIC = -2 * (elpd - pD))
+    }
   }
   return(out)
 

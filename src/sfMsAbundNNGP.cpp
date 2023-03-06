@@ -182,7 +182,7 @@ extern "C" {
         Rprintf("Using %i latent spatial factors.\n", q);
         Rprintf("Using %i nearest neighbors.\n\n", m);
 #ifdef _OPENMP
-        Rprintf("\nSource compiled with OpenMP support and model fit using %i thread(s).\n\n", nThreads);
+        Rprintf("Source compiled with OpenMP support and model fit using %i thread(s).\n\n", nThreads);
 #else
         Rprintf("Source not compiled with OpenMP support.\n\n");
 #endif

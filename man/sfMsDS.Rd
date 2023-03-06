@@ -1,17 +1,19 @@
-\name{sfMsNMix}
-\alias{sfMsNMix}
-\title{Function for Fitting Spatial Factor Multi-Species N-mixture Models}
+\name{sfMsDS}
+\alias{sfMsDS}
+\title{Function for Fitting Spatial Factor Multi-Species Hierarchical Distance Sampling Models}
 
 \description{
-Function for fitting spatial multi-species N-mixture models with species correlations (i.e., an abundance-based spatially-explicit joint species distribution model with imperfect detection). We use Nearest Neighbor Gaussian Processes and a spatial factor modeling approach to achieve dimension reducition. 
+Function for fitting spatial factor multi-species hierarchical distance sampling models. 
 }
 
 \usage{
-sfMsNMix(abund.formula, det.formula, data, inits, priors,  
-       tuning, cov.model = 'exponential', NNGP = TRUE, n.neighbors = 15, 
-       search.type = 'cb', n.factors, n.batch, batch.length, accept.rate = 0.43, 
-       family = 'Poisson', n.omp.threads = 1, verbose = TRUE, n.report = 100, 
-       n.burn = round(.10 * n.samples), n.thin = 1, 
+sfMsDS(abund.formula, det.formula, data, inits, priors,  
+       tuning, cov.model = 'exponential', NNGP = TRUE, 
+       n.neighbors = 15, search.type = 'cb', n.factors, 
+       n.batch, batch.length, accept.rate = 0.43, 
+       family = 'Poisson', transect = 'line', det.model = 'halfnormal', 
+       n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+       n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
        n.chains = 1, k.fold, k.fold.threads = 1, k.fold.seed = 100, 
        k.fold.only = FALSE, ...)
 }
@@ -29,22 +31,22 @@ sfMsNMix(abund.formula, det.formula, data, inits, priors,
   and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
 \item{data}{a list containing data necessary for model fitting.
-  Valid tags are \code{y}, \code{abund.covs}, \code{det.covs}, and \code{coords}. \code{y}
+  Valid tags are \code{y}, \code{covs}, \code{coords}, 
+  \code{dist.breaks}, and \code{offset}. \code{y}
   is a three-dimensional array of observed count data with first dimension equal to the number 
   of species, second dimension equal to the number of sites, and third 
   dimension equal to the maximum number of replicates at a given site. 
-  \code{abund.covs} is a matrix or data frame containing the variables 
-  used in the abundance portion of the model, with \eqn{J}{J} rows for 
-  each column (variable). \code{det.covs} is a list of variables included 
-  in the detection portion of the model. Each list element is a different 
-  detection covariate, which can be site-level or observational-level. 
-  Site-level covariates are specified as a vector of length \eqn{J}{J} while 
-  observation-level covariates are specified as a matrix or data frame 
-  with the number of rows equal to \eqn{J}{J} and number of columns equal 
-  to the maximum number of replicates at a given site. \code{coords} is a matrix
-  or data frame with two columns that contain the spatial coordinates of each 
-  site. Note that \code{spAbundance} assumes coordinates are specified 
-  in a projected coordinate system.}
+  \code{covs} is a matrix or data frame containing the variables 
+  used in the the abundance and/or the detection portion of the model, with
+  \eqn{J}{J} rows for each column (variable). \code{dist.breaks} is a vector of 
+  distances that denote the breakpoints of the distance bands. \code{dist.breaks} should
+  have length equal to the number of columns in \code{y} plus one. \code{offset} is an 
+  offset that can be used to scale estimates from abundance per transect to density per 
+  some desired unit of measure. This can be either a single value or a vector with an offset
+  value for each site (e.g., if transects differ in length). \code{coords} is a matrix
+  or data frame with two columns that contain the spatial coordinates of each site. 
+  Note that \code{spAbundance} assumes coordinates are specified in a projected
+  coordinate system.}
 
 \item{inits}{a list with each tag corresponding to a parameter name.
   Valid tags are \code{alpha.comm}, \code{beta.comm}, \code{beta}, 
@@ -73,8 +75,7 @@ sfMsNMix(abund.formula, det.formula, data, inits, priors,
   distribution, which are each specified as vectors of 
   length equal to the number of coefficients to be estimated or of length one
   if priors are the same for all coefficients. If not
-  specified, prior means are set to 0 and prior variances for the abundance
-  coefficients are set to 100 and for the detection coefficients are set to 2.72. 
+  specified, prior means are set to 0 and prior variances are set to 100.
   Community-level variance parameters for abundance (\code{tau.sq.beta}) and
   detection (\code{tau.sq.alpha}) are assumed to follow an inverse Gamma 
   distribution. The hyperparameters of the inverse gamma distribution are 
@@ -88,7 +89,7 @@ sfMsNMix(abund.formula, det.formula, data, inits, priors,
   Gamma distribution. The hyperparameters of the inverse-Gamma distribution
   are passed as a list of length two with first and second elements corresponding
   to the shape and scale parameters, respectively, which are each specified as
-  vectors of length equal to the number of random effects or of length one 
+  vectors of length equal to the number of random intercepts or of length one 
   if priors are the same for all random effect variances. \code{kappa} is the 
   negative binomial dispersion parameter for each species and is assumed to 
   follow a uniform distribution. The hyperparameters of the uniform distribution
@@ -109,19 +110,18 @@ sfMsNMix(abund.formula, det.formula, data, inits, priors,
   diagonal elements are fixed at 1. The lower triangular elements are assigned a 
   standard normal prior (i.e., mean 0 and variance 1).}
 
-  \item{cov.model}{a quoted keyword that specifies the covariance
+\item{tuning}{a list with each tag corresponding to a parameter name, whose
+  whose value defines the initial variance of the adaptive sampler. 
+  Valid tags are \code{beta}, \code{alpha}, \code{lambda} (the latent factor loadings), 
+  \code{w} (the latent factors), \code{beta.star} (the abundance 
+  random effect values), \code{alpha.star} (the detection random effect values), and 
+  \code{kappa}. See Roberts and Rosenthal (2009) for details.}
+
+\item{cov.model}{a quoted keyword that specifies the covariance
     function used to model the spatial dependence structure among the
     observations. Supported covariance model key words are:
     \code{"exponential"}, \code{"matern"}, \code{"spherical"}, and
     \code{"gaussian"}.}
-
-\item{tuning}{a list with each tag corresponding to a parameter name, whose
-  whose value defines the initial variance of the adaptive sampler. 
-  Valid tags are \code{beta}, \code{alpha}, \code{beta.star} (the abundance 
-  random effect values), \code{alpha.star} (the detection random effect values), 
-  \code{phi}, \code{nu}, \code{lambda} (the latent factor loadings), 
-  \code{w} (the latent factors), and 
-  \code{kappa}. See Roberts and Rosenthal (2009) for details.}
 
 \item{NNGP}{if \code{TRUE}, model is fit with an NNGP.  See Datta et al. (2016) and 
   Finley et al. (2019) for more information. Currently only NNGP is supported,
@@ -146,7 +146,7 @@ of neighbors using WAIC or k-fold cross-validation.}
   might produce different, but equally valid, neighbor sets, 
   e.g., if data are on a grid.}
 
-\item{n.factors}{the number of factors to use in the spatial factor model approach.
+\item{n.factors}{the number of factors to use in the latent factor model approach.
     Typically, the number of factors is set to be small (e.g., 4-5) relative to the
     total number of species in the community, which will lead to substantial
     decreases in computation time. However, the value can be anywhere
@@ -163,6 +163,14 @@ of neighbors using WAIC or k-fold cross-validation.}
 
 \item{family}{the distribution to use for the latent abundance process. Currently 
   supports \code{'NB'} (negative binomial) and \code{'Poisson'}.}
+
+\item{transect}{the type of transect. Currently supports line transects (\code{'line'}) or
+  circular transects (i.e., point counts; \code{'point'}).}
+
+\item{det.model}{the detection model used to describe how detection probability varies
+  with distance. In other software, this is often referred to as the key function. Currently
+  supports two functions: half normal (\code{'halfnormal'}) and negative exponential
+  (\code{'negexp'}).}
 
 \item{n.omp.threads}{a positive integer indicating the number of threads
   to use for SMP parallel processing. The package must be compiled for 
@@ -219,6 +227,9 @@ of neighbors using WAIC or k-fold cross-validation.}
   Fitting Linear Mixed-Effects Models Using lme4. Journal of
   Statistical Software, 67(1), 1-48. \doi{10.18637/jss.v067.i01}.
 
+  Royle, J. A. (2004). N‐mixture models for estimating population size
+  from spatially replicated counts. Biometrics, 60(1), 108-115.
+
   Datta, A., S. Banerjee, A.O. Finley, and A.E. Gelfand. (2016)
   Hierarchical Nearest-Neighbor Gaussian process models for large
   geostatistical datasets. \emph{Journal of the American Statistical
@@ -229,17 +240,11 @@ of neighbors using WAIC or k-fold cross-validation.}
   Gaussian Processes. \emph{Journal of Computational and Graphical
     Statistics}, \doi{10.1080/10618600.2018.1537924}.
 
-  Christensen, W. F., and Amemiya, Y. (2002). Latent variable analysis 
-  of multivariate spatial data. \emph{Journal of the American Statistical Association}, 
-  97(457), 302-317.
+  Sollmann, R., Gardner, B., Williams, K. A., Gilbert, A. T., 
+  & Veit, R. R. (2016). A hierarchical distance sampling model to 
+  estimate abundance and covariate associations of species 
+  and communities. Methods in Ecology and Evolution, 7(5), 529-537.
 
-  Royle, J. A. (2004). N‐mixture models for estimating population size
-  from spatially replicated counts. Biometrics, 60(1), 108-115.
-
-  Yamaura, Y., Royle, J. A., Shimada, N., Asanuma, S., Sato, T., 
-  Taki, H., & Makino, S. I. (2012). Biodiversity of man-made open habitats 
-  in an underused country: a class of multispecies abundance models for 
-  count data. Biodiversity and Conservation, 21(6), 1365-1380.
 }
 
 \author{
@@ -248,7 +253,7 @@ of neighbors using WAIC or k-fold cross-validation.}
 }
 
 \value{
-  An object of class \code{sfMsNMix} that is a list comprised of: 
+  An object of class \code{sfMsDS} that is a list comprised of: 
 
   \item{beta.comm.samples}{a \code{coda} object of posterior samples
     for the community level abundance regression coefficients.}
@@ -268,24 +273,28 @@ of neighbors using WAIC or k-fold cross-validation.}
   \item{alpha.samples}{a \code{coda} object of posterior samples
     for the species level detection regression coefficients.}
 
-  \item{lambda.samples}{a \code{coda} object of posterior samples
-    for the spatial factor loadings.}
-
-  \item{theta.samples}{a \code{coda} object of posterior samples
-    for the spatial correlation parameters for each spatial factor.}
-
-  \item{w.samples}{a three-dimensional array of posterior samples for 
-    the latent effects for each latent factor.}
-
   \item{kappa.samples}{a \code{coda} object of posterior samples
     for the species level abundance dispersion parameters. Only included
     when \code{family = 'NB'}.}
 
+  \item{theta.samples}{a \code{coda} object of posterior samples
+    for the spatial correlation parameters for each spatial factor.}
+
+  \item{lambda.samples}{a \code{coda} object of posterior samples
+    for the spatial factor loadings.}
+
+  \item{w.samples}{a three-dimensional array of posterior samples for 
+    the latent effects for each spatial factor.}
+
   \item{N.samples}{a three-dimensional array of posterior samples for
-    the latent abundance values for each species.}
+    the latent abundance values for each species. Note that these values
+    always represent transect-level abundance, even when an offset is 
+    supplied.}
 
   \item{mu.samples}{a three-dimensional array of posterior samples for
-    the latent expected abundance values for each species.}
+    the latent expected abundance values for each species. When an offset
+    is supplied in the \code{data} object, these correspond to expected
+    abundance per unit area (i.e., density).}
 
   \item{sigma.sq.mu.samples}{a \code{coda} object of posterior samples
     for variances of random effects included in the abundance portion
@@ -305,6 +314,13 @@ of neighbors using WAIC or k-fold cross-validation.}
     for the detection random effects. Only included if random effects 
     are specified in \code{det.formula}.}
 
+  \item{y.rep.samples}{a four-dimensional array of fitted values. 
+    Array dimensions correspond to MCMC samples, species, sites, and distance band.}
+
+  \item{pi.samples}{a four-dimensional array of cell-specific detection
+    probabilities. Array dimensions correspond to MCMC samples, species, 
+    sites, and distance band.}
+
   \item{rhat}{a list of Gelman-Rubin diagnostic values for some of the model
     parameters.}
 
@@ -317,28 +333,30 @@ of neighbors using WAIC or k-fold cross-validation.}
     Only included if \code{k.fold} is specified in function call.}
 
   The return object will include additional objects used for 
-  subsequent prediction and/or model fit evaluation. Note that detection probability
-  estimated values are not included in the model object, but can be extracted
-  using \code{fitted()}. 
+  subsequent prediction and/or model fit evaluation. 
 }
 
 \examples{
-set.seed(408)
-J.x <- 8
-J.y <- 8
+set.seed(210)
+J.x <- 10
+J.y <- 10 
 J <- J.x * J.y
-n.rep <- sample(5, size = J, replace = TRUE)
-n.sp <- 6
-# Community-level covariate effects
-# Abundance 
-beta.mean <- c(0, 0.5)
+# Number of distance bins from which to simulate data. 
+n.bins <- 5
+# Length of each bin. This should be of length n.bins
+bin.width <- c(.10, .10, .20, .3, .1)
+# Number of species
+n.sp <- 5
+# Community-level abundance coefficients
+beta.mean <- c(-1, 0.2, 0.3, -0.2)
 p.abund <- length(beta.mean)
-tau.sq.beta <- c(0.2, 1.2)
-# Detection
-alpha.mean <- c(0, 0.5, 0.8)
-tau.sq.alpha <- c(0.2, 1, 1.5)
+tau.sq.beta <- c(0.2, 0.3, 0.5, 0.4)
+# Detection coefficients
+alpha.mean <- c(-1.0, -0.3)
 p.det <- length(alpha.mean)
-# Random effects
+tau.sq.alpha <- c(0.1, 0.2)
+# Detection decay function
+det.model <- 'halfnormal'
 mu.RE <- list()
 p.RE <- list()
 # Draw species-level effects from community means.
@@ -350,67 +368,81 @@ for (i in 1:p.abund) {
 for (i in 1:p.det) {
   alpha[, i] <- rnorm(n.sp, alpha.mean[i], sqrt(tau.sq.alpha[i]))
 }
+sp <- TRUE 
+family <- 'Poisson'
+kappa <- runif(n.sp, 0.3, 3) 
+offset <- pi * .8^2
+transect <- 'line'
+factor.model <- TRUE
 n.factors <- 3
 phi <- runif(n.factors, 3 / 1, 3 / .2)
+cov.model <- 'exponential'
 
-dat <- simMsNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta, alpha = alpha,
-	         mu.RE = mu.RE, p.RE = p.RE, family = 'Poisson', 
-                 factor.model = TRUE, n.factors = n.factors, sp = TRUE, phi = phi,
-                 cov.model = 'exponential')
+dat <- simMsDS(J.x = J.x, J.y = J.y, n.bins = n.bins, bin.width = bin.width,
+	       n.sp = n.sp, beta = beta, alpha = alpha, det.model = det.model, kappa = kappa, 
+               mu.RE = mu.RE, p.RE = p.RE, sp = sp, cov.model = cov.model,
+               sigma.sq = sigma.sq, phi = phi, nu = nu, family = family, 
+               offset = offset, transect = transect, factor.model = factor.model, 
+               n.factors = n.factors)
 
 y <- dat$y
 X <- dat$X
 X.p <- dat$X.p
-X.re <- dat$X.re
-X.p.re <- dat$X.p.re
 coords <- dat$coords
+dist.breaks <- dat$dist.breaks
 
-# Package all data into a list
-abund.covs <- X
-colnames(abund.covs) <- c('int', 'abund.cov.1')
-det.covs <- list(det.cov.1 = as.data.frame(X.p[, , 2]),
-		 det.cov.2 = as.data.frame(X.p[, , 3]))
-data.list <- list(y = y,
-		  abund.covs = abund.covs,
-		  det.covs = det.covs, 
-                  coords = coords)
-prior.list <- list(beta.comm.normal = list(mean = rep(0, p.abund), 
-					   var = rep(100, p.abund)),
-		   alpha.comm.normal = list(mean = rep(0, p.det),
-			               var = rep(2.72, p.det)),
+covs <- cbind(X, X.p)
+colnames(covs) <- c('int.abund', 'abund.cov.1', 'abund.cov.2', 'abund.cov.3', 
+		    'int.det', 'det.cov.1')
+
+data.list <- list(y = y, 
+		  covs = covs,
+ 		  dist.breaks = dist.breaks, 
+		  coords = coords,
+                  offset = offset)
+
+# Priors
+prior.list <- list(beta.comm.normal = list(mean = 0, var = 10),
+		   alpha.comm.normal = list(mean = 0,
+			               var = 10), 
+                   kappa.unif = list(0, 100), 
+		   phi.unif = list(3 / 1, 3 / .1),
                    tau.sq.beta.ig = list(a = 0.1, b = 0.1),
-                   tau.sq.alpha.ig = list(a = 0.1, b = 0.1), 
-                   phi.unif = list(a = 3 / 1, 3 / .1))
-inits.list <- list(beta.comm = 0, alpha.comm = 0,
-		   beta = 0, alpha = 0,
-		   tau.sq.beta = 0.5, tau.sq.alpha = 0.5,
-		   N = apply(y, c(1, 2), max, na.rm = TRUE))
-tuning.list <- list(beta = 0.5, alpha = 0.5, lambda = 0.5, w = 0.5, 
-                    phi = 1)
+                   tau.sq.alpha.ig = list(a = 0.1, b = 0.1)) 
+# Starting values
+inits.list <- list(alpha.comm = 0, beta.comm = 0, beta = 0,
+		   alpha = 0, kappa = 1, phi = 3 / .5)
 
-n.batch <- 4
+tuning <- list(beta = 0.1, alpha = 0.1, beta.star = 0.3, alpha.star = 0.1, 
+               kappa = 0.8, lambda = 1, w = 1, phi = 0.8) 
+
+n.batch <- 4 
 batch.length <- 25
-n.burn <- 0 
+n.burn <- 0
 n.thin <- 1
 n.chains <- 1
 
-out <- sfMsNMix(abund.formula = ~ abund.cov.1,
-	      det.formula = ~ det.cov.1 + det.cov.2,
-	      data = data.list,
-	      n.batch = n.batch,
-	      inits = inits.list,
-	      priors = prior.list,
-	      tuning = tuning.list,
-	      batch.length = batch.length,
-	      n.omp.threads = 1,
-	      n.factors = n.factors,
-	      cov.model = 'exponential', 
-	      n.neighbors = 5,
-	      verbose = TRUE,
-	      n.report = 1,
-	      n.burn = n.burn,
-	      n.thin = n.thin,
-	      n.chains = n.chains)
-
+out <- sfMsDS(abund.formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3,
+	    det.formula = ~ det.cov.1,
+	    data = data.list, 
+	    n.batch = n.batch, 
+	    batch.length = batch.length, 
+	    inits = inits.list, 
+	    family = 'Poisson',
+	    det.model = 'halfnormal', 
+	    transect = transect, 
+	    tuning = tuning,
+	    cov.model = 'exponential', 
+	    NNGP = TRUE,
+	    n.neighbors = 5,
+	    n.factors = n.factors,
+	    priors = prior.list, 
+	    accept.rate = 0.43, 
+	    n.omp.threads = 1, 
+	    verbose = TRUE, 
+	    n.report = 10,
+	    n.burn = n.burn,
+	    n.thin = n.thin,
+	    n.chains = n.chains) 
 summary(out, level = 'community')
 }

@@ -1074,7 +1074,7 @@ sfMsAbund <- function(formula, data, inits, priors,
       }
       out$like.samples <- tmp[, , order(ord), , drop = FALSE]
       out$w.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$w.samples, 
-        								dim = c(q, J, n.post.samples * n.chains))))
+        								dim = c(q, J, n.post.samples))))
       out$w.samples <- out$w.samples[, order(ord), , drop = FALSE]
       out$w.samples <- aperm(out$w.samples, c(3, 1, 2))
       if (p.abund.re > 0) {

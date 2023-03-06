@@ -14,7 +14,8 @@ ppcAbund(object, fit.stat, group, ...)
 \item{object}{an object of class \code{NMix}, \code{spNMix}, 
 	\code{msNMix}, \code{lfMsNMix}, \code{sfMsNMix},
 	\code{abund}, \code{spAbund}, \code{msAbund}, 
-	\code{lfMsAbund}, \code{sfMsAbund}, \code{DS}, \code{spDS}.}
+	\code{lfMsAbund}, \code{sfMsAbund}, \code{DS}, \code{spDS}, 
+	\code{msDS}, \code{lfMsDS}, \code{sfMsDS}.}
 
 \item{fit.stat}{a quoted keyword that specifies the fit statistic
 to use in the posterior predictive check. Supported fit statistics are
@@ -42,6 +43,7 @@ column (replicate).}
   of class \code{NMix}, \code{spNMix}, \code{abund}, \code{spAbund}, \code{DS}, or \code{spDS}. 
   When \code{object} is of class \code{msNMix}, \code{lfMsNMix}, \code{sfMsNMix},
   \code{msAbund}, \code{lfMsAbund}, \code{sfMsAbund}, 
+  \code{msDS}, \code{lfMsDS}, \code{sfMsDS}, 
   this is a numeric matrix with rows corresponding to posterior samples
   and columns corresponding to species.}
 
@@ -50,7 +52,7 @@ column (replicate).}
   model when \code{object} is of class \code{NMix}, \code{spNMix}, \code{abund}, 
   \code{spAbund}, \code{DS}, \code{spDS}. When \code{object} is of 
   class \code{msNMix}, \code{lfMsNMix}, \code{sfMsNMix}, \code{msAbund}, 
-  \code{lfMsAbund}, \code{sfMsAbund},
+  \code{lfMsAbund}, \code{sfMsAbund}, \code{msDS}, \code{lfMsDS}, \code{sfMsDS},
   this is a numeric matrix with rows corresponding to posterior samples
   and columns corresponding to species.}
 
@@ -60,7 +62,8 @@ column (replicate).}
   replicates when group = 2) when \code{object} is of class \code{NMix}, \code{spNMix}, 
   \code{abund}, \code{spAbund}, \code{DS}, or \code{spDS}. 
   When \code{object} is of class \code{msNMix}, \code{lfMsNMix}, \code{sfMsNMix}, 
-  \code{msAbund}, \code{lfMsAbund}, \code{sfMsAbund}, this is a three-dimensional
+  \code{msAbund}, \code{lfMsAbund}, \code{sfMsAbund}, \code{msDS}, 
+  \code{lfMsDS}, \code{sfMsDS}, this is a three-dimensional
   array with the additional dimension corresponding to species.}
 
   \item{fit.y.rep.group.quants}{a matrix consisting of posterior quantiles
@@ -69,7 +72,8 @@ column (replicate).}
   replicates when group = 2) when \code{object} is of class \code{NMix}, \code{spNMix}, 
   \code{abund}, \code{spAbund}, \code{DS}, \code{spDS}. 
   When \code{object} is of class \code{msNMix}, \code{sfMsNMix}, \code{msAbund}, 
-  \code{lfMsAbund}, \code{sfMsAbund}, this is a three-dimensional
+  \code{lfMsAbund}, \code{sfMsAbund}, \code{msDS}, \code{lfMsDS}, 
+  \code{sfMsDS}, this is a three-dimensional
   array with the additional dimension corresponding to species.}
 
   The return object will include additional objects used for 

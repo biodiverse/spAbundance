@@ -483,6 +483,7 @@ extern "C" {
 	    F77_NAME(dcopy)(&nObsFull, piFullCand, &inc, piFull, &inc);
           } else {
             alphaCand[l] = alpha[l];
+	    F77_NAME(dcopy)(&nObsFull, piFull, &inc, piFullCand, &inc);
 	  }
 	}
 
@@ -590,12 +591,12 @@ extern "C" {
 	          } else {
                     p[k * J + j] = p[k * J + j] * 2.0 / (pow(distBreaks[k + 1], 2) - pow(distBreaks[k], 2));
 	          }
-	          piFull[k * J + j] = p[k * J + j] * psi[k];
-	          tmp_0 += piFull[k * J + j];
-	          likeVal += y[k * J + j] * log(piFull[k * J + j]);
+	          piFullCand[k * J + j] = p[k * J + j] * psi[k];
+	          tmp_0 += piFullCand[k * J + j];
+	          likeVal += y[k * J + j] * log(piFullCand[k * J + j]);
 	        } // k (bins)
-	        piFull[K * J + j] = 1.0 - tmp_0;
-	        likeVal += (N[j] - yMax[j]) * log(piFull[K * J + j]);
+	        piFullCand[K * J + j] = 1.0 - tmp_0;
+	        likeVal += (N[j] - yMax[j]) * log(piFullCand[K * J + j]);
 		logPostAlphaStarCand[l] += likeVal;
                 /********************************
                  * Current
@@ -635,6 +636,7 @@ extern "C" {
 	    } else {
               alphaStarCand[l] = alphaStar[l];
 	      F77_NAME(dcopy)(&J, alphaStarSites, &inc, alphaStarSitesCand, &inc);
+	      F77_NAME(dcopy)(&nObsFull, piFull, &inc, piFullCand, &inc);
 	    }
 	  }
 	}
@@ -858,8 +860,8 @@ extern "C" {
     SET_VECTOR_ELT(resultName_r, 5, mkChar("y.rep.samples"));
     SET_VECTOR_ELT(resultName_r, 6, mkChar("pi.samples"));
     if (pDetRE > 0) {
-      SET_VECTOR_ELT(resultName_r, 6, mkChar("sigma.sq.p.samples")); 
-      SET_VECTOR_ELT(resultName_r, 7, mkChar("alpha.star.samples")); 
+      SET_VECTOR_ELT(resultName_r, 7, mkChar("sigma.sq.p.samples")); 
+      SET_VECTOR_ELT(resultName_r, 8, mkChar("alpha.star.samples")); 
     }
     if (pAbundRE > 0) {
       SET_VECTOR_ELT(resultName_r, tmp_0, mkChar("sigma.sq.mu.samples")); 

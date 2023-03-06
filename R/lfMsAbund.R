@@ -841,7 +841,7 @@ lfMsAbund <- function(formula, data, inits, priors,
     }
     out$like.samples <- tmp
     out$w.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$w.samples, 
-      								dim = c(q, J, n.post.samples * n.chains))))
+      								dim = c(q, J, n.post.samples))))
     out$w.samples <- aperm(out$w.samples, c(3, 1, 2))
     if (p.abund.re > 0) {
       out$sigma.sq.mu.samples <- mcmc(
@@ -1029,6 +1029,9 @@ lfMsAbund <- function(formula, data, inits, priors,
       if (family == 'NB') {
         out.fit$kappa.samples <- mcmc(t(out.fit$kappa.samples))
       }
+      loadings.names <- paste(rep(sp.names, times = n.factors), rep(1:n.factors, each = n.sp), sep = '-')
+      out.fit$lambda.samples <- mcmc(t(out.fit$lambda.samples))
+      colnames(out.fit$lambda.samples) <- loadings.names
       out.fit$w.samples <- array(out.fit$w.samples, dim = c(q, J, n.post.samples))
       out.fit$w.samples <- aperm(out.fit$w.samples, c(3, 1, 2))
       out.fit$X <- X.fit.new

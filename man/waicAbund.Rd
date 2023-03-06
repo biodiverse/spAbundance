@@ -14,7 +14,8 @@ waicAbund(object, N.max, by.species = FALSE, ...)
 \arguments{
   \item{object}{an object of class \code{NMix}, \code{spNMix}, \code{msNMix}, 
   \code{lfMsNMix}, \code{sfMsNMix}, \code{abund}, \code{spAbund}, 
-  \code{msAbund}, \code{lfMsAbund}, \code{sfMsAbund}, \code{DS}, \code{spDS}.}
+  \code{msAbund}, \code{lfMsAbund}, \code{sfMsAbund}, \code{DS}, \code{spDS}, 
+  \code{msDS}, \code{lfMsDS}, \code{sfMsDS}.}
 
   \item{N.max}{values indicating the upper limit on the latent abundance 
   values when calculating WAIC for N-mixture models or distance sampling models. 
@@ -56,7 +57,9 @@ waicAbund(object, N.max, by.species = FALSE, ...)
 \value{
   Returns a vector with three elements corresponding to 
   estimates of the expected log pointwise predictive density (elpd), the 
-  effective number of parameters (pD), and the WAIC. 
+  effective number of parameters (pD), and the WAIC. If calculating WAIC
+  for a multi-species model and \code{by.species = TRUE}, this will be a 
+  data frame with rows corresponding to the different species.
 }
 
 \details{
