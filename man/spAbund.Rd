@@ -13,8 +13,7 @@ spAbund(formula, data, inits, priors, tuning,
        n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
        n.omp.threads = 1, verbose = TRUE, n.report = 100, 
         n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
-       n.chains = 1, k.fold, k.fold.threads = 1, k.fold.seed = 100, 
-       k.fold.only = FALSE, ...)
+       n.chains = 1, ...)
 }
 
 \arguments{
@@ -104,7 +103,7 @@ spAbund(formula, data, inits, priors, tuning,
   sets, which can lead to even greater decreases in run time. We recommend
   starting with 15 neighbors (the default) and if additional gains in computation
   time are desired, subsequently compare the results with a smaller number
-  of neighbors using WAIC or k-fold cross-validation.}
+  of neighbors using WAIC.}
   
   \item{search.type}{a quoted keyword that specifies the type of nearest
     neighbor search algorithm. Supported method key words are: \code{"cb"} and
@@ -153,30 +152,6 @@ spAbund(formula, data, inits, priors, tuning,
 
   \item{n.chains}{the number of MCMC chains to run in sequence.}
 
-  \item{k.fold}{specifies the number of \emph{k} folds for cross-validation. 
-    If not specified as an argument, then cross-validation is not performed
-    and \code{k.fold.threads} and \code{k.fold.seed} are ignored. In \emph{k}-fold
-    cross-validation, the data specified in \code{data} is randomly
-    partitioned into \emph{k} equal sized subsamples. Of the \emph{k} subsamples, 
-    \emph{k} - 1 subsamples are used to fit the model and the remaining \emph{k}
-    samples are used for prediction. The cross-validation process is repeated 
-    \emph{k} times (the folds). As a scoring rule, the root mean
-    squared prediction error. Cross-validation is performed
-    after the full model is fit using all the data. Cross-validation results
-    are reported in the \code{rmspe} object in the return list.}
-  
-  \item{k.fold.threads}{number of threads to use for cross-validation. If 
-    \code{k.fold.threads > 1} parallel processing is accomplished using the 
-    \pkg{foreach} and \pkg{doParallel} packages. Ignored if \code{k.fold}
-    is not specified.} 
-  
-  \item{k.fold.seed}{seed used to split data set into \code{k.fold} parts
-  for k-fold cross-validation. Ignored if \code{k.fold} is not specified.}
-
-  \item{k.fold.only}{logical value indicating whether to only perform
-  k-fold cross-validation. Setting this to \code{TRUE} will only return
-  the k-fold deviance.}
-  
   \item{...}{currently no additional arguments}
 }
 
@@ -248,9 +223,6 @@ spAbund(formula, data, inits, priors, tuning,
   \item{ESS}{a list of effective sample sizes for some of the model parameters.}
 
   \item{run.time}{execution time reported using \code{proc.time()}.}
-
-  \item{rmspe}{soring rule (root mean squared prediction error) from k-fold cross-validation. 
-    Only included if \code{k.fold} is specified in function call.}
 
   The return object will include additional objects used for 
   subsequent prediction and/or model fit evaluation. 

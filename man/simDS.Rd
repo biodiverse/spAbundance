@@ -7,7 +7,7 @@
 }
 
 \usage{
-simDS(J.x, J.y, n.bins, bin.width, beta, alpha, det.model, transect = 'line', 
+simDS(J.x, J.y, n.bins, bin.width, beta, alpha, det.func, transect = 'line', 
       kappa, mu.RE = list(), p.RE = list(), offset = 1, 
       sp = FALSE, cov.model, sigma.sq, phi, nu, family = 'Poisson', ...)
 }
@@ -25,7 +25,7 @@ simDS(J.x, J.y, n.bins, bin.width, beta, alpha, det.model, transect = 'line',
 
 \item{alpha}{a numeric vector containing the intercept and regression coefficient parameters for the detection portion of the single-species distance sampling model.}
 
-\item{det.model}{the detection model used to describe how detection probability varies
+\item{det.func}{the detection model used to describe how detection probability varies
   with distance. In other software, this is often referred to as the key function. Currently
   supports two functions: half normal (\code{'halfnormal'}) and negative exponential
   (\code{'negexp'}).}
@@ -96,7 +96,7 @@ p.abund <- length(beta)
 alpha <- c(-1.0, -0.3)
 p.det <- length(alpha)
 # Detection decay function
-det.model <- 'halfnormal'
+det.func <- 'halfnormal'
 mu.RE <- list()
 p.RE <- list()
 sp <- FALSE 
@@ -106,7 +106,7 @@ offset <- 1.8
 transect <- 'point'
 
 dat <- simDS(J.x = J.x, J.y = J.y, n.bins = n.bins, bin.width = bin.width,
-	     beta = beta, alpha = alpha, det.model = det.model, kappa = kappa, 
+	     beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
 	     mu.RE = mu.RE, p.RE = p.RE, sp = sp,
 	     sigma.sq = sigma.sq, phi = phi, nu = nu, family = family, 
              offset = offset, transect = transect)

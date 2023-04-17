@@ -1,5 +1,5 @@
 simMsDS <- function(J.x, J.y, n.bins, bin.width, n.sp, beta, alpha, 
-		    det.model, transect = 'line', kappa, 
+		    det.func, transect = 'line', kappa, 
 		    mu.RE = list(), p.RE = list(), offset = 1, 
                     sp = FALSE, cov.model, sigma.sq, phi, 
 		    nu, family = 'Poisson', factor.model = FALSE, 
@@ -158,14 +158,14 @@ simMsDS <- function(J.x, J.y, n.bins, bin.width, n.sp, beta, alpha,
       }
     }
   }
-  # det.model -------------------------
-  if (missing(det.model)) {
-    stop("error: det.model must be specified")
+  # det.func -------------------------
+  if (missing(det.func)) {
+    stop("error: det.func must be specified")
   }
-  det.model.names <- c('halfnormal', 'negexp')
-  if (! det.model %in% det.model.names) {
-    stop("error: specified det.model '", det.model, "' is not a valid option; choose from ", 
-	 paste(det.model.names, collapse = ', ', sep = ''), ".")
+  det.func.names <- c('halfnormal', 'negexp')
+  if (! det.func %in% det.func.names) {
+    stop("error: specified det.func '", det.func, "' is not a valid option; choose from ", 
+	 paste(det.func.names, collapse = ', ', sep = ''), ".")
   }
 
   # Subroutines -----------------------------------------------------------
@@ -399,10 +399,10 @@ simMsDS <- function(J.x, J.y, n.bins, bin.width, n.sp, beta, alpha,
   }
   # Probability of detecting an individual in a given bin at a given site.
   p <- array(NA, dim = c(n.sp, J, n.bins))
-  if (det.model == 'halfnormal') {
+  if (det.func == 'halfnormal') {
     curr.function <- halfNormal
   }
-  if (det.model == 'negexp') {
+  if (det.func == 'negexp') {
     curr.function <- negExp
   }
   # Create distance bins

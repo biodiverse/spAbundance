@@ -1,4 +1,4 @@
-simDS <- function(J.x, J.y, n.bins, bin.width, beta, alpha, det.model, transect = 'line',
+simDS <- function(J.x, J.y, n.bins, bin.width, beta, alpha, det.func, transect = 'line',
 		  kappa, mu.RE = list(), p.RE = list(), offset = 1, 
 		  sp = FALSE, cov.model, sigma.sq, phi, nu, family = 'Poisson', ...) {
 
@@ -106,15 +106,18 @@ simDS <- function(J.x, J.y, n.bins, bin.width, beta, alpha, det.model, transect 
       stop("error: nu must be specified when cov.model = 'matern'")
     }
   }
-  # det.model -------------------------
-  if (missing(det.model)) {
-    stop("error: det.model must be specified")
+  # det.func -------------------------
+  if (missing(det.func)) {
+    stop("error: det.func must be specified")
   }
-  det.model.names <- c('halfnormal', 'negexp')
-  if (! det.model %in% det.model.names) {
-    stop("error: specified det.model '", det.model, "' is not a valid option; choose from ", 
-	 paste(det.model.names, collapse = ', ', sep = ''), ".")
+  det.func.names <- c('halfnormal', 'negexp')
+  if (! det.func %in% det.func.names) {
+    stop("error: specified det.func '", det.func, "' is not a valid option; choose from ", 
+	 paste(det.func.names, collapse = ', ', sep = ''), ".")
   }
+  # if (det.func == 'hazard' & missing(b)) {
+  #   stop("b (scale parameter) must be specified for a hazard rate detection function")
+  # }
 
   # Subroutines -----------------------------------------------------------
   # MVN
@@ -139,6 +142,14 @@ simDS <- function(J.x, J.y, n.bins, bin.width, beta, alpha, det.model, transect 
       exp(-x / sigma)
     } else {
       exp(-x / sigma) * x
+    }
+  }
+  # Hazard rate detection function
+  hazard <- function(x, sigma, transect, b) {
+    if (transect == 'line') {
+      1 - exp(-1 * (x / sigma)^(-b)) 
+    } else {
+      (1 - exp(-1 * (x / sigma)^(-b))) * x
     }
   }
 
@@ -286,12 +297,15 @@ simDS <- function(J.x, J.y, n.bins, bin.width, beta, alpha, det.model, transect 
   }
   # Probability of detecting an individual in a given bin at a given site.
   p <- matrix(NA, J, n.bins)
-  if (det.model == 'halfnormal') {
+  if (det.func == 'halfnormal') {
     curr.function <- halfNormal
   }
-  if (det.model == 'negexp') {
+  if (det.func == 'negexp') {
     curr.function <- negExp
   }
+  # if (det.func == 'hazard') {
+  #   curr.function <- hazard
+  # }
   # Create distance bins
   dist.breaks <- rep(0, n.bins + 1)
   tmp <- 0
@@ -303,8 +317,13 @@ simDS <- function(J.x, J.y, n.bins, bin.width, beta, alpha, det.model, transect 
   strip.width <- sum(bin.width)
   for (j in 1:J) {
     for (k in 1:n.bins) {
-      p[j, k] <- integrate(curr.function, dist.breaks[k], 
-			   dist.breaks[k + 1], sig = sigma[j, ], transect = transect)$value
+      # if (det.func == 'hazard') {
+      #   p[j, k] <- integrate(curr.function, dist.breaks[k], 
+      #   		     dist.breaks[k + 1], sig = sigma[j, ], b = b, transect = transect)$value
+      # } else {
+        p[j, k] <- integrate(curr.function, dist.breaks[k], 
+			     dist.breaks[k + 1], sig = sigma[j, ], transect = transect)$value
+      # }
       if (transect == 'line') {
         p[j, k] <- p[j, k] / (dist.breaks[k + 1] - dist.breaks[k])
       } else {

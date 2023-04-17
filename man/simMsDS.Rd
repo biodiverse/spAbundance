@@ -8,7 +8,7 @@
 
 \usage{
 simMsDS(J.x, J.y, n.bins, bin.width, n.sp, beta, alpha, 
-	det.model, transect = 'line', kappa, mu.RE = list(), 
+	det.func, transect = 'line', kappa, mu.RE = list(), 
         p.RE = list(), offset = 1, sp = FALSE, cov.model, 
         sigma.sq, phi, nu, family = 'Poisson',
         factor.model = FALSE, n.factors, ...)
@@ -30,7 +30,7 @@ simMsDS(J.x, J.y, n.bins, bin.width, n.sp, beta, alpha,
 
 \item{alpha}{a numeric matrix with \code{n.sp} rows containing the intercept and regression coefficient parameters for the detection portion of the multi-species N-mixture model. Each row corresponds to the regression coefficients for a given species.}
 
-\item{det.model}{the detection model used to describe how detection probability varies
+\item{det.func}{the detection model used to describe how detection probability varies
   with distance. In other software, this is often referred to as the key function. Currently
   supports two functions: half normal (\code{'halfnormal'}) and negative exponential
   (\code{'negexp'}).}
@@ -106,7 +106,7 @@ alpha.mean <- c(-1.0, -0.3)
 p.det <- length(alpha.mean)
 tau.sq.alpha <- c(0.1, 0.2)
 # Detection decay function
-det.model <- 'halfnormal'
+det.func <- 'halfnormal'
 mu.RE <- list()
 p.RE <- list()
 # Draw species-level effects from community means.
@@ -126,7 +126,7 @@ transect <- 'line'
 factor.model <- FALSE
 
 dat <- simMsDS(J.x = J.x, J.y = J.y, n.bins = n.bins, bin.width = bin.width,
-	       n.sp = n.sp, beta = beta, alpha = alpha, det.model = det.model, kappa = kappa, 
+	       n.sp = n.sp, beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
                mu.RE = mu.RE, p.RE = p.RE, sp = sp, cov.model = cov.model,
                sigma.sq = sigma.sq, phi = phi, nu = nu, family = family, 
                offset = offset, transect = transect, factor.model = factor.model)

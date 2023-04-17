@@ -133,9 +133,9 @@ extern "C" {
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
 	if (family == 1) {
-          Rprintf("Negative Binomial Distance Sampling model with %i sites.\n\n", J);
+          Rprintf("Negative Binomial Hierarchical Distance Sampling model with %i sites.\n\n", J);
 	} else {
-          Rprintf("Poisson Distance Sampling model with %i sites.\n\n", J);
+          Rprintf("Poisson Hierarchical Distance Sampling model with %i sites.\n\n", J);
 	}
         Rprintf("Samples per Chain: %i (%i batches of length %i)\n", nSamples, nBatch, batchLength);
         Rprintf("Burn-in: %i \n", nBurn); 
@@ -227,6 +227,8 @@ extern "C" {
     ********************************************************************/
     int JpAbund = J * pAbund; 
     int nObspDet = nObs * pDet;
+    int JpAbundRE = J * pAbundRE;
+    int JpDetRE = J * pDetRE;
     double tmp_0, tmp_02; 
     double *tmp_one = (double *) R_alloc(inc, sizeof(double)); 
     double *tmp_ppDet = (double *) R_alloc(ppDet, sizeof(double));
@@ -304,7 +306,7 @@ extern "C" {
     zeros(logPostCurrN, J);
     double *logPostCandN = (double *) R_alloc(J, sizeof(double));
     zeros(logPostCandN, J);
-    double epsilon = 1;
+    double epsilonN = 1;
     double *NCand = (double *) R_alloc(J, sizeof(double));
     for (j = 0; j < J; j++) {
       NCand[j] = N[j];
@@ -321,10 +323,12 @@ extern "C" {
     double *betaStarSites = (double *) R_alloc(J, sizeof(double)); 
     zeros(betaStarSites, J); 
     double *betaStarSitesCand = (double *) R_alloc(J, sizeof(double)); 
+    int *betaStarLongIndx = (int *) R_alloc(JpAbundRE, sizeof(int));
     // Initial sums
     for (j = 0; j < J; j++) {
       for (l = 0; l < pAbundRE; l++) {
-        betaStarSites[j] += betaStar[which(XRE[l * J + j], betaLevelIndx, nAbundRE)] * 
+        betaStarLongIndx[l * J + j] = which(XRE[l * J + j], betaLevelIndx, nAbundRE);
+        betaStarSites[j] += betaStar[betaStarLongIndx[l * J + j]] * 
                             XRandom[l * J + j];
       }
       betaStarSitesCand[j] = betaStarSites[j];
@@ -333,10 +337,12 @@ extern "C" {
     double *alphaStarSites = (double *) R_alloc(J, sizeof(double)); 
     zeros(alphaStarSites, J); 
     double *alphaStarSitesCand = (double *) R_alloc(J, sizeof(double));
+    int *alphaStarLongIndx = (int *) R_alloc(JpDetRE, sizeof(int));
     // Get sums of the current REs for each site/visit combo
     for (j = 0; j < J; j++) {
       for (l = 0; l < pDetRE; l++) {
-        alphaStarSites[j] += alphaStar[which(XpRE[l * J + j], alphaLevelIndx, nDetRE)] * 
+        alphaStarLongIndx[l * J + j] = which(XpRE[l * J + j], alphaLevelIndx, nDetRE);
+        alphaStarSites[j] += alphaStar[alphaStarLongIndx[l * J + j]] * 
                            XpRandom[l * J + j];
       }
       alphaStarSitesCand[j] = alphaStarSites[j];
@@ -520,8 +526,7 @@ extern "C" {
                 // Candidate
                 betaStarSitesCand[j] = 0.0;
                 for (ll = 0; ll < pAbundRE; ll++) {
-                  betaStarSitesCand[j] += betaStarCand[which(XRE[ll * J + j], 
-				                         betaLevelIndx, nAbundRE)] * 
+                  betaStarSitesCand[j] += betaStarCand[betaStarLongIndx[ll * J + j]] * 
 	                              XRandom[ll * J + j];
                 }
                 tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, beta, &inc) + 
@@ -534,8 +539,7 @@ extern "C" {
 		// Current
                 betaStarSites[j] = 0.0;
                 for (ll = 0; ll < pAbundRE; ll++) {
-                  betaStarSites[j] += betaStar[which(XRE[ll * J + j], 
-				               betaLevelIndx, nAbundRE)] * 
+                  betaStarSites[j] += betaStar[betaStarLongIndx[ll * J + j]] * 
 	                              XRandom[ll * J + j];
                 }
                 tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, beta, &inc) + 
@@ -577,8 +581,7 @@ extern "C" {
                  *******************************/
                 alphaStarSitesCand[j] = 0.0;
                 for (ll = 0; ll < pDetRE; ll++) {
-                  alphaStarSitesCand[j] += alphaStarCand[which(XpRE[ll * J + j], 
-				                         alphaLevelIndx, nDetRE)] * 
+                  alphaStarSitesCand[j] += alphaStarCand[alphaStarLongIndx[ll * J + j]] * 
 	                              XpRandom[ll * J + j];
                 }
                 sigma[j] = exp(F77_NAME(ddot)(&pDet, &Xp[j], &J, alpha, &inc) + 
@@ -605,8 +608,7 @@ extern "C" {
 		tmp_0 = 0.0;
                 alphaStarSites[j] = 0.0;
                 for (ll = 0; ll < pDetRE; ll++) {
-                  alphaStarSites[j] += alphaStar[which(XpRE[ll * J + j], 
-				                         alphaLevelIndx, nDetRE)] * 
+                  alphaStarSites[j] += alphaStar[alphaStarLongIndx[ll * J + j]] * 
 	                              XpRandom[ll * J + j];
                 }
                 sigma[j] = exp(F77_NAME(ddot)(&pDet, &Xp[j], &J, alpha, &inc) + 
@@ -671,7 +673,7 @@ extern "C" {
 	zeros(logPostCandN, J);
 	// Proposal
 	for (j = 0; j < J; j++) {
-          NCand[j] = rpois(N[j] + epsilon);
+          NCand[j] = rpois(N[j] + epsilonN);
 	  // Only calculate if Poisson since its already calculated in kappa update
 	  if (family == 0) {
             mu[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, beta, &inc) + 
@@ -697,10 +699,10 @@ extern "C" {
 	    if (family == 0) {
               logPostCurrN[j] += poisson_logpost(N[j], mu[j], offset[j]);
 	    } else {
-	      logPostCurrN[j] += nb_logpost(kappa, N[j], mu[j], offset[j]);
+              logPostCurrN[j] += nb_logpost(kappa, N[j], mu[j], offset[j]);
 	    }
 	    // MH contribution for assymetric proposal distribution.
-	    logPostCurrN[j] += dpois(NCand[j], N[j] + epsilon, 1);
+	    logPostCurrN[j] += dpois(NCand[j], N[j] + epsilonN, 1);
             /********************************
              * Candidate
              *******************************/
@@ -711,10 +713,10 @@ extern "C" {
 	    if (family == 0) {
               logPostCandN[j] += poisson_logpost(NCand[j], mu[j], offset[j]);
 	    } else {
-	      logPostCandN[j] += nb_logpost(kappa, NCand[j], mu[j], offset[j]);
+              logPostCandN[j] += nb_logpost(kappa, NCand[j], mu[j], offset[j]);
 	    }
 	    // MH contribution for assymetric proposal distribution.
-	    logPostCandN[j] += dpois(N[j], NCand[j] + epsilon, 1);
+	    logPostCandN[j] += dpois(N[j], NCand[j] + epsilonN, 1);
             if (runif(0.0,1.0) <= exp(logPostCandN[j] - logPostCurrN[j])) {
               N[j] = NCand[j];
             }
@@ -815,7 +817,7 @@ extern "C" {
       nResultListObjs += 2;
     }
     if (family == 1) {
-      nResultListObjs += 1;
+      nResultListObjs += 2;
     }
 
     PROTECT(result_r = allocVector(VECSXP, nResultListObjs)); nProtect++;
@@ -845,7 +847,7 @@ extern "C" {
     }
     if (family == 1) {
       if ((pDetRE > 0) || (pAbundRE > 0)) {
-        tmp_02 = tmp_0 + 2;
+        tmp_02 = tmp_0 + 1;
       } else {
         tmp_02 = 7;
       }  

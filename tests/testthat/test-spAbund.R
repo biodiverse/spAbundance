@@ -72,20 +72,11 @@ out <- spAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1, 
-               k.fold = 2, 
-               k.fold.threads = 1) 
+	       n.chains = 1) 
 
 # Test to make sure it worked ---------
 test_that("out is of class spAbund", {
   expect_s3_class(out, "spAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -277,20 +268,11 @@ out <- spAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1, 
-               k.fold = 2, 
-               k.fold.threads = 1) 
+	       n.chains = 1) 
 
 # Test to make sure it worked ---------
 test_that("out is of class spAbund", {
   expect_s3_class(out, "spAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -482,20 +464,11 @@ out <- spAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1, 
-               k.fold = 2, 
-               k.fold.threads = 1) 
+	       n.chains = 1) 
 
 # Test to make sure it worked ---------
 test_that("out is of class spAbund", {
   expect_s3_class(out, "spAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -688,20 +661,11 @@ out <- spAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1, 
-               k.fold = 2, 
-               k.fold.threads = 1) 
+	       n.chains = 1) 
 
 # Test to make sure it worked ---------
 test_that("out is of class spAbund", {
   expect_s3_class(out, "spAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -895,20 +859,11 @@ out <- spAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1, 
-               k.fold = 2, 
-               k.fold.threads = 1) 
+	       n.chains = 1) 
 
 # Test to make sure it worked ---------
 test_that("out is of class spAbund", {
   expect_s3_class(out, "spAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -1141,20 +1096,11 @@ out <- spAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1, 
-               k.fold = 2, 
-               k.fold.threads = 1) 
+	       n.chains = 1) 
 
 # Test to make sure it worked ---------
 test_that("out is of class spAbund", {
   expect_s3_class(out, "spAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -1390,20 +1336,11 @@ out <- spAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1, 
-               k.fold = 2, 
-               k.fold.threads = 1) 
+	       n.chains = 1) 
 
 # Test to make sure it worked ---------
 test_that("out is of class spAbund", {
   expect_s3_class(out, "spAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -1640,20 +1577,11 @@ out <- spAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1, 
-               k.fold = 2, 
-               k.fold.threads = 1) 
+	       n.chains = 1) 
 
 # Test to make sure it worked ---------
 test_that("out is of class spAbund", {
   expect_s3_class(out, "spAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------

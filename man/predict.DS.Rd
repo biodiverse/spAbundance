@@ -68,7 +68,7 @@ p.abund <- length(beta)
 alpha <- c(-1.0, -0.3)
 p.det <- length(alpha)
 # Detection decay function
-det.model <- 'halfnormal'
+det.func <- 'halfnormal'
 mu.RE <- list()
 p.RE <- list()
 sp <- FALSE 
@@ -78,7 +78,7 @@ offset <- 1.8
 transect <- 'point'
 
 dat <- simDS(J.x = J.x, J.y = J.y, n.bins = n.bins, bin.width = bin.width,
-             beta = beta, alpha = alpha, det.model = det.model, kappa = kappa, 
+             beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
              mu.RE = mu.RE, p.RE = p.RE, sp = sp, family = family, 
              offset = offset, transect = transect)
 
@@ -122,7 +122,7 @@ out <- DS(abund.formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3,
           batch.length = 25, 
           inits = inits.list, 
           family = 'NB',
-          det.model = 'halfnormal', 
+          det.func = 'halfnormal', 
           transect = 'point', 
           tuning = tuning,
           priors = prior.list, 

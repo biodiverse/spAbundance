@@ -435,8 +435,7 @@ extern "C" {
                   tmp_nObs[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, &beta[i], &nSp) + 
 	  			  betaStarSitesCand[i * nObs + j]);
                   if (family == 1) {
-	  	    logPostBetaStarCand[l] += dnbinom_mu(y[j * nSp + i], kappa[i], 
-                                                         tmp_nObs[j], 1);
+	  	    logPostBetaStarCand[l] += dnbinom_mu(y[j * nSp + i], kappa[i], tmp_nObs[j], 1);
 	  	  } else {
 	  	    logPostBetaStarCand[l] += dpois(y[j * nSp + i], tmp_nObs[j], 1);
 	  	  }
@@ -449,8 +448,7 @@ extern "C" {
                     tmp_nObs[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, &beta[i], &nSp) + 
 	  	  		  betaStarSites[i * nObs + j]);
                     if (family == 1) {
-	  	    logPostBetaStarCurr[l] += dnbinom_mu(y[j * nSp + i], kappa[i], 
-                                                         tmp_nObs[j], 1);
+	  	    logPostBetaStarCurr[l] += dnbinom_mu(y[j * nSp + i], kappa[i], tmp_nObs[j], 1);
 	  	  } else {
 	  	    logPostBetaStarCurr[l] += dpois(y[j * nSp + i], tmp_nObs[j], 1);
 	  	  }

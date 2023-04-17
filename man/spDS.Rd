@@ -7,11 +7,10 @@ spDS(abund.formula, det.formula, data, inits, priors, tuning,
      cov.model = 'exponential', NNGP = TRUE,
      n.neighbors = 15, search.type = 'cb',
      n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
-     transect = 'line', det.model = 'halfnormal',
+     transect = 'line', det.func = 'halfnormal',
      n.omp.threads = 1, verbose = TRUE,
      n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
-     n.chains = 1, k.fold, k.fold.threads = 1, k.fold.seed = 100, 
-     k.fold.only = FALSE, ...)
+     n.chains = 1, ...)
 }
 
 \description{
@@ -112,7 +111,7 @@ spDS(abund.formula, det.formula, data, inits, priors, tuning,
   sets, which can lead to even greater decreases in run time. We recommend
   starting with 15 neighbors (the default) and if additional gains in computation
   time are desired, subsequently compare the results with a smaller number
-  of neighbors using WAIC or k-fold cross-validation.}
+  of neighbors using WAIC.}
   
   \item{search.type}{a quoted keyword that specifies the type of nearest
     neighbor search algorithm. Supported method key words are: \code{"cb"} and
@@ -140,7 +139,7 @@ spDS(abund.formula, det.formula, data, inits, priors, tuning,
 \item{transect}{the type of transect. Currently supports line transects (\code{'line'}) or
   circular transects (i.e., point counts; \code{'point'}).}
 
-\item{det.model}{the detection model used to describe how detection probability varies
+\item{det.func}{the detection model used to describe how detection probability varies
   with distance. In other software, this is often referred to as the key function. Currently
   supports two functions: half normal (\code{'halfnormal'}) and negative exponential
   (\code{'negexp'}).}
@@ -166,30 +165,6 @@ spDS(abund.formula, det.formula, data, inits, priors, tuning,
   value is set to 1.}
 
 \item{n.chains}{the number of chains to run in sequence.}
-
-\item{k.fold}{specifies the number of \emph{k} folds for cross-validation. 
-  If not specified as an argument, then cross-validation is not performed
-  and \code{k.fold.threads} and \code{k.fold.seed} are ignored. In \emph{k}-fold
-  cross-validation, the data specified in \code{data} is randomly
-  partitioned into \emph{k} equal sized subsamples. Of the \emph{k} subsamples, 
-  \emph{k} - 1 subsamples are used to fit the model and the remaining \emph{k}
-  samples are used for prediction. The cross-validation process is repeated 
-  \emph{k} times (the folds). As a scoring rule, we use the root mean
-  squared prediction error. Cross-validation is performed
-  after the full model is fit using all the data. Cross-validation results
-  are reported in the \code{rmspe} object in the return list.}
-
-\item{k.fold.threads}{number of threads to use for cross-validation. If 
-  \code{k.fold.threads > 1} parallel processing is accomplished using the 
-  \pkg{foreach} and \pkg{doParallel} packages. Ignored if \code{k.fold}
-  is not specified.} 
-
-\item{k.fold.seed}{seed used to split data set into \code{k.fold} parts
-  for k-fold cross-validation. Ignored if \code{k.fold} is not specified.}
-
-\item{k.fold.only}{logical value indicating whether to only perform
-  k-fold cross-validation. Setting this to \code{TRUE} will only return
-  the k-fold rmspe.}
 
 \item{...}{currently no additional arguments}
 }
@@ -279,9 +254,6 @@ spDS(abund.formula, det.formula, data, inits, priors, tuning,
 
   \item{run.time}{execution time reported using \code{proc.time()}.}
 
-  \item{rmspe}{scoring rule (root mean squared prediciton error) from k-fold cross-validation. 
-    Only included if \code{k.fold} is specified in function call.}
-
   The return object will include additional objects used for 
   subsequent prediction and/or model fit evaluation. 
 }
@@ -302,7 +274,7 @@ p.abund <- length(beta)
 alpha <- c(-1.0, -0.3)
 p.det <- length(alpha)
 # Detection decay function
-det.model <- 'halfnormal'
+det.func <- 'halfnormal'
 mu.RE <- list()
 p.RE <- list()
 sp <- TRUE
@@ -315,7 +287,7 @@ offset <- 1.8
 transect <- 'point'
 
 dat <- simDS(J.x = J.x, J.y = J.y, n.bins = n.bins, bin.width = bin.width,
-             beta = beta, alpha = alpha, det.model = det.model, kappa = kappa, 
+             beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
              mu.RE = mu.RE, p.RE = p.RE, sp = sp,
              offset = offset, transect = transect, phi = phi, sigma.sq = sigma.sq,
              cov.model = cov.model)
@@ -362,7 +334,7 @@ out <- spDS(abund.formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3,
             batch.length = 25, 
             inits = inits.list, 
             family = 'NB',
-            det.model = 'halfnormal', 
+            det.func = 'halfnormal', 
             transect = 'point', 
 	    cov.model = 'exponential', 
 	    NNGP = TRUE,

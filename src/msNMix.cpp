@@ -419,7 +419,7 @@ extern "C" {
     zeros(logPostCurrN, J);
     double *logPostCandN = (double *) R_alloc(J, sizeof(double));
     zeros(logPostCandN, J);
-    double epsilon = 1;
+    double epsilonN = 1;
     kappaCand = kappa[0];
     double *NCand = (double *) R_alloc(J, sizeof(double));
     for (j = 0; j < J; j++) {
@@ -644,8 +644,7 @@ extern "C" {
                   tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
 	  			  betaStarSitesCand[i * J + j]);
                   if (family == 1) {
-	  	    logPostBetaStarCand[l] += dnbinom_mu(N[j * nSp + i], kappa[i], 
-                                                         tmp_J[j], 1);
+	  	    logPostBetaStarCand[l] += dnbinom_mu(N[j * nSp + i], kappa[i], tmp_J[j], 1);
 	  	  } else {
 	  	    logPostBetaStarCand[l] += dpois(N[j * nSp + i], tmp_J[j], 1);
 	  	  }
@@ -658,8 +657,7 @@ extern "C" {
                     tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
 	  	  		  betaStarSites[i * J + j]);
                     if (family == 1) {
-	  	    logPostBetaStarCurr[l] += dnbinom_mu(N[j * nSp + i], kappa[i], 
-                                                         tmp_J[j], 1);
+	  	    logPostBetaStarCurr[l] += dnbinom_mu(N[j * nSp + i], kappa[i], tmp_J[j], 1);
 	  	  } else {
 	  	    logPostBetaStarCurr[l] += dpois(N[j * nSp + i], tmp_J[j], 1);
 	  	  }
@@ -720,7 +718,6 @@ extern "C" {
 	      }
 	    }
 	  }
-
           /********************************************************************
            *Update kappa (the NB size parameter)
            *******************************************************************/
@@ -752,7 +749,7 @@ extern "C" {
 	  zeros(logPostCandN, J);
 	  // Proposal
 	  for (j = 0; j < J; j++) {
-            NCand[j] = rpois(N[j * nSp + i] + epsilon);
+            NCand[j] = rpois(N[j * nSp + i] + epsilonN);
 	    // Only calculate if Poisson since its already calculated in kappa update
 	    if (family == 0) {
               mu[j * nSp + i] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
@@ -780,7 +777,7 @@ extern "C" {
 	        logPostCurrN[j] += dnbinom_mu(N[j * nSp + i], kappa[i], mu[j * nSp + i], 1);
 	      }
 	      // MH contribution for assymetric proposal distribution.
-	      logPostCurrN[j] += dpois(NCand[j], N[j * nSp + i] + epsilon, 1);
+	      logPostCurrN[j] += dpois(NCand[j], N[j * nSp + i] + epsilonN, 1);
               /********************************
                * Candidate
                *******************************/
@@ -790,7 +787,7 @@ extern "C" {
                 logPostCandN[j] += dnbinom_mu(NCand[j], kappa[i], mu[j * nSp + i], 1);
 	      }
 	      // MH contribution for assymetric proposal distribution
-	      logPostCandN[j] += dpois(N[j * nSp + i], NCand[j] + epsilon, 1);
+	      logPostCandN[j] += dpois(N[j * nSp + i], NCand[j] + epsilonN, 1);
               if (runif(0.0,1.0) <= exp(logPostCandN[j] - logPostCurrN[j])) {
                 N[j * nSp + i] = NCand[j];
               }
@@ -882,7 +879,7 @@ extern "C" {
       nResultListObjs += 2;
     }
     if (family == 1) {
-      nResultListObjs += 1;
+      nResultListObjs += 2;
     }
 
     PROTECT(result_r = allocVector(VECSXP, nResultListObjs)); nProtect++;
@@ -912,7 +909,7 @@ extern "C" {
     }
     if (family == 1) {
       if ((pDetRE > 0) || (pAbundRE > 0)) {
-        tmp_02 = tmp_0 + 2;
+        tmp_02 = tmp_0 + 1;
       } else {
         tmp_02 = 8;
       }  

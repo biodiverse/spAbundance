@@ -77,7 +77,7 @@ alpha.mean <- c(-1.0, -0.3)
 p.det <- length(alpha.mean)
 tau.sq.alpha <- c(0.1, 0.2)
 # Detection decay function
-det.model <- 'halfnormal'
+det.func <- 'halfnormal'
 mu.RE <- list()
 p.RE <- list()
 # Draw species-level effects from community means.
@@ -98,7 +98,7 @@ factor.model <- TRUE
 n.factors <- 3
 
 dat <- simMsDS(J.x = J.x, J.y = J.y, n.bins = n.bins, bin.width = bin.width,
-	       n.sp = n.sp, beta = beta, alpha = alpha, det.model = det.model, kappa = kappa, 
+	       n.sp = n.sp, beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
                mu.RE = mu.RE, p.RE = p.RE, sp = sp, cov.model = cov.model,
                sigma.sq = sigma.sq, phi = phi, nu = nu, family = family, 
                offset = offset, transect = transect, factor.model = factor.model, 
@@ -155,7 +155,7 @@ out <- lfMsDS(abund.formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3,
 	    batch.length = batch.length, 
 	    inits = inits.list, 
 	    family = 'Poisson',
-	    det.model = 'halfnormal', 
+	    det.func = 'halfnormal', 
 	    transect = transect, 
 	    tuning = tuning,
 	    n.factors = n.factors,

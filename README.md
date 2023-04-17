@@ -13,10 +13,10 @@ package” [spOccupancy](https://www.jeffdoser.com/files/spoccupancy-web/)
 
 ## Installation
 
-`spAbundance` is in the initial stages of active development. The
-functionality currently implemented is not yet stable, and should be
-used with caution. To download the development version of the package,
-you can use `devtools` as follows:
+`spAbundance` is in active development. The functionality currently
+implemented is not yet fully tested, and should be used with caution. To
+download the development version of the package, you can use `devtools`
+as follows:
 
 ``` r
 devtools::install_github("doserjef/spAbundance")
@@ -30,50 +30,34 @@ C++ on a Mac, you can install `XCode` from the Mac app store.
 
 ## Functionality
 
-Below is a running list of currently implemented functionality, along
-with each function’s [lifecycle
-stage](https://lifecycle.r-lib.org/articles/stages.html). This will be
-updated as new functionality is included
-
-| `spAbundance` Function | Description                                                              |
-| ---------------------- | ------------------------------------------------------------------------ |
-| `NMix()`               | *stable* Single-species N-mixture model                                  |
-| `spNMix()`             | *stable* Single-species spatial N-mixture model                          |
-| `msNMix()`             | *stable* Multi-species N-mixture model                                   |
-| `lfMsNMix()`           | *stable* Multi-species N-mixture model with species correlations         |
-| `sfMsNMix()`           | *stable* Multi-species spatial N-mixture model with species correlations |
-| `DS()`                 | *stable* Single-species distance sampling model                          |
-| `spDS()`               | *stable* Single-species spatial distance sampling model                  |
-| `abund()`              | *stable* Single-species abundance GLM                                    |
-| `spAbund()`            | *stable* Single-species spatial abundance GLM                            |
-| `msAbund()`            | *stable* Multi-species abundance GLM                                     |
-| `lfMsAbund()`          | *stable* Multi-species abundance GLM with species correlations           |
-| `sfMsAbund()`          | *stable* Multi-species spatial abundance GLM with species correlations   |
-| `ppcAbund()`           | *stable* Posterior predictive check using Bayesian p-values              |
-| `waicAbund()`          | *stable* Calculate Widely Applicable Information Criterion (WAIC)        |
-| `simNMix()`            | *stable* Simulate single-species repeated count data                     |
-| `simAbund()`           | *stable* Simulate single-species count data                              |
-| `simMsAbund()`         | *stable* Simulate multi-species count data                               |
-| `simMsNMix()`          | *stable* Simulate multi-species repeated count data                      |
-| `simDS()`              | *stable* Simulate single-species distance sampling data                  |
+| `spAbundance` Function | Description                                                             |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `NMix()`               | Single-species N-mixture model                                          |
+| `spNMix()`             | Single-species spatial N-mixture model                                  |
+| `msNMix()`             | Multi-species N-mixture model                                           |
+| `lfMsNMix()`           | Multi-species N-mixture model with species correlations                 |
+| `sfMsNMix()`           | Multi-species spatial N-mixture model with species correlations         |
+| `DS()`                 | Single-species distance sampling model                                  |
+| `spDS()`               | Single-species spatial distance sampling model                          |
+| `msDS()`               | Multi-species distance sampling model                                   |
+| `lfMsDS()`             | Multi-species distance sampling model with species correlations         |
+| `sfMsDS()`             | Multi-species spatial distance sampling model with species correlations |
+| `abund()`              | Single-species abundance GLM                                            |
+| `spAbund()`            | Single-species spatial abundance GLM                                    |
+| `msAbund()`            | Multi-species abundance GLM                                             |
+| `lfMsAbund()`          | Multi-species abundance GLM with species correlations                   |
+| `sfMsAbund()`          | Multi-species spatial abundance GLM with species correlations           |
+| `ppcAbund()`           | Posterior predictive check using Bayesian p-values                      |
+| `waicAbund()`          | Calculate Widely Applicable Information Criterion (WAIC)                |
+| `simNMix()`            | Simulate single-species repeated count data                             |
+| `simAbund()`           | Simulate single-species count data                                      |
+| `simMsAbund()`         | Simulate multi-species count data                                       |
+| `simMsNMix()`          | Simulate multi-species repeated count data                              |
+| `simDS()`              | Simulate single-species distance sampling data                          |
+| `simMsDS()`            | Simulate multi-species distance sampling data                           |
 
 All model fitting functions allow for Poisson and negative binomial
 distributions for the abundance portion of the model.
-
-## Functionality to be included prior to first release on CRAN
-
-  - [x] Single-species and multi-species spatial and non-spatial
-    N-mixture models with Poisson and Negative Binomial distributions
-    for latent abundance.
-  - [x] Single-species and multi-species spatial and non-spatial
-    abundance GLMS without imperfect detection with Poisson and Negative
-    Binomial likelihoods.
-  - [ ] Single-species and multi-species spatial and non-spatial
-    distance sampling models with Poisson and Negative Binomial
-    distributions for latent abundance.
-  - [x] Posterior predcitve checks for all model types.
-  - [ ] Simulation functions for all model types.
-  - [ ] WAIC and k-fold cross-validation for all model types.
 
 ## Citing `spAbundance`
 

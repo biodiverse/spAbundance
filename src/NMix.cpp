@@ -291,7 +291,7 @@ extern "C" {
     zeros(logPostCurrN, J);
     double *logPostCandN = (double *) R_alloc(J, sizeof(double));
     zeros(logPostCandN, J);
-    double epsilon = 1;
+    double epsilonN = 1;
     double *NCand = (double *) R_alloc(J, sizeof(double));
     for (j = 0; j < J; j++) {
       NCand[j] = N[j];
@@ -553,7 +553,7 @@ extern "C" {
 	zeros(logPostCandN, J);
 	// Proposal
 	for (j = 0; j < J; j++) {
-          NCand[j] = rpois(N[j] + epsilon);
+          NCand[j] = rpois(N[j] + epsilonN);
 	  // Only calculate if Poisson since its already calculated in kappa update
 	  if (family == 0) {
             mu[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, beta, &inc) + 
@@ -576,20 +576,20 @@ extern "C" {
 	    if (family == 0) {
               logPostCurrN[j] += dpois(N[j], mu[j], 1);
 	    } else {
-	      logPostCurrN[j] += dnbinom_mu(N[j], kappa, mu[j], 1);
+              logPostCurrN[j] += dnbinom_mu(N[j], kappa, mu[j], 1);
 	    }
 	    // MH contribution for assymetric proposal distribution.
-	    logPostCurrN[j] += dpois(NCand[j], N[j] + epsilon, 1);
+	    logPostCurrN[j] += dpois(NCand[j], N[j] + epsilonN, 1);
             /********************************
              * Candidate
              *******************************/
 	    if (family == 0) {
               logPostCandN[j] += dpois(NCand[j], mu[j], 1);
 	    } else {
-	      logPostCandN[j] += dnbinom_mu(NCand[j], kappa, mu[j], 1);
+              logPostCandN[j] += dnbinom_mu(NCand[j], kappa, mu[j], 1);
 	    }
 	    // MH contribution for assymetric proposal distribution.
-	    logPostCandN[j] += dpois(N[j], NCand[j] + epsilon, 1);
+	    logPostCandN[j] += dpois(N[j], NCand[j] + epsilonN, 1);
             if (runif(0.0,1.0) <= exp(logPostCandN[j] - logPostCurrN[j])) {
               N[j] = NCand[j];
             }
@@ -655,7 +655,7 @@ extern "C" {
             Rprintf("\talpha[%i]\t%3.1f\t\t%1.5f\n", j + 1, 100.0*REAL(acceptSamples_r)[s * nAMCMC + alphaAMCMCIndx + j], exp(tuning[alphaAMCMCIndx + j]));
           }
 	  if (family == 1) {
-            Rprintf("\tkappa\t\t%3.1f\t\t%1.5f\n", 100.0*REAL(acceptSamples_r)[s], exp(tuning[kappaAMCMCIndx]));
+            Rprintf("\tkappa\t\t%3.1f\t\t%1.5f\n", 100.0*REAL(acceptSamples_r)[s * nAMCMC + kappaAMCMCIndx], exp(tuning[kappaAMCMCIndx]));
 	  }
           Rprintf("-------------------------------------------------\n");
           #ifdef Win32
@@ -709,7 +709,7 @@ extern "C" {
     }
     if (family == 1) {
       if ((pDetRE > 0) || (pAbundRE > 0)) {
-        tmp_02 = tmp_0 + 2;
+        tmp_02 = tmp_0 + 1;
       } else {
         tmp_02 = 5;
       }  

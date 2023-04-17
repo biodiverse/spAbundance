@@ -313,6 +313,7 @@ extern "C" {
     ********************************************************************/
     double logPostBetaCurr = 0.0, logPostBetaCand = 0.0;
     double logPostKappaCurr = 0.0, logPostKappaCand = 0.0;
+    double logPostEpsilonCurr = 0.0, logPostEpsilonCand = 0.0;
     double logPostThetaCurr = 0.0, logPostThetaCand = 0.0;
     double *logPostWCand = (double *) R_alloc(J, sizeof(double));
     double *logPostWCurr = (double *) R_alloc(J, sizeof(double));
@@ -529,6 +530,7 @@ extern "C" {
           }	
           a += b*b/F[j];
           logPostWCand[j] = -0.5*a;
+	  // Rprintf("logPostWCand First: %f\n", logPostWCand[j]);
           for (i = 0; i < nObs; i++) {
             if (siteIndx[i] == j) { 
               tmp_nObs[i] = exp(F77_NAME(ddot)(&pAbund, &X[i], &nObs, beta, &inc) + 
@@ -540,8 +542,6 @@ extern "C" {
 	      }
 	    }
 	  }
-	  // Rprintf("logPostWCand[%i]: %f\n", j, logPostWCand[j]);
-	  // Rprintf("logPostWCurr[%i]: %f\n", j, logPostWCurr[j]);
           
 	  a = 0.0;
 	  // MVN for any neighbors of j
@@ -568,6 +568,7 @@ extern "C" {
           }	
           a += b*b/F[j];
           logPostWCurr[j] = -0.5*a;
+	  // Rprintf("logPostWCurr First: %f\n", logPostWCurr[j]);
           for (i = 0; i < nObs; i++) {
             if (siteIndx[i] == j) { 
               tmp_nObs[i] = exp(F77_NAME(ddot)(&pAbund, &X[i], &nObs, beta, &inc) + 
@@ -579,12 +580,15 @@ extern "C" {
 	      }
 	    }
 	  }
+	  // Rprintf("logPostWCurr After: %f\n", logPostWCurr[j]);
 
 	  if (runif(0.0, 1.0) <= exp(logPostWCand[j] - logPostWCurr[j])) {
-	    w[j] = wCand[j];
+	    // w[j] = wCand[j];
+	    F77_NAME(dcopy)(&J, wCand, &inc, w, &inc);
 	    accept[wAMCMCIndx + j]++;
 	  } else {
-            wCand[j] = w[j];
+            // wCand[j] = w[j];
+	    F77_NAME(dcopy)(&J, w, &inc, wCand, &inc);
 	  }
         }
 
@@ -712,11 +716,11 @@ extern "C" {
 	    accept[sigmaSqAMCMCIndx]++;
 	  }
         }
-
+        
         /********************************************************************
          *Update kappa (the NB size parameter)
          *******************************************************************/
-	if (family == 1) {
+        if (family == 1) {
           kappaCand = logitInv(rnorm(logit(kappa, kappaA, kappaB), exp(tuning[kappaAMCMCIndx])), 
 			       kappaA, kappaB);
 	  logPostKappaCurr = 0.0;
@@ -812,7 +816,7 @@ extern "C" {
 	    Rprintf("\tsigmaSq\t\t%3.1f\t\t%1.5f\n", 100.0*REAL(acceptSamples_r)[s * nAMCMC + sigmaSqAMCMCIndx], exp(tuning[sigmaSqAMCMCIndx]));
 	  }
 	  if (family == 1) {
-            Rprintf("\tkappa\t\t%3.1f\t\t%1.5f\n", 100.0*REAL(acceptSamples_r)[s], exp(tuning[kappaAMCMCIndx]));
+            Rprintf("\tkappa\t\t%3.1f\t\t%1.5f\n", 100.0*REAL(acceptSamples_r)[s * nAMCMC + kappaAMCMCIndx], exp(tuning[kappaAMCMCIndx]));
 	  }
           Rprintf("-------------------------------------------------\n");
           #ifdef Win32
@@ -882,4 +886,5 @@ extern "C" {
     return(result_r);
   }
 }
+
 

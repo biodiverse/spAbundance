@@ -250,7 +250,7 @@ extern "C" {
     }
     for (j = 0; j < nObs0; j++) {
       for (s = 0; s < nSamples; s++) {
-          F77_NAME(dgemv)(ntran, &nSp, &q, &one, &lambda[s * nSpq], &nSp, &w0[s * J0q + j*q], &inc, &zero, &w0Star[s * J0nSp + sites0[j] * nSp], &inc FCONE);
+          F77_NAME(dgemv)(ntran, &nSp, &q, &one, &lambda[s * nSpq], &nSp, &w0[s * J0q + sites0[j]*q], &inc, &zero, &w0Star[s * J0nSp + sites0[j] * nSp], &inc FCONE);
 	  for (i = 0; i < nSp; i++) {
 	    mu0[s * nObs0nSp + j * nSp + i] = exp(F77_NAME(ddot)(&pAbund, &X0[j], &nObs0, &beta[s*pAbundnSp + i], &nSp) + w0Star[s * J0nSp + sites0[j] * nSp + i] + betaStarSite[s*nObs0nSp + j * nSp + i]);
 	    if (family == 1) {

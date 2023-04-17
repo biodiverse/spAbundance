@@ -1140,9 +1140,9 @@ predict.sfMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
   }
   re.cols <- object$re.cols
 
-  if (ncol(X.0) != p.abund + p.abund.re){
-    stop(paste("error: X.0 must have ", p.abund + p.abund.re," columns\n"))
-  }
+  # if (ncol(X.0) != p.abund + p.abund.re){
+  #   stop(paste("error: X.0 must have ", p.abund + p.abund.re," columns\n"))
+  # }
   X.0 <- as.matrix(X.0)
 
   if (missing(coords.0)) {
@@ -1233,7 +1233,7 @@ predict.sfMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
           }
         } # j
       } # t
-    }
+    } # i
   } else {
     X.fix <- X.0
     beta.star.sites.0.samples <- array(0, dim = c(n.post, n.sp, nrow(X.0)))
@@ -1271,7 +1271,6 @@ predict.sfMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
   } else {
     # Get nearest neighbors
     # nn2 is a function from RANN.
-    # TODO: a place to check if you run into problems.
     nn.indx.0 <- nn2(coords, coords.0, k=n.neighbors)$nn.idx-1
 
     storage.mode(coords) <- "double"
@@ -2890,9 +2889,9 @@ predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
     }
     re.cols <- object$re.cols
 
-    if (ncol(X.0) != p.abund + p.abund.re){
-      stop(paste("error: X.0 must have ", p.abund + p.abund.re," columns\n"))
-    }
+    # if (ncol(X.0) != p.abund + p.abund.re){
+    #   stop(paste("error: X.0 must have ", p.abund + p.abund.re," columns\n"))
+    # }
     X.0 <- as.matrix(X.0)
 
     if (missing(coords.0)) {
@@ -4093,4 +4092,3 @@ predict.sfMsDS <- function(object, X.0, coords.0, n.omp.threads = 1,
   class(out) <- 'predict.sfMsDS'
   return(out)
 }
-

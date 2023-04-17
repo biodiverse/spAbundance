@@ -1,10 +1,9 @@
 DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
                n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
-	       transect = 'line', det.model = 'halfnormal',
+	       transect = 'line', det.func = 'halfnormal',
                n.omp.threads = 1, verbose = TRUE,
                n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
-               n.chains = 1, k.fold, k.fold.threads = 1, k.fold.seed = 100, 
-               k.fold.only = FALSE, ...){
+               n.chains = 1, ...){
 
   ptm <- proc.time()
 
@@ -117,10 +116,9 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   if (n.thin > n.samples) {
     stop("error: n.thin must be less than n.samples")
   }
-  if (!missing(k.fold)) {
-    if (!is.numeric(k.fold) | length(k.fold) != 1 | k.fold < 2) {
-      stop("error: k.fold must be a single integer value >= 2")  
-    }
+
+  if (!(family) %in% c('Poisson', 'NB')) {
+    stop("family must be either 'Poisson' or 'NB'")
   }
 
   data$covs <- as.data.frame(data$covs)
@@ -243,14 +241,14 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
 
   # Grab specific distance sampling information ---------------------------
-  det.model.names <- c("halfnormal", "negexp")
-  if (! det.model %in% det.model.names) {
-    stop("error: specified det.model '", det.model, "' is not a valid option; choose from ", 
-	 paste(det.model.names, collapse = ', ', sep = ''), ".")
+  det.func.names <- c("halfnormal", "negexp")
+  if (! det.func %in% det.func.names) {
+    stop("error: specified det.func '", det.func, "' is not a valid option; choose from ", 
+	 paste(det.func.names, collapse = ', ', sep = ''), ".")
   }
-  # Obo for det.model lookup on c side
+  # Obo for det.func lookup on c side
   # halfnormal = 0, negexp = 1
-  det.model.indx <- which(det.model == det.model.names) - 1
+  det.func.indx <- which(det.func == det.func.names) - 1
   if (! transect %in% c('line', 'point')) {
     stop("error: transect must be either 'line', or 'point'")
   }
@@ -767,456 +765,166 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   family.c <- ifelse(family == 'NB', 1, 0)
   storage.mode(family.c) <- "integer"
   # Distance sampling information
-  storage.mode(det.model.indx) <- "integer"
+  storage.mode(det.func.indx) <- "integer"
   storage.mode(transect.c) <- 'integer'
   storage.mode(dist.breaks) <- 'double'
 
   # Fit the model -------------------------------------------------------
   out.tmp <- list()
   out <- list()
-  if (!k.fold.only) {
-    for (i in 1:n.chains) {
-      # Change initial values if i > 1
-      if ((i > 1) & (!fix.inits)) {
-        beta.inits <- runif(p.abund, -1, 1)
-        alpha.inits <- runif(p.det, -1, 1)
-        if (p.abund.re > 0) {
-          sigma.sq.mu.inits <- runif(p.abund.re, 0.05, 1)
-          beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
-        }
-        if (p.det.re > 0) {
-          sigma.sq.p.inits <- runif(p.det.re, 0.05, 1)
-          alpha.star.inits <- rnorm(n.det.re, sqrt(sigma.sq.p.inits[alpha.star.indx + 1]))
-        }
-        if (family == 'NB') {
-          kappa.inits <- runif(1, kappa.a, kappa.b)
-        }
-      }
-      storage.mode(chain.info) <- "integer"
-      # Run the model in C
-      out.tmp[[i]] <- .Call("DS", y, X, X.p, X.re, X.p.re, X.random, X.p.random, 
-          		  y.max, offset, consts, K, n.abund.re.long, 
-          		  n.det.re.long, beta.inits, alpha.inits, kappa.inits, 
-          		  sigma.sq.mu.inits, sigma.sq.p.inits, beta.star.inits, 
-          		  alpha.star.inits, N.inits, N.long.indx, beta.star.indx, 
-        		          beta.level.indx, alpha.star.indx, alpha.level.indx, 
-          		  mu.beta, Sigma.beta, mu.alpha, Sigma.alpha, 
-        		          sigma.sq.mu.a, sigma.sq.mu.b, 
-          		  sigma.sq.p.a, sigma.sq.p.b, kappa.a, kappa.b, 
-          		  det.model.indx, transect.c, dist.breaks,
-        		          tuning.c, n.batch, batch.length, accept.rate, 
-        		          n.omp.threads, verbose, n.report, samples.info, chain.info, family.c)
-      chain.info[1] <- chain.info[1] + 1
-    } # i   
-    # Calculate R-Hat ---------------
-    out <- list()
-    out$rhat <- list()
-    if (n.chains > 1) {
-      # as.vector removes the "Upper CI" when there is only 1 variable. 
-      out$rhat$beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-      					      mcmc(t(a$beta.samples)))), 
-      			     autoburnin = FALSE)$psrf[, 2])
-      out$rhat$alpha <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-      					      mcmc(t(a$alpha.samples)))), 
-      			      autoburnin = FALSE)$psrf[, 2])
-      if (p.det.re > 0) {
-      out$rhat$sigma.sq.p <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-      					      mcmc(t(a$sigma.sq.p.samples)))), 
-      			     autoburnin = FALSE)$psrf[, 2])
-      }
+  for (i in 1:n.chains) {
+    # Change initial values if i > 1
+    if ((i > 1) & (!fix.inits)) {
+      beta.inits <- runif(p.abund, -1, 1)
+      alpha.inits <- runif(p.det, -1, 1)
       if (p.abund.re > 0) {
-      out$rhat$sigma.sq.mu <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-      					      mcmc(t(a$sigma.sq.mu.samples)))), 
-      			     autoburnin = FALSE)$psrf[, 2])
+        sigma.sq.mu.inits <- runif(p.abund.re, 0.05, 1)
+        beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
+      }
+      if (p.det.re > 0) {
+        sigma.sq.p.inits <- runif(p.det.re, 0.05, 1)
+        alpha.star.inits <- rnorm(n.det.re, sqrt(sigma.sq.p.inits[alpha.star.indx + 1]))
       }
       if (family == 'NB') {
-          out$rhat$kappa <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-          						       mcmc(t(a$kappa.samples)))), 
-          					autoburnin = FALSE)$psrf[, 2])
-      }
-    } else {
-      out$rhat$beta <- rep(NA, p.abund)
-      out$rhat$kappa <- NA
-      out$rhat$alpha <- rep(NA, p.det)
-      if (p.det.re > 0) {
-        out$rhat$sigma.sq.p <- rep(NA, p.det.re)
-      }
-      if (p.abund.re > 0) {
-        out$rhat$sigma.sq.mu <- rep(NA, p.abund.re)
+        kappa.inits <- runif(1, kappa.a, kappa.b)
       }
     }
-    # Put everything into MCMC objects
-    out$beta.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$beta.samples))))
-    colnames(out$beta.samples) <- x.names
-    out$alpha.samples <- mcmc(do.call(rbind, 
-      				lapply(out.tmp, function(a) t(a$alpha.samples))))
-    colnames(out$alpha.samples) <- x.p.names
+    storage.mode(chain.info) <- "integer"
+    # Run the model in C
+    out.tmp[[i]] <- .Call("DS", y, X, X.p, X.re, X.p.re, X.random, X.p.random, 
+        		  y.max, offset, consts, K, n.abund.re.long, 
+        		  n.det.re.long, beta.inits, alpha.inits, kappa.inits, 
+        		  sigma.sq.mu.inits, sigma.sq.p.inits, beta.star.inits, 
+        		  alpha.star.inits, N.inits, N.long.indx, beta.star.indx, 
+      		          beta.level.indx, alpha.star.indx, alpha.level.indx, 
+        		  mu.beta, Sigma.beta, mu.alpha, Sigma.alpha, 
+      		          sigma.sq.mu.a, sigma.sq.mu.b, 
+        		  sigma.sq.p.a, sigma.sq.p.b, kappa.a, kappa.b, 
+        		  det.func.indx, transect.c, dist.breaks,
+      		          tuning.c, n.batch, batch.length, accept.rate, 
+      		          n.omp.threads, verbose, n.report, samples.info, chain.info, family.c)
+    chain.info[1] <- chain.info[1] + 1
+  } # i   
+  # Calculate R-Hat ---------------
+  out <- list()
+  out$rhat <- list()
+  if (n.chains > 1) {
+    # as.vector removes the "Upper CI" when there is only 1 variable. 
+    out$rhat$beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
+    					      mcmc(t(a$beta.samples)))), 
+    			     autoburnin = FALSE)$psrf[, 2])
+    out$rhat$alpha <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
+    					      mcmc(t(a$alpha.samples)))), 
+    			      autoburnin = FALSE)$psrf[, 2])
+    if (p.det.re > 0) {
+    out$rhat$sigma.sq.p <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
+    					      mcmc(t(a$sigma.sq.p.samples)))), 
+    			     autoburnin = FALSE)$psrf[, 2])
+    }
+    if (p.abund.re > 0) {
+    out$rhat$sigma.sq.mu <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
+    					      mcmc(t(a$sigma.sq.mu.samples)))), 
+    			     autoburnin = FALSE)$psrf[, 2])
+    }
     if (family == 'NB') {
-      out$kappa.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$kappa.samples))))
-      colnames(out$kappa.samples) <- c("kappa")
+        out$rhat$kappa <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
+        						       mcmc(t(a$kappa.samples)))), 
+        					autoburnin = FALSE)$psrf[, 2])
     }
-    out$N.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$N.samples))))
-    out$mu.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$mu.samples))))
-    out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
-          								c(K + 1, J, n.post.samples))))
-    out$y.rep.samples <- aperm(out$y.rep.samples, c(3, 2, 1))
-    out$y.rep.samples <- out$y.rep.samples[, , -c(K + 1)]
-    out$pi.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$pi.samples, 
-          								c(K + 1, J, n.post.samples))))
-    out$pi.samples <- aperm(out$pi.samples, c(3, 2, 1))
-    out$pi.samples <- out$pi.samples[, , -c(K + 1)]
-    if (p.abund.re > 0) {
-      out$sigma.sq.mu.samples <- mcmc(
-        do.call(rbind, lapply(out.tmp, function(a) t(a$sigma.sq.mu.samples))))
-      colnames(out$sigma.sq.mu.samples) <- x.re.names
-      out$beta.star.samples <- mcmc(
-        do.call(rbind, lapply(out.tmp, function(a) t(a$beta.star.samples))))
-      tmp.names <- unlist(re.level.names)
-      beta.star.names <- paste(rep(x.re.names, n.abund.re.long), tmp.names, sep = '-')
-      colnames(out$beta.star.samples) <- beta.star.names
-      out$re.level.names <- re.level.names
-    }
+  } else {
+    out$rhat$beta <- rep(NA, p.abund)
+    out$rhat$kappa <- NA
+    out$rhat$alpha <- rep(NA, p.det)
     if (p.det.re > 0) {
-      out$sigma.sq.p.samples <- mcmc(
-        do.call(rbind, lapply(out.tmp, function(a) t(a$sigma.sq.p.samples))))
-      colnames(out$sigma.sq.p.samples) <- x.p.re.names
-      out$alpha.star.samples <- mcmc(
-        do.call(rbind, lapply(out.tmp, function(a) t(a$alpha.star.samples))))
-      tmp.names <- unlist(p.re.level.names)
-      alpha.star.names <- paste(rep(x.p.re.names, n.det.re.long), tmp.names, sep = '-')
-      colnames(out$alpha.star.samples) <- alpha.star.names
-      out$p.re.level.names <- p.re.level.names
-    }
-    # Calculate effective sample sizes
-    out$ESS <- list()
-    out$ESS$beta <- effectiveSize(out$beta.samples)
-    if (family == 'NB') {
-      out$ESS$kappa <- effectiveSize(out$kappa.samples)
-    }
-    out$ESS$alpha <- effectiveSize(out$alpha.samples)
-    if (p.det.re > 0) {
-      out$ESS$sigma.sq.p <- effectiveSize(out$sigma.sq.p.samples)
+      out$rhat$sigma.sq.p <- rep(NA, p.det.re)
     }
     if (p.abund.re > 0) {
-      out$ESS$sigma.sq.mu <- effectiveSize(out$sigma.sq.mu.samples)
-    }
-    out$X <- X
-    out$X.p <- X.p
-    out$X.re <- X.re
-    out$X.p.re <- X.p.re
-    out$X.p.random <- X.p.random
-    out$y <- y.mat
-    out$offset <- offset
-    out$n.samples <- n.samples
-    out$call <- cl
-    out$n.post <- n.post.samples
-    out$n.thin <- n.thin
-    out$n.burn <- n.burn
-    out$n.chains <- n.chains
-    out$re.cols <- re.cols
-    out$re.det.cols <- re.det.cols
-    out$det.model <- det.model
-    out$dist.breaks <- dist.breaks
-    out$dist <- family 
-    out$transect <- transect
-    if (p.det.re > 0) {
-      out$pRE <- TRUE
-    } else {
-      out$pRE <- FALSE
-    }
-    if (p.abund.re > 0) {
-      out$muRE <- TRUE
-    } else {
-      out$muRE <- FALSE
+      out$rhat$sigma.sq.mu <- rep(NA, p.abund.re)
     }
   }
-  # K-fold cross-validation -------
-  if (!missing(k.fold)) {
-    if (verbose) {
-      cat("----------------------------------------\n");
-      cat("\tCross-validation\n");
-      cat("----------------------------------------\n");
-      message(paste("Performing ", k.fold, "-fold cross-validation using ", k.fold.threads,
-      	        " thread(s).", sep = ''))
-    }
-    set.seed(k.fold.seed)
-    # Number of sites in each hold out data set. 
-    sites.random <- sample(1:J)    
-    sites.k.fold <- split(sites.random, sites.random %% k.fold)
-    registerDoParallel(k.fold.threads)
-    rmspe <- foreach (i = 1:k.fold, .combine = sum) %dopar% {
-      curr.set <- sort(sites.random[sites.k.fold[[i]]])
-      y.indx <- !((N.long.indx + 1) %in% curr.set)
-      y.fit <- y[y.indx]
-      y.0 <- y[!y.indx]
-      y.mat.fit <- y.mat[-curr.set, , drop = FALSE]
-      y.mat.0 <- y.mat[curr.set, , drop = FALSE]
-      N.inits.fit <- N.inits[-curr.set]
-      y.max.fit <- y.max[-curr.set]
-      X.p.fit <- X.p[-curr.set, , drop = FALSE]
-      X.p.0 <- X.p[curr.set, , drop = FALSE]
-      X.fit <- X[-curr.set, , drop = FALSE]
-      X.0 <- X[curr.set, , drop = FALSE]
-      offset.fit <- offset[-curr.set]
-      offset.0 <- offset[curr.set]
-      J.fit <- nrow(X.fit)
-      J.0 <- nrow(X.0)
-      K.fit <- K
-      K.0 <- K
-      n.obs.fit <- K.fit * J.fit
-      n.obs.0 <- K.0 * J.0
-      # Random Detection Effects
-      X.p.re.fit <- X.p.re[-curr.set, , drop = FALSE]
-      X.p.re.0 <- X.p.re[curr.set, , drop = FALSE]
-      X.p.random.fit <- X.p.random[-curr.set, , drop = FALSE]
-      X.p.random.0 <- X.p.random[curr.set, , drop = FALSE]
-      n.det.re.fit <- length(unique(c(X.p.re.fit)))
-      n.det.re.long.fit <- apply(X.p.re.fit, 2, function(a) length(unique(a)))
-      if (p.det.re > 0) {	
-        alpha.star.indx.fit <- rep(0:(p.det.re - 1), n.det.re.long.fit)
-        alpha.level.indx.fit <- sort(unique(c(X.p.re.fit)))
-        alpha.star.inits.fit <- rnorm(n.det.re.fit, 
-        			      sqrt(sigma.sq.p.inits[alpha.star.indx.fit + 1]))
-        p.re.level.names.fit <- list()
-        for (t in 1:p.det.re) {
-          tmp.indx <- alpha.level.indx.fit[alpha.star.indx.fit == t - 1]
-          p.re.level.names.fit[[t]] <- unlist(p.re.level.names)[tmp.indx + 1]    
-        }
-      } else {
-        alpha.star.indx.fit <- alpha.star.indx
-        alpha.level.indx.fit <- alpha.level.indx
-        alpha.star.inits.fit <- alpha.star.inits
-	p.re.level.names.fit <- p.re.level.names
-      }
-      # Random Abundance Effects
-      X.re.fit <- X.re[-curr.set, , drop = FALSE]
-      X.re.0 <- X.re[curr.set, , drop = FALSE]
-      X.random.fit <- X.random[-curr.set, , drop = FALSE]
-      X.random.0 <- X.random[curr.set, , drop = FALSE]
-      n.abund.re.fit <- length(unique(c(X.re.fit)))
-      n.abund.re.long.fit <- apply(X.re.fit, 2, function(a) length(unique(a)))
-      if (p.abund.re > 0) {	
-        beta.star.indx.fit <- rep(0:(p.abund.re - 1), n.abund.re.long.fit)
-        beta.level.indx.fit <- sort(unique(c(X.re.fit)))
-        beta.star.inits.fit <- rnorm(n.abund.re.fit, 
-        			      sqrt(sigma.sq.mu.inits[beta.star.indx.fit + 1]))
-        re.level.names.fit <- list()
-        for (t in 1:p.abund.re) {
-          tmp.indx <- beta.level.indx.fit[beta.star.indx.fit == t - 1]
-          re.level.names.fit[[t]] <- unlist(re.level.names)[tmp.indx + 1]    
-        }
-      } else {
-        beta.star.indx.fit <- beta.star.indx
-        beta.level.indx.fit <- beta.level.indx
-        beta.star.inits.fit <- beta.star.inits
-        re.level.names.fit <- re.level.names
-      }
-      # Gotta be a better way, but will do for now. 
-      N.long.indx.fit <- matrix(NA, J.fit, max(K.fit))
-      for (j in 1:J.fit) {
-        N.long.indx.fit[j, 1:K.fit] <- j  
-      }
-      N.long.indx.fit <- c(N.long.indx.fit)
-      N.long.indx.fit <- N.long.indx.fit[!is.na(N.long.indx.fit)] - 1
-      N.0.long.indx <- matrix(NA, nrow(X.0), max(K.0))
-      for (j in 1:nrow(X.0)) {
-        N.0.long.indx[j, 1:K.0] <- j  
-      }
-      N.0.long.indx <- c(N.0.long.indx)
-      N.0.long.indx <- N.0.long.indx[!is.na(N.0.long.indx)] 
-      verbose.fit <- FALSE
-      n.omp.threads.fit <- 1
-      storage.mode(y.fit) <- "double"
-      storage.mode(N.inits.fit) <- "double"
-      storage.mode(X.p.fit) <- "double"
-      storage.mode(X.fit) <- "double"
-      storage.mode(K.fit) <- "double"
-      storage.mode(y.max.fit) <- "double"
-      storage.mode(offset.fit) <- "double"
-      consts.fit <- c(J.fit, n.obs.fit, p.abund, p.abund.re, n.abund.re.fit, 
-                      p.det, p.det.re, n.det.re.fit)
-      storage.mode(consts.fit) <- "integer"
-      storage.mode(K.fit) <- "integer"
-      storage.mode(N.long.indx.fit) <- "integer"
-      storage.mode(n.omp.threads.fit) <- "integer"
-      storage.mode(verbose.fit) <- "integer"
-      storage.mode(n.report) <- "integer"
-      storage.mode(X.p.re.fit) <- "integer"
-      storage.mode(X.p.random.fit) <- "double"
-      storage.mode(n.det.re.long.fit) <- "integer"
-      storage.mode(alpha.star.inits.fit) <- "double"
-      storage.mode(alpha.star.indx.fit) <- "integer"
-      storage.mode(alpha.level.indx.fit) <- "integer"
-      storage.mode(X.re.fit) <- "integer"
-      storage.mode(X.random.fit) <- "double"
-      storage.mode(n.abund.re.long.fit) <- "integer"
-      storage.mode(beta.star.inits.fit) <- "double"
-      storage.mode(beta.star.indx.fit) <- "integer"
-      storage.mode(beta.level.indx.fit) <- "integer"
-      chain.info[1] <- 1
-      storage.mode(chain.info) <- "integer"
-      # Run the model in C
-      out.fit <- .Call("DS", y.fit, X.fit, X.p.fit, X.re.fit, X.p.re.fit,
-		       X.random.fit, X.p.random.fit, y.max.fit, offset.fit, consts.fit, 
-      		       K.fit, n.abund.re.long.fit, n.det.re.long.fit, 
-		       beta.inits, alpha.inits, kappa.inits,
-      		       sigma.sq.mu.inits, sigma.sq.p.inits, beta.star.inits.fit, 
-      		       alpha.star.inits.fit, N.inits.fit, N.long.indx.fit, beta.star.indx.fit, 
-      		       beta.level.indx.fit, alpha.star.indx.fit, alpha.level.indx.fit, mu.beta, 
-		       Sigma.beta, mu.alpha, Sigma.alpha, sigma.sq.mu.a, sigma.sq.mu.b, 
-      		       sigma.sq.p.a, sigma.sq.p.b, kappa.a, kappa.b, 
-		       det.model.indx, transect.c, dist.breaks,
-		       tuning.c, n.batch, batch.length, accept.rate, n.omp.threads.fit, 
-		       verbose.fit, n.report, samples.info, chain.info, family.c)
-      out.fit$beta.samples <- mcmc(t(out.fit$beta.samples))
-      out.fit$alpha.samples <- mcmc(t(out.fit$alpha.samples))
-      colnames(out.fit$beta.samples) <- x.names
-      if (family == 'NB') {
-        out.fit$kappa.samples <- mcmc(t(out.fit$kappa.samples))
-        colnames(out$kappa.samples) <- c("kappa")
-      }
-      out.fit$X <- X.fit
-      out.fit$y <- y.mat.fit
-      out.fit$X.p <- X.p.fit
-      out.fit$call <- cl
-      out.fit$n.samples <- n.samples
-      out.fit$n.post <- n.post.samples
-      out.fit$n.thin <- n.thin
-      out.fit$n.burn <- n.burn
-      out.fit$n.chains <- 1
-      out.fit$re.cols <- re.cols
-      out.fit$re.det.cols <- re.det.cols
-      out.fit$dist <- family 
-      out.fit$det.model <- det.model
-      out.fit$dist.breaks <- dist.breaks
-      out.fit$transect <- transect
-      out.fit$offset <- offset.fit
-      if (p.det.re > 0) {
-        out.fit$RE <- TRUE
-      } else {
-        out.fit$pRE <- FALSE
-      }
-      if (p.abund.re > 0) {
-        out.fit$sigma.sq.mu.samples <- mcmc(t(out.fit$sigma.sq.mu.samples))
-        colnames(out.fit$sigma.sq.mu.samples) <- x.re.names
-        out.fit$beta.star.samples <- mcmc(t(out.fit$beta.star.samples))
-        tmp.names <- unlist(re.level.names.fit)
-        beta.star.names <- paste(rep(x.re.names, n.abund.re.long.fit), tmp.names, sep = '-')
-        colnames(out.fit$beta.star.samples) <- beta.star.names
-        out.fit$re.level.names <- re.level.names.fit
-        out.fit$X.re <- X.re.fit
-      }
-      if (p.det.re > 0) {
-        out.fit$sigma.sq.p.samples <- mcmc(t(out.fit$sigma.sq.p.samples))
-        colnames(out.fit$sigma.sq.p.samples) <- x.p.re.names
-        out.fit$alpha.star.samples <- mcmc(t(out.fit$alpha.star.samples))
-        tmp.names <- unlist(p.re.level.names.fit)
-        alpha.star.names <- paste(rep(x.p.re.names, n.det.re.long.fit), tmp.names, sep = '-')
-        colnames(out.fit$alpha.star.samples) <- alpha.star.names
-        out.fit$p.re.level.names <- p.re.level.names.fit
-        out.fit$X.p.re <- X.p.re.fit
-      }
-      if (p.abund.re > 0) {
-        out.fit$muRE <- TRUE
-      } else {
-        out.fit$muRE <- FALSE	
-      }
-      if (p.det.re > 0) {
-        out.fit$pRE <- TRUE
-      } else {
-        out.fit$pRE <- FALSE
-      }
-      class(out.fit) <- "DS"
-
-      # Get RE levels correct for use in prediction code. 
-      if (p.abund.re > 0) {
-        tmp.2 <- colnames(X.re.0)
-        tmp <- unlist(re.level.names)
-        X.re.0 <- matrix(tmp[c(X.re.0 + 1)], nrow(X.re.0), ncol(X.re.0))
-        colnames(X.re.0) <- tmp.2
-      }
-
-      # Get unique factors for random effects
-      if (p.abund.re > 0) {
-        # Get unique factors for random effects.
-        tmp <- split(seq_along(colnames(X.re.0)), colnames(X.re.0))
-        tmp <- sapply(tmp, function(a) a[1])
-        X.re.0 <- X.re.0[, tmp, drop = FALSE]
-      }
-      # Predict abundance at new sites
-      if (p.abund.re > 0) {X.0 <- cbind(X.0, X.re.0)}
-      out.pred <- predict.DS(out.fit, X.0, k.fold.offset = offset.0)
-
-      # Get RE levels correct for use in prediction code. 
-      if (p.det.re > 0) {
-        tmp.2 <- colnames(X.p.re.0)
-        tmp <- unlist(p.re.level.names)
-        X.p.re.0 <- matrix(tmp[c(X.p.re.0 + 1)], nrow(X.p.re.0), ncol(X.p.re.0))
-        colnames(X.p.re.0) <- tmp.2
-      }
-
-      # Get unique factors for random effects
-      if (p.det.re > 0) {
-        # Get unique factors for random effects.
-        tmp <- split(seq_along(colnames(X.p.re.0)), colnames(X.p.re.0))
-        tmp <- sapply(tmp, function(a) a[1])
-        X.p.re.0 <- X.p.re.0[, tmp, drop = FALSE]
-      }
-      # Generate detection values
-      if (p.det.re > 0) {X.p.0 <- cbind(X.p.0, X.p.re.0)}
-      out.p.pred <- predict.DS(out.fit, X.p.0, type = 'detection')
-
-      # Generate cell probabilities and predicted y values from sigma predictions. 
-      y.hat.samples <- array(NA, dim = c(nrow(out.pred$N.0.samples), 
-					     J.0, K.0 + 1))
-      p <- array(NA, dim = c(J.0, K.0))
-      strip.width <- sum(diff(dist.breaks))
-      psi <- rep(NA, K.0)
-      # Get correlation function
-      if (det.model == 'halfnormal') {
-        curr.function <- halfNormal
-      }
-      if (det.model == 'negexp') {
-        curr.function <- negExp
-      }
-      for (t in 1:nrow(out.pred$N.0.samples)) {
-        for (j in 1:J.0) {
-          for (k in 1:K.0) {
-            p[j, k] <- integrate(curr.function, dist.breaks[k], 
-              		   dist.breaks[k + 1], 
-            		   sig = out.p.pred$sigma.0.samples[t, j], 
-			   transect = transect)$value
-            if (transect == 'line') {
-              p[j, k] <- p[j, k] / (dist.breaks[k + 1] - dist.breaks[k])
-            } else {
-              p[j, k] <- p[j, k] * 2 / (dist.breaks[k + 1]^2 - dist.breaks[k]^2)
-            }
-          }
-        }
-        # Probability an individual occurs in each interval.
-        bin.width <- diff(dist.breaks)
-        for (k in 1:K.0) {
-          if (transect == 'line') {
-            psi[k] <- bin.width[k] / strip.width
-          } else {
-            psi[k] <- (dist.breaks[k + 1]^2 - dist.breaks[k]^2) / strip.width^2
-          }
-        }
-        # Multinomial cell probability
-        pi.obs <- t(apply(p,  1, function(a) a * psi))
-        pi.full <- cbind(pi.obs, 1 - apply(pi.obs, 1, sum))
-
-        for (j in 1:J.0) {
-          y.hat.samples[t, j, ] <- rmultinom(1, out.pred$N.0.samples[t, j], pi.full[j, ])
-        }
-      }
-      rmspe.samples <- apply(y.hat.samples[, , -(K.0 + 1)], 1, 
-			     function(a) sqrt(mean(y.mat.0 - a)^2))
-      mean(rmspe.samples, na.rm = TRUE) 
-    }
-    # Return objects from cross-validation
-    out$rmspe <- rmspe
-    stopImplicitCluster()
+  # Put everything into MCMC objects
+  out$beta.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$beta.samples))))
+  colnames(out$beta.samples) <- x.names
+  out$alpha.samples <- mcmc(do.call(rbind, 
+    				lapply(out.tmp, function(a) t(a$alpha.samples))))
+  colnames(out$alpha.samples) <- x.p.names
+  if (family == 'NB') {
+    out$kappa.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$kappa.samples))))
+    colnames(out$kappa.samples) <- c("kappa")
+  }
+  out$N.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$N.samples))))
+  out$mu.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$mu.samples))))
+  out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
+        								c(K + 1, J, n.post.samples))))
+  out$y.rep.samples <- aperm(out$y.rep.samples, c(3, 2, 1))
+  out$y.rep.samples <- out$y.rep.samples[, , -c(K + 1)]
+  out$pi.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$pi.samples, 
+        								c(K + 1, J, n.post.samples))))
+  out$pi.samples <- aperm(out$pi.samples, c(3, 2, 1))
+  out$pi.samples <- out$pi.samples[, , -c(K + 1)]
+  if (p.abund.re > 0) {
+    out$sigma.sq.mu.samples <- mcmc(
+      do.call(rbind, lapply(out.tmp, function(a) t(a$sigma.sq.mu.samples))))
+    colnames(out$sigma.sq.mu.samples) <- x.re.names
+    out$beta.star.samples <- mcmc(
+      do.call(rbind, lapply(out.tmp, function(a) t(a$beta.star.samples))))
+    tmp.names <- unlist(re.level.names)
+    beta.star.names <- paste(rep(x.re.names, n.abund.re.long), tmp.names, sep = '-')
+    colnames(out$beta.star.samples) <- beta.star.names
+    out$re.level.names <- re.level.names
+  }
+  if (p.det.re > 0) {
+    out$sigma.sq.p.samples <- mcmc(
+      do.call(rbind, lapply(out.tmp, function(a) t(a$sigma.sq.p.samples))))
+    colnames(out$sigma.sq.p.samples) <- x.p.re.names
+    out$alpha.star.samples <- mcmc(
+      do.call(rbind, lapply(out.tmp, function(a) t(a$alpha.star.samples))))
+    tmp.names <- unlist(p.re.level.names)
+    alpha.star.names <- paste(rep(x.p.re.names, n.det.re.long), tmp.names, sep = '-')
+    colnames(out$alpha.star.samples) <- alpha.star.names
+    out$p.re.level.names <- p.re.level.names
+  }
+  # Calculate effective sample sizes
+  out$ESS <- list()
+  out$ESS$beta <- effectiveSize(out$beta.samples)
+  if (family == 'NB') {
+    out$ESS$kappa <- effectiveSize(out$kappa.samples)
+  }
+  out$ESS$alpha <- effectiveSize(out$alpha.samples)
+  if (p.det.re > 0) {
+    out$ESS$sigma.sq.p <- effectiveSize(out$sigma.sq.p.samples)
+  }
+  if (p.abund.re > 0) {
+    out$ESS$sigma.sq.mu <- effectiveSize(out$sigma.sq.mu.samples)
+  }
+  out$X <- X
+  out$X.p <- X.p
+  out$X.re <- X.re
+  out$X.p.re <- X.p.re
+  out$X.p.random <- X.p.random
+  out$y <- y.mat
+  out$offset <- offset
+  out$n.samples <- n.samples
+  out$call <- cl
+  out$n.post <- n.post.samples
+  out$n.thin <- n.thin
+  out$n.burn <- n.burn
+  out$n.chains <- n.chains
+  out$re.cols <- re.cols
+  out$re.det.cols <- re.det.cols
+  out$det.func <- det.func
+  out$dist.breaks <- dist.breaks
+  out$dist <- family 
+  out$transect <- transect
+  if (p.det.re > 0) {
+    out$pRE <- TRUE
+  } else {
+    out$pRE <- FALSE
+  }
+  if (p.abund.re > 0) {
+    out$muRE <- TRUE
+  } else {
+    out$muRE <- FALSE
   }
   class(out) <- "DS"
   out$run.time <- proc.time() - ptm
