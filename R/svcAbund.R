@@ -84,8 +84,25 @@ svcAbund <- function(formula, data, inits, priors, tuning,
     }
     z <- data$z
   } else {
-    z <- rep(1, J)
+    z <- rep(1, length(y))
   }
+  
+  # Check first-stage sample ----------------------------------------------
+  if (length(z) != length(y)) {
+    stop(paste("z must be a vector of length ", length(y), ".", sep = ''))
+  }
+  # Number of points where z == 1
+  J.est <- sum(z == 1)
+  # Number of points where z != 1
+  J.zero <- sum(z == 0)
+  # Index for the sites where z == 1
+  z.indx <- which(z == 1)
+
+  # Filter all objects to only use sites with z == 1
+  y.orig <- y
+  y <- y[z.indx]
+  coords <- coords[z.indx, ]
+  data$covs <- data$covs[z.indx, , drop = FALSE]
 
   # Neighbors and Ordering ----------------------------------------------
   if (NNGP) {
@@ -176,11 +193,11 @@ svcAbund <- function(formula, data, inits, priors, tuning,
     } else {
       if (!is.matrix(stage.1.like)) {
         stop(paste("stage.1.like must be a matrix with dimensions ", 
-		   n.post.samples * n.chains, " x ", J, sep = ''))
+		   n.post.samples * n.chains, " x ", J.est + J.zero, sep = ''))
       }
-      if (nrow(stage.1.like) != n.post.samples * n.chains | ncol(stage.1.like) != J) {
+      if (nrow(stage.1.like) != n.post.samples * n.chains | ncol(stage.1.like) != J.est + J.zero) {
         stop(paste("stage.1.like must be a matrix with dimensions ", 
-		   n.post.samples * n.chains, " x ", J, sep = ''))
+		   n.post.samples * n.chains, " x ", J.est + J.zero, sep = ''))
       }
     }
   }
@@ -203,19 +220,6 @@ svcAbund <- function(formula, data, inits, priors, tuning,
     }
   }
   p.svc <- length(svc.cols)
-
-  # Check first-stage sample ----------------------------------------------
-  if (length(z) != J) {
-    stop(paste("z must be a vector of length ", J, ".", sep = ''))
-  }
-  # Reorder z
-  z <- z[ord]
-  # Number of points where z == 1
-  J.est <- sum(z == 1)
-  # Number of points where z != 1
-  J.zero <- sum(z == 0)
-  # Index for the sites where z == 1
-  z.indx <- which(z == 1)
 
   # Get random effect matrices all set ----------------------------------
   X.re <- X.re - 1
@@ -299,7 +303,7 @@ svcAbund <- function(formula, data, inits, priors, tuning,
     if (verbose) {
     message("No prior specified for phi.unif.\nSetting uniform bounds based on the range of observed spatial coordinates.\n")
     }
-    coords.D <- iDist(coords[z.indx, ])
+    coords.D <- iDist(coords)
     phi.a <- rep(3 / max(coords.D), p.svc)
     phi.b <- rep(3 / sort(unique(c(coords.D)))[2], p.svc)
   }
@@ -650,9 +654,9 @@ svcAbund <- function(formula, data, inits, priors, tuning,
     storage.mode(n.omp.threads) <- "integer"
     ## Indexes
     if(search.type == "brute"){
-      indx <- mkNNIndx(coords[z.indx, ], n.neighbors, n.omp.threads)
+      indx <- mkNNIndx(coords, n.neighbors, n.omp.threads)
     } else{
-      indx <- mkNNIndxCB(coords[z.indx, ], n.neighbors, n.omp.threads)
+      indx <- mkNNIndxCB(coords, n.neighbors, n.omp.threads)
     }
     
     nn.indx <- indx$nnIndx
@@ -758,9 +762,9 @@ svcAbund <- function(formula, data, inits, priors, tuning,
       }
       storage.mode(chain.info) <- "integer"
       # Run the model in C    
-      out.tmp[[i]] <- .Call("svcAbundNNGP", y[z.indx], y[-z.indx], X[z.indx, , drop = FALSE], 
-      		            X.w[z.indx, , drop = FALSE], coords[z.indx, ], 
-      		            X.re[z.indx, , drop = FALSE], X.random[z.indx, , drop = FALSE], 
+      out.tmp[[i]] <- .Call("svcAbundNNGP", y, X, 
+      		            X.w, coords, 
+      		            X.re, X.random, 
       		            consts, n.re.long, 
         	             n.neighbors, nn.indx, nn.indx.lu, u.indx, u.indx.lu, ui.indx, 
                             beta.inits, tau.sq.inits, sigma.sq.mu.inits, beta.star.inits, 
@@ -821,17 +825,19 @@ svcAbund <- function(formula, data, inits, priors, tuning,
       out$like.samples <- mcmc(out$like.samples[, order(ord), drop = FALSE])
     } else {
       y.rep.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.samples))))
+      y.rep.samples <- mcmc(y.rep.samples[, order(ord), drop = FALSE])
       like.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$like.samples))))
+      like.samples <- mcmc(like.samples[, order(ord), drop = FALSE])
       y.rep.zero.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.zero.samples))))
       like.zero.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$like.zero.samples))))
-      out$y.rep.samples <- matrix(NA, n.post.samples * n.chains, J)
+      out$y.rep.samples <- matrix(NA, n.post.samples * n.chains, J.est + J.zero)
       out$y.rep.samples[, z.indx] <- y.rep.samples
       out$y.rep.samples[, -z.indx] <- y.rep.zero.samples
-      out$y.rep.samples <- mcmc(out$y.rep.samples[, order(ord), drop = FALSE])
-      out$like.samples <- matrix(NA, n.post.samples * n.chains, J)
+      out$y.rep.samples <- mcmc(out$y.rep.samples)
+      out$like.samples <- matrix(NA, n.post.samples * n.chains, J.est + J.zero)
       out$like.samples[, z.indx] <- like.samples
       out$like.samples[, -z.indx] <- like.zero.samples
-      out$like.samples <- mcmc(out$like.samples[, order(ord), drop = FALSE])
+      out$like.samples <- mcmc(out$like.samples)
       if (!missing(stage.1.like)) {
         out$like.samples <- out$like.samples + stage.1.like
       }
@@ -842,18 +848,18 @@ svcAbund <- function(formula, data, inits, priors, tuning,
     # Account for case when intercept only spatial model. 
     if (p.svc == 1) {
       tmp <- do.call(rbind, lapply(out.tmp, function(a) t(a$w.samples)))
-      tmp <- tmp[, order(ord[z.indx]), drop = FALSE]
+      tmp <- tmp[, order(ord), drop = FALSE]
       out$w.samples <- array(NA, dim = c(p.svc, J.est, n.post.samples * n.chains))
       out$w.samples[1, , ] <- t(tmp)
     } else {
       out$w.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$w.samples, 
         								dim = c(p.svc, J.est, n.post.samples))))
-      out$w.samples <- out$w.samples[, order(ord[z.indx]), ]
+      out$w.samples <- out$w.samples[, order(ord), ]
     }
     out$w.samples <- aperm(out$w.samples, c(3, 1, 2))
     out$mu.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$mu.samples))))
-    out$mu.samples <- mcmc(out$mu.samples[, order(ord[z.indx]), drop = FALSE])
-    out$y <- y[order(ord)]
+    out$mu.samples <- mcmc(out$mu.samples[, order(ord), drop = FALSE])
+    out$y <- y.orig 
     if (p.re > 0) {
       out$sigma.sq.mu.samples <- mcmc(
         do.call(rbind, lapply(out.tmp, function(a) t(a$sigma.sq.mu.samples))))

@@ -61,7 +61,7 @@ void updateBFSVCNNGP(double *B, double *F, double *c, double *C, double *coords,
 }
 
 extern "C" {
-  SEXP svcAbundNNGP(SEXP y_r, SEXP yZero_r, SEXP X_r, SEXP Xw_r, SEXP coords_r, SEXP XRE_r, SEXP XRandom_r,
+  SEXP svcAbundNNGP(SEXP y_r, SEXP X_r, SEXP Xw_r, SEXP coords_r, SEXP XRE_r, SEXP XRandom_r,
                SEXP consts_r, SEXP nRELong_r, SEXP m_r, SEXP nnIndx_r, 
                SEXP nnIndxLU_r, SEXP uIndx_r, SEXP uIndxLU_r, SEXP uiIndx_r,
                SEXP betaStarting_r, SEXP tauSqStarting_r, SEXP sigmaSqMuStarting_r,
@@ -94,7 +94,6 @@ extern "C" {
      * Get Inputs
      * *******************************************************************/
     double *y = REAL(y_r);
-    double *yZero = REAL(yZero_r);
     double *X = REAL(X_r);
     // Order: covariate, site
     double *Xw = REAL(Xw_r);
@@ -686,7 +685,7 @@ extern "C" {
          *******************************************************************/
          for (j = 0; j < JZero; j++) {
            yRepZero[j] = rnorm(0.0, sqrt(0.0001));
-           likeZero[j] = dnorm(yZero[j], 0.0, sqrt(0.0001), 0);
+           likeZero[j] = dnorm(0.0, 0.0, sqrt(0.0001), 0);
 	 } // j
 
         /********************************************************************
