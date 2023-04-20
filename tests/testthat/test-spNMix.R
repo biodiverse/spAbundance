@@ -90,20 +90,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 1,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -353,20 +344,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 50,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -618,20 +600,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 1,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -882,20 +855,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 1,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -1146,20 +1110,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 1,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -1411,20 +1366,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 1,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -1674,20 +1620,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 1,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -1978,20 +1915,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 1,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -2282,20 +2210,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 1,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -2587,20 +2506,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 1,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -2891,20 +2801,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 1,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -3195,20 +3096,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 1,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -3499,20 +3391,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 1,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -3803,20 +3686,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 1,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -4108,20 +3982,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 1,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -4417,20 +4282,11 @@ out <- spNMix(abund.formula = abund.formula,
 	      n.report = 1,
 	      n.burn = n.burn,
 	      n.thin = n.thin,
-	      n.chains = n.chains,
-              k.fold = 2,
-              k.fold.threads = 1)
+	      n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class spNMix", {
   expect_s3_class(out, "spNMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------

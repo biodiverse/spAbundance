@@ -1,5 +1,6 @@
-simAbund <- function(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),  
-		     sp = FALSE, cov.model, sigma.sq, phi, nu, family = 'Poisson', ...) {
+simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),  
+		     sp = FALSE, svc.cols = 1, cov.model, sigma.sq, phi, 
+		     nu, family = 'Poisson', z, ...) {
 
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -12,6 +13,11 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),
   # Check function inputs -------------------------------------------------
   J <- J.x * J.y
   # n.rep -----------------------------
+  if (family %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (missing(n.rep)) {
+      n.rep <- rep(1, J)
+    }
+  }
   if (missing(n.rep)) {
     stop("error: n.rep must be specified.")
   }
@@ -23,8 +29,13 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),
     stop("error: beta must be specified.")
   }
   # family ------------------------------
-  if (! (family %in% c('NB', 'Poisson'))) {
-    stop("error: family must be either NB (negative binomial) or Poisson")
+  if (! (family %in% c('NB', 'Poisson', 'Gaussian', 'Gaussian-hurdle'))) {
+    stop("error: family must be one of: NB (negative binomial), Poisson, 'Gaussian', or 'Gaussian-hurdle'")
+  }
+  if (family %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (max(n.rep) != 1) {
+      stop("n.rep must be one for all sites for Gaussian or Gaussian-hurdle models")
+    }
   }
   # kappa -----------------------------
   if (family == 'NB') {
@@ -34,6 +45,12 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),
   }
   if (family == 'Poisson' & !missing(kappa)) {
     message("overdispersion parameter (kappa) is ignored when family == 'Poisson'")
+  }
+  # tau.sq ----------------------------
+  if (family %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (missing(tau.sq)) {
+      stop('error: tau.sq (residual variance) must be specified when family is Gaussian or Gaussian-hurdle')
+    }
   }
   # mu.RE ----------------------------
   names(mu.RE) <- tolower(names(mu.RE))
@@ -55,6 +72,12 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),
     }
   }
   # Spatial parameters ----------------
+  if (length(svc.cols) > 1 & !sp) {
+    stop("error: if simulating data with spatially-varying coefficients, set sp = TRUE")
+  }
+  if (length(svc.cols) > 1 & family %in% c('Poisson', 'NB')) {
+    stop("spatially-varying coefficient models are only currently supported for Gaussian and Gaussian-hurdle models")
+  }
   if (sp) {
     if(missing(sigma.sq)) {
       stop("error: sigma.sq must be specified when sp = TRUE")
@@ -72,6 +95,24 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),
     }
     if (cov.model == 'matern' & missing(nu)) {
       stop("error: nu must be specified when cov.model = 'matern'")
+    }
+    p.svc <- length(svc.cols)
+    if (length(phi) != p.svc) {
+      stop("error: phi must have the same number of elements as svc.cols")
+    }
+    if (length(sigma.sq) != p.svc) {
+      stop("error: sigma.sq must have the same number of elements as svc.cols")
+    }
+    if (cov.model == 'matern') {
+      if (length(nu) != p.svc) {
+        stop("error: nu must have the same number of elements as svc.cols")
+      }
+    }
+  }
+  # z values --------------------------
+  if (family == 'Gaussian-hurdle') {
+    if (missing(z)) {
+      stop('for a Gaussian hurdle model, you must supply the z values (binary 0s or 1s)')
     }
   }
 
@@ -105,16 +146,21 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),
   s.y <- seq(0, 1, length.out = J.y)
   coords <- as.matrix(expand.grid(s.x, s.y))
   if (sp) {
+    w.mat <- matrix(NA, J, p.svc)
     if (cov.model == 'matern') {
-      theta <- c(phi, nu)
+      theta <- cbind(phi, nu)
     } else {
-      theta <- phi
+      theta <- as.matrix(phi)
     }
-    Sigma <- mkSpCov(coords, as.matrix(sigma.sq), as.matrix(0), theta, cov.model)
-    # Random spatial process
-    w <- rmvn(1, rep(0, J), Sigma)
+    for (i in 1:p.svc) {
+      Sigma <- mkSpCov(coords, as.matrix(sigma.sq[i]), as.matrix(0), theta[i, ], cov.model)
+      # Random spatial process
+      w.mat[, i] <- rmvn(1, rep(0, J), Sigma)
+    }
+    X.w <- X[, , svc.cols, drop = FALSE]
   } else {
-    w <- NA
+    w.mat <- NA
+    X.w <- NA
   }
 
   # Random effects --------------------------------------------------------
@@ -164,30 +210,50 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),
     for (k in 1:n.rep[j]) {
       if (sp) {
         if (length(mu.RE) > 0) {
-          mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
-      			   w[j] + 
-      			   beta.star.sites[j, k])
+          mu[j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
+      			   t(as.matrix(X.w[j, k, ])) %*% as.matrix(w.mat[j, ]) + 
+      			   beta.star.sites[j, k]
         } else {
-          mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + w[j])
+          mu[j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
+		      t(as.matrix(X.w[j, k, ])) %*% as.matrix(w.mat[j, ])
         }
       } else {
         if (length(mu.RE) > 0) {
-          mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
-      			   beta.star.sites[j, k])
+          mu[j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
+      			   beta.star.sites[j, k]
         } else {
-          mu[j, k] <- exp(t(as.matrix(X[j, k, ])) %*% as.matrix(beta))
+          mu[j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta)
         }
+      }
+      if (family %in% c('Poisson', 'NB')) {
+        mu[j, k] <- exp(mu[j, k])
       }
       if (family == 'NB') {
         y[j, k] <- rnbinom(1, size = kappa, mu = mu[j, k])
-      } else {
+      }
+      if (family == 'Poisson') {
         y[j, k] <- rpois(1, lambda = mu[j, k])
+      }
+      if (family == 'Gaussian') {
+        y[j, k] <- rnorm(1, mu[j, k], sqrt(tau.sq))
+      }
+      if (family == 'Gaussian-hurdle') {
+        y[j, k] <- rnorm(1, mu[j, k], sqrt(tau.sq)) * z[j]
       }
     } # k
   } # j
+  if (family %in% c('Gaussian', 'Gaussian-hurdle')) {
+    y <- y[, 1]
+    mu <- mu[, 1]
+    X <- X[, 1, ]
+    if (length(mu.RE) > 0) {
+      X.re <- X.re[, 1, ]
+      beta.star.sites <- beta.star.sites[, 1]
+    }
+  }
 
   return(
-    list(X = X, coords = coords, w = w, mu = mu, 
+    list(X = X, coords = coords, w = w.mat, mu = mu, 
 	 y = y, X.re = X.re, beta.star = beta.star)
   )
 }

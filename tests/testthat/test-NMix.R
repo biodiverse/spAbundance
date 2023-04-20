@@ -51,21 +51,6 @@ n.chains <- 2
 abund.formula <- ~ 1
 det.formula <- ~ 1
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
 
 out <- NMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
@@ -82,21 +67,13 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
 })
 
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
-})
 
 # Check random effects ----------------
 test_that("random effects are empty", {
@@ -308,10 +285,6 @@ n.omp.threads = 1
 verbose = TRUE
 family <- 'NB'
 n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
 
 
 out <- NMix(abund.formula = abund.formula,
@@ -329,21 +302,13 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
 })
 
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
-})
 
 # Check random effects ----------------
 test_that("random effects are empty", {
@@ -546,22 +511,6 @@ n.chains <- 2
 abund.formula <- ~ 1
 det.formula <- ~ det.cov.1
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
-
 out <- NMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
 	    data = data.list,
@@ -577,20 +526,11 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -794,21 +734,6 @@ n.chains <- 2
 abund.formula <- ~ abund.cov.1 + abund.cov.2
 det.formula <- ~ det.cov.1
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
 
 out <- NMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
@@ -825,20 +750,11 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -1042,21 +958,6 @@ n.chains <- 2
 abund.formula <- ~ abund.cov.1 * abund.cov.2
 det.formula <- ~ det.cov.1 * det.cov.2
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
 
 out <- NMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
@@ -1073,20 +974,11 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -1290,21 +1182,6 @@ n.chains <- 2
 abund.formula <- ~ abund.cov.1 + abund.cov.2
 det.formula <- ~ det.cov.1
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
 
 out <- NMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
@@ -1321,20 +1198,11 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -1537,22 +1405,6 @@ n.chains <- 2
 abund.formula <- ~ (1 | abund.factor.1)
 det.formula <- ~ 1 
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
-
 out <- NMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
 	    data = data.list,
@@ -1568,20 +1420,11 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -1823,21 +1666,6 @@ n.chains <- 2
 abund.formula <- ~ (1 | abund.factor.1) + (1 | abund.factor.2) + (1 | abund.factor.3)
 det.formula <- ~ 1 
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
 
 out <- NMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
@@ -1854,20 +1682,11 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -2111,22 +1930,6 @@ abund.formula <- ~ (1 | abund.factor.1) + (1 | abund.factor.2) + (1 | abund.fact
                    abund.cov.1 + abund.cov.2
 det.formula <- ~ 1 
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
-
 out <- NMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
 	    data = data.list,
@@ -2142,20 +1945,11 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -2401,22 +2195,6 @@ abund.formula <- ~ (1 | abund.factor.1) + (1 | abund.factor.2) + (1 | abund.fact
                    abund.cov.1 + abund.cov.2
 det.formula <- ~ det.cov.1
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
-
 out <- NMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
 	    data = data.list,
@@ -2432,20 +2210,11 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -2689,21 +2458,6 @@ n.chains <- 2
 abund.formula <- ~ 1
 det.formula <- ~ (1 | det.factor.1) 
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
 
 out <- NMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
@@ -2720,20 +2474,11 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -2976,21 +2721,6 @@ n.chains <- 2
 abund.formula <- ~ 1
 det.formula <- ~ (1 | det.factor.1) + (1 | det.factor.2)
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
 
 out <- NMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
@@ -3007,20 +2737,11 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -3264,21 +2985,6 @@ n.chains <- 2
 abund.formula <- ~ 1
 det.formula <- ~ det.cov.1 + (1 | det.factor.1) + (1 | det.factor.2)
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
 
 out <- NMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
@@ -3295,20 +3001,11 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -3552,21 +3249,6 @@ n.chains <- 2
 abund.formula <- ~ abund.cov.1 + abund.cov.2
 det.formula <- ~ det.cov.1 + (1 | det.factor.1) + (1 | det.factor.2)
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
 
 out <- NMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
@@ -3583,20 +3265,11 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -3843,21 +3516,6 @@ n.chains <- 2
 abund.formula <- ~ abund.cov.1 + abund.cov.2 + (1 | abund.factor.1) + (1 | abund.factor.2)
 det.formula <- ~ det.cov.1 + (1 | det.factor.1) + (1 | det.factor.2)
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
 
 out <- NMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
@@ -3874,20 +3532,11 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------
@@ -4136,21 +3785,6 @@ n.chains <- 2
 abund.formula <- ~ abund.cov.1 + abund.cov.2 + (1 | abund.factor.1) + (abund.cov.1 | abund.factor.2)
 det.formula <- ~ det.cov.1 + (1 | det.factor.1) + (det.cov.1 | det.factor.2)
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
 
 out <- NMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
@@ -4167,20 +3801,11 @@ out <- NMix(abund.formula = abund.formula,
 	    n.report = 50,
 	    n.burn = n.burn,
 	    n.thin = n.thin,
-	    n.chains = n.chains,
-            k.fold = 2,
-            k.fold.threads = 1)
+	    n.chains = n.chains)
 
 # Test to make sure it worked ---------
 test_that("out is of class NMix", {
   expect_s3_class(out, "NMix")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), 1)
-  expect_type(out$rmspe, "double")
-  expect_gt(out$rmspe, 0)
 })
 
 # Check random effects ----------------

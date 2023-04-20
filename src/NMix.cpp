@@ -709,7 +709,7 @@ extern "C" {
     }
     if (family == 1) {
       if ((pDetRE > 0) || (pAbundRE > 0)) {
-        tmp_02 = tmp_0 + 1;
+        tmp_02 = tmp_0 + 2;
       } else {
         tmp_02 = 5;
       }  

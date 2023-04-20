@@ -64,19 +64,11 @@ out <- msAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1,
-               k.fold = 2,
-               k.fold.threads = 1)
+	       n.chains = 1)
 
 # Test to make sure it worked ---------
 test_that("out is of class msAbund", {
   expect_s3_class(out, "msAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), n.sp)
-  expect_type(out$rmspe, "double")
 })
 
 # Check random effects ----------------
@@ -254,19 +246,11 @@ out <- msAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1,
-               k.fold = 2,
-               k.fold.threads = 1)
+	       n.chains = 1)
 
 # Test to make sure it worked ---------
 test_that("out is of class msAbund", {
   expect_s3_class(out, "msAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), n.sp)
-  expect_type(out$rmspe, "double")
 })
 
 # Check random effects ----------------
@@ -444,19 +428,11 @@ out <- msAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1,
-               k.fold = 2,
-               k.fold.threads = 1)
+	       n.chains = 1)
 
 # Test to make sure it worked ---------
 test_that("out is of class msAbund", {
   expect_s3_class(out, "msAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), n.sp)
-  expect_type(out$rmspe, "double")
 })
 
 # Check random effects ----------------
@@ -636,19 +612,11 @@ out <- msAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1,
-               k.fold = 2,
-               k.fold.threads = 1)
+	       n.chains = 1)
 
 # Test to make sure it worked ---------
 test_that("out is of class msAbund", {
   expect_s3_class(out, "msAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), n.sp)
-  expect_type(out$rmspe, "double")
 })
 
 # Check random effects ----------------
@@ -814,21 +782,6 @@ n.thin <- 2
 n.chains <- 1
 formula <- ~ (1 | factor.1)
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-tuning <- tuning.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
 
 out <- msAbund(formula = formula,
 	       data = data.list,
@@ -844,19 +797,11 @@ out <- msAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1,
-               k.fold = 2,
-               k.fold.threads = 1)
+	       n.chains = 1)
 
 # Test to make sure it worked ---------
 test_that("out is of class msAbund", {
   expect_s3_class(out, "msAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), n.sp)
-  expect_type(out$rmspe, "double")
 })
 
 # Check random effects ----------------
@@ -1060,21 +1005,6 @@ n.thin <- 2
 n.chains <- 1
 formula <- ~ (1 | factor.1) + (1 | factor.2)
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-tuning <- tuning.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
 
 out <- msAbund(formula = formula,
 	       data = data.list,
@@ -1090,19 +1020,11 @@ out <- msAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1,
-               k.fold = 2,
-               k.fold.threads = 1)
+	       n.chains = 1)
 
 # Test to make sure it worked ---------
 test_that("out is of class msAbund", {
   expect_s3_class(out, "msAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), n.sp)
-  expect_type(out$rmspe, "double")
 })
 
 # Check random effects ----------------
@@ -1308,20 +1230,6 @@ n.thin <- 2
 n.chains <- 1
 formula <- ~ cov.1 + (1 | factor.1) + (cov.1 | factor.2)
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-tuning <- tuning.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
 
 out <- msAbund(formula = formula,
 	       data = data.list,
@@ -1337,19 +1245,11 @@ out <- msAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1,
-               k.fold = 2,
-               k.fold.threads = 1)
+	       n.chains = 1)
 
 # Test to make sure it worked ---------
 test_that("out is of class msAbund", {
   expect_s3_class(out, "msAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), n.sp)
-  expect_type(out$rmspe, "double")
 })
 
 # Check random effects ----------------
@@ -1555,21 +1455,6 @@ n.thin <- 2
 n.chains <- 1
 formula <- ~ cov.1 + (1 | factor.1) + (cov.1 | factor.2) + (cov.1 | factor.1)
 
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-tuning <- tuning.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-n.report = 50
-k.fold = 3
-k.fold.threads = 3
-k.fold.seed <- 100
-k.fold.only <- FALSE
-
 out <- msAbund(formula = formula,
 	       data = data.list,
 	       n.batch = n.batch,
@@ -1584,19 +1469,11 @@ out <- msAbund(formula = formula,
 	       n.report = 10,
 	       n.burn = n.burn,
 	       n.thin = n.thin,
-	       n.chains = 1,
-               k.fold = 2,
-               k.fold.threads = 1)
+	       n.chains = 1)
 
 # Test to make sure it worked ---------
 test_that("out is of class msAbund", {
   expect_s3_class(out, "msAbund")
-})
-
-# Check cross-validation --------------
-test_that("cross-validation works", {
-  expect_equal(length(out$rmspe), n.sp)
-  expect_type(out$rmspe, "double")
 })
 
 # Check random effects ----------------

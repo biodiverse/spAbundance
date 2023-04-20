@@ -261,4 +261,20 @@ extern "C" {
                  SEXP muSamples_r, SEXP pSamples_r, SEXP NMax_r, SEXP KMax_r, 
 		 SEXP yMax_r);
 
+  SEXP svcAbundNNGP(SEXP y_r, SEXP X_r, SEXP Xw_r, SEXP coords_r, SEXP XRE_r, SEXP XRandom_r,
+               SEXP consts_r, SEXP nRELong_r, SEXP m_r, SEXP nnIndx_r, 
+               SEXP nnIndxLU_r, SEXP uIndx_r, SEXP uIndxLU_r, SEXP uiIndx_r,
+               SEXP betaStarting_r, SEXP tauSqStarting_r, SEXP sigmaSqPsiStarting_r,
+               SEXP betaStarStarting_r,  
+               SEXP wStarting_r, SEXP phiStarting_r, 
+               SEXP sigmaSqStarting_r, SEXP nuStarting_r, 
+               SEXP betaStarIndx_r, SEXP betaLevelIndx_r, 
+               SEXP muBeta_r, SEXP SigmaBeta_r, 
+	       SEXP tauSqA_r, SEXP tauSqB_r, SEXP phiA_r, SEXP phiB_r, 
+               SEXP sigmaSqA_r, SEXP sigmaSqB_r, SEXP nuA_r, SEXP nuB_r, 
+               SEXP sigmaSqPsiA_r, SEXP sigmaSqPsiB_r, 
+               SEXP tuning_r, SEXP covModel_r, SEXP nBatch_r, 
+               SEXP batchLength_r, SEXP acceptRate_r, SEXP nThreads_r, SEXP verbose_r, 
+               SEXP nReport_r, SEXP samplesInfo_r, SEXP chainInfo_r);
+
 }

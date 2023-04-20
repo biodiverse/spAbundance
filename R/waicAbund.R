@@ -19,11 +19,11 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
 			     'msAbund', 'lfMsAbund', 
 			     'sfMsAbund', 'msNMix', 
 			     'lfMsNMix', 'sfMsNMix', 'DS', 'spDS', 
-			     'msDS', 'lfMsDS', 'sfMsDS'))) {
-    stop("error: object must be one of the following classes: abund, spAbund, NMix, spNMix, msAbund, lfMsAbund, sfMsAbund, msNMix, lfMsNMix, sfMsNMix, DS, spDS, msDS, lfMsDS, sfMsDS\n")
+			     'msDS', 'lfMsDS', 'sfMsDS', 'svcAbund'))) {
+    stop("error: object must be one of the following classes: abund, spAbund, NMix, spNMix, msAbund, lfMsAbund, sfMsAbund, msNMix, lfMsNMix, sfMsNMix, DS, spDS, msDS, lfMsDS, sfMsDS, svcAbund\n")
   }
 
-  if (!(class(object) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund', 'sfMsAbund'))) {
+  if (!(class(object) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund', 'sfMsAbund', 'svcAbund'))) {
     if (missing(N.max)) {
       message("N.max not specified. Setting upper index of integration of N to 10 plus\nthe largest estimated abundance value at each site in object$N.samples")
       if (class(object) %in% c('msNMix', 'lfMsNMix', 'sfMsNMix', 
@@ -69,9 +69,15 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
   logit.inv <- function(z, a = 0, b = 1) {b-(b-a)/(1+exp(z))}
 
   # Single-species abundance GLMs -----------------------------------------
-  if (class(object) %in% c('abund', 'spAbund')) {
-    elpd <- sum(apply(object$like.samples, c(2, 3), function(a) log(mean(a))), na.rm = TRUE)
-    pD <- sum(apply(object$like.samples, c(2, 3), function(a) var(log(a))), na.rm = TRUE)
+  if (class(object) %in% c('abund', 'spAbund', 'svcAbund')) {
+    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+      elpd <- sum(apply(object$like.samples, c(2), function(a) log(mean(a))), na.rm = TRUE)
+      pD <- sum(apply(object$like.samples, c(2), function(a) var(log(a))), na.rm = TRUE)
+    }
+    if (object$dist %in% c('Poisson', 'NB')) {
+      elpd <- sum(apply(object$like.samples, c(2, 3), function(a) log(mean(a))), na.rm = TRUE)
+      pD <- sum(apply(object$like.samples, c(2, 3), function(a) var(log(a))), na.rm = TRUE)
+    }
     out <- c(elpd, pD, -2 * (elpd - pD))
     names(out) <- c("elpd", "pD", "WAIC")
   }

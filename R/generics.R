@@ -338,7 +338,12 @@ summary.spAbund <- function(object,
   cat(paste("Run Time (min): ", round(run.time, digits), "\n\n", sep = ""))
 
   # Abundance
-  cat("Abundance (log scale): \n")
+  if (object$dist %in% c('Poisson', 'NB')) {
+    cat("Abundance (log scale): \n")
+  }
+  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+    cat("Abundance: \n")
+  }
   tmp.1 <- t(apply(object$beta.samples, 2,
 		   function(x) c(mean(x), sd(x))))
   colnames(tmp.1) <- c("Mean", "SD")
@@ -350,7 +355,12 @@ summary.spAbund <- function(object,
   print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
   if (object$muRE) {
     cat("\n")
-    cat("Abundance Random Effect Variances (log scale): \n")
+    if (object$dist %in% c('Poisson', 'NB')) {
+      cat("Abundance Random Effect Variances (log scale): \n")
+    }
+    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+      cat("Abundance Random Effect Variances: \n")
+    }
     tmp.1 <- t(apply(object$sigma.sq.mu.samples, 2,
           	   function(x) c(mean(x), sd(x))))
     colnames(tmp.1) <- c("Mean", "SD")
@@ -382,6 +392,20 @@ summary.spAbund <- function(object,
     tmp <- t(apply(object$kappa.samples, 2,
           	 function(x) quantile(x, prob = quantiles)))
     diags <- matrix(c(object$rhat$kappa, round(object$ESS$kappa, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+  }
+  
+  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+    cat("\n")
+    cat("Residual variance: \n")
+    tmp.1 <- t(apply(object$tau.sq.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$tau.sq.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$tau.sq, round(object$ESS$tau.sq, 0)), ncol = 2)
     colnames(diags) <- c('Rhat', 'ESS')
 
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
@@ -4091,4 +4115,21 @@ predict.sfMsDS <- function(object, X.0, coords.0, n.omp.threads = 1,
   }
   class(out) <- 'predict.sfMsDS'
   return(out)
+}
+
+# svcAbund --------------------------------------------------------------------
+print.svcAbund <- function(x, ...) {
+  cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)),
+      "", sep = "\n")
+}
+
+fitted.svcAbund <- function(object, ...) {
+  return(object$y.rep.samples)
+}
+
+summary.svcAbund <- function(object,
+			    quantiles = c(0.025, 0.5, 0.975),
+			    digits = max(3L, getOption("digits") - 3L), ...) {
+  summary.spAbund(object, quantiles, digits)
+
 }

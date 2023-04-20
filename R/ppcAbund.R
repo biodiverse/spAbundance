@@ -264,12 +264,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
         fit.big.y <- array(NA, dim = c(J, max(K), n.samples))
         for (i in 1:n.samples) {
 	  for (j in 1:J) {
-            if (object$dist == 'NB') {
-              E <- mu.samples[i, j, 1:K[j]] * object$epsilon.samples[i, j, 1:K[j]]
-	    }
-	    if (object$dist == 'Poisson') {
-              E <- mu.samples[i, j, 1:K[j]]
-	    }
+            E <- mu.samples[i, j, 1:K[j]]
 	    fit.big.y.rep[j, 1:K[j], i] <- (y.rep.samples[i, j, 1:K[j]] - E)^2 / (E + e)
 	    fit.big.y[j, 1:K[j], i] <- (y[j, 1:K[j]] - E)^2 / (E + e)
 	  } # j
@@ -281,12 +276,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
         fit.big.y <- array(NA, dim = c(J, max(K), n.samples))
         for (i in 1:n.samples) {
 	  for (j in 1:J) {
-            if (object$dist == 'NB') {
-              E <- mu.samples[i, j, 1:K[j]] * object$epsilon.samples[i, j, 1:K[j]]
-	    }
-	    if (object$dist == 'Poisson') {
-              E <- mu.samples[i, j, 1:K[j]]
-	    }
+            E <- mu.samples[i, j, 1:K[j]]
 	    fit.big.y.rep[j, 1:K[j], i] <- (sqrt(y.rep.samples[i, j, 1:K[j]]) - sqrt(E))^2
 	    fit.big.y[j, 1:K[j], i] <- (sqrt(y[j, 1:K[j]]) - sqrt(E))^2
 	  } # j
@@ -332,12 +322,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
         if (fit.stat %in% c('chi-squared', 'chi-square')) {
           for (t in 1:n.samples) {
             for (j in 1:J) {
-              if (object$dist == 'NB') {
-                E <- mu.samples[t, i, j, 1:K[j]] * object$epsilon.samples[t, i, j, 1:K[j]]
-	      }
-              if (object$dist == 'Poisson') {
-                E <- mu.samples[t, i, j, 1:K[j]]
-	      }
+              E <- mu.samples[t, i, j, 1:K[j]]
               fit.big.y.rep[i, j, 1:K[j], t] <- (y.rep.samples[t, i, j, 1:K[j]] - E)^2 / (E + e)
               fit.big.y[i, j, 1:K[j], t] <- (y[i, j, 1:K[j]] - E)^2 / (E + e)
             } # j
@@ -347,12 +332,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
         } else if (fit.stat == 'freeman-tukey') {
           for (t in 1:n.samples) {
             for (j in 1:J) {
-              if (object$dist == 'NB') {
-                E <- mu.samples[t, i, j, 1:K[j]] * object$epsilon.samples[t, i, j, 1:K[j]]
-	      }
-              if (object$dist == 'Poisson') {
-                E <- mu.samples[t, i, j, 1:K[j]]
-	      }
+              E <- mu.samples[t, i, j, 1:K[j]]
               fit.big.y.rep[i, j, 1:K[j], t] <- (sqrt(y.rep.samples[t, i, j, 1:K[j]]) - sqrt(E))^2
               fit.big.y[i, j, 1:K[j], t] <- (sqrt(y[i, j, 1:K[j]]) - sqrt(E))^2
             } # j
