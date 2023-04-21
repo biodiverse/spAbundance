@@ -23,6 +23,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"spDSNNGP", (DL_FUNC) &spDSNNGP, 63},
     {"waicAbund", (DL_FUNC) &waicAbund, 13},
     {"svcAbundNNGP", (DL_FUNC) &svcAbundNNGP, 46},
+    {"svcAbundNNGPPredict", (DL_FUNC) &svcAbundNNGPPredict, 25},
     {NULL, NULL, 0}
 };
 

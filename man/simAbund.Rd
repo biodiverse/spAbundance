@@ -7,9 +7,9 @@
 }
 
 \usage{
-simAbund(J.x, J.y, n.rep, beta, kappa, mu.RE = list(), 
-       sp = FALSE, cov.model, sigma.sq, phi, nu, 
-       family = 'Poisson', ...)
+simAbund(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(), 
+       sp = FALSE, svc.cols = 1, cov.model, sigma.sq, phi, nu, 
+       family = 'Poisson', z, ...)
 }
 
 \arguments{
@@ -23,9 +23,16 @@ simAbund(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),
 
 \item{kappa}{a single numeric value containing the dispersion parameter for the abundance portion of the model. Only relevant when \code{family = 'NB'}.}
 
+\item{tau.sq}{a single numeric value containing the residual variance parameter of the Gaussian distribution. Only relevant when \code{family = 'Gaussian'} or \code{family = 'Gaussian-hurdle'}.}
+
 \item{mu.RE}{a list used to specify the non-spatial random intercepts included in the model. The list must have two tags: \code{levels} and \code{sigma.sq.mu}. \code{levels} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the number of levels there are in each intercept. \code{sigma.sq.mu} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the variances for each random effect. A third optional tage is \code{beta.indx}, which is a numeric vector with length equal to the number of distinct random intercepts. The values in \code{beta.indx} denote the intercept/covariate for which you wish to simulate a random intercept/slope. Numeric values correspond to the intercept/covaraite in \code{beta}. If \code{mu.RE} is not specified, no random effects are included in the abundance portion of the model.}
 
 \item{sp}{a logical value indicating whether to simulate a spatially-explicit model with a Gaussian process. By default set to \code{FALSE}.}
+
+\item{svc.cols}{a vector indicating the variables whose effects will be
+  estimated as spatially-varying coefficients. \code{svc.cols} is an
+  integer vector with values indicating the order of covariates specified
+  in the model formula (with 1 being the intercept if specified).}
 
 \item{cov.model}{a quoted keyword that specifies the covariance function used to model the spatial dependence structure among the abundance data.  Supported covariance model key words are: \code{"exponential"}, \code{"matern"}, \code{"spherical"}, and \code{"gaussian"}.}
 
@@ -36,7 +43,10 @@ simAbund(J.x, J.y, n.rep, beta, kappa, mu.RE = list(),
 \item{nu}{a numeric value indicating the spatial smoothness parameter. Only used when \code{sp = TRUE} and \code{cov.model = "matern"}.} 
 
 \item{family}{the distribution to use for the data. Currently
-  supports \code{'NB'} (negative binomial) and \code{'Poisson'}.}
+  supports \code{'NB'} (negative binomial), \code{'Poisson'}, \code{'Gaussian'}, and
+  \code{'Gaussian-hurdle'}.}
+
+\item{z}{a vector of length \code{J} containing the binary presence/absence portion of a Gaussian-hurdle model. Only relevant when \code{family = 'Gaussian-hurdle'}.}
 
 \item{...}{currently no additional arguments}
 }

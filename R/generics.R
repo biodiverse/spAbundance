@@ -4133,3 +4133,253 @@ summary.svcAbund <- function(object,
   summary.spAbund(object, quantiles, digits)
 
 }
+
+predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1, 
+                             verbose = TRUE, n.report = 100, 
+                             ignore.RE = FALSE, z.0.samples, ...) {
+  # Check for unused arguments ------------------------------------------
+  formal.args <- names(formals(sys.function(sys.parent())))
+  elip.args <- names(list(...))
+  for(i in elip.args){
+      if(! i %in% formal.args)
+          warning("'",i, "' is not an argument")
+  }
+  # Call ----------------------------------------------------------------
+  cl <- match.call()
+
+  # Functions ---------------------------------------------------------------
+  logit <- function(theta, a = 0, b = 1) {log((theta-a)/(b-theta))}
+  logit.inv <- function(z, a = 0, b = 1) {b-(b-a)/(1+exp(z))}
+
+  # Some initial checks ---------------------------------------------------
+  if (missing(object)) {
+    stop("error: predict expects object\n")
+  }
+
+  # Check X.0 -------------------------------------------------------------
+  if (missing(X.0)) {
+    stop("error: X.0 must be specified\n")
+  }
+  if (!any(is.data.frame(X.0), is.matrix(X.0))) {
+    stop("error: X.0 must be a data.frame or matrix\n")
+  }
+
+  # Abundance predictions ------------------------------------------------
+  if (missing(coords.0)) {
+    stop("error: coords.0 must be specified\n")
+  }
+  if (!any(is.data.frame(coords.0), is.matrix(coords.0))) {
+    stop("error: coords.0 must be a data.frame or matrix\n")
+  }
+  if (!ncol(coords.0) == 2){
+    stop("error: coords.0 must have two columns\n")
+  }
+  coords.0 <- as.matrix(coords.0)
+  
+  p.abund <- ncol(object$X)
+  p.design <- p.abund
+  X <- object$X
+  svc.cols <- object$svc.cols
+  p.svc <- length(svc.cols)
+  X.w.0 <- X.0[, svc.cols, drop = FALSE]
+  X.w <- object$X.w
+  coords <- object$coords
+  J <- nrow(X)
+  beta.samples <- as.matrix(object$beta.samples)
+  n.post <- object$n.post * object$n.chains
+  family <- object$dist
+  family.c <- ifelse(family == 'Gaussian-hurdle', 1, 0)
+  theta.samples <- object$theta.samples
+  w.samples <- object$w.samples
+  n.neighbors <- object$n.neighbors
+  cov.model.indx <- object$cov.model.indx
+  re.cols <- object$re.cols
+  sp.type <- object$type
+  out <- list()
+  if (object$muRE) {
+    p.abund.re <- length(object$re.level.names)
+  } else {
+    p.abund.re <- 0
+  }
+
+  # Eliminate prediction sites that have already sampled been for now
+  match.indx <- match(do.call("paste", as.data.frame(coords.0)), do.call("paste", as.data.frame(coords)))
+  coords.0.indx <- which(is.na(match.indx))
+  coords.indx <- match.indx[!is.na(match.indx)]
+  coords.place.indx <- which(!is.na(match.indx))
+  # coords.0.new <- coords.0[coords.0.indx, , drop = FALSE]
+  # X.0.new <- X.0[coords.0.indx, , drop = FALSE]
+  # offset.new <- offset.new[coords.0.indx]
+
+  if (object$muRE & !ignore.RE) {
+    beta.star.samples <- object$beta.star.samples
+    re.level.names <- object$re.level.names
+    # Get columns in design matrix with random effects
+    x.re.names <- colnames(object$X.re)
+    x.0.names <- colnames(X.0)
+    re.long.indx <- sapply(re.cols, length)
+    tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
+    indx <- list()
+    for (i in 1:length(tmp)) {
+      indx[[i]] <- rep(tmp[i], re.long.indx[i])
+    }
+    indx <- unlist(indx)
+    if (length(indx) == 0) {
+      stop("error: column names in X.0 must match variable names in data$abund.covs")
+    }
+    n.abund.re <- length(indx)
+    n.unique.abund.re <- length(unique(indx))
+    # Check RE columns
+    for (i in 1:n.abund.re) {
+      if (is.character(re.cols[[i]])) {
+        # Check if all column names in svc are in occ.covs
+        if (!all(re.cols[[i]] %in% x.0.names)) {
+            missing.cols <- re.cols[[i]][!(re.cols[[i]] %in% x.0.names)]
+            stop(paste("error: variable name ", paste(missing.cols, collapse=" and "), " not in abundance covariates", sep=""))
+        }
+        # Convert desired column names into the numeric column index
+        re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
+        
+      } else if (is.numeric(re.cols[[i]])) {
+        # Check if all column indices are in 1:p.abund
+        if (!all(re.cols %in% 1:p.abund)) {
+            missing.cols <- re.cols[[i]][!(re.cols[[i]] %in% (1:p.abund))]
+            stop(paste("error: column index ", paste(missing.cols, collapse=" "), " not in design matrix columns", sep=""))
+        }
+      }
+    }
+    re.cols <- unlist(re.cols)
+    X.re <- as.matrix(X.0[, indx, drop = FALSE])
+    X.fix <- as.matrix(X.0[, -indx, drop = FALSE])
+    X.random <- as.matrix(X.0[, re.cols, drop = FALSE])
+    n.abund.re <- length(unlist(re.level.names))
+    X.re.ind <- matrix(NA, nrow(X.re), p.abund.re)
+    for (i in 1:p.abund.re) {
+      for (j in 1:nrow(X.re)) {
+        tmp <- which(re.level.names[[i]] == X.re[j, i])
+        if (length(tmp) > 0) {
+          X.re.ind[j, i] <- tmp 
+        }
+      }
+    }
+    if (p.abund.re > 1) {
+      for (j in 2:p.abund.re) {
+        X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+      }
+    }
+    # Create the random effects corresponding to each 
+    # new location
+    # ORDER: ordered by site, then species within site.
+    beta.star.sites.0.samples <- matrix(0, n.post,  nrow(X.re))
+    for (t in 1:p.abund.re) {
+      for (j in 1:nrow(X.re)) {
+        if (!is.na(X.re.ind[j, t])) {
+          beta.star.sites.0.samples[, j] <- 
+            beta.star.samples[, X.re.ind[j, t]] * X.random[j, t] + 
+            beta.star.sites.0.samples[, j]
+        } else {
+          beta.star.sites.0.samples[, j] <- 
+            rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+            beta.star.sites.0.samples[, j]
+        }
+      } # j
+    } # t
+  } else {
+    X.fix <- X.0
+    beta.star.sites.0.samples <- matrix(0, n.post, nrow(X.0))
+    p.abund.re <- 0
+  }
+  # Get samples in proper format for C++
+  beta.samples <- t(beta.samples)
+  w.samples <- matrix(w.samples, n.post, J * p.svc)
+  # Order: iteration, site within iteration, svc within site. 
+  # Example: site 1, svc 1, iter 1, site 1, svc 2, iter 1, ..., site 2, svc 1, iter 1
+  w.samples <- t(w.samples)
+  beta.star.sites.0.samples <- t(beta.star.sites.0.samples)
+  if (family %in% c('Gaussian', 'Gaussian-hurdle')) {
+    tau.sq.samples <- t(object$tau.sq.samples)
+  } else {
+    tau.sq.samples <- matrix(0, 1, n.post)
+  }
+  theta.samples <- t(theta.samples)
+
+  sites.0.indx <- 0:(nrow(X.0) - 1)
+  J.0 <- length(unique(sites.0.indx))
+  sites.0.sampled <- ifelse(!is.na(match.indx), 1, 0)
+  sites.link <- rep(NA, J.0)
+  sites.link[which(!is.na(match.indx))] <- coords.indx
+  # For C
+  sites.link <- sites.link - 1
+
+  # Check stage 1 samples
+  if (family == 'Gaussian-hurdle') {
+    if (missing(z.0.samples)) {
+      stop("z.0.samples must be supplied for a Gaussian-hurdle model")
+    }
+    if (!is.matrix(z.0.samples)) {
+      stop(paste("z.0.samples must be a matrix with ", n.post, " rows and ", 
+		 J.0, " columns.", sep = ''))
+    }
+    if (nrow(z.0.samples) != n.post | ncol(z.0.samples) != J.0) {
+      stop(paste("z.0.samples must be a matrix with ", n.post, " rows and ", 
+		 J.0, " columns.", sep = ''))
+    }
+  } else {
+    if (!missing(z.0.samples)) {
+      message("z.0.samples is ignored for the current model family\n")
+    }
+    z.0.samples <- NA
+  }
+  z.0.samples <- t(z.0.samples)
+
+  if (sp.type == 'GP') {
+    stop("NNGP = FALSE is not currently supported for svcAbund")
+  } else {
+    # Get nearest neighbors
+    # nn2 is a function from RANN.
+    nn.indx.0 <- nn2(coords, coords.0, k=n.neighbors)$nn.idx-1
+
+    storage.mode(coords) <- "double"
+    storage.mode(J) <- "integer"
+    storage.mode(p.abund) <- "integer"
+    storage.mode(p.svc) <- 'integer'
+    storage.mode(n.neighbors) <- "integer"
+    storage.mode(X.fix) <- "double"
+    storage.mode(X.w.0) <- 'double'
+    storage.mode(coords.0) <- "double"
+    storage.mode(J.0) <- "integer"
+    storage.mode(sites.link) <- "integer"
+    storage.mode(sites.0.sampled) <- 'integer'
+    storage.mode(sites.0.indx) <- 'integer'
+    storage.mode(beta.samples) <- "double"
+    storage.mode(theta.samples) <- "double"
+    storage.mode(tau.sq.samples) <- "double"
+    storage.mode(family.c) <- "integer"
+    storage.mode(w.samples) <- "double"
+    storage.mode(beta.star.sites.0.samples) <- "double"
+    storage.mode(n.post) <- "integer"
+    storage.mode(cov.model.indx) <- "integer"
+    storage.mode(nn.indx.0) <- "integer"
+    storage.mode(n.omp.threads) <- "integer"
+    storage.mode(verbose) <- "integer"
+    storage.mode(n.report) <- "integer"
+    storage.mode(z.0.samples) <- "double"
+
+    ptm <- proc.time()
+
+    out <- .Call("svcAbundNNGPPredict", coords, J, family.c, p.abund, p.svc, n.neighbors,
+                 X.fix, X.w.0, coords.0, J.0, nn.indx.0, beta.samples,
+                 theta.samples, tau.sq.samples, w.samples, beta.star.sites.0.samples,
+      	         sites.link, sites.0.sampled, sites.0.indx,
+        	 n.post, cov.model.indx, n.omp.threads, verbose, n.report, z.0.samples)
+  }
+  out$y.0.samples <- mcmc(t(out$y.0.samples))
+  out$mu.0.samples <- mcmc(t(out$mu.0.samples))
+  out$w.0.samples <- array(out$w.0.samples, dim = c(p.svc, J.0, n.post))
+  out$w.0.samples <- aperm(out$w.0.samples, c(3, 1, 2))
+  out$call <- cl
+
+  class(out) <- "predict.spNMix"
+  out
+
+}

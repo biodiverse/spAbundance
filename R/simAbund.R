@@ -238,7 +238,8 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
         y[j, k] <- rnorm(1, mu[j, k], sqrt(tau.sq))
       }
       if (family == 'Gaussian-hurdle') {
-        y[j, k] <- rnorm(1, mu[j, k], sqrt(tau.sq)) * z[j]
+        mu[j, k] <- mu[j, k] * z[j]
+        y[j, k] <- rnorm(1, mu[j, k], sqrt(tau.sq))
       }
     } # k
   } # j

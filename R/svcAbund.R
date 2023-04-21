@@ -681,6 +681,17 @@ svcAbund <- function(formula, data, inits, priors, tuning,
     ui.indx <- indx$ui.indx
     u.indx.run.time <- indx$run.time
 
+    # Other miscellaneous ---------------------------------------------------
+    # For prediction with random slopes
+    re.cols <- list()
+    if (p.re > 0) {
+      split.names <- strsplit(x.re.names, "[-]")
+      for (j in 1:p.re) {
+        re.cols[[j]] <- split.names[[j]][1]
+        names(re.cols)[j] <- split.names[[j]][2]
+      }
+    }
+
     # Set storage for all variables ---------------------------------------
     storage.mode(y) <- "double"
     storage.mode(X) <- "double"
@@ -889,6 +900,7 @@ svcAbund <- function(formula, data, inits, priors, tuning,
     out$n.thin <- n.thin
     out$n.burn <- n.burn
     out$n.chains <- n.chains
+    out$re.cols <- re.cols
     out$dist <- family
     if (p.re > 0) {
       out$muRE <- TRUE
