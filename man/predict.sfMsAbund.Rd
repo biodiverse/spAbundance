@@ -8,7 +8,8 @@
 
 \usage{
 \method{predict}{sfMsAbund}(object, X.0, coords.0, n.omp.threads = 1, 
-                            verbose = TRUE, n.report = 100, ignore.RE = FALSE, ...)
+                            verbose = TRUE, n.report = 100, ignore.RE = FALSE, 
+			    z.0.samples, ...)
 }
 
 \arguments{
@@ -18,7 +19,7 @@
   \item{X.0}{the design matrix of covariates at the prediction locations. This can be either a two-dimensional matrix with rows corresponding to sites and columns corresponding to covariates, or can be a three-dimensional array, with dimensions corresponding to site, replicate, and covariate, respectively. Note that the first covariate should consist of all 1s for the intercept if an intercept is included in the model. If random effects are included in the the model, the levels of the random effects at the new locations/time periods should be included as an element of the three-dimensional array. The ordering of the levels should match the ordering used to fit the data in \code{sfMsAbund}. The covariates should be organized in the same order as they were specified in the corresponding formula argument of \code{sfMsAbund}. Names of the third dimension (covariates) of any random effects in X.0 must match the name of the random effects used to fit the model, if specified in the corresponding formula argument of \code{sfMsAbund}. See example below.}
 
   \item{coords.0}{the spatial coordinates corresponding to \code{X.0}. 
-    Note that \code{spOccupancy} assumes coordinates are specified 
+    Note that \code{spAbundance} assumes coordinates are specified 
     in a projected coordinate system.}
 
    \item{n.omp.threads}{a positive integer indicating
@@ -35,6 +36,8 @@
 
   \item{ignore.RE}{logical value that specifies whether or not to remove unstructured random effects from the subsequent predictions. If \code{TRUE}, unstructured random effects will be included. If \code{FALSE}, unstructured random effects will be set to 0 and predictions will only be generated from the fixed effects.}
 
+  \item{z.0.samples}{a three-dimensional array with dimensions corresponding to MCMC samples, species, and prediction locations. The array contains the full posterior samples of the predicted binary portion of a Gaussian hurdle model. In the context of abundance models, this typically corresponds to estimates of the presence or absence of each species at the location. When using \code{spOccupancy} to generate the first stage samples of the Gaussian-hurdle model, this is the object contained in the \code{z.0.samples} object of the predition function for the spOccupancy object. Ignored for all model types other than Gaussian-hurdle.}
+
   \item{...}{currently no additional arguments}
 }
 
@@ -50,11 +53,11 @@
 \value{
   A list object of class \code{predict.sfMsAbund}. The list consists of: 
 
-  \item{mu.0.samples}{a four-dimensional object of posterior predictive samples for the
+  \item{mu.0.samples}{a three or four-dimensional object of posterior predictive samples for the
     expected abundance values with dimensions corresponding to posterior predictive
     sample, species, site, and replicate.}
 
-  \item{y.0.samples}{a four-dimensional object of posterior predictive samples for the
+  \item{y.0.samples}{a three or four-dimensional object of posterior predictive samples for the
     abundance values with dimensions corresponding to posterior predictive sample, species, site, 
     and replicate.}
 

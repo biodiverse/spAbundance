@@ -9,7 +9,7 @@
 \usage{
 \method{predict}{spAbund}(object, X.0, coords.0, n.omp.threads = 1, 
                           verbose = TRUE, n.report = 100, 
-                          ignore.RE = FALSE, ...)
+                          ignore.RE = FALSE, z.0.samples, ...)
 }
 
 \arguments{
@@ -34,6 +34,8 @@
   \item{n.report}{the interval to report sampling progress.}
 
   \item{ignore.RE}{logical value that specifies whether or not to remove unstructured random effects from the subsequent predictions. If \code{TRUE}, unstructured random effects will be included. If \code{FALSE}, unstructured random effects will be set to 0 and predictions will only be generated from the fixed effects.}
+
+  \item{z.0.samples}{a matrix with rows corresponding to MCMC samples and columns corresponding to prediction locations containing the full posterior samples of the predicted binary portion of a Gaussian hurdle model. In the context of abundance models, this typically corresponds to estimates of the presence or absence of the species at the location. When using \code{spOccupancy} to generate the first stage samples of the Gaussian-hurdle model, this is the object contained in the \code{z.0.samples} object of the predition function for the spOccupancy object. Ignored for all model types other than Gaussian-hurdle.}
 
   \item{...}{currently no additional arguments}
 }

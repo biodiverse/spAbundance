@@ -7,7 +7,7 @@
 }
 
 \usage{
-\method{predict}{lfMsAbund}(object, X.0, coords.0, ignore.RE = FALSE, ...)
+\method{predict}{lfMsAbund}(object, X.0, coords.0, ignore.RE = FALSE, z.0.samples, ...)
 }
 
 \arguments{
@@ -21,6 +21,8 @@
     in a projected coordinate system.}
 
   \item{ignore.RE}{logical value that specifies whether or not to remove unstructured random effects from the subsequent predictions. If \code{TRUE}, unstructured random effects will be included. If \code{FALSE}, unstructured random effects will be set to 0 and predictions will only be generated from the fixed effects.}
+
+  \item{z.0.samples}{a three-dimensional array with dimensions corresponding to MCMC samples, species, and prediction locations. The array contains the full posterior samples of the predicted binary portion of a Gaussian hurdle model. In the context of abundance models, this typically corresponds to estimates of the presence or absence of each species at the location. When using \code{spOccupancy} to generate the first stage samples of the Gaussian-hurdle model, this is the object contained in the \code{z.0.samples} object of the predition function for the spOccupancy object. Ignored for all model types other than Gaussian-hurdle.}
 
   \item{...}{currently no additional arguments}
 }
@@ -36,11 +38,11 @@
 \value{
   A list object of class \code{predict.lfMsAbund}. The list consists of: 
 
-  \item{mu.0.samples}{a four-dimensional object of posterior predictive samples for the
+  \item{mu.0.samples}{a three or four-dimensional object of posterior predictive samples for the
     expected abundance values with dimensions corresponding to posterior predictive
     sample, species, site, and replicate.}
 
-  \item{y.0.samples}{a four-dimensional object of posterior predictive samples for the
+  \item{y.0.samples}{a three or four-dimensional object of posterior predictive samples for the
     abundance values with dimensions corresponding to posterior predictive sample, species, site, 
     and replicate.}
 

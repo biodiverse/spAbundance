@@ -1,15 +1,5 @@
 comment: false
 
-language: R
-
-sudo: false
-
-cache: packages
-
-after_success:
-
-- Rscript -e 'covr::codecov()'
-
 coverage:
   status:
     project:
@@ -22,5 +12,3 @@ coverage:
         target: auto
         threshold: 1%
         informational: true
-codecov:
-  token: b58221c9-b683-4248-b284-2c75cb167c76

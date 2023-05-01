@@ -39,14 +39,17 @@ spAbund(formula, data, inits, priors, tuning,
     and number of columns equal to the maximum number of replicate observations at a 
     given site. \code{coords} is a \eqn{J \times 2}{J x 2} matrix of the observation coordinates. 
     Note that \code{spAbundance} assumes coordinates are specified 
-    in a projected coordinate system.}
+    in a projected coordinate system. For Gaussian hurdle models, the tag \code{z} is
+    used to specify the binary component of the hurdle model and should have the same
+    length as \code{y}.}
   
   \item{inits}{a list with each tag corresponding to a parameter name.
     Valid tags are \code{beta}, \code{sigma.sq}, 
-    \code{phi}, \code{w}, \code{nu}, \code{kappa}, \code{sigma.sq.mu}. 
+    \code{phi}, \code{w}, \code{nu}, \code{kappa}, \code{sigma.sq.mu}, \code{tau.sq}. 
     \code{nu} is only specified if \code{cov.model = "matern"}, \code{sigma.sq.mu}
     is only specified if there are random effects in \code{formula}, and
     \code{kappa} is only specified when \code{family = 'NB'}. 
+    \code{tau.sq} is only specified when \code{family = 'Gaussian'} or \code{family = 'Gaussian-hurdle'}.
     The value portion of each tag is the parameter's initial value. See \code{priors}
     description for definition of each parameter name.
     Additionally, the tag \code{fix} can be set to \code{TRUE} 
@@ -56,7 +59,7 @@ spAbund(formula, data, inits, priors, tuning,
   \item{priors}{a list with each tag corresponding to a parameter name. 
     Valid tags are \code{beta.normal}, \code{phi.unif}, 
     \code{sigma.sq.ig}, \code{nu.unif}, \code{kappa.unif},
-    \code{sigma.sq.mu.ig}. Abundance (\code{beta}) regression coefficients 
+    \code{sigma.sq.mu.ig}, \code{tau.sq.ig}. Abundance (\code{beta}) regression coefficients 
     are assumed to follow a normal distribution. The hyperparameters of the 
     normal distribution are passed as a list of length two with the first
     and second elements corresponding to the mean and variance of the normal
@@ -80,7 +83,11 @@ spAbund(formula, data, inits, priors, tuning,
     first and second elements corresponding to the shape and scale parameters, 
     respectively, which are each specified as vectors of length equal to the 
     number of random effects or of length one if priors are the same for all
-    random effect variances.}
+    random effect variances. \code{tau.sq} is the residual variance 
+    for Gaussian (or Gaussian hurdle) models, and it is assigned 
+    an inverse-Gamma prior. The hyperparameters of the inverse-Gamma are passed as a vector
+    of length two, with the first and second element corresponding to the shape and 
+    scale parameters, respectively.}
  
   \item{cov.model}{a quoted keyword that specifies the covariance
     function used to model the spatial dependence structure among the
@@ -90,8 +97,10 @@ spAbund(formula, data, inits, priors, tuning,
 
   \item{tuning}{a single numeric value representing the initial variance of the
   adaptive sampler for \code{beta}, \code{alpha}, \code{beta.star} (the abundance 
-  random effect values), \code{alpha.star} (the detection random effect values),
-  \code{kappa}, \code{phi}, and \code{nu}. See Roberts and Rosenthal (2009) for details.}
+  random effect values), \code{kappa}, \code{phi}, 
+  and \code{nu}. See Roberts and Rosenthal (2009) for details. Note that only \code{phi} 
+  and \code{nu} are the only parameters that require tuning for a Gaussian or 
+  Gaussian hurdle model.}
 
   \item{NNGP}{if \code{TRUE}, model is fit with an NNGP. See Datta et al. (2016) and 
     Finley et al. (2019) for more information. Currently only NNGP is supported,
@@ -125,9 +134,10 @@ spAbund(formula, data, inits, priors, tuning,
   \item{accept.rate}{target acceptance rate for Adaptive MCMC. Default is 
     0.43. See Roberts and Rosenthal (2009) for details.}
 
-  \item{family}{the distribution to use for abundance. Currently 
-    supports \code{'NB'} (negative binomial) and \code{'Poisson'}.}
-  
+  \item{family}{the distribution to use for the latent abundance process. Currently 
+    supports \code{'NB'} (negative binomial), \code{'Poisson'}, \code{'Gaussian'}, 
+    and \code{'Gaussian-hurdle'}.} 
+
   \item{n.omp.threads}{a positive integer indicating
    the number of threads to use for SMP parallel processing. The package must
    be compiled for OpenMP support. For most Intel-based machines, we
@@ -190,11 +200,15 @@ spAbund(formula, data, inits, priors, tuning,
     for the abundance dispersion parameter. Only included when
     \code{family = 'NB'}.}
 
-  \item{y.rep.samples}{a three-dimensional object of posterior samples 
+  \item{tau.sq.samples}{a \code{coda} object of posterior samples
+    for the Gaussian residual variance parameter. Only included when
+    \code{family = 'Gaussian'} or \code{family = 'Gaussian-hurdle'}.}
+
+  \item{y.rep.samples}{a two or three-dimensional object of posterior samples 
     for the abundance replicate (fitted) values with dimensions 
     corresponding to MCMC samples, site, and replicate.}
 
-  \item{mu.samples}{a three-dimensional array of posterior samples
+  \item{mu.samples}{a two or -three-dimensional array of posterior samples
     for the expected abundance samples with dimensions corresponding 
     to MCMC samples, site, and replicate.}
 

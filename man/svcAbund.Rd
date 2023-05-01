@@ -13,7 +13,7 @@ svcAbund(formula, data, inits, priors, tuning,
        batch.length, accept.rate = 0.43, family = 'Gaussian',
        n.omp.threads = 1, verbose = TRUE, n.report = 100, 
         n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
-       n.chains = 1, stage.1.like, ...)
+       n.chains = 1, ...)
 }
 
 \arguments{
@@ -27,8 +27,8 @@ svcAbund(formula, data, inits, priors, tuning,
     Valid tags are \code{y}, \code{covs}, \code{coords}, and \code{z} (for 
     \code{family = 'Gaussian-hurdle'} only. \code{y}
     is a vector of the observed count values, where the values 
-    represent the observed values at each site. \code{covs} is a matrix or data
-    frame of covariates used in the model, where each column represents a 
+    represent the observed values at each site. \code{covs} is a list, matrix, or data
+    frame of covariates used in the model, where each column (or list element) represents a 
     different covariate. \code{coords} is a \eqn{J \times 2}{J x 2} matrix of the observation coordinates.
     Note that \code{svcAbundance} assumes coordinates are specified 
     in a projected coordinate system. \code{z} is used for fitting a two-stage
@@ -77,7 +77,16 @@ svcAbund(formula, data, inits, priors, tuning,
     respectively, which are each specified as vectors of length equal to the 
     number of random effects or of length one if priors are the same for all
     random effect variances.}
- 
+
+  \item{svc.cols}{a vector indicating the variables whose effects will be
+    estimated as spatially-varying coefficients. \code{svc.cols} can be an
+    integer vector with values indicating the order of covariates specified
+    in the model formula (with 1 being the intercept if specified), or it can
+    be specified as a character vector with names corresponding to variable
+    names in \code{occ.covs} (for the intercept, use '(Intercept)'). \code{svc.cols}
+    default argument of 1 results in a spatial occupancy model analogous to
+    \code{spAbund} (assuming an intercept is included in the model).}
+
   \item{cov.model}{a quoted keyword that specifies the covariance
     function used to model the spatial dependence structure among the
     observations.  Supported covariance model key words are:
@@ -146,11 +155,6 @@ svcAbund(formula, data, inits, priors, tuning,
     value is set to 1.}
 
   \item{n.chains}{the number of MCMC chains to run in sequence.}
-
-  \item{stage.1.like}{a set of log-likelihood values from the first stage 
-    model when fitting a Gaussian-hurdle model. When fitting the first stage
-    model in \code{spOccupancy}, these are the values in the \code{like.samples}
-    object of the resulting model fit. Only value when \code{family = 'Gaussian-hurdle'}.}
 
   \item{...}{currently no additional arguments}
 }
@@ -240,10 +244,10 @@ p <- length(beta)
 mu.RE <- list()
 mu.RE <- list(levels = c(35, 40),
 	      sigma.sq.mu = c(0.7, 1.5),
-              beta.indx = list(1, 2))
+              beta.indx = list(1, 1))
 # Spatial parameters ------------------
 sp <- TRUE
-svc.cols <- c(1)
+svc.cols <- c(1, 2)
 p.svc <- length(svc.cols)
 cov.model <- "exponential"
 sigma.sq <- runif(p.svc, 0.4, 4)
@@ -288,8 +292,8 @@ batch.length <- 25
 n.burn <- 100
 n.thin <- 1
 
-out <- svcAbund(formula = ~ cov.1 + cov.2 + cov.3 + (1 | factor.1) + (cov.1 | factor.2),
-                svc.cols = svc.cols,
+out <- svcAbund(formula = ~ cov.1 + cov.2 + cov.3 + (1 | factor.1) + (1 | factor.2),
+                svc.cols = c(1, 2),
                 data = data.list,
                 n.batch = n.batch,
                 batch.length = batch.length,

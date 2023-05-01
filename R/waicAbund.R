@@ -71,6 +71,9 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
   # Single-species abundance GLMs -----------------------------------------
   if (class(object) %in% c('abund', 'spAbund', 'svcAbund')) {
     if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+      if (object$dist == 'Gaussian-hurdle') {
+        message("Calculated WAIC is only for stage 2 of the hurdle model\n")
+      }
       elpd <- sum(apply(object$like.samples, c(2), function(a) log(mean(a))), na.rm = TRUE)
       pD <- sum(apply(object$like.samples, c(2), function(a) var(log(a))), na.rm = TRUE)
     }
@@ -84,17 +87,26 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
 
   # Multi-species abundance GLMs ------------------------------------------
   if (class(object) %in% c('msAbund', 'lfMsAbund', 'sfMsAbund')) {
+    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+      if (object$dist == 'Gaussian-hurdle') {
+        message("Calculated WAIC is only for stage 2 of the hurdle model\n")
+      }
+      margin <- c(2, 3)
+    }  
+    if (object$dist %in% c('Poisson', 'NB')) {
+      margin <- c(2, 3, 4)
+    }
     if (by.species) {
-      elpd <- apply(apply(object$like.samples, c(2, 3, 4), function(a) log(mean(a))), 
+      elpd <- apply(apply(object$like.samples, margin, function(a) log(mean(a))), 
                     1, sum, na.rm = TRUE) 
-      pD <- apply(apply(object$like.samples, c(2, 3, 4), function(a) var(log(a))), 
+      pD <- apply(apply(object$like.samples, margin, function(a) var(log(a))), 
                   1, sum, na.rm = TRUE)
       out <- data.frame(elpd = elpd, 
 			pD = pD, 
 			WAIC = -2 * (elpd - pD))
     } else {
-      elpd <- sum(apply(object$like.samples, c(2, 3, 4), function(a) log(mean(a))), na.rm = TRUE)
-      pD <- sum(apply(object$like.samples, c(2, 3, 4), function(a) var(log(a))), na.rm = TRUE)
+      elpd <- sum(apply(object$like.samples, margin, function(a) log(mean(a))), na.rm = TRUE)
+      pD <- sum(apply(object$like.samples, margin, function(a) var(log(a))), na.rm = TRUE)
       out <- c(elpd, pD, -2 * (elpd - pD))
       names(out) <- c("elpd", "pD", "WAIC")
     }

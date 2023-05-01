@@ -34,6 +34,11 @@ column (replicate).}
   Jeffrey W. Doser \email{doserjef@msu.edu}, \cr
 }
 
+\note{
+  \code{ppcAbund} will return an error for Gaussian or Gaussian hurdle models. 
+  For Gaussian models, standard residual diagnostics can be used to assess model fit.
+}
+
 \value{
 
   An object of class \code{ppcAbund} that is a list comprised of: 

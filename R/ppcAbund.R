@@ -244,7 +244,10 @@ ppcAbund <- function(object, fit.stat, group, ...) {
   } 
  
   # Single-species abundance models --------------------------------------- 
-  if (class(object) %in% c('abund', 'spAbund')) {
+  if (class(object) %in% c('abund', 'spAbund', 'svcAbund')) {
+    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+      stop("ppcAbund is not supported for Gaussian or Gaussian-hurdle GLM(M)s. These are linear (mixed) models, and classic tools for residual diagnostics can be applied using object$y and object$y.rep.samples to generate residuals")
+    }
     y <- object$y
     J <- nrow(y)
     if (is(object, 'abund')) {
@@ -303,6 +306,9 @@ ppcAbund <- function(object, fit.stat, group, ...) {
 
   # Multi-species abundance models ----------------------------------------
   if (class(object) %in% c('msAbund', 'lfMsAbund', 'sfMsAbund')) {
+    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+      stop("ppcAbund is not supported for Gaussian or Gaussian-hurdle GLM(M)s. These are linear (mixed) models, and classic tools for residual diagnostics can be applied using object$y and object$y.rep.samples to generate residuals")
+    }
     y <- object$y
     J <- dim(y)[2] 
     n.sp <- dim(y)[1]

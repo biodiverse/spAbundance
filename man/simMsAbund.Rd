@@ -7,10 +7,10 @@
 }
 
 \usage{
-simMsAbund(J.x, J.y, n.rep, n.sp, beta, kappa, mu.RE = list(), 
+simMsAbund(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(), 
           sp = FALSE, cov.model, 
           sigma.sq, phi, nu, family = 'Poisson',
-          factor.model = FALSE, n.factors, ...)
+          factor.model = FALSE, n.factors, z, ...)
 }
 
 \arguments{
@@ -26,6 +26,8 @@ simMsAbund(J.x, J.y, n.rep, n.sp, beta, kappa, mu.RE = list(),
 \item{beta}{a numeric matrix with \code{n.sp} rows containing the intercept and regression coefficient parameters for the model. Each row corresponds to the regression coefficients for a given species.} 
 
 \item{kappa}{a numeric vector of length \code{n.sp} containing the dispersion parameter for the model for each species. Only relevant when \code{family = 'NB'}.}
+
+\item{tau.sq}{a numeric vector of length \code{n.sp} containing the residual variance parameters for the model for each species. Only relevant for Gaussian or Gaussian-hurdle models.}
 
 \item{mu.RE}{a list used to specify the non-spatial random intercepts included in the model. The list must have two tags: \code{levels} and \code{sigma.sq.mu}. \code{levels} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the number of levels there are in each intercept. \code{sigma.sq.mu} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the variances for each random effect. If not specified, no random effects are included in the model.}
 
@@ -45,6 +47,8 @@ simMsAbund(J.x, J.y, n.rep, n.sp, beta, kappa, mu.RE = list(),
 
 \item{family}{the distribution to use for the latent abundance process. Currently
   supports \code{'NB'} (negative binomial) and \code{'Poisson'}.}
+
+\item{z}{a matrix with \code{n.sp} rows and \code{J} columns containing the binary presence/absence portion of a Gaussian-hurdle model for each species. Only relevant when \code{family = 'Gaussian-hurdle'}.}
 
 \item{...}{currently no additional arguments}
 }

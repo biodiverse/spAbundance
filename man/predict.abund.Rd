@@ -7,7 +7,7 @@
 }
 
 \usage{
-\method{predict}{abund}(object, X.0, ignore.RE = FALSE, ...)
+\method{predict}{abund}(object, X.0, ignore.RE = FALSE, z.0.samples, ...)
 }
 
 \arguments{
@@ -17,6 +17,8 @@
   \item{X.0}{the design matrix of covariates at the prediction locations. This should be a three-dimensional array, with dimensions corresponding to site, replicate, and covariate, respectively. Note that the first covariate should consist of all 1s for the intercept if an intercept is included in the model. If random effects are included in the abundance portion of the model, the levels of the random effects at the new locations/time periods should be included as an element of the three-dimensional array. The ordering of the levels should match the ordering used to fit the data in \code{abund}. The covariates should be organized in the same order as they were specified in the corresponding formula argument of \code{abund}. Names of the third dimension (covariates) of any random effects in X.0 must match the name of the random effects used to fit the model, if specified in the corresponding formula argument of \code{abund}. See example below. If there is only one replicate per location, the design matrix can be a two-dimensional matrix instead of a three-dimensional array.}
 
   \item{ignore.RE}{logical value that specifies whether or not to remove unstructured random effects from the subsequent predictions. If \code{TRUE}, unstructured random effects will be included. If \code{FALSE}, unstructured random effects will be set to 0 and predictions will only be generated from the fixed effects.}
+
+  \item{z.0.samples}{a matrix with rows corresponding to MCMC samples and columns corresponding to prediction locations containing the full posterior samples of the predicted binary portion of a Gaussian hurdle model. In the context of abundance models, this typically corresponds to estimates of the presence or absence of the species at the location. When using \code{spOccupancy} to generate the first stage samples of the Gaussian-hurdle model, this is the object contained in the \code{z.0.samples} object of the predition function for the spOccupancy object. Ignored for all model types other than Gaussian-hurdle.}
 
   \item{...}{currently no additional arguments}
 }
@@ -34,11 +36,12 @@
 
   \item{mu.0.samples}{a three-dimensional object of posterior predictive samples for the
     expected abundance values with dimensions corresponding to posterior predictive
-    sample, site, and replicate.}
+    sample, site, and replicate. When there is no replication, this will be a two-dimensional
+    matrix}
 
   \item{y.0.samples}{a three-dimensional object of posterior predictive samples for the
     abundance values with dimensions corresponding to posterior predictive sample, site, 
-    and replicate.}
+    and replicate. When there is no replication, this will be a two-dimensional matrix.}
 
   The return object will include additional objects used for standard 
   extractor functions. 

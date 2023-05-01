@@ -35,6 +35,14 @@ waicAbund(object, N.max, by.species = FALSE, ...)
 
 }
 
+\note{
+  When fitting Gaussian-hurdle models, the WAIC is only calculated for the 
+  values that are past the hurdle. If fitting a first stage model with 
+  \code{spOccupancy} to the binary portion of the 
+  hurdle model, you can use the \code{spOccupancy::waicOcc} function to 
+  calculate WAIC for the binary portion of the hurdle model. 
+}
+
 \references{
   Watanabe, S. (2010). Asymptotic equivalence of Bayes cross
   validation and widely applicable information criterion in 

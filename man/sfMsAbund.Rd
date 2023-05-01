@@ -38,13 +38,16 @@ sfMsAbund(formula, data, inits, priors,
     and number of columns equal to the maximum number of replicate observations at a 
     given site. \code{coords} is a 
     \eqn{J \times 2}{J x 2} matrix of the observation coordinates. Note that 
-    \code{spAbundance} assumes coordinates are specified in a projected coordinate system.}
+    \code{spAbundance} assumes coordinates are specified in a projected coordinate system. 
+    For Gaussian hurdle models, the tag \code{z} is used to specify the 
+    binary component of the hurdle model and should have the same dimensions as \code{y}.}
 
   \item{inits}{a list with each tag corresponding to a parameter name.
     Valid tags are \code{beta.comm}, \code{beta}, 
     \code{tau.sq.beta}, \code{sigma.sq.mu}, \code{kappa},
-    \code{phi}, \code{lambda}, and \code{nu}. \code{nu} is only specified if 
+    \code{phi}, \code{lambda}, \code{nu}, and \code{tau.sq}. \code{nu} is only specified if 
     \code{cov.model = "matern"}, \code{kappa} is only specified if \code{family = 'NB'}, 
+    \code{tau.sq} is only specified for Gaussian and Gaussian-hurdle models,
     and \code{sigma.sq.mu} is only specified if random effects are included in \code{formula}. 
     The value portion of each tag is 
     the parameter's initial value. See \code{priors} description for definition
@@ -54,9 +57,8 @@ sfMsAbund(formula, data, inits, priors,
 
   \item{priors}{a list with each tag corresponding to a parameter name. 
   Valid tags are \code{beta.comm.normal}, \code{tau.sq.beta.ig}, \code{sigma.sq.mu}, 
-  \code{kappa.unif}, \code{phi.unif}, 
-  and \code{nu.unif}. Community-level (\code{beta.comm}) 
-  regression coefficients are assumed to follow a 
+  \code{kappa.unif}, \code{phi.unif}, \code{nu.unif}, and \code{tau.sq.ig}. 
+  Community-level (\code{beta.comm}) regression coefficients are assumed to follow a 
   normal distribution. The hyperparameters of the normal distribution
   are passed as a list of length two with the first and second elements 
   corresponding to the mean and variance of the normal distribution, 
@@ -95,12 +97,18 @@ sfMsAbund(formula, data, inits, priors,
   are passed as a list of length two with first and second elements corresponding to the
   lower and upper bounds of the uniform distribution, respectively, which are each 
   specified as vectors of length equal to the number of species or of length one
-  if priors are the same for all species-specific dispersion parameters.}
+  if priors are the same for all species-specific dispersion parameters. \code{tau.sq} is the 
+  species-specific residual variance for Gaussian (or Gaussian hurdle) models, and it is assigned 
+  an inverse-Gamma prior. The hyperparameters of the inverse-Gamma are passed as a list 
+  of length two, with the first and second element corresponding to the shape and 
+  scale parameters, respectively, which are each specified as vectors of length
+  equal to the number of species or a single value if priors are the same for all species.}
 
 \item{tuning}{a single numeric value representing the initial variance of the
   adaptive sampler for \code{beta}, \code{alpha}, \code{beta.star} (the abundance 
   random effect values), \code{kappa}, \code{phi}, \code{lambda}. 
-  See Roberts and Rosenthal (2009) for details.}
+  See Roberts and Rosenthal (2009) for details. Note that only \code{phi} and \code{nu}
+  are tuned for Gaussian or Gaussian-hurdle models.}
 
   \item{cov.model}{a quoted keyword that specifies the covariance
     function used to model the spatial dependence structure among the
@@ -222,17 +230,21 @@ sfMsAbund(formula, data, inits, priors,
     for the species level abundance dispersion parameters. Only included
     when \code{family = 'NB'}.}
 
+  \item{tau.sq.samples}{a \code{coda} object of posterior samples
+    for the Gaussian residual variance parameter. Only included when
+    \code{family = 'Gaussian'} or \code{family = 'Gaussian-hurdle'}.}
+
   \item{theta.samples}{a \code{coda} object of posterior samples
     for the spatial correlation parameters.}
 
   \item{lambda.samples}{a \code{coda} object of posterior samples
     for the latent spatial factor loadings.}
 
-  \item{y.rep.samples}{a four-dimensional array of posterior samples for
+  \item{y.rep.samples}{a three or four-dimensional array of posterior samples for
     the fitted (replicate) values for each species with dimensions corresponding
     to MCMC sample, species, site, and replicate.}
 
-  \item{mu.samples}{a four-dimensional array of posterior samples for
+  \item{mu.samples}{a three or four-dimensional array of posterior samples for
     the expected abundance values for each species with dimensions
     corresponding to MCMC samples, species, site, and replicate.}
 

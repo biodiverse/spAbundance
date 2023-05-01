@@ -80,12 +80,12 @@ extern "C" {
       Rprintf("----------------------------------------\n");
       Rprintf("\tPrediction description\n");
       Rprintf("----------------------------------------\n");
-      Rprintf("NNGP SVC Model fit with %i observations.\n\n", J);
-      Rprintf("Number of covariates %i (including intercept if specified).\n\n", pAbund);
-      Rprintf("Number of spatially-varying covariates %i (including intercept if specified).\n\n", pTilde);
+      Rprintf("NNGP Model fit with %i observations.\n\n", J);
+      Rprintf("Number of covariates: %i (including intercept if specified).\n\n", pAbund);
+      Rprintf("Number of spatially-varying coefficients: %i (including intercept if specified).\n\n", pTilde);
       Rprintf("Using the %s spatial correlation model.\n\n", corName.c_str());
       Rprintf("Using %i nearest neighbors.\n\n", m);
-      Rprintf("Number of MCMC samples %i.\n\n", nSamples);
+      Rprintf("Number of MCMC samples: %i.\n\n", nSamples);
       Rprintf("Predicting at %i non-sampled locations.\n\n", J0);  
 #ifdef _OPENMP
       Rprintf("\nSource compiled with OpenMP support and model fit using %i threads.\n", nThreads);
@@ -244,7 +244,7 @@ extern "C" {
     }
     for(j = 0; j < J0; j++){
       for(s = 0; s < nSamples; s++){
-        if (family == 1) {
+        if (family == 3) {
           if (z0[s * J0 + j] == 1.0) {
           wSites = F77_NAME(ddot)(&pTilde, &Xw0[j], &J0, 
 	  		        &w0[s * J0pTilde + j * pTilde], &inc);
