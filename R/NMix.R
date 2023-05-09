@@ -159,7 +159,7 @@ NMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     tmp.indx <- !(y.missing %in% det.covs.missing[[i]])
     if (sum(tmp.indx) > 0) {
       if (i == 1 & verbose) {
-        message("There are missing values in data$y with corresponding non-missing values in data$det.covs.\nRemoving these site/replicate combinations for fitting the model.")
+        message("There are missing values in data$y with corresponding non-missing values in data$det.covs.\nRemoving these site/replicate combinations for fitting the model.\n")
       }
       data$det.covs[y.missing, i] <- NA
     }

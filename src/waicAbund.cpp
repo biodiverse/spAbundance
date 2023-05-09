@@ -19,7 +19,7 @@
 
 extern "C" {
   SEXP waicAbund(SEXP J_r, SEXP K_r, SEXP dist_r, SEXP modelType_r, SEXP y_r,
-                 SEXP nSamples_r, SEXP NSamples_r, SEXP epsilonSamples_r, 
+                 SEXP nSamples_r, SEXP NSamples_r, SEXP kappaSamples_r, 
                  SEXP muSamples_r, SEXP pSamples_r, SEXP NMax_r, SEXP KMax_r, 
 		 SEXP yMax_r) {
 
@@ -38,7 +38,7 @@ extern "C" {
     double *y = REAL(y_r);
     int nSamples = INTEGER(nSamples_r)[0]; 
     double *NSamples = REAL(NSamples_r);
-    double *epsilonSamples = REAL(epsilonSamples_r);
+    double *kappaSamples = REAL(kappaSamples_r);
     double *muSamples = REAL(muSamples_r);
     double *pSamples = REAL(pSamples_r);
     int *NMax = INTEGER(NMax_r);
@@ -79,9 +79,7 @@ extern "C" {
               yProd *= dbinom(y[k * J + j], t, pSamples[k * JnSamples + j * nSamples + i], 0);
             } // k (replicate)
             if (dist == 1) {
-              tmp_0 = dpois(t, 
-			    muSamples[j * nSamples + i] * epsilonSamples[j * nSamples + i], 
-			    0);
+              tmp_0 = dnbinom_mu(t, kappaSamples[i], muSamples[j * nSamples + i], 0);
             } else {
               tmp_0 = dpois(t, muSamples[j * nSamples + i], 0);
             }
@@ -96,6 +94,7 @@ extern "C" {
     /**********************************
      * Distance sampling
      **********************************/
+    // TODO: think about if you need the offset here. 
     if (modelType == 1) {
       for (i = 0; i < nSamples; i++) {
         zeros(like, J);
@@ -109,9 +108,7 @@ extern "C" {
 	    yProd += ((t - yMax[j]) * log(pSamples[K[j] * JnSamples + j * nSamples + i])) +
                      lgammafn(t + 1.0) - lgammafn(t - yMax[j] + 1.0);
             if (dist == 1) {
-              tmp_0 = dpois(t, 
-			    muSamples[j * nSamples + i] * epsilonSamples[j * nSamples + i], 
-			    0);
+              tmp_0 = dnbinom_mu(t, kappaSamples[i], muSamples[j * nSamples + i], 0);
             } else {
               tmp_0 = dpois(t, muSamples[j * nSamples + i], 0);
             }

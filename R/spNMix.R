@@ -107,7 +107,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
 
   if (family == 'NB') {
-    message('**NOTE**: spatial negative binomial models can be difficult to\nestimate as they contain two forms of overdispersion. If experiencing\nvery poor mixing/convergence of MCMC chains (particularly kappa and theta),\nconsider using a spatial Poisson model or more informative\npriors on kappa or phi.\n') 
+    message('**NOTE**: spatial negative binomial models can be difficult to\nestimate as they contain two forms of overdispersion.\nIf experiencing very poor mixing/convergence of MCMC chains (particularly kappa and theta),\nconsider using a spatial Poisson model or more informative priors on kappa or phi.\n') 
   }
 
   # Neighbors and Ordering ----------------------------------------------
@@ -191,7 +191,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     tmp.indx <- !(y.missing %in% det.covs.missing[[i]])
     if (sum(tmp.indx) > 0) {
       if (i == 1 & verbose) {
-        message("There are missing values in data$y with corresponding non-missing values in data$det.covs.\nRemoving these site/replicate combinations for fitting the model.")
+        message("There are missing values in data$y with corresponding non-missing values in data$det.covs.\nRemoving these site/replicate combinations for fitting the model.\n")
       }
       data$det.covs[y.missing, i] <- NA
     }

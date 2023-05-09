@@ -38,13 +38,10 @@ extern "C" {
     /**********************************************************************
      * Initial constants
      * *******************************************************************/
-    int i, g, t, j, s, r, l, k, ll, info, nProtect=0;
+    int i, g, t, j, s, l, k, ll, nProtect=0;
     const int inc = 1;
     const double one = 1.0;
     const double zero = 0.0;
-    char const *lower = "L";
-    char const *ntran = "N";
-    char const *ytran = "T";
     
     /**********************************************************************
      * Get Inputs
@@ -84,7 +81,6 @@ extern "C" {
     double kappaB = REAL(kappaB_r)[0];
     int *nAbundRELong = INTEGER(nAbundRELong_r); 
     int *nDetRELong = INTEGER(nDetRELong_r); 
-    double *K = REAL(K_r); 
     int *NLongIndx = INTEGER(NLongIndx_r); 
     int *alphaStarIndx = INTEGER(alphaStarIndx_r); 
     int *alphaLevelIndx = INTEGER(alphaLevelIndx_r);
@@ -137,7 +133,7 @@ extern "C" {
         Rprintf("Number of Chains: %i \n", nChain);
         Rprintf("Total Posterior Samples: %i \n\n", nPost * nChain); 
 #ifdef _OPENMP
-        Rprintf("\nSource compiled with OpenMP support and model fit using %i thread(s).\n\n", nThreads);
+        Rprintf("Source compiled with OpenMP support and model fit using %i thread(s).\n\n", nThreads);
 #else
         Rprintf("Source not compiled with OpenMP support.\n\n");
 #endif
@@ -212,24 +208,11 @@ extern "C" {
     /********************************************************************
       Some constants and temporary variables to be used later
     ********************************************************************/
-    int JpAbund = J * pAbund; 
-    int nObspDet = nObs * pDet;
     double tmp_0, tmp_02; 
-    double *tmp_one = (double *) R_alloc(inc, sizeof(double)); 
-    double *tmp_ppDet = (double *) R_alloc(ppDet, sizeof(double));
-    double *tmp_ppAbund = (double *) R_alloc(ppAbund, sizeof(double)); 
-    double *tmp_pDet = (double *) R_alloc(pDet, sizeof(double));
-    double *tmp_pAbund = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_pDet2 = (double *) R_alloc(pDet, sizeof(double));
-    double *tmp_pAbund2 = (double *) R_alloc(pAbund, sizeof(double));
     double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
-    double *tmp_JpAbund = (double *) R_alloc(JpAbund, sizeof(double));
-    double *tmp_nObspDet = (double *) R_alloc(nObspDet, sizeof(double));
     double *tmp_J = (double *) R_alloc(J, sizeof(double));
-    double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
    
     // For latent abundance
-    double muNum; 
     double *detProb = (double *) R_alloc(nObs, sizeof(double)); zeros(detProb, nObs);
     double *mu = (double *) R_alloc(J, sizeof(double)); 
     zeros(mu, J); 

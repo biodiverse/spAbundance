@@ -1,6 +1,6 @@
 simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),  
 		     sp = FALSE, svc.cols = 1, cov.model, sigma.sq, phi, 
-		     nu, family = 'Poisson', z, ...) {
+		     nu, family = 'Poisson', z, x.positive = FALSE, ...) {
 
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -135,7 +135,12 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
   if (n.beta > 1) {
     for (i in 2:n.beta) {
       for (j in 1:J) {
-        X[j, 1:n.rep[j], i] <- rnorm(n.rep[j])
+        if (x.positive) {
+          X[j, 1:n.rep[j], i] <- runif(n.rep[j], 0, 5)
+           
+	} else {
+          X[j, 1:n.rep[j], i] <- rnorm(n.rep[j])
+	}
       } 
     } # i
   }
@@ -145,6 +150,10 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
   s.x <- seq(0, 1, length.out = J.x)
   s.y <- seq(0, 1, length.out = J.y)
   coords <- as.matrix(expand.grid(s.x, s.y))
+  # TODO: 
+  # Sigma <- mkSpCov(coords, as.matrix(1), as.matrix(0), 3 / 0.8, 'exponential')
+  # # Random spatial process
+  # X[, , 2] <- rmvn(1, rep(5, J), Sigma)
   if (sp) {
     w.mat <- matrix(NA, J, p.svc)
     if (cov.model == 'matern') {

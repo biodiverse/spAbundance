@@ -139,7 +139,7 @@ sfMsAbund <- function(formula, data, inits, priors,
     data$covs <- data.frame(lapply(data$covs, function(a) unlist(c(a))))
     # Check if only site-level covariates are included
     if (nrow(data$covs) == dim(y)[2]) {
-      data$covs <- as.data.frame(mapply(rep, data$covs, dim(y)[3]))
+      data$covs <- as.data.frame(lapply(data$covs, rep, dim(y)[3]))
     }
 
     # Check whether random effects are sent in as numeric, and

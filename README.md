@@ -3,20 +3,22 @@
 
 # spAbundance
 
-`spAbundance` fits single-species and multi-species spatial abundance
-models using Markov Chain Monte Carlo (MCMC). The package is in initial
-stages of development and testing of existing functionality is not
-complete so use of the package prior to it’s first release on CRAN is at
-your own risk. `spAbundance` uses analogous syntax to its “sister
-package” [spOccupancy](https://www.jeffdoser.com/files/spoccupancy-web/)
-(Doser et al. 2022).
+[![](https://codecov.io/gh/https://github.com/doserjef/spAbundance/branch/main/graph/badge.svg)](https://codecov.io/gh/https://github.com/doserjef/spAbundance)
+
+`spAbundance` fits univariate (i.e., single-species) and multivariate
+(i.e., multi-species) spatial abundance models using Markov Chain Monte
+Carlo (MCMC). The package currently contains all functionality for it’s
+first release on CRAN, and is currently undergoing extensive testing
+prior to the release on CRAN. `spAbundance` uses analogous syntax to its
+“sister package”
+[spOccupancy](https://www.jeffdoser.com/files/spoccupancy-web/) (Doser
+et al. 2022).
 
 ## Installation
 
-`spAbundance` is in active development. The functionality currently
-implemented is not yet fully tested, and should be used with caution. To
-download the development version of the package, you can use `devtools`
-as follows:
+`spAbundance` is not yet on CRAN, with a planned initial submission date
+in early June, 2023. To download the development version of the package,
+you can use `devtools` as follows:
 
 ``` r
 devtools::install_github("doserjef/spAbundance")
@@ -44,6 +46,7 @@ C++ on a Mac, you can install `XCode` from the Mac app store.
 | `sfMsDS()`             | Multi-species spatial distance sampling model with species correlations |
 | `abund()`              | Single-species abundance GLM                                            |
 | `spAbund()`            | Single-species spatial abundance GLM                                    |
+| `svcAbund()`           | Single-species spatially-varying coefficient GLMMs (currently Gaussian) |
 | `msAbund()`            | Multi-species abundance GLM                                             |
 | `lfMsAbund()`          | Multi-species abundance GLM with species correlations                   |
 | `sfMsAbund()`          | Multi-species spatial abundance GLM with species correlations           |
@@ -57,15 +60,17 @@ C++ on a Mac, you can install `XCode` from the Mac app store.
 | `simMsDS()`            | Simulate multi-species distance sampling data                           |
 
 All model fitting functions allow for Poisson and negative binomial
-distributions for the abundance portion of the model.
+distributions for the abundance portion of the model (with the exception
+of `svcAbund()`, which is currently only for Gaussian outcomes). All
+GLM(M)s also allow for Gaussian models.
 
 ## Citing `spAbundance`
 
 Please cite `spAbundance` as:
 
-Doser, J. (2023). spAbundance: Single-species and multi-species
-spatially-explicit abundance models". R package version 0.1.0.
-<https://github.com/doserjef/spAbundance>
+Doser, J. W. and Finley, A. O. (2023). spAbundance: Univariate and
+Multivariate Spatial Modeling of Species Abundance". R package version
+0.1.0. <https://github.com/doserjef/spAbundance>
 
 ## References
 

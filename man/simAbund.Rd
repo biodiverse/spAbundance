@@ -9,7 +9,7 @@
 \usage{
 simAbund(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(), 
        sp = FALSE, svc.cols = 1, cov.model, sigma.sq, phi, nu, 
-       family = 'Poisson', z, ...)
+       family = 'Poisson', z, x.positive = FALSE, ...)
 }
 
 \arguments{
@@ -47,6 +47,8 @@ simAbund(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
   \code{'Gaussian-hurdle'}.}
 
 \item{z}{a vector of length \code{J} containing the binary presence/absence portion of a Gaussian-hurdle model. Only relevant when \code{family = 'Gaussian-hurdle'}.}
+
+\item{x.positive}{a logical value indicating whether the simulated covariates should be simulated as random standard normal covariates (\code{x.positive = FALSE}) or restricted to positive values using a uniform distribution with lower bound 0 and upper bound 1 (\code{x.positive = TRUE}).}
 
 \item{...}{currently no additional arguments}
 }
