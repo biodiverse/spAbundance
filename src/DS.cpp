@@ -133,9 +133,9 @@ extern "C" {
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
 	if (family == 1) {
-          Rprintf("Negative Binomial Hierarchical Distance Sampling model with %i sites.\n\n", J);
+          Rprintf("Negative Binomial HDS model with %i sites.\n\n", J);
 	} else {
-          Rprintf("Poisson Hierarchical Distance Sampling model with %i sites.\n\n", J);
+          Rprintf("Poisson HDS model with %i sites.\n\n", J);
 	}
         Rprintf("Samples per Chain: %i (%i batches of length %i)\n", nSamples, nBatch, batchLength);
         Rprintf("Burn-in: %i \n", nBurn); 
@@ -283,6 +283,8 @@ extern "C" {
     int alphaStarAMCMCIndx = betaStarAMCMCIndx + nAbundRE;
     int kappaAMCMCIndx = alphaStarAMCMCIndx + nDetRE;
     double *accept = (double *) R_alloc(nAMCMC, sizeof(double)); zeros(accept, nAMCMC);
+    double betaAccept = 1;
+    double alphaAccept = 1;
     // Set the initial candidate values for everything to the inital values. 
     double *betaCand = (double *) R_alloc(pAbund, sizeof(double)); 
     for (j = 0; j < pAbund; j++) {
@@ -399,11 +401,15 @@ extern "C" {
         // Proposal
         for (k = 0; k < pAbund; k++) {
           logPostBetaCand = 0.0;
-	  logPostBetaCurr = 0.0;
+	  if (betaAccept == 1) {
+	    logPostBetaCurr = 0.0;
+	  }
           betaCand[k] = rnorm(beta[k], exp(tuning[betaAMCMCIndx + k]));
           for (i = 0; i < pAbund; i++) {
             logPostBetaCand += dnorm(betaCand[i], muBeta[i], sqrt(SigmaBeta[i * pAbund + i]), 1);
-	    logPostBetaCurr += dnorm(beta[i], muBeta[i], sqrt(SigmaBeta[i * pAbund + i]), 1);
+            if (betaAccept == 1) {
+	      logPostBetaCurr += dnorm(beta[i], muBeta[i], sqrt(SigmaBeta[i * pAbund + i]), 1);
+	    }
           }
           for (j = 0; j < J; j++) {
             tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, betaCand, &inc) + betaStarSites[j]);
@@ -412,20 +418,25 @@ extern "C" {
 	    } else {
               logPostBetaCand += poisson_logpost(N[j], tmp_J[j], offset[j]);
 	    }
-            tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, beta, &inc) + betaStarSites[j]);
-	    if (family == 1) {
-              logPostBetaCurr += nb_logpost(kappa, N[j], tmp_J[j], offset[j]);
-	    } else {
-              logPostBetaCurr += poisson_logpost(N[j], tmp_J[j], offset[j]);
+	    if (betaAccept == 1) {
+              tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, beta, &inc) + betaStarSites[j]);
+	      if (family == 1) {
+                logPostBetaCurr += nb_logpost(kappa, N[j], tmp_J[j], offset[j]);
+	      } else {
+                logPostBetaCurr += poisson_logpost(N[j], tmp_J[j], offset[j]);
+	      }
 	    }
           }
           if (runif(0.0, 1.0) <= exp(logPostBetaCand - logPostBetaCurr)) {
             beta[k] = betaCand[k];
             accept[betaAMCMCIndx + k]++;
+	    betaAccept = 1;
           } else {
             betaCand[k] = beta[k];
+	    betaAccept = 0;
 	  }
         }
+	betaAccept = 1;
 
 	/********************************************************************
          *Update Detection Regression Coefficients
@@ -433,10 +444,16 @@ extern "C" {
         // Proposal
 	for (l = 0; l < pDet; l++) {
           logPostAlphaCand = 0.0;
-	  logPostAlphaCurr = 0.0;
+	  if (alphaAccept == 1) {
+	    logPostAlphaCurr = 0.0;
+	  }
           alphaCand[l] = rnorm(alpha[l], exp(tuning[alphaAMCMCIndx + l]));
-          logPostAlphaCand += dnorm(alphaCand[l], muAlpha[l], sqrt(SigmaAlpha[l * pDet + l]), 1);
-	  logPostAlphaCurr += dnorm(alpha[l], muAlpha[l], sqrt(SigmaAlpha[l * pDet + l]), 1);
+	  for (i = 0; i < pDet; i++ ) {
+            logPostAlphaCand += dnorm(alphaCand[i], muAlpha[i], sqrt(SigmaAlpha[i * pDet + i]), 1);
+	    if (alphaAccept == 1) {
+	      logPostAlphaCurr += dnorm(alpha[i], muAlpha[i], sqrt(SigmaAlpha[i * pDet + i]), 1);
+	    }
+	  }
 	  for (j = 0; j < J; j++) {
             /********************************
              * Candidate 
@@ -463,35 +480,40 @@ extern "C" {
             /********************************
              * Current 
              *******************************/
-            tmp_0 = 0.0; 
-	    likeVal = 0.0;
-            sigma[j] = exp(F77_NAME(ddot)(&pDet, &Xp[j], &J, alpha, &inc) + 
-                           alphaStarSites[j]);
-            for (k = 0; k < K; k++) {
-              p[k * J + j] = integrate(detModel, distBreaks[k], distBreaks[k + 1], sigma[j], 
-                                       nInt, transect); 
-	      if (transect == 0) {
-                p[k * J + j] /= (distBreaks[k + 1] - distBreaks[k]);
-	      } else {
-                p[k * J + j] = p[k * J + j] * 2.0 / (pow(distBreaks[k + 1], 2) - pow(distBreaks[k], 2));
-	      }
-	      piFull[k * J + j] = p[k * J + j] * psi[k];
-	      tmp_0 += piFull[k * J + j];
-	      likeVal += y[k * J + j] * log(piFull[k * J + j]);
-	    } // k (bins)
-	    piFull[K * J + j] = 1.0 - tmp_0;
-	    likeVal += (N[j] - yMax[j]) * log(piFull[K * J + j]);
-	    logPostAlphaCurr += likeVal;
+	    if (alphaAccept == 1) {
+              tmp_0 = 0.0; 
+	      likeVal = 0.0;
+              sigma[j] = exp(F77_NAME(ddot)(&pDet, &Xp[j], &J, alpha, &inc) + 
+                             alphaStarSites[j]);
+              for (k = 0; k < K; k++) {
+                p[k * J + j] = integrate(detModel, distBreaks[k], distBreaks[k + 1], sigma[j], 
+                                         nInt, transect); 
+	        if (transect == 0) {
+                  p[k * J + j] /= (distBreaks[k + 1] - distBreaks[k]);
+	        } else {
+                  p[k * J + j] = p[k * J + j] * 2.0 / (pow(distBreaks[k + 1], 2) - pow(distBreaks[k], 2));
+	        }
+	        piFull[k * J + j] = p[k * J + j] * psi[k];
+	        tmp_0 += piFull[k * J + j];
+	        likeVal += y[k * J + j] * log(piFull[k * J + j]);
+	      } // k (bins)
+	      piFull[K * J + j] = 1.0 - tmp_0;
+	      likeVal += (N[j] - yMax[j]) * log(piFull[K * J + j]);
+	      logPostAlphaCurr += likeVal;
+	    }
 	  } // j (sites)
           if (runif(0.0, 1.0) <= exp(logPostAlphaCand - logPostAlphaCurr)) {
             alpha[l] = alphaCand[l];
             accept[alphaAMCMCIndx + l]++;
+	    alphaAccept = 1;
 	    F77_NAME(dcopy)(&nObsFull, piFullCand, &inc, piFull, &inc);
           } else {
             alphaCand[l] = alpha[l];
 	    F77_NAME(dcopy)(&nObsFull, piFull, &inc, piFullCand, &inc);
+	    alphaAccept = 1;
 	  }
 	}
+	alphaAccept = 1;
 
         /********************************************************************
          *Update abundance random effects variance

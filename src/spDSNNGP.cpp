@@ -195,9 +195,9 @@ extern "C" {
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
 	if (family == 1) {
-          Rprintf("Spatial NNGP Negative Binomial Distance Sampling model with %i sites.\n\n", J);
+          Rprintf("Spatial NNGP Negative Binomial HDS model with %i sites.\n\n", J);
 	} else {
-          Rprintf("Spatial NNGP Poisson Distance Sampling model with %i sites.\n\n", J);
+          Rprintf("Spatial NNGP Poisson HDS model with %i sites.\n\n", J);
 	}
         Rprintf("Samples per Chain: %i (%i batches of length %i)\n", nSamples, nBatch, batchLength);
         Rprintf("Burn-in: %i \n", nBurn); 

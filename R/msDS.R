@@ -973,8 +973,10 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   for (i in 1:n.chains) {
     # Change initial values if i > 1
     if ((i > 1) & (!fix.inits)) {
-      beta.comm.inits <- runif(p.abund, -1, 1)
-      alpha.comm.inits <- runif(p.det, -1, 1)
+      # beta.comm.inits <- runif(p.abund, -1, 1)
+      beta.comm.inits <- rnorm(p.abund)
+      # alpha.comm.inits <- runif(p.det, -1, 1)
+      alpha.comm.inits <- rnorm(p.det)
       tau.sq.beta.inits <- runif(p.abund, 0.05, 1)
       tau.sq.alpha.inits <- runif(p.det, 0.05, 1)
       beta.inits <- matrix(rnorm(n.sp * p.abund, beta.comm.inits, 

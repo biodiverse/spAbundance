@@ -75,7 +75,7 @@ extern "C" {
       Rprintf("----------------------------------------\n");
       Rprintf("\tPrediction description\n");
       Rprintf("----------------------------------------\n");
-      Rprintf("NNGP spatial N-mixture model with %i observations.\n\n", J);
+      Rprintf("NNGP spatial abundance model with %i observations.\n\n", J);
       Rprintf("Number of covariates %i (including intercept if specified).\n\n", pAbund);
       Rprintf("Using the %s spatial correlation model.\n\n", corName.c_str());
       Rprintf("Using %i nearest neighbors.\n\n", m);

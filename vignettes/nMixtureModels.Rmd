@@ -1,0 +1,923 @@
+---
+title: "Fitting N-mixture models in spAbundance"
+author: "Jeffrey W. Doser, Andrew O. Finley, Marc K&eacute;ry, Elise F. Zipkin"
+description: Learn how to fit single-species and multi-species N-mixture models in spAbundance
+date: "2023"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+bibliography: [references.bib]
+biblio-style: apalike
+vignette: >
+  %\VignetteIndexEntry{nMix}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+options(rmarkdown.html_vignette.check_title = FALSE)
+knitr::opts_chunk$set(
+  comment = "", cache = TRUE
+)
+```
+
+\newcommand{\bm}{\boldsymbol} 
+
+# Introduction
+
+This vignette provides worked examples and explanations for fitting single-species and multi-species N-mixture models in the `spAbundance` R package. We will provide step by step examples on how to fit the following models: 
+
+1. N-mixture model using `NMix()`.
+2. Spatial N-mixture model using `spNMix()`.
+3. Multi-species N-mixture model using `msNMix()`.
+4. Multi-species N-mixture model with species correlations using `lfMsNMix()`.
+5. Spatial multi-species N-mixture with species correlations using `sfMsNMix()`.
+
+In this vignette we are only describing `spAbundance` functionality to fit N-mixture models, with separate vignettes on fitting hierarchical distance sampling models and generalized linear mixed models. We fit all models in a Bayesian framework using custom Markov chain Monte Carlo (MCMC) samplers written in `C/C++` and called through `R`'s foreign language interface. Here we will provide a brief description of each model, with full statistical details provided in a separate vignette. As with all model types in `spAbundance`, we will show how to perform posterior predictive checks as a Goodness of Fit assessment, model comparison and assessment using the Widely Applicable Information Criterion (WAIC), and out-of-sample predictions using standard R helper functions (e.g., `predict()`). Note that syntax of N-mixture models in `spAbundance` closely follows syntax for fitting occupancy models in `spOccupancy` [@doser2022spoccupancy], and that this vignette closely follows the documentation on the [spOccupancy website](https://www.jeffdoser.com/files/spoccupancy-web/).
+
+To get started, we load the `spAbundance` package, as well as the `coda` package, which we will use for some MCMC summary and diagnostics. We will also use the `stars` and `ggplot2` packages to create some basic plots of our results. We then set a seed so you can reproduce the same results as we do.
+
+```{r setup, message = FALSE, warning = FALSE}
+library(spAbundance)
+library(coda)
+library(stars)
+library(ggplot2)
+set.seed(111)
+```
+
+## Example data set: Simulated multi-species count data
+
+As an example data set throughout this vignette, we will use a simulated data set comprised of 6 species across 225 sites and 5 repeat surveys. The data are provided as part of the `spAbundance` package and are loaded with `data(dataNMixSim)`. The manual page obtained using `help(dataNMixSim)` contains information on the parameter values used to generate the data set with the `simMsNMix()` function.
+
+```{r}
+data(dataNMixSim) # Load the data set.
+str(dataNMixSim) # Get an overview of what's in the data.
+```
+
+Thus, the object `dataNMixSim` is a list comprised of the count data (`y`), covariates on the abundance portion of the model (`abund.covs`), covariates on the detection portion of the model (`det.covs`), and the spatial coordinates of each site (`coords`) for use in spatial N-mixture models and in plotting. This list is in the exact format required for input to N-mixture models in `spAbundance`. `dataNMixSim` contains data on 6 species in the three-dimensional array `y`, where the dimensions of `y` correspond to species (6), sites (225), and replicates (5). For single-species N-mixture models in Section 2 and 3, we will only use data on one species, so we next subset the `dataNmixSim` list to only include data from the first species in a new object `data.one.sp`. 
+
+```{r}
+data.one.sp <- dataNMixSim
+data.one.sp$y <- data.one.sp$y[1, , ]
+table(data.one.sp$y) # Quick summary.
+```
+
+We see that our species is fairly rare, with most observations of the species being 0. 
+
+# Single-species N-mixture models
+
+## Basic model description
+
+Let $N_j$ denote the true abundance of a species of interest at site $j = 1, \dots, J$. We model $N_j$ following either a Poisson or negative binomial (NB) distribution according to 
+
+\begin{align}\label{abundance}
+  \begin{split}
+  N_j &\sim \text{Poisson}(\mu_j) \text{, or, } \\
+  N_j &\sim \text{NB}(\mu_j, \kappa),
+  \end{split}
+\end{align}
+
+where $\mu_j$ is the average abundance at site $j$ and $\kappa$ is a positive dispersion parameter. Smaller values of $\kappa$ indicate overdispersion in the latent abundance values, while higher values indicate minimal overdispersion in abundance. We model $\mu_j$ using a log link function following
+
+\begin{equation}\label{muAbund}
+  \text{log}(\mu_j) = \textbf{x}_j^\top\bm{\beta},
+\end{equation}
+
+where $\bm{\beta}$ is a vector of regression coefficients for a set of covariates $\textbf{X}_j$ (including an intercept). Note that while not shown, unstructured random intercepts and slopes can be included in the equation for expected abundance.
+
+Following the standard N-mixture model of @royle2004n, we suppose observers count the number of individuals of the species of interest at each site $j$ over a set of multiple surveys $k = 1, \dots, K_j$, denoted as $y_{j, k}$. Note the number of surveys can vary by site, but at least some sites must be surveyed more than once to ensure identifiability. We model $y_{j, k}$ conditional on the true abundance of the species at site $j$, $N_j$, following
+
+\begin{equation}\label{y-NMix}
+     y_{j, k} \sim \text{Binomial}(N_j, p_{j, k}),
+\end{equation}
+
+where $p_{j, k}$ is the probability of detecting an individual given it is present at the site. We model $p_{j, k}$ using a logit link function in which we can allow detection probability to vary over space and/or surveys. More specifically, we have
+
+\begin{equation} \label{p-NMix}
+     \text{logit}(p_{j, k}) = \textbf{v}_{j, k}^\top\bm{\alpha},
+\end{equation}
+
+where $\bm{\alpha}$ is a vector of the effects of a set of covariates $\textbf{v}_{j, k}$ (including an intercept). 
+
+To complete the Bayesian specification of the model, we assign normal priors for the abundance ($\bm{\beta}$) and detection ($\bm{\alpha}$) regression coefficients. 
+
+## Fitting single-species N-mixture models with `NMix()`
+
+The `NMix()` function fits single-species N-mixture models. `NMix()` has the following arguments: 
+
+```{r, eval = FALSE}
+NMix(abund.formula, det.formula, data, inits, priors, tuning,
+     n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
+     n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+     n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
+     n.chains = 1, ...)
+```
+
+The first two arguments, `abund.formula` and `det.formula`, use standard R model syntax to denote the covariates to be included in the abundance and detection portions of the model, respectively. Only the right hand side of the formulas are included. Random intercepts and slopes can be included in both the abundance and detection portions of the single-species N-mixture model using `lme4` syntax [@bates2015]. For example, to include a random intercept for different observers in the detection portion of the model, we would include `(1 | observer)` in the `det.formula`, where `observer` indicates the specific observer for each data point. The names of variables given in the formulas should correspond to those found in `data`, which is a list consisting of the following tags: `y` (count data), `abund.covs` (abundance covariates), `det.covs` (detection covariates). `y` should be stored as a sites x replicate matrix, `abund.covs` as a matrix or data frame with site-specific covariate values, and `det.covs` as a list with each list element corresponding to a covariate to include in the detection portion of the model. Covariates on detection can vary by site and/or survey, and so these covariates may be specified as a site by survey matrix for survey-level covariates or as a one-dimensional vector for survey level covariates. The `data.one.sp` list is already in the required format. Here we will model abundance as a function of a continuous covariate `abund.cov.1` as well as a categorical variable `abund.factor.1`, which we will treat as a random effect. We can imagine this categorical variable corresponding to a management unit, aspect of the experimental design, or some other grouping variable that we want to account for in our model. We model detection probability as a function of two continuous variables that vary across sites and replicates. We standardize all continuous covariates by using the `scale()` function in our model specification:
+
+```{r}
+abund.formula <- ~ scale(abund.cov.1) + (1 | abund.factor.1) 
+det.formula <- ~ scale(det.cov.1) + scale(det.cov.2) 
+# Check out the format of data.one.sp
+str(data.one.sp)
+```
+
+Next, we specify the initial values for the MCMC sampler in `inits`. `NMix()` (and all other `spAbundance` model fitting functions) will set initial values by default, but here we will do this explicitly, since in more complicated cases setting initial values close to the presumed solutions can be vital for success of an MCMC-based analysis. For all models described in this vignette (in particular the non-spatial models), choice of the initial values is largely inconsequential, with the exception being that specifying initial values close to the presumed solutions can decrease the amount of samples you need to run to arrive at convergence of the MCMC chains. Thus, when first running a model in `spAbundance`, we recommend fitting the model using the default initial values that `spAbundance` provides. The initial values that `spAbundance` chooses will be reported to the screen when setting `verbose = TRUE`. After running the model for a reasonable period, if you find the chains are taking a long time to reach convergence, you then may wish to set the initial values to the mean estimates of the parameters from the initial model fit, as this will likely help reduce the amount of time you need to run the model.
+
+The default initial values for abundance and detection regression coefficients (including the intercepts) are random values from a standard normal distribution, while the default initial values for the latent abundance effects are set to the maximum number of individuals observed at a given site over the replicate surveys at that site. When fitting an N-mixture model with a negative binomial distribution, the initial value for the overdispersion parameter is drawn from the prior distribution. Initial values are specified in a list with the following tags: `N` (latent abundance values), `alpha` (detection intercept and regression coefficients), `beta` (abundance intercept and regression coefficients), and `kappa` (negative binomial overdispersion parameter). Below we set all initial values of the regression coefficients to 0, initial values for the overdispersion parameter to 0.5, and set initial values for `N` based on the count data matrix. For the abundance (`beta`) and detection (`alpha`) regression coefficients, the initial values are passed either as a vector of length equal to the number of estimated parameters (including an intercept, and in the order specified in the model formula), or as a single value if setting the same initial value for all parameters (including the intercept). Below we take the latter approach. For the negative binomial overdispersion parameter, the initial value is simply a single numeric value. To specify the initial values for the latent abundance at each site (`N`), we must ensure we set the value to at least the maximum number of individuals observed at a site on a given survey, because we know the true abundance must be greater than or equal to the number of individuals observed (i.e., assuming no false positives). If the initial values for `N` do not meet this criterion, `NMix()` will fail. `spAbundance` will provide a clear error message if the supplied initial values for `N` are invalid. Below we use the raw count data and the `apply()` function to set the initial values to the largest observed count at each site. For any random effects that are included in the model, we can also specify the initial values for the random effect variances (`sigma.sq.mu` for abundance and `sigma.sq.p` for detection. By default, these will be drawn as random values between 0.05 and 2. Here we specify the initial value for the abundance random effect to 0.5.
+
+```{r}
+# Format with explicit specification of inits for alpha and beta
+# with four detection parameters and three occurrence parameters
+# (including the intercept).
+inits <- list(alpha = c(0, 0, 0, 0),
+              beta = c(0, 0, 0),
+              kappa = 0.5,
+	      sigma.sq.mu = 0.5,
+              N = apply(data.one.sp$y, 1, max, na.rm = TRUE))
+# Format with abbreviated specification of inits for alpha and beta.
+inits <- list(alpha = 0,
+              beta = 0,
+              kappa = 0.5,
+	      sigma.sq.mu = 0.5,
+              N = apply(data.one.sp$y, 1, max, na.rm = TRUE))
+```
+
+We next specify the priors for the abundance and detection regression coefficients, as well as the negative binomial overdispersion parameter. We assume normal priors for both the detection and abundance regression coefficients. These priors are specified in a list with tags `beta.normal` for abundance and `alpha.normal` for detection parameters (including intercepts). Each list element is then itself a list, with the first element of the list consisting of the hypermeans for each coefficient and the second element of the list consisting of the hypervariances for each coefficient. Alternatively, the hypermean and hypervariances can be specified as a single value if the same prior is used for all regression coefficients. By default, `spOccupancy` will set the hypermeans to 0 and the hypervariances to 100 for the abundance coefficients and 2.72 for the detection coefficients. The variance of 2.72 corresponds to a relatively flat prior on the probability scale (0, 1; @lunn2013bugs). For the negative binomial overdispersion parameter, we will use a uniform prior. This prior is specified as a tag in the prior list called `kappa.unif`, which should be a vector with two values indicating the lower and upper bound of the uniform distribution. The default prior is to set the lower bound to 0 and the upper bound to 100. Recall that lower values of `kappa` indicate substantial overdispersion and high values of `kappa` indicate minimal overdispersion. If there is little support for overdispersion when fitting a negative binomial model, we will likely see the estimates of `kappa` be close to the upper bound of the uniform prior distribution. For the default prior distribution, if the estimates of `kappa` are very close to 100, this indicates little support for overdispersion in the model, and we can likely switch to using a Poisson distribution (which would also likely be favored by model comparison approaches). For models with random effects in the abundance and/or detection portion of the N-mixture model, we can also specify the prior for the random effect ariance parameter (`sigma.sq.mu` for abundance and `sigma.sq.p` for detection). We assume an inverse-Gamma prior for these variance parameters and these are specified with the tags `sigma.sq.mu.ig` and `sigma.sq.p.ig`, respectively. These priors are set as a list with two components, where the first element is the shape parameter and the second element is the scale parameter. The shape and scale parameters can be specified as a single value or vectors equal to the number of random effects we include in the model. The default prior distribution for random effect variances is 0.1 for both the shape and scale parameters. Below we use default priors for all parameters, but specify them explicitly for clarity.
+
+```{r}
+priors <- list(alpha.normal = list(mean = 0, var = 2.72),
+               beta.normal = list(mean = 0, var = 100), 
+               kappa.unif = c(0, 100), 
+               sigma.sq.mu.ig = list(0.1, 0.1))
+```
+
+The next four arguments (`tuning`, `n.batch`, `batch.length`, and `accept.rate`) are all related to the specific type of MCMC sampler we use when we fit N-mixture models in `spAbundance`. The parameters in N-mixture models are all estimated using whats called a Metropolis-Hastings step, which can often be slow and inefficient, leading to slow mixing and convergence of the MCMC chains. To try and mitigate the slow mixing and convergence issues, we update all parameters in N-mixture models using an algorithm called an adaptive Metropolis-Hastings algorithm (see @roberts2009examples for more details on this algorithm). In this approach, we break up the total number of MCMC samples into a set of "batches", where each batch has a specific number of MCMC samples. Thus, we must specify the total number of batches (`n.batch`) as well as the number of MCMC samples each batch contains (`batch.length`) when specifying the function arguments. The total number of MCMC samples is `n.batch * batch.length`. Typically, we set `batch.length = 25` and then play around with `n.batch` until convergence of all model parameters is reached. We generally recommend setting `batch.length = 25`, but in certain situations this can be increased to a larger number of samples (e.g., 100), which can result in moderate decreases in run time. Here we set `n.batch = 800` for a total of 20,000 MCMC samples for each MCMC chain we run.
+
+```{r}
+batch.length <- 25
+n.batch <- 800
+# Total number of MCMC samples per chain
+batch.length * n.batch
+```
+
+Importantly, we also need to specify a target acceptance rate and initial tuning parameters for the abundance and detection regression coefficients (and the negative binomial overdispersion parameter and any latent random effects if applicable). These are both features of the adaptive algorithm we use to sample these parameters. In this adaptive Metropolis-Hastings algorithm, we propose new values for the parameters from some proposal distribution, compare them to our previous values, and use a statistical algorithm to determine if we should accept the new proposed value or keep the old one. The `accept.rate` argument specifies the ideal proportion of times we will accept the newly proposed values for these parameters. @roberts2009examples show that if we accept new values around 43% of the time, this will lead to optimal mixing and convergence of the MCMC chains. Following these recommendations, we should strive for an algorithm that accepts new values about 43% of the time. Thus, we recommend setting `accept.rate = 0.43` unless you have a specific reason not to (this is the default value). The values specified in the `tuning` argument help control the initial values we will propose for the abundance/detection coefficients and the negative binomial overdispersion parameter. These values are supplied as input in the form of a list with tags `beta`, `alpha`, and `kappa`. The initial tuning value can be any value greater than 0, but we generally recommend starting the value out around 0.5. These tuning values can also be thought of as tuning "variances", as it is these values that controls the variance of the distribution we use to generate newly proposed values for the parameters we are trying to estimate. In short, the new values that we propose for the parameters `beta`, `alpha`, and `kappa` come from a normal distribution with mean equal to the current value for the given parameter and the variance equal to the tuning parameter. Thus, the smaller this tuning parameter/variance is, the closer our proposed values will be to the current value, and vise versa for large values of the tuning parameter. The "ideal" value of the tuning variance will depend on the data set, the parameter, and how much uncertainty there is in the estimate of the parameter. This initial tuning value that we supply is the first tuning variance that will be used for the given parameter, and our adaptive algorithm will adjust this tuning parameter after each batch to yield acceptance rates of newly proposed values that are close to our target acceptance rate that we specified in the `accept.rate` argument. Information on the acceptance rates for a few of the parameters in your model will be displayed when setting `verbose = TRUE`. After some initial runs of the model, if you notice the final acceptance rate is much larger or smaller than the target acceptance rate (`accept.rate`), you can then change the initial tuning value to get closer to the target rate. While use of this algorithm requires us to specify more arguments than if we didn't "adaptively tune" our proposal variances, this leads to much shorter run times compared to a more simple approach where we do not have an "adaptive" sampling approach, and it should thus save us time in the long haul when waiting for these models to run. For our example here, we set the initial tuning values to 0.5 for `beta`, `alpha`, and `kappa`. For models with random effects in either the abundance or detection portions of the model, we also need to specify tuning parameters for the latent random effect values (`beta.star` for abundance and `alpha.star` for detection). We similarly set these to 0.5. 
+
+
+```{r}
+tuning <- list(beta = 0.5, alpha = 0.5, kappa = 0.5, beta.star = 0.5)
+# accept.rate = 0.43 by default, so we do not specify it.
+```
+
+We also need to specify the length of burn-in (`n.burn`), the rate at which we want to thin the posterior samples (`n.thin`), and the number of MCMC chains to run (`n.chains`). Note that currently `spAbundance` runs multiple chains sequentially and does not allow chains to be run simultaneously in parallel across multiple threads. Instead, we allow for within-chain parallelization using the `n.omp.threads` argument. We can set `n.omp.threads` to a number greater than 1 and smaller than the number of threads on the computer you are using. Generally, setting `n.omp.threads > 1` will not result in decreased run times for non-spatial models in `spAbundance`, but can substantially decrease run time when fitting spatial models [@finley2020spnngp]. Here we set `n.omp.threads = 1`.
+
+For a simple single-species N-mixture model, we shouldn't need too many samples and will only need a moderate amount of burn-in and thinning. We will run the model using three chains to assess convergence using the Gelman-Rubin diagnostic (Rhat; @brooks1998).
+
+```{r}
+n.burn <- 10000
+n.thin <- 10
+n.chains <- 3
+```
+
+We are now almost set to run the model. The `family` argument is used to indicate whether we want to model abundance with a Poisson distribution (`Poisson`) or a negative binomial distribution (`NB`). Here we will start with a Poisson distribution (the default), which we will compare to a model with a negative binomial distribution later. The `verbose` argument is a logical value indicating whether or not MCMC sampler progress is reported to the screen. If `verbose = TRUE`, sampler progress is reported to the screen. The argument `n.report` specifies the interval to report the Metropolis-Hastings sampler acceptance rate. Note that `n.report` is specified in terms of batches, not the overall number of samples. Below we set `n.report = 200`, which will result in information on the acceptance rate and tuning parameters every 200th batch (not sample).
+
+We now are set to fit the model.
+
+```{r}
+out <- NMix(abund.formula = abund.formula, 
+	    det.formula = det.formula, 
+	    data = data.one.sp, 
+	    inits = inits, 
+	    priors = priors,
+	    n.batch = n.batch,
+	    batch.length = batch.length, 
+	    tuning = tuning, 
+	    n.omp.threads = 1,
+	    n.report = 200,
+	    family = 'Poisson',
+	    verbose = TRUE,
+	    n.burn = n.burn,
+	    n.thin = n.thin, 
+	    n.chains = n.chains)
+```
+
+`NMix()` returns a list of class `NMix` with a suite of different objects, many of them being `coda::mcmc` objects of poseterior samples. The "Preparing to run the model" section will print information on default priors or initial values that are used when they are not specified in the function call. Here we specified everything explicitly so no information was reported.
+
+We next use the `summary()` function on the resulting `NMix()` object for a concise, informative summary of the regression parameters and convergence of the MCMC chains.
+
+```{r}
+summary(out)
+```
+
+Notice that the abundance coefficients are printed on the log scale and the detection coefficients are on the logit scale. We see that our species is quite rare, with an average expected abundance of approximately 0.37 (`exp(-1)`). There is a slight positive effect of the covariate effect, but its 95% credible interval clearly overlaps 0. The random effect variance mean is approximately 0.69, indicating this is a potentially important source of variability in abundance for the species. Note that we can also change the quantiles that are returned in the summary output if we desire to see additional quantiles. This is controlled with the `quantiles` argument.
+
+```{r}
+# Return a 50% CI and the median instead of the 95% CI
+summary(out, quantiles = c(0.25, 0.5, 0.75))
+```
+
+The model summary also provides information on convergence of the MCMC chains in the form of the Gelman-Rubin diagnostic [@brooks1998] and the effective sample size (ESS) of the posterior samples. Here we find all Rhat values are less than 1.1 and the ESS values are substantially large for all parameters. The ESS values are also adequately high for all model parameters, indicating adequate mixing of the MCMC chains.
+
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
+# Abundance parameters
+plot(out$beta.samples, density = FALSE)
+```
+
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
+# Detection parameters
+plot(out$alpha.samples, density = FALSE)
+```
+
+## Posterior predictive checks
+
+The function `ppcAbund()` performs a posterior predictive check on all `spAbundance` model objects as a Goodness of Fit (GoF) assessment. The fundamental idea of GoF testing is that a good model should generate data that closely align with the observed data. If there are drastic differences in the true data from the model generated data, our model is likely not very useful [@hobbs2015]. In `spAbundance`, we perform posterior predictive checks using the following approach:
+
+1. Fit the model using any of the model-fitting functions (here `NMix()`), which generates replicated values for all observed data points.
+2. Optionally bin both the actual and the replicated count data in some manner, such as by site or replicate.
+3. Compute a fit statistic on both the actual data and also on the model-generated 'replicate data'.
+4. Compare the fit statistics for the true data and replicate data. If they are widely different, this suggests a lack of fit of the model to the actual data set at hand.
+
+To perform a posterior predictive check, we send the resulting `NMix` model object as input to the `ppcAbund()` function, along with a fit statistic (`fit.stat`) and a numeric value indicating how to group, or bin, the data (`group`). Currently supported fit statistics include the Freeman-Tukey statistic and the Chi-Squared statistic (`freeman-tukey` or `chi-squared`, respectively, @kery2015applied). Currently, `ppcAbund()` allows the user to group the data by row (site; `group = 1`), column (replicate; `group = 2`), or not at all (`group = 0`). `ppcAbund()` will then return a set of posterior samples for the fit statistic (or discrepancy measure) using the actual data (`fit.y`) and model generated replicate data set (`fit.y.rep`), summed across all data points in the chosen manner. We generally recommend performing a posterior predictive check using all forms of grouping, as they may reveal (or fail to reveal) different inadequacies of the model for the specific data set at hand [@kery2015applied]. Throughout this vignette, we will display different types of poseterior predictive checks using different combinations of the fit statistic and grouping approach.
+
+The resulting values from a call to `ppcAbund()` can be used with the `summary()` function to generate a Bayesian p-value, which is the probability, under the fitted model, to obtain a value of the fit statistic that is more extreme (i.e., larger) than the one observed, i.e., for the actual data. Bayesian p-values are sensitive to individual values, so we may also want to explore the discrepancy measures for each (potentially "grouped") data point. `ppcAbund()` returns a matrix of posterior quantiles for the fit statistic for both the observed (`fit.y.group.quants`) and model generated, replicate data (`fit.y.rep.group.quants`) for each "grouped" data point.
+
+We next perform a posterior predictive check using the Freeman-Tukey statistic grouping the data by sites. We summarize the posterior predictive check with the `summary()` function, which reports a Bayesian p-value. A Bayesian p-value that hovers around 0.5 indicates adequate model fit, while values less than 0.1 or greater than 0.9 suggest our model does not fit the data well [@hobbs2015]. As always with a simulation-based analysis using MCMC, you will get numerically slightly different values.
+
+```{r}
+ppc.out <- ppcAbund(out, fit.stat = 'freeman-tukey', group = 1)
+summary(ppc.out)
+```
+
+The Bayesian p-value is greater than 0.1 and less than 0.9, indicating an adequate fit to the data. See the [introductory `spOccupancy` vignette](https://www.jeffdoser.com/files/spoccupancy-web/) for ways to further explore resulting objects from posterior predictive checks.
+
+## Model selection using WAIC
+
+Posterior predictive checks allow us to assess how well our model fits the data, but they are not very useful if we want to compare multiple competing models and ultimately select a final model based on some criterion. Bayesian model selection is very much a constantly changing field. See @hooten2015guide for an accessible overview of Bayesian model selection for ecologists.
+
+For Bayesian hierarchical models like occupancy models, the most common Bayesian model selection criterion, the deviance information criterion or DIC, is not applicable [@hooten2015guide]. Instead, the Widely Applicable Information Criterion [@watanabe2010] is recommended to compare a set of models and select the best-performing model for final analysis.
+
+The WAIC is calculated for all `spAbundance` model objects using the function `waicAbund()`. We calculate the WAIC as
+
+$$
+\text{WAIC} = -2 \times (\text{elpd} - \text{pD}),
+$$
+
+where elpd is the expected log point-wise predictive density and PD is the effective number of parameters. We calculate elpd by calculating the likelihood for each posterior sample, taking the mean of these likelihood values, taking the log of the mean of the likelihood values, and summing these values across all sites. We calculate the effective number of parameters by calculating the variance of the log likelihood for each site taken over all posterior samples, and then summing these values across all sites. See Appendix S1 from @broms2016model for more details.
+
+We calculate the WAIC using `waicAbund()` for our model below (as always, note some slight differences with your solutions due to Monte Carlo error).
+
+```{r}
+waicAbund(out)
+```
+
+Note the perhaps somewhat cryptic message that is displayed to the screen when you run the previous line. When calculating WAIC for N-mixture models (and distance sampling models), we need to integrate out the latent abundance values, which requires setting an upper bound to the potential value of the latent abundance values $N_j$ at each spatial location. By default, `waicAbund()` will set that upper bound to the largest abundance value at each site plus 10 (as indicated by the message). This upper bound can be controlled further with the `N.max` argument in `waicAbund()`. See the help page for `waicAbund` for details. 
+
+Now let's do a bit of model comparison. We will fit three candidate models to compare to our original model: 
+
+1. A model with a Poisson distribution for abundance with the random effect on abundance (this is the model we already fit).
+2. A model with a Poisson distribution for abundance without the random effect.
+3. A model with a negative binomial distribution for abundance with the random effect on abundance.
+4. A model with a negative binomial distribution without the random effect.
+
+We next run the three candidate models (setting `verbose = FALSE` to hide the messages printed by the model fitting functions). 
+
+```{r}
+# Approx run time: 30 sec
+out.2 <- NMix(abund.formula = ~ abund.cov.1, det.formula = det.formula, 
+	      data = data.one.sp, inits = inits, priors = priors,
+	      n.batch = n.batch, batch.length = batch.length, 
+	      tuning = tuning, n.omp.threads = 1, 
+	      family = 'Poisson', verbose = FALSE, n.burn = n.burn, 
+	      n.thin = n.thin, n.chains = n.chains)
+# Approx run time: 30 sec
+out.3 <- NMix(abund.formula = ~ abund.cov.1 + (1 | abund.factor.1),
+	      det.formula = det.formula, data = data.one.sp, 
+	      inits = inits, priors = priors, n.batch = n.batch, 
+	      batch.length = batch.length, tuning = tuning, 
+	      n.omp.threads = 1, family = 'NB', verbose = FALSE, 
+	      n.burn = n.burn, n.thin = n.thin, n.chains = n.chains)
+# Approx run time: 30 sec
+out.4 <- NMix(abund.formula = ~ abund.cov.1, det.formula = det.formula, 
+	      data = data.one.sp, inits = inits, priors = priors,
+	      n.batch = n.batch, batch.length = batch.length, 
+	      tuning = tuning, n.omp.threads = 1, 
+	      family = 'NB', verbose = FALSE, n.burn = n.burn, 
+	      n.thin = n.thin, n.chains = n.chains)
+# Compare models with WAIC
+# Poisson with abundance random effect
+waicAbund(out)
+# Poisson with no abundance random effect
+waicAbund(out.2)
+# NB with abundance random effect
+waicAbund(out.3)
+# NB with no abundance random effect
+waicAbund(out.4)
+```
+
+From this simple model comparison exercise, we see two things arise. First, the negative binomial models outperform the Poisson models, indicating there is substantial overdispersion in latent abundance that is not captured by the covariate/random effect included in the model. Second, models with the random effect outperform models without the random effect, indicating it is an important source of variation in abundance across the 225 sites. The best performing model is the model with the random effect and using a negative binomial distribution for latent abundance. 
+
+## Prediction
+
+All model objects from a call to `spAbundance` model-fitting functions can be used with `predict()` to generate a series of posterior predictive samples at new locations, given the values of all covariates used in the model fitting process. Given that we standardized the covariate values when we fit the model, we need to standardize the covariate values for prediction using the exact same values of the mean and standard deviation of the covariate values used to fit the data. 
+
+We envision the `predict()` functions can be used for two purposes: (1) generating marginal effects plots; and (2) predicting across some region of interest. The approach to do the prediction is the same for both purposes. Here we will use the `predict()` function to generate a marginal effects plot for the effect of the covariate on abundance.
+
+First, we create a set of evenly-spaced values of the covariate across the range of observed values, and subsequently standardize them by the mean and standard deviation of the covariate used to fit the model.
+
+```{r}
+cov.pred.vals <- seq(min(dataNMixSim$abund.covs[, 'abund.cov.1']), 
+		     max(dataNMixSim$abund.covs[, 'abund.cov.1']), 
+                     length.out = 100)
+# Scale predicted values by mean and sd used to fit the model
+cov.pred.vals.s <- (cov.pred.vals - mean(dataNMixSim$abund.covs[, 'abund.cov.1'])) / 
+                   sd(dataNMixSim$abund.covs[, 'abund.cov.1'])
+```
+
+For `NMix()`, the `predict()` function takes four arguments: 
+
+1. `object`: the `NMix` fitted model object.
+2. `X.0`: a matrix or data frame consisting of the design matrix for the prediction locations (which must include an intercept if our model contained one). 
+3. `ignore.RE`: a logical value indicating whether or not to remove random effects from the predicted values. By default, this is set to `FALSE`, and so prediction will include the random effects.
+4. `type`: a quoted keyword indicating whether we want to predict `abundance` or `detection`. This is by default set to `abundance`.
+
+Here, we only seek to predict to visualize the relationship between the covariate and abundance, and so we will predict without the random effect and set `ignore.RE = TRUE`. Thus, our design matrix that we form below only consists of the intercept and covariate value. If we were to predict with the random effect, the random effect values at the prediction location would be included as another column in `X.0`. 
+
+```{r}
+X.0 <- as.matrix(data.frame(intercept = 1, abund.cov.1 = cov.pred.vals.s))
+out.pred <- predict(out.3, X.0, ignore.RE = TRUE)
+str(out.pred)
+```
+
+The resulting object consists of posterior predictive samples for the expected abundances (`mu.0.samples`) and latent abundance values (`N.0.samples`). The beauty of the Bayesian paradigm, and the MCMC computing machinery, is that these predictions all have fully propagated uncertainty. Below, we produce a plot showing the relationship between expected abundance and the covariate, with the 95% credible interval shown in grey and the posterior median shown with the black line. 
+
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
+# Get the lower bound, median, and 95% credible interval
+mu.0.quants <- apply(out.pred$mu.0.samples, 2, quantile, 
+		                  prob = c(0.025, 0.5, 0.975))
+mu.plot.dat <- data.frame(mu.med = mu.0.quants[2, ], 
+			                     mu.low = mu.0.quants[1, ], 
+			                     mu.high = mu.0.quants[3, ], 
+                          abund.cov.1 = cov.pred.vals)
+ggplot(mu.plot.dat, aes(x = abund.cov.1, y = mu.med)) + 
+  geom_ribbon(aes(ymin = mu.low, ymax = mu.high), fill = 'grey70') +
+  geom_line() + 
+  theme_bw() + 
+  labs(x = 'Covariate', y = 'Expected abundance') 
+```
+
+Here we see a moderately positive relationship between the covariate and expected abundance.
+
+# Single-species spatial N-mixture models {#spNMix}
+
+## Basic model description
+
+When working across large spatial domains, accounting for residual spatial autocorrelation in species distributions can often improve predictive performance of a model, leading to more accurate predictions of species abundance patterns [@guelat2018]. We here extend the basic single-species N-mixture model to incorporate a spatial random effect that accounts for unexplained spatial variation in species abundance across a region of interest. Let $\bm{s}_j$ denote the geographical coordinates of site $j$ for $j = 1, \dots, J$. In all spatially-explicit models, we include $\bm{s}_j$ directly in the notation of spatially-indexed variables to indicate the model is spatially-explicit. More specifically, the expecteda bundance at site $j$ with coordinates $\bm{s}_j$, $\mu(\bm{s}_j)$, now takes the form
+
+\begin{equation}
+\text{log}(\mu(\bm{s}_j) = \textbf{x}(\bm{s}_j)^{\top}\bm{\beta} + \text{w}(\bm{s}_j),
+\end{equation}
+
+where $\text{w}(\bm{s}_j)$ is a spatial random effect modeled with a Nearest Neighbor Gaussian Process (NNGP; @datta2016hierarchical). More specifically, we have
+
+\begin{equation}
+\textbf{w}(\bm{s}) \sim N(\bm{0}, \bm{\tilde{\Sigma}}(\bm{s}, \bm{s}', \bm{\theta})),
+\end{equation}
+
+where $\bm{\tilde{\Sigma}}(\bm{s}, \bm{s}', \bm{\theta})$ is the NNGP-derived spatial covariance matrix that originates from the full $J \times J$ covariance matrix $\bm{\Sigma}(\bm{s}, \bm{s}', \bm{\theta})$ that is a function of the distances between any pair of site coordinates $\bm{s}$ and $\bm{s}'$ and a set of parameters $(\bm{\theta})$ that govern the spatial process. The vector $\bm{\theta}$ is equal to $\bm{\theta} = \{\sigma^2, \phi, \nu\}$, where $\sigma^2$ is a spatial variance parameter, $\phi$ is a spatial decay parameter, and $\nu$ is a spatial smoothness parameter. $\nu$ is only specified when using a Matern correlation function. The detection portion of the N-mixture model remains unchanged from the non-spatial N-mixture model. The NNGP is a computationally efficient alternative to working with a full Gaussian process model, which is notoriously slow for even moderately large data sets. See @datta2016hierarchical and @finley2019efficient for complete statistical details on the NNGP.
+
+## Fitting single-species spatial N-mixture models with `spNMix()`
+
+We will fit the same N-mixture model that we fit previously using `NMix()`, but we will now make the model spatially-explicit by incorporating a spatial process with `spNMix()`. The `spNMix()` function fits single-species spatial N-mixture models. 
+
+```{r, eval = FALSE}
+spNMix(abund.formula, det.formula, data, inits, priors, tuning,
+       cov.model = 'exponential', NNGP = TRUE, 
+       n.neighbors = 15, search.type = 'cb',
+       n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
+       n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+       n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
+       n.chains = 1, ...)
+```
+
+The arguments to `spNMix()` are very similar to those we saw with `NMix()`, with a few additional components. The abundance (`abund.formula`) and detection (`det.formula`) formmulas, as well as the list of data (`data`), take the same form as we saw in `NMix()`, with random slopes and intercepts allowed in both the abundance and detection models. Notice the `coords` matrix in the `data.one.sp` list of data. We did not use this for `NMix()`, but specifying the spatial coordinates in `data` is necessary for all spatially explicit models in `spAbundance`. 
+
+```{r}
+abund.formula <- ~ scale(abund.cov.1) + (1 | abund.factor.1) 
+det.formula <- ~ scale(det.cov.1) + scale(det.cov.2) 
+str(data.one.sp) # coords is required for spNMix()
+```
+
+The initial values (`inits`) are again specified in a list. Valid tags for initial values now additionally include the parameters associated with the spatial random effects. These include: `sigma.sq` (spatial variance parameter), `phi` (spatial decay parameter), `w` (the latent spatial random effects at each site), and `nu` (spatial smoothness parameter), where the latter is only specified if adopting a Matern covariance function (i.e., `cov.model = 'matern'`). `spAbundance` supports four spatial covariance models (`exponential`, `spherical`, `gaussian`, and `matern`), which are specified in the `cov.model` argument. Throughout this vignette, we will use an exponential covariance model, which we often use as our default covariance model when fitting spatially-explicit models and is commonly used throughout ecology. To determine which covariance function to use, we can fit models with the different covariance functions and compare them using WAIC to select the best performing function. We will note that the Matern covariance function has the additional spatial smoothness parameter $\nu$ and thus can often be more flexible than the other functions. However, because we need to estimate an additional parameter, this also tends to require more data (i.e., a larger number of sites) than the other covariance functions, and so we encourage use of the three simpler functions if your data set is sparse. We note that model estimates are generally fairly robust to the different covariance functions, although certain functions may provide substantially better estimates depending on the specific form of the underlying spatial autocorrelation in the data. For example, the Gaussian covariance function is often useful for accounting for spatial autocorrelation that is very smooth (i.e., long range spatial dependence). See Chapter 2 in @banerjee2003 for a more thorough discussion of these functions and their mathematical properties.
+
+The default initial values for `phi`, and `nu` are set to random values from the prior distribution, while the default initial value for `sigma.sq` is set to a random value between 0.05 and 3. In all spatially-explicit models described in this vignette, the spatial decay parameter `phi` is often the most sensitive to initial values. In general, the spatial decay parameter will often have poor mixing and take longer to converge than the rest of the parameters in the model, so specifying an initial value that is reasonably close to the resulting value can really help decrease run times for complicated models. As an initial value for the spatial decay parameter `phi`, we compute the mean distance between points in our coordinates matrix and then set it equal to 3 divided by this mean distance. When using an exponential covariance function, $\frac{3}{\phi}$ is the effective range, or the distance at which the residual spatial correlation between two sites drops to 0.05 [@banerjee2003]. Thus our initial guess for this effective range is the average distance between sites across the simulated region. As with all other parameters, we generally recommend using the default initial values for an initial model run, and if the model is taking a very long time to converge you can rerun the model with initial values based on the posterior means of estimated parameters from the initial model fit. For the spatial variance parameter `sigma.sq`, we set the initial value to 1. This corresponds to a moderate amount of spatial variance. Further, we set the initial values of the latent spatial random effects at each site to 0. The initial values for these random effects has an extremely small influence on the model results, so we generally recommend setting their initial values to 0 as we have done here (this is also the default). However, if you are running your model for a very long time and are seeing very slow convergence of the MCMC chains, setting the initial values of the spatial random effects to the mean estimates from a previous run of the model could help reach convergence faster.
+
+
+```{r}
+# Pair-wise distances between all sites
+dist.mat <- dist(data.one.sp$coords)
+# Exponential covariance model
+cov.model <- 'exponential'
+# Specify list of inits
+inits <- list(alpha = 0,
+              beta = 0,
+              kappa = 0.5,
+	      sigma.sq.mu = 0.5,
+              N = apply(data.one.sp$y, 1, max, na.rm = TRUE), 
+              sigma.sq = 1, 
+	      phi = 3 / mean(dist.mat),
+	      w = rep(0, nrow(data.one.sp$y)))
+```
+
+The parameter `NNGP` is a logical value that specifies whether we want to use an NNGP to fit the model. Currently, only `NNGP = TRUE` is supported, but we may eventually add functionality to fit full Gaussian Process models. The arguments `n.neighbors` and `search.type` specify the number of neighbors used in the NNGP and the nearest neighbor search algorithm, respectively, to use for the NNGP model. Generally, the default values of these arguments will be adequate. @datta2016hierarchical showed that setting `n.neighbors = 15` is usually sufficient, although for certain data sets a good approximation can be achieved with as few as five neighbors, which could substantially decrease run time for the model. We generally recommend leaving `search.type = "cb"`, as this results in a fast code book nearest neighbor search algorithm. However, details on when you may want to change this are described in @finley2020spnngp. We will run an NNGP model using the default value for `search.type` and setting `n.neighbors = 15` (both the defaults).
+
+```{r}
+NNGP <- TRUE
+n.neighbors <- 15
+search.type <- 'cb'
+```
+
+Priors are again specified in a list in the argument `priors`. We follow standard recommendations for prior distributions from the spatial statistics literature [@banerjee2003]. We assume an inverse gamma prior for the spatial variance parameter `sigma.sq` (the tag of which is `sigma.sq.ig`), and uniform priors for the spatial decay parameter `phi` and smoothness parameter `nu` (if using the Matern correlation function), with the associated tags `phi.unif` and `nu.unif`. The hyperparameters of the inverse Gamma are passed as a vector of length two, with the first and second elements corresponding to the shape and scale, respectively. The lower and upper bounds of the uniform distribution are passed as a two-element vector for the uniform priors. We also allow users to restrict the spatial variance further by specifying a uniform prior (with the tag `sigma.sq.unif`), which can potentially be useful to place a more informative prior on the spatial parameters. Generally, we use an inverse-Gamma prior.
+
+Note that the priors for the spatial parameters in a spatially-explicit model must be at least weakly informative for the model to converge [@banerjee2003]. For the inverse-Gamma prior on the spatial variance, we typically set the shape parameter to 2 and the scale parameter equal to our best guess of the spatial variance. The default prior hyperparameter values for the spatial variance $\sigma^2$ are a shape parameter of 2 and a scale parameter of 1. This weakly informative prior suggests a prior mean of 1 for the spatial variance, which is a moderately small amount of spatial variation. Here we will use this default prior. For the spatial decay parameter, our default approach is to set the lower and upper bounds of the uniform prior based on the minimum and maximum distances between sites in the data. More specifically, by default we set the lower bound to `3 / max` and the upper bound to `3 / min`, where `min` and `max` are the minimum and maximum distances between sites in the data set, respectively. This equates to a vague prior that states the spatial autocorrelation in the data could only exist between sites that are very close together, or could span across the entire observed study area. If additional information is known on the extent of the spatial autocorrelation in the data, you may place more restrictive bounds on the uniform prior, which would reduce the amount of time needed for adequate mixing and convergence of the MCMC chains. Here we use this default approach, but will explicitly set the values for transparency.
+
+```{r}
+min.dist <- min(dist.mat)
+max.dist <- max(dist.mat)
+priors <- list(alpha.normal = list(mean = 0, var = 2.72),
+               beta.normal = list(mean = 0, var = 100), 
+               kappa.unif = c(0, 100), 
+               sigma.sq.mu.ig = list(0.1, 0.1), 
+	       sigma.sq.ig = c(2, 1),
+	       phi.unif = c(3 / max.dist, 3 / min.dist))
+```
+
+We again split our MCMC algorithm up into a set of batches and use an adaptive sampler to adaptively tune the variances that we propose new values from. We specify the initial tuning values again in the `tuning` argument, and now need to add `phi` and `w` to the parameters that must be tuned. Note that we do not need to add `sigma.sq`, as this parameter can be sampled with a more efficient approach (i.e., it's full conditional distribution is available in closed form). 
+
+
+```{r}
+tuning <- list(beta = 0.5, alpha = 0.5, kappa = 0.5, beta.star = 0.5, 
+               w = 0.5, phi = 0.5)
+```
+
+The argument `n.omp.threads` specifies the number of threads to use for within-chain parallelization, while `verbose` specifies whether or not to print the progress of the sampler. As before, the argument `n.report` specifies the interval to report the Metropolis-Hastings sampler acceptance rate. Below we set `n.report = 100`, which will result in information on the acceptance rate and tuning parameters every 100th batch.
+
+```{r}
+verbose <- TRUE
+batch.length <- 25
+n.batch <- 800
+# Total number of MCMC samples per chain
+batch.length * n.batch
+n.report <- 100
+n.omp.threads <- 1
+```
+
+We will use the same amount of burn-in and thinning as we did with the non-spatial model, and we'll also first fit a model with a Poisson distribution for abundance. We next fit the model and summarize the results using the `summary()` function.
+
+```{r}
+n.burn <- 10000
+n.thin <- 10
+n.chains <- 3
+out.sp <- spNMix(abund.formula = abund.formula, 
+	         det.formula = det.formula, 
+	         data = data.one.sp, 
+	         inits = inits, 
+	         priors = priors,
+	         n.batch = n.batch,
+	         batch.length = batch.length, 
+	         tuning = tuning, 
+		 cov.model = cov.model,
+		 NNGP = NNGP, 
+		 n.neighbors = n.neighbors,
+		 search.type = search.type,
+	         n.omp.threads = n.omp.threads,
+	         n.report = n.report,
+	         family = 'Poisson',
+	         verbose = TRUE,
+	         n.burn = n.burn,
+	         n.thin = n.thin, 
+	         n.chains = n.chains)
+summary(out.sp)
+```
+
+Looking at the model summary we see adequate convergence of all model parameters. The `summary()` output looks the same as what we saw previously, with the additional section titled "Spatial Covariance". There we see the estimate of the spatial variance (`sigma.sq`) and spatial decay (`phi`) parameters. The spatial variance is near 1, which indicates substantial spatial variability in abundance across space. Interpretation of the spatial variance parameter can follow interpretation of variance parameters in "regular" (i.e., unstructured) random effect variances: when the variance is close to 0, that indicates little support for inclusion of the spatial random effect. When the variance is large, it indicates substantial support for the spatial random effect. What indicates "large" vs. "small" isn't necessarily straightforward, but here the estimate is clearly above 1, which is a substantially large variance parameter on the log scale. We can also look at the magnitude of the spatial random effect estimates themselves to give an indication as to how much residual spatial autocorrelation there is in the abundance estimates. The posterior samples for the spatial random effects are stored in `w.samples` tag of the resulting model fit list. Here we calculate the means of the spatial random effects and plot a histogram of their values.
+
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
+w.means <- apply(out.sp$w.samples, 2, mean)
+hist(w.means)
+```
+
+We see a fair amount of large magnitude random effect values, both above and below zero. If there was limited support for spatial autocorrelation, these values would all be very close to zero. 
+
+## Posterior predictive checks
+
+Posterior predictive checks proceed exactly before using the `ppcAbund()` function.
+
+```{r}
+ppc.out.sp <- ppcAbund(out.sp, fit.stat = 'freeman-tukey', group = 1)
+summary(ppc.out.sp)
+```
+
+## Model selection using WAIC
+
+We next compare the spatial Poisson N-mixture model to the best performing non-spatial N-mixture model, which used a negative binomial distribution (stored in `out.3`). 
+
+```{r}
+# Negative binomial non-spatial model
+waicAbund(out.3)
+# Poisson spatial model
+waicAbund(out.sp)
+```
+
+Here we see the spatial Poisson model outperforms the negative binomial non-spatial model. Both of these models can be viewed as a "standard" N-mixture model that account for overdispersion in two different ways: the negative binomial model has a parameter `kappa` that controls the amount of overdispersion, which is not assumed to have any spatial structure, while the spatial Poisson model can be thought of as a Poisson-lognormal model, where the log-normal random effects are assigned a spatial structure. Here, the latter model does a more adequate job of accounting for overdispersion in the latent abundance values. We could also fit a spatial negative binomial model, which essentially includes two mechanisms to account for overdispersion. We leave this to the interested reader to fit this model and see how it compares for this data set. We will note that spatial negative binomial models can sometimes be difficult to fit. This is particularly the case when there is no medium to large range spatial autocorrelation in the abundance values. When this is the case, the spatial random effects will be very difficult to identify from the negative binomial overdispersion parameter, and we may seem some unidentifiability occurring between the negative binomial overdispersion parameter and the parameters controlling the spatial dependence. In such a case, a spatial Poisson model or a negative binomial non-spatial model will usually suffice. Alternatively, we could set an informative prior on the spatial range to only allow the spatial random effects to explain high-range spatial autocorrelation and let the negative binomial overdispersion parameter account for short range overdispersion. We could then compare that model to simpler versions of the model using WAIC. 
+
+## Prediction
+
+We can similarly predict across a region of interest using the `predict()` function as we saw with the non-spatial N-mixture model. Here we again generate a marginal effects plot for the effect of the covariate on abundance. When generating a marginal effects plot, we set the `include.sp` argument to `FALSE`, which means that we will generate predictions only used the covariates, their effects, and any unstructured random effects included in the model. We generally only recommend doing this if the goal is to produce a marginal effects plot, as the inclusion of the spatial random effects often drastically improves model predictive performance when interest lies in predicting at new regions. See `?predict.spNMix` for an example of predicting abundance at a set of new locations. 
+
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
+# Recall what the prediction design matrix looks like
+str(X.0)
+out.pred <- predict(out.sp, X.0, ignore.RE = TRUE, include.sp = FALSE)
+str(out.pred)
+# Get the lower bound, median, and 95% credible interval
+mu.0.quants <- apply(out.pred$mu.0.samples, 2, quantile,
+		                  prob = c(0.025, 0.5, 0.975))
+mu.plot.dat <- data.frame(mu.med = mu.0.quants[2, ],
+			                     mu.low = mu.0.quants[1, ],
+			                     mu.high = mu.0.quants[3, ],
+                          abund.cov.1 = cov.pred.vals)
+ggplot(mu.plot.dat, aes(x = abund.cov.1, y = mu.med)) +
+  geom_ribbon(aes(ymin = mu.low, ymax = mu.high), fill = 'grey70') +
+  geom_line() +
+  theme_bw() +
+  labs(x = 'Covariate', y = 'Expected abundance')
+```
+
+# Multi-species N-mixture models
+
+## Basic model description
+
+Now consider the case where repeated count data, $y_{i, j, k}$, are collected for multiple species $i = 1, \dots, I$ at each survey location $j$ during survey $k$. We are now interested in estimating the abundance of each species $i$ at each location $j$, denoted as $N_{i, j}$. We model $N_{i, j}$ analogous to the single-species N-mixture model, with expected abundance now varying by species and site according to
+
+\begin{equation}\label{mu-msNMix}
+     \text{log}(\mu_{i, j}) = \textbf{x}_j)^\top\bm{\beta}_i,
+\end{equation}
+
+where $\bm{\beta}_i$ are the species-specific effects of covariates $\textbf{x}_j$ (including an intercept) . When $N_i(\bm{s}_j)$ is modeled using a negative binomial distribution, we estimate a separate dispersion parameter $\kappa_i$ for each species. We model $\bm{\beta}_i$ as random effects arising from a common, community-level normal distribution, which leads to increased precision of species-specific effects compared to single-species models [@yamaura2012biodiversity]. For example, the species-specific abundance intercept $\beta0_i$ is modeled according to
+
+\begin{equation}\label{betaComm}
+     \beta0_i \sim \text{Normal}(\mu_{\beta0}, \tau^2_{\beta0}),
+\end{equation}
+
+where $\mu_{\beta0}$ is the community-level abundance intercept, and $\tau^2_{\beta0}$ is the variance of the intercept across all $I$ species. The observation portion of the multi-species N-mixture model is identical to the single-species model, with all parameters indexed by species, and the species-specific coefficients $\bm{\alpha}_i$ modeled hierarchically analogous to the species-specific abundance coefficients just described.
+
+We assign normal priors to the community-level abundance ($\bm{\mu}_{\beta}$) and detection ($\bm{\mu}_{\alpha}$) mean parameters and inverse-Gamma priors to the community-level variance parameters ($\bm{\tau^2}_{\beta}$ and $\bm{\tau^2}_{\alpha}$). 
+
+## Fitting multi-species N-mixture models with `msNMix()`
+
+`spAbundance` uses nearly identical syntax for fitting multi-species N-mixture models as it does for single-species models and provides the same functionality for posterior predictive checks, model assessment and selection using WAIC, and prediction. The `msNMix()` function fits the multi-species N-mixture model first introduced by @yamaura2012biodiversity. `msNMix()` has the following syntax
+
+```{r, eval = FALSE}
+msNMix(abund.formula, det.formula, data, inits, priors,  
+       tuning, n.batch, batch.length, accept.rate = 0.43, 
+       family = 'Poisson', n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+       n.burn = round(.10 * n.samples), n.thin = 1, 
+       n.chains = 1, ...)
+```
+
+Notice these are the exact same arguments we saw with `NMix()`. We will again use our simulated data set contained in `dataNMixSim`, but now we will use data from all 6 species in the simulated community. Below we reload the `dataNMixSim` data set to get a fresh copy. 
+
+```{r}
+data(dataNMixSim)
+```
+
+We will model abundance for all species as a function of the continuous covariate and a random effect of the categorical variable, as well as the two continuous covariates for detection probability. For multi-species models, the multi-species detection-nondetection data `y` is now a three-dimensional array with dimensions corresponding to species, sites, and replicates. This is how the data are provided in the `dataNMixSim` object, so we don't need to do any additional preparations. For guidance on preparing raw data into such a three-dimensional array format, please see [this vignette on the `spOccupancy` website](https://www.jeffdoser.com/files/spoccupancy-web/articles/dataformatting), which while providing guidance for fitting multi-species models in `spOccupancy`, the format for `spAbundance` is exactly the same and all the same guidance applies here.
+
+```{r}
+abund.ms.formula <- ~ scale(abund.cov.1) + (1 | abund.factor.1) 
+det.ms.formula <- ~ scale(det.cov.1) + scale(det.cov.2) 
+str(dataNMixSim)
+```
+
+Next we specify the initial values in `inits`. For multi-species N-mixture models, we supply initial values for community-level and species-level parameters. In `msNMix()`, we will supply initial values for the following parameters: `alpha.comm` (community-level detection coefficients), `beta.comm` (community-level abundance coefficients), `alpha` (species-level detection coefficients), `beta` (species-level abundance coefficients), `tau.sq.beta` (community-level abundance variance parameters), `tau.sq.alpha` (community-level detection variance parameters, `N` (latent abundance variables for all species), `kappa` (species-level negative binomial overdispersion parameters), `sigma.sq.mu` (random effect variances for abundance), and `sigma.sq.p` (random effect variances for detection). These are all specified in a single list. Initial values for community-level parameters (including the random effect variances) are either vectors of length corresponding to the number of community-level detection or occurrence parameters in the model (including the intercepts) or a single value if all parameters are assigned the same initial values. Initial values for species level parameters are either matrices with the number of rows indicating the number of species, and each column corresponding to a different regression parameter, or a single value if the same initial value is used for all species and parameters. The initial values for the latent abundance matrix are specified as a matrix with $I$ rows corresponding to the number of species and $J$ columns corresponding to the number of sites.
+
+```{r}
+# Number of species
+n.sp <- dim(dataNMixSim$y)[1]
+ms.inits <- list(alpha.comm = 0,
+                 beta.comm = 0,
+                 beta = 0,
+                 alpha = 0,
+                 tau.sq.beta = 1,
+		 kappa = 1,
+                 tau.sq.alpha = 1,
+		 sigma.sq.mu = 0.5,
+                 N = apply(dataNMixSim$y, c(1, 2), max, na.rm = TRUE))
+```
+
+In multi-species models, we specify priors on the community-level coefficients (or hyperparameters) rather than the species-level effects, with the exception that we still assign uniform priors for the negative binomial overdispersion parameter.  For nonspatial models, these priors are specified with the following tags: `beta.comm.normal` (normal prior on the community-level abundance mean effects), `alpha.comm.normal` (normal prior on the community-level detection mean effects), `tau.sq.beta.ig` (inverse-Gamma prior on the community-level abundance variance parameters), `tau.sq.alpha.ig` (inverse-Gamma prior on the community-level detection variance parameters), `sigma.sq.mu.ig` (inverse-Gamma prior on the abundance random effect variances), `sigma.sq.p.ig` (inverse-Gamma prior on the detection random effect variances), `kappa.unif` (uniform prior on the species-specific overdispersion parameters). For all parameters except the species-specific overdispersion parameters, each tag consists of a list with elements corresponding to the mean and variance for normal priors and scale and shape for inverse-Gamma priors. Values can be specified individually for each parameter or as a single value if the same prior is assigned to all parameters of a given type. For the species-specific overdispersion parameters, the prior is specified as a list with two elements representing the lower and upper bound of the uniform distribution, where each of the elements can be a single value if the same prior is used for all species, or a vector of values for each species if specifying a different prior for each species. 
+
+By default, we set the prior hyperparameter values for the community-level means to a mean of 0 and a variance of 100 for abundance and 2.72 for detection, which results in a vague prior on the probability scale as we discussed for the single-species N-mixture  model. Below we specify these priors explicitly. For the community-level variance parameters, by default we set the scale and shape parameters to 0.1 following the recommendations of [@lunn2013bugs], which results in a weakly informative prior on the community-level variances. This may lead to shrinkage of the community-level variance towards zero under certain circumstances so that all species will have fairly similar values for the species-specific covariate effect [@gelman2006prior], although we have found multi-species models to be relatively robust to this prior specification. We are in the process of implementing half-Cauchy and half-t priors for the variance parameters in all multi-species models in `spAbundance` (and `spOccupancy`), which generally result in less shrinkage toward zero than the inverse-Gamma [@gelman2006prior]. For the negative binomial overdispersion parameters, we by default use a lower bound of 0 and upper bound of 100 for the uniform priors for each species, as we did in the single-species (univariate) models. Below we explicitly set these default prior values for our example.
+
+```{r}
+ms.priors <- list(beta.comm.normal = list(mean = 0, var = 100),
+                  alpha.comm.normal = list(mean = 0, var = 2.72),
+                  tau.sq.beta.ig = list(a = 0.1, b = 0.1),
+                  tau.sq.alpha.ig = list(a = 0.1, b = 0.1), 
+		  sigma.sq.mu.ig = list(a = 0.1, b = 0.1),
+                  kappa.unif = list(a = 0, b = 100))
+```
+
+All that's now left to do is specify the number of threads to use (`n.omp.threads`), the number of MCMC samples (which we do by specifying the number of batches `n.batch` and batch length `batch.length`), the initial tuning variances (`tuning`), the amount of samples to discard as burn-in (`n.burn`), the thinning rate (`n.thin`), and arguments to control the display of sampler progress (`verbose`, `n.report`). Note for the tuning variances, we do not need to specify initial tuning values for any of the community-level parameters, as those parameters can be sampled with an efficient Gibbs update. We will also run the model with a Poisson distribution for abundance, which later we will shortly compare to a negative binomial.
+
+```{r}
+# Specify initial tuning values
+ms.tuning <- list(beta = 0.3, alpha = 0.3, beta.star = 0.5, kappa = 0.5)
+# Approx. run time:  2.5 min
+out.ms <- msNMix(abund.formula = abund.ms.formula,
+                  det.formula = det.ms.formula,
+                  data = dataNMixSim,
+                  inits = ms.inits,
+		  n.batch = 800,
+		  tuning = ms.tuning,
+		  batch.length = 25,
+                  priors = ms.priors,
+                  n.omp.threads = 1,
+                  verbose = TRUE,
+                  n.report = 200,
+                  n.burn = 10000,
+                  n.thin = 10,
+                  n.chains = 3)
+```
+
+The resulting object `out.ms` is a list of class `msNMix` consisting primarily of posterior samples of all community and species-level parameters, as well as some additional objects that are used for summaries, prediction, and model fit evaluation. We can display a nice summary of these results using the `summary()` function as before. For multi-species objects, when using summary we need to specify the level of parameters we want to summarize. We do this using the argument `level`, which takes values `community`, `species`, or `both` to print results for community-level parameters, species-level parameters, or all parameters. By default, `level` is set to `both` to display both species and community-level parameters. 
+
+```{r}
+summary(out.ms)
+# Or more explicitly
+# summary(out.ms, level = 'both')
+```
+
+We see adequate convergence and mixing of all model parameters, with ESS values fairly large and Rhat values less (or very close to) 1.1. Looking at the community-level variance parameters, we can see there is fairly minimal variation among average abundance of each species (i.e., the intercept), with larger variable in the effect of the covariate on abundance, which is further seen by looking at the species-specific effects of the covariate, which range from highly positive to highly negative.
+
+## Posterior predictive checks
+
+As with single-species models, we can use the `ppcAbund()` function to perform posterior predictive checks, and summarize the check with a Bayesian p-value using the `summary()` function. The `summary()` function again requires the `level` argument to specify if you want an overall Bayesian p-value for the entire community (`level = 'community'`), each individual species (`level = 'species'`), or for both (`level = 'both'`). By default, we set `level = 'both'. This time, we use a chi-squared test statistic, grouping the data by replicates (again, we just do this to display the different ways of performing posterior predictive checks, and for a full analysis we would explore multiple fit statistics and ways of grouping the data). 
+
+```{r}
+ppc.ms.out <- ppcAbund(out.ms, fit.stat = 'chi-squared', group = 2)
+summary(ppc.ms.out)
+```
+
+Here we see mixed results of the posterior predictive check, with the fourth species having a fairly small Bayesian p-value, suggesting the model does not fit very well for that species. This is likely a result of overdispersion in the abundance values for that species which the Poisson multi-species N-mixture model is not accounting for. Here we will resist further temptations to identify the source of the inadequate fit for the fourth species.
+
+## Model selection using WAIC
+
+We can compute the WAIC for comparison with alternative models using the `waicAbund()` function. For multi-species models, we can calculate the WAIC for the entire data set, or we can calculate it separately for each species. This is done by using the logical `by.sp` argument. Note that the WAIC for the entire data set is simply the sum of all the WAIC values for the individual responses. Below we calculate the WAIC by species for the multi-species model and compare the WAIC for species 1 to the corresponding WAIC for the non-spatial single-species model we fit for that species.
+
+```{r}
+# Multi-species Poisson N-mixture model
+waicAbund(out.ms, by.sp = TRUE)
+# Single-species Poisson N-mixture model for species 1
+waicAbund(out)
+```
+
+Here we see nearly identical WAIC values for species 1 across a single-species model vs. a multi-species model. Next, we fit a multi-species negative binomial N-mixture model for comparison with the Poisson multi-species model
+
+```{r}
+# Approx. run time:  2.7 min
+out.ms.nb <- msNMix(abund.formula = abund.ms.formula,
+                  det.formula = det.ms.formula,
+                  data = dataNMixSim,
+                  inits = ms.inits,
+		  n.batch = 800,
+		  tuning = ms.tuning,
+		  batch.length = 25,
+                  priors = ms.priors,
+                  n.omp.threads = 1,
+                  verbose = TRUE,
+		  family = 'NB',
+                  n.report = 200,
+                  n.burn = 10000,
+                  n.thin = 10,
+                  n.chains = 3)
+# Negative binomial
+waicAbund(out.ms.nb, by.sp = TRUE)
+# Poisson
+waicAbund(out.ms, by.sp = TRUE)
+```
+
+Here we see the negative binomial model provides pretty substantial improvements for the first two species in the data set, while the last four species all have WAIC values that are very similar across the two models. 
+
+## Prediction
+
+Prediction proceeds exactly as we have seen previously with the single-species non-spatial N-mixture model. Below we generate a marginal effects plot for the effect of the covariate on each of the six species in the data set. Because we saw substantial improvements in WAIC for the first two species in the data set, we will use the negative binomial model
+
+```{r}
+out.pred <- predict(out.ms.nb, X.0, ignore.RE = TRUE)
+# Look at the resulting object
+str(out.pred)
+```
+
+Notice that `mu.0.samples` (expected abundances) and `N.0.samples` (mean abundances) are now three-dimensional arrays, with dimensions corresponding to posterior sample, species, and site. Now, we make a marginal effect plot for each species. 
+
+```{r}
+mu.0.quants <- apply(out.pred$mu.0.samples, c(2, 3), quantile,
+		                  prob = c(0.025, 0.5, 0.975))
+# Put stuff together for plotting with ggplot2
+mu.0.plot.df <- data.frame(mu.med = c(mu.0.quants[2, , ]), 
+			   mu.low = c(mu.0.quants[1, , ]),
+			   mu.high = c(mu.0.quants[3, , ]),
+                           sp = rep(1:n.sp, nrow(X.0)),
+                           abund.cov.1 = rep(cov.pred.vals, each = n.sp))
+ggplot(mu.0.plot.df, aes(x = abund.cov.1, y = mu.med)) +
+  geom_ribbon(aes(ymin = mu.low, ymax = mu.high), fill = 'grey70') +
+  geom_line() +
+  theme_bw() +
+  facet_wrap(vars(sp)) +
+  labs(x = 'Covariate', y = 'Expected abundance') 
+```
+
+# Latent factor multi-species N-mixture models 
+
+## Basic model description
+
+The latent factor multi-species N-mixture model is identical to the previously described multi-species N-mixture model except we include an additional component in the model to accommodate residual correlations between species. This type of model is often referred to as an abundance-based joint species distribution model (JSDM) in the statistical ecology literature [@warton2015so]. The previously described multi-species N-mixture model can be viewed as a simplified version of the latent factor multi-species N-mixture model, where we assume there are no residual correlations between species. This model was described in Section 8.5.4 of @keryRoyle2021, which they implemented in JAGS. 
+
+The model is identical to the previously described multi-species N-mixture model, with the only addition being a species-specific random effect at each site added to the equation for expected abundance. More specifically, we model species-specific abundance as 
+
+\begin{equation}
+\text{log}(\mu_{i, j}) = \textbf{x}_j^\top\bm{\beta}_i + \text{w}^\ast_{i, j}.
+\end{equation}
+
+The species-specific random effect $\text{w}^\ast_{i, j}$ is used to account for residual correlations between species by assuming that correlation amongst the species can be explained by species-specific effects of a set of $q$ latent variables. More specifically, we use a factor modeling approach [@lopes2004bayesian] to account for species residual correlations in a computationally efficient manner [@tobler2019joint]. This approach is ideal for large groups of species, where estimating a full $I \times I$ covariance matrix would be computatinally intractable (and/or require massive amounts of data). Specifically, we decompose $\text{w}^\ast_{i, j}$ into a linear combination of $q$ latent variables (i.e., factors) and their associated species-specific coefficients (i.e., factor loadings) according to 
+
+\begin{equation}\label{factorModel}
+	\text{w}^\ast_{i, j} = \bm{\lambda}_i^\top\text{w}_j,
+\end{equation}
+
+where $\bm{\lambda}_i^\top$ is the $i$\text{th} row of factor loadings from an $I \times q$ loadings matrix $\bm{\Lambda}$, and $\text{w}_j$ is a $q \times 1$ vector of independent latent factors at site $j$. By settng $q << N$, we achieve dimension reduction to efficiently model communities with a large number of species [@taylor2019spatial; @tobler2019joint; @doser2022joint]. The approach accounts for residual species correlations via their species-specific responses to the $q$ factors. We model each latent factor as a standard normal random variable. To ensure identifiability of the latent factors from the latent factor loadings, we fix the upper triangle of the factor loadings matrix to 0 and the diagonal elements to 1. We assign standard normal priors to the lower triangular elements of the factor loadings matrix. All other priors are identical to the multi-species N-mixture model previously discussed.
+
+The constraints on the factor loadings matrix ensures identifiability of the factor loadings from the latent factors, but this also results in important practical considerations when fitting these models (e.g., ordering of the species, initial values). The [`spOccupancy` website](https://www.jeffdoser.com/files/spoccupancy-web/) provides variety of vignettes that discuss these considerations. All the advice applied to factor models fit with detection-nondetection data in `spOccupancy` also apply to factor models fit in `spAbundance`.
+
+## Fitting latent factor multi-species N-mixture models with `lfMsNMix()`
+
+The function `lfMsNMix()` fits latent factor multi-species N-mixture models in `spAbundance`. The arguments are identical to those in `msNMix()` with one additional argument that specifies the number of factors we wish to use in the model (`n.factors`): 
+
+```{r, eval = FALSE}
+lfMsNMix(abund.formula, det.formula, data, inits, priors,  
+       tuning, n.factors, n.batch, batch.length, accept.rate = 0.43, 
+       family = 'Poisson', n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+       n.burn = round(.10 * n.samples), n.thin = 1, 
+       n.chains = 1, ...)
+```
+
+For guidance on choosing the number of latent factors, see [the section on fitting latent factor multi-species occupancy models](https://www.jeffdoser.com/files/spoccupancy-web/articles/factormodels#latent-factor-multi-species-occupancy-models) on the `spOccupancy` website. Here we will fit a model with 3 latent factors.
+
+```{r}
+n.factors <- 3
+```
+
+There are only a few slight differences in how we go about fitting a multi-species N-mixture model with latent factors compared to one without latent factors. The `data` format as well as `abund.formula` and `det.formula` remain the same as before. 
+
+```{r}
+abund.ms.formula <- ~ scale(abund.cov.1) + (1 | abund.factor.1) 
+det.ms.formula <- ~ scale(det.cov.1) + scale(det.cov.2) 
+str(dataNMixSim)
+```
+
+Initial values are specified as with `msNMix()`, with the exception that we can now specify initial values for the latent factor loadings matrix `lambda` and the latent factors `w`. Initial values for the species-specific factor loadings (`lambda`) are specified as a numeric matrix with $I$ rows and $q$ columns, where $I$ is the number of species and $q$ is the number of latent factors used in the model. The diagonal elements of the matrix must be 1, and values in the upper triangle must be set to 0 to ensure identifiability of the latent factors. Note that the default initial values for the lower triangle of the factor loadings matrix is 0. We can also specify the initial values for the latent factors. Below we set these to 0 (which is the default).
+
+```{r}
+# Number of species
+n.sp <- dim(dataNMixSim$y)[1]
+# Initiate all lambda initial values to 0. 
+lambda.inits <- matrix(0, n.sp, n.factors)
+# Set diagonal elements to 1
+diag(lambda.inits) <- 1
+# Set lower triangular elements to random values from a standard normal distribution
+lambda.inits[lower.tri(lambda.inits)] <- rnorm(sum(lower.tri(lambda.inits)))
+# Check it out.
+lambda.inits
+w.inits <- matrix(0, n.factors, ncol(dataNMixSim$y))
+ms.inits <- list(alpha.comm = 0,
+                 beta.comm = 0,
+                 beta = 0,
+                 alpha = 0,
+                 tau.sq.beta = 1,
+		 lambda = lambda.inits,
+		 kappa = 1,
+		 w = w.inits,
+                 tau.sq.alpha = 1,
+		 sigma.sq.mu = 0.5,
+                 N = apply(dataNMixSim$y, c(1, 2), max, na.rm = TRUE))
+```
+
+Priors are specified exactly the same as we saw with `msNMix()`. We do not need to explicitly specify the prior for the factor loadings, as we require the prior for the lower-triangular values to be Normal(0, 1).
+
+```{r}
+ms.priors <- list(beta.comm.normal = list(mean = 0, var = 2.72),
+                  alpha.comm.normal = list(mean = 0, var = 2.72),
+                  tau.sq.beta.ig = list(a = 0.1, b = 0.1),
+                  tau.sq.alpha.ig = list(a = 0.1, b = 0.1), 
+		  sigma.sq.mu.ig = list(a = 0.1, b = 0.1),
+                  kappa.unif = list(a = 0, b = 100))
+```
+
+We finish up by specifying the tuning values, where now we specify the initial tuning variance for the factor loadings `lambda` as well as the latent factors `w`. We then run the model for 20,000 iterations with a burn-in of 10,000 samples and a thinning rate of 10, for each of 3 chains, yielding a total of 3000 posterior samples. We will fit the model with a Poisson distribution for abundance.
+
+```{r}
+# Specify initial tuning values
+ms.tuning <- list(beta = 0.3, alpha = 0.3, beta.star = 0.5, kappa = 0.5, w = 0.5, lambda = 0.5)
+# Approx. run time: ~4.3 min
+out.lf.ms <- lfMsNMix(abund.formula = abund.ms.formula,
+                   det.formula = det.ms.formula,
+                   data = dataNMixSim,
+                   inits = ms.inits,
+		   n.batch = 800,
+                   n.factors = n.factors,
+		   tuning = ms.tuning,
+		   batch.length = 25,
+                   priors = ms.priors,
+                   n.omp.threads = 1,
+                   verbose = TRUE,
+                   n.report = 200,
+                   n.burn = 10000,
+                   n.thin = 10,
+                   n.chains = 3)
+summary(out.lf.ms)
+```
+
+We see adequate convergence of all model parameters shown in the summary output. Note that the factor loadings themselves are not shown in the `summary()` output, but are available in the `lambda.samples` portion of the model list object.
+
+```{r}
+# Rhats for lambda (the factor loadings)
+out.lf.ms$rhat$lambda.lower.tri
+# ESS for lambda
+out.lf.ms$ESS$lambda
+# Posterior quantiles for the latent factor loadings
+summary(out.lf.ms$lambda.samples)$quantiles
+```
+
+We can inspect the latent factor loadings as well as the latent factors (stored in `out.lf.ms$w.samples`) to provide information on any groupings that arise from the species in the modeled community. See Appendix S1 in @doser22joint for a discussion on using factor models as a model-based ordination technique. 
+
+## Posterior predictive checks
+
+We again use the `ppcAbund()` function perform a posterior predictive check of our model
+
+```{r}
+ppc.out.lf.ms <- ppcAbund(out.lf.ms, fit.stat = 'chi-squared', group = 2)
+# Summarize with a Bayesian p-value
+summary(ppc.out.lf.ms)
+```
+
+## Model selection using WAIC
+
+We can use `waicAbund()` to calculate the WAIC for comparison to other models. Below, we compare the regular multi-species N-mixture model to the latent factor multi-species N-mixture model.
+
+```{r}
+# With latent factors
+waicAbund(out.lf.ms, by.sp = TRUE)
+# Without latent factors
+waicAbund(out.ms, by.sp = TRUE)
+```
+
+## Prediction
+
+Prediction proceeds exactly as before with the multi-species N-mixture model, so we can simply copy the code from above and re-run it with our latent factor model. 
+
+```{r}
+out.pred <- predict(out.lf.ms, X.0, ignore.RE = TRUE)
+# Look at the resulting object
+str(out.pred)
+mu.0.quants <- apply(out.pred$mu.0.samples, c(2, 3), quantile,
+		                  prob = c(0.025, 0.5, 0.975))
+# Put stuff together for plotting with ggplot2
+mu.0.plot.df <- data.frame(mu.med = c(mu.0.quants[2, , ]),
+			   mu.low = c(mu.0.quants[1, , ]),
+			   mu.high = c(mu.0.quants[3, , ]),
+                           sp = rep(1:n.sp, nrow(X.0)),
+                           abund.cov.1 = rep(cov.pred.vals, each = n.sp))
+ggplot(mu.0.plot.df, aes(x = abund.cov.1, y = mu.med)) +
+  geom_ribbon(aes(ymin = mu.low, ymax = mu.high), fill = 'grey70') +
+  geom_line() +
+  theme_bw() +
+  facet_wrap(vars(sp)) +
+  labs(x = 'Covariate', y = 'Expected abundance')
+```
+
+# Spatial factor multi-species N-mixture models 
+
+## Basic model description
+
+## Fitting spatial factor multi-species N-mixture models with `sfMsNMix()`
+
+## Posterior predictive checks
+
+## Model selection using WAIC
+
+## Prediction
+
+# References {-}
+

@@ -169,7 +169,7 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
       message(noquote(paste("Currently on species ", i, " out of ", n.sp, sep = '')))
       N.samples <- object$N.samples[, i, ]
       n.samples <- object$n.post * object$n.chains
-      kappa.samples <- object$kappa.samples[, i, ]
+      kappa.samples <- object$kappa.samples[, i]
       y <- object$y[i, , ]
       if (length(dim(y)) == 1) {
         y <- as.matrix(y)
@@ -283,7 +283,7 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
       if (length(dim(y)) == 1) {
         y <- as.matrix(y)
       }
-      y.max <- apply(y, 1, max, na.rm = TRUE)
+      y.sum <- apply(y, 1, sum, na.rm = TRUE)
       # TODO: 
       # y.max <- ifelse(y.max == 0, 1, y.max)
       J <- nrow(y)
@@ -294,6 +294,7 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
       pi.samples[, , K.max + 1] <- apply(pi.samples[, , 1:K.max], c(1, 2),
 				       function(a) 1 - sum(a))
       mu.samples <- object$mu.samples[, i, ]
+      mu.samples <- t(apply(mu.samples, 1, function(a) a * object$offset))
       # dist == 1 for NB, 0 for Poisson
       dist <- object$dist
       dist <- ifelse(dist == 'NB', 1, 0)
@@ -314,12 +315,12 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
       storage.mode(model.type) <- "integer"
       storage.mode(N.max.curr) <- "integer"
       storage.mode(K.max) <- "integer"
-      storage.mode(y.max) <- "integer"
+      storage.mode(y.sum) <- "integer"
 
       tmp <- .Call("waicAbund", J, K, dist, model.type, 
           	 y, n.samples, N.samples, 
           	 kappa.samples, mu.samples, pi.samples, 
-          	 N.max.curr, K.max, y.max)
+          	 N.max.curr, K.max, y.sum)
       elpd[i] <- sum(apply(tmp$like.samples, 1, function(a) log(mean(a))), na.rm = TRUE)
       pD[i] <- sum(apply(tmp$like.samples, 1, function(a) var(log(a))), na.rm = TRUE)
     }

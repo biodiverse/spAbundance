@@ -140,9 +140,9 @@ extern "C" {
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
 	if (family == 1) {
-          Rprintf("Multi-species Negative Binomial Distance Sampling model with %i sites and %i species.\n\n", J, nSp);
+          Rprintf("Multi-species Negative Binomial HDS model with %i sites and %i species.\n\n", J, nSp);
 	} else {
-          Rprintf("Multi-species Poisson Distance Sampling model with %i sites and %i species.\n\n", J, nSp);
+          Rprintf("Multi-species Poisson HDS model with %i sites and %i species.\n\n", J, nSp);
 	}
         Rprintf("Samples per Chain: %i (%i batches of length %i)\n", nSamples, nBatch, batchLength);
         Rprintf("Burn-in: %i \n", nBurn); 
@@ -150,7 +150,7 @@ extern "C" {
         Rprintf("Number of Chains: %i \n", nChain);
         Rprintf("Total Posterior Samples: %i \n\n", nPost * nChain); 
 #ifdef _OPENMP
-        Rprintf("\nSource compiled with OpenMP support and model fit using %i thread(s).\n\n", nThreads);
+        Rprintf("Source compiled with OpenMP support and model fit using %i thread(s).\n\n", nThreads);
 #else
         Rprintf("Source not compiled with OpenMP support.\n\n");
 #endif

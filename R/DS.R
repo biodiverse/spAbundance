@@ -489,9 +489,9 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       beta.inits <- rep(beta.inits, p.abund)
     }
   } else {
-    beta.inits <- runif(p.abund, -1, 1)
+    beta.inits <- rnorm(p.abund)
     if (verbose) {
-      message('beta is not specified in initial values.\nSetting initial values to random values from a uniform(-1, 1) distribution\n')
+      message('beta is not specified in initial values.\nSetting initial values to random values from a standard normal distribution\n')
     }
   }
   # alpha -----------------------
@@ -510,9 +510,9 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       alpha.inits <- rep(alpha.inits, p.det)
     }
   } else {
-    alpha.inits <- runif(p.det, -1, 1)
+    alpha.inits <- rnorm(p.det) 
     if (verbose) {
-      message("alpha is not specified in initial values.\nSetting initial values to random values from a uniform(-1, 1) distribution\n")
+      message("alpha is not specified in initial values.\nSetting initial values to random values from a standard normal distribution\n")
     }
   }
   # sigma.sq.mu -------------------
@@ -775,8 +775,8 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   for (i in 1:n.chains) {
     # Change initial values if i > 1
     if ((i > 1) & (!fix.inits)) {
-      beta.inits <- runif(p.abund, -1, 1)
-      alpha.inits <- runif(p.det, -1, 1)
+      beta.inits <- rnorm(p.abund)
+      alpha.inits <- rnorm(p.det)
       if (p.abund.re > 0) {
         sigma.sq.mu.inits <- runif(p.abund.re, 0.05, 1)
         beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))

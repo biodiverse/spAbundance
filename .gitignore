@@ -10,3 +10,5 @@ _pkgdown.yml
 src/*.o
 src/*.so
 *.swp
+vignettes/*_cache
+vignettes/*_files
