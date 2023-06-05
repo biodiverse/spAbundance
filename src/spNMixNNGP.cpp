@@ -85,7 +85,7 @@ extern "C" {
     /**********************************************************************
      * Initial constants
      * *******************************************************************/
-    int i, g, t, j, s, r, l, k, jj, kk, ll, info, nProtect=0;
+    int i, g, t, j, s, r, l, k, jj, ii, kk, ll, info, nProtect=0;
     const int inc = 1;
     const double one = 1.0;
     const double zero = 0.0;
@@ -317,7 +317,7 @@ extern "C" {
     double *theta = (double *) R_alloc(nTheta, sizeof(double));
     SEXP thetaSamples_r; 
     PROTECT(thetaSamples_r = allocMatrix(REALSXP, nTheta, nPost)); nProtect++; 
-    double a, v, b, e, muNNGP, var, aij; 
+    double a, v, aa, b, e, muNNGP, var, aij; 
     // Initiate spatial values
     theta[sigmaSqIndx] = REAL(sigmaSqStarting_r)[0]; 
     theta[phiIndx] = REAL(phiStarting_r)[0]; 
@@ -693,6 +693,7 @@ extern "C" {
           }	
           a += b*b/F[j];
           logPostWCand[j] = -0.5*a;
+
 	  tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, beta, &inc) + 
 			 betaStarSites[j] + 
 			 wCand[j]);
@@ -729,6 +730,7 @@ extern "C" {
           }	
           a += b*b/F[j];
           logPostWCurr[j] = -0.5*a;
+
 	  tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, beta, &inc) + 
 			 betaStarSites[j] + 
 			 w[j]);

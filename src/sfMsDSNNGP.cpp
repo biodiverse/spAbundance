@@ -1085,6 +1085,7 @@ extern "C" {
 	    }
 	    a[ll] += b * b / F[ll * J + j];
 	    logPostWCand[j * q + ll] = -0.5 * a[ll];
+
             /*****************************
 	     *Current
              *****************************/
@@ -1096,11 +1097,11 @@ extern "C" {
 	        // now the neighbors for the jth location who has ii as a neighbor
 	        jj = uIndx[uIndxLU[j]+r]; // jj is the index of the rth location who has j as a neighbor
                 e = 0;
-	        for (k = 0; k < nnIndxLU[J + jj]; k++) {
+	        for (k = 0; k < nnIndxLU[J + jj]; k++) { // these are the neighbors of jj
                   e += B[ll * nIndx + nnIndxLU[jj] + k] * w[nnIndx[nnIndxLU[jj] + k] * q + ll];
 	        }
 	        b = w[jj * q + ll] - e;
-	        a[ll] += b * b / F[ll * J + j];
+	        a[ll] += b * b / F[ll * J + jj];
 	      } // r
 	    }
 	    // MVN for j
@@ -1115,6 +1116,7 @@ extern "C" {
 	    }
 	    a[ll] += b * b / F[ll * J + j];
 	    logPostWCurr[j * q + ll] = -0.5 * a[ll];
+
 	    // Likelihood for proposal
 	    for (i = 0; i < nSp; i++) {
 	      wStarCand[j * nSp + i] = 0.0;

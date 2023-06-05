@@ -989,7 +989,7 @@ extern "C" {
                   e += B[ll * nIndx + nnIndxLU[jj] + k] * w[nnIndx[nnIndxLU[jj] + k] * q + ll];
 	        }
 	        b = w[jj * q + ll] - e;
-	        a[ll] += b * b / F[ll * J + j];
+	        a[ll] += b * b / F[ll * J + jj];
 	      } // r
 	    }
 	    // MVN for j
