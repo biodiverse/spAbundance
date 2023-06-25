@@ -118,7 +118,7 @@ extern "C" {
 	Rprintf("Number of Chains: %i \n", nChain);
         Rprintf("Total Posterior Samples: %i \n\n", nPost * nChain); 
 #ifdef _OPENMP
-        Rprintf("\nSource compiled with OpenMP support and model fit using %i thread(s).\n\n", nThreads);
+        Rprintf("Source compiled with OpenMP support and model fit using %i thread(s).\n\n", nThreads);
 #else
         Rprintf("Source not compiled with OpenMP support.\n\n");
 #endif
@@ -230,12 +230,8 @@ extern "C" {
     // Put community level variances in a pAbund x PAbund matrix.
     double *TauBetaInv = (double *) R_alloc(ppAbund, sizeof(double)); zeros(TauBetaInv, ppAbund); 
     for (i = 0; i < pAbund; i++) {
-      TauBetaInv[i * pAbund + i] = tauSqBeta[i]; 
+      TauBetaInv[i * pAbund + i] = 1.0 / tauSqBeta[i]; 
     } // i
-    F77_NAME(dpotrf)(lower, &pAbund, TauBetaInv, &pAbund, &info FCONE); 
-    if(info != 0){error("c++ error: dpotrf TauBetaInv failed\n");}
-    F77_NAME(dpotri)(lower, &pAbund, TauBetaInv, &pAbund, &info FCONE); 
-    if(info != 0){error("c++ error: dpotri TauBetaInv failed\n");}
 
     /**********************************************************************
      * Prep for random effects
@@ -245,7 +241,7 @@ extern "C" {
     zeros(betaStarSites, nObsnSp); 
     double *betaStarSitesCand = (double *) R_alloc(nObsnSp, sizeof(double)); 
     int *betaStarLongIndx = (int *) R_alloc(nObspAbundRE, sizeof(int));
-    // Initial sums (initiate with the first species)
+    // Initial sums
     for (j = 0; j < nObs; j++) {
       for (l = 0; l < pAbundRE; l++) {
         betaStarLongIndx[l * nObs + j] = which(XRE[l * nObs + j], betaLevelIndx, nAbundRE);

@@ -180,9 +180,9 @@ extern "C" {
         Rprintf("Number of Chains: %i \n", nChain);
         Rprintf("Total Posterior Samples: %i \n\n", nPost * nChain); 
         Rprintf("Using the %s spatial correlation model.\n\n", corName.c_str());
-        Rprintf("Using %i nearest neighbors.\n", m);
+        Rprintf("Using %i nearest neighbors.\n\n", m);
 #ifdef _OPENMP
-        Rprintf("\nSource compiled with OpenMP support and model fit using %i thread(s).\n\n", nThreads);
+        Rprintf("Source compiled with OpenMP support and model fit using %i thread(s).\n\n", nThreads);
 #else
         Rprintf("Source not compiled with OpenMP support.\n\n");
 #endif
@@ -366,7 +366,6 @@ extern "C" {
     int betaStarAMCMCIndx = wAMCMCIndx + J;
     int kappaAMCMCIndx = betaStarAMCMCIndx + nAbundRE; 
     double *accept = (double *) R_alloc(nAMCMC, sizeof(double)); zeros(accept, nAMCMC); 
-    // TODO: will probably want to cut this back eventually. 
     SEXP acceptSamples_r; 
     PROTECT(acceptSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
     SEXP tuningSamples_r; 
@@ -407,10 +406,8 @@ extern "C" {
           logPostBetaCand = 0.0;
 	  logPostBetaCurr = 0.0;
           betaCand[k] = rnorm(beta[k], exp(tuning[betaAMCMCIndx + k]));
-          for (i = 0; i < pAbund; i++) {
-            logPostBetaCand += dnorm(betaCand[i], muBeta[i], sqrt(SigmaBeta[i * pAbund + i]), 1);
-	    logPostBetaCurr += dnorm(beta[i], muBeta[i], sqrt(SigmaBeta[i * pAbund + i]), 1);
-          }
+          logPostBetaCand += dnorm(betaCand[k], muBeta[k], sqrt(SigmaBeta[k * pAbund + k]), 1);
+	  logPostBetaCurr += dnorm(beta[k], muBeta[k], sqrt(SigmaBeta[k * pAbund + k]), 1);
           for (j = 0; j < nObs; j++) {
             tmp_nObs[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, betaCand, &inc) + betaStarSites[j] + 
 			      w[siteIndx[j]]);
@@ -530,7 +527,6 @@ extern "C" {
           }	
           a += b*b/F[j];
           logPostWCand[j] = -0.5*a;
-	  // Rprintf("logPostWCand First: %f\n", logPostWCand[j]);
           for (i = 0; i < nObs; i++) {
             if (siteIndx[i] == j) { 
               tmp_nObs[i] = exp(F77_NAME(ddot)(&pAbund, &X[i], &nObs, beta, &inc) + 
@@ -568,7 +564,6 @@ extern "C" {
           }	
           a += b*b/F[j];
           logPostWCurr[j] = -0.5*a;
-	  // Rprintf("logPostWCurr First: %f\n", logPostWCurr[j]);
           for (i = 0; i < nObs; i++) {
             if (siteIndx[i] == j) { 
               tmp_nObs[i] = exp(F77_NAME(ddot)(&pAbund, &X[i], &nObs, beta, &inc) + 
@@ -580,15 +575,12 @@ extern "C" {
 	      }
 	    }
 	  }
-	  // Rprintf("logPostWCurr After: %f\n", logPostWCurr[j]);
 
 	  if (runif(0.0, 1.0) <= exp(logPostWCand[j] - logPostWCurr[j])) {
-	    // w[j] = wCand[j];
-	    F77_NAME(dcopy)(&J, wCand, &inc, w, &inc);
+	    w[j] = wCand[j];
 	    accept[wAMCMCIndx + j]++;
 	  } else {
-            // wCand[j] = w[j];
-	    F77_NAME(dcopy)(&J, w, &inc, wCand, &inc);
+            wCand[j] = w[j];
 	  }
         }
 
@@ -597,9 +589,8 @@ extern "C" {
          *******************************************************************/
 	if (sigmaSqIG == 1) {
 	  a = 0;
-	  logDet = 0;
 #ifdef _OPENMP
-#pragma omp parallel for private (e, i, b) reduction(+:a, logDet)
+#pragma omp parallel for private (e, i, b) reduction(+:a)
 #endif
           for (j = 0; j < J; j++){
             if(nnIndxLU[J+j] > 0){
@@ -696,9 +687,9 @@ extern "C" {
         if (corName == "matern"){
           logPostThetaCand += log(nuCand - nuA) + log(nuB - nuCand); 
         }
-	  if (sigmaSqIG == 0) {
-            logPostThetaCand += log(sigmaSqCand - sigmaSqA) + log(sigmaSqB - sigmaSqCand);
-	  }
+	if (sigmaSqIG == 0) {
+          logPostThetaCand += log(sigmaSqCand - sigmaSqA) + log(sigmaSqB - sigmaSqCand);
+	}
 
         if (runif(0.0,1.0) <= exp(logPostThetaCand - logPostThetaCurr)) {
 
