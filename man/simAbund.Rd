@@ -23,7 +23,7 @@ simAbund(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
 
 \item{kappa}{a single numeric value containing the dispersion parameter for the abundance portion of the model. Only relevant when \code{family = 'NB'}.}
 
-\item{tau.sq}{a single numeric value containing the residual variance parameter of the Gaussian distribution. Only relevant when \code{family = 'Gaussian'} or \code{family = 'Gaussian-hurdle'}.}
+\item{tau.sq}{a single numeric value containing the residual variance parameter of the Gaussian distribution. Only relevant when \code{family = 'Gaussian'} or \code{family = 'zi-Gaussian'}.}
 
 \item{mu.RE}{a list used to specify the non-spatial random intercepts included in the model. The list must have two tags: \code{levels} and \code{sigma.sq.mu}. \code{levels} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the number of levels there are in each intercept. \code{sigma.sq.mu} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the variances for each random effect. A third optional tage is \code{beta.indx}, which is a numeric vector with length equal to the number of distinct random intercepts. The values in \code{beta.indx} denote the intercept/covariate for which you wish to simulate a random intercept/slope. Numeric values correspond to the intercept/covaraite in \code{beta}. If \code{mu.RE} is not specified, no random effects are included in the abundance portion of the model.}
 
@@ -44,9 +44,9 @@ simAbund(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
 
 \item{family}{the distribution to use for the data. Currently
   supports \code{'NB'} (negative binomial), \code{'Poisson'}, \code{'Gaussian'}, and
-  \code{'Gaussian-hurdle'}.}
+  \code{'zi-Gaussian'}.}
 
-\item{z}{a vector of length \code{J} containing the binary presence/absence portion of a Gaussian-hurdle model. Only relevant when \code{family = 'Gaussian-hurdle'}.}
+\item{z}{a vector of length \code{J} containing the binary presence/absence portion of a zero-inflated Gaussian model. Only relevant when \code{family = 'zi-Gaussian'}.}
 
 \item{x.positive}{a logical value indicating whether the simulated covariates should be simulated as random standard normal covariates (\code{x.positive = FALSE}) or restricted to positive values using a uniform distribution with lower bound 0 and upper bound 1 (\code{x.positive = TRUE}).}
 

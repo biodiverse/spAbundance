@@ -187,11 +187,14 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(
   coords <- as.matrix(expand.grid(s.x, s.y))
   w.star <- matrix(0, nrow = n.sp, ncol = J)
   if (factor.model) {
-    lambda <- matrix(rnorm(n.sp * n.factors, 0, 0.25), n.sp, n.factors) 
+    # TODO: think about how you want to simulate these
+    lambda <- matrix(rnorm(n.sp * n.factors), n.sp, n.factors) 
     # Set diagonals to 1
     diag(lambda) <- 1
     # Set upper tri to 0
     lambda[upper.tri(lambda)] <- 0
+    # TODO: testing
+    # lambda[-1, 1] <- 0
     w <- matrix(NA, n.factors, J)
     if (sp) { # sfMsPGOcc
       if (cov.model == 'matern') {

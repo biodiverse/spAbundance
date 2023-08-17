@@ -99,7 +99,7 @@ summary.abund <- function(object,
   if (object$dist %in% c('Poisson', 'NB')) {
     cat("Abundance (log scale): \n")
   }
-  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     cat("Abundance: \n")
   }
   tmp.1 <- t(apply(object$beta.samples, 2,
@@ -116,7 +116,7 @@ summary.abund <- function(object,
     if (object$dist %in% c('Poisson', 'NB')) {
       cat("Abundance Random Effect Variances (log scale): \n")
     }
-    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
       cat("Abundance Random Effect Variances: \n")
     }
     tmp.1 <- t(apply(object$sigma.sq.mu.samples, 2,
@@ -142,7 +142,7 @@ summary.abund <- function(object,
 
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
   }
-  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     cat("\n")
     cat("Residual variance: \n")
     tmp.1 <- t(apply(object$tau.sq.samples, 2,
@@ -208,9 +208,9 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
   
   # Check z.0.samples -----------------------------------------------------
   # Check stage 1 samples
-  if (object$dist == 'Gaussian-hurdle') {
+  if (object$dist == 'zi-Gaussian') {
     if (missing(z.0.samples)) {
-      stop("z.0.samples must be supplied for a Gaussian-hurdle model")
+      stop("z.0.samples must be supplied for a zi-Gaussian model")
     }
     if (!is.matrix(z.0.samples)) {
       stop(paste("z.0.samples must be a matrix with ", n.post, " rows and ", 
@@ -239,7 +239,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
   } else {
     p.abund.re <- 0
   }
-  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     tau.sq.samples <- as.matrix(object$tau.sq.samples)
   }
 
@@ -255,7 +255,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
     beta.star.samples <- object$beta.star.samples
     re.level.names <- object$re.level.names
     # Get columns in design matrix with random effects
-    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
       x.re.names <- dimnames(object$X.re)[[2]]
     } else {
       x.re.names <- dimnames(object$X.re)[[3]]
@@ -341,7 +341,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
   mu.long <- exp(t(X.fix %*% t(beta.samples) + 
 	       t(beta.star.sites.0.samples)))
   } 
-  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
   mu.long <- t(X.fix %*% t(beta.samples) + 
 	       t(beta.star.sites.0.samples))
   }
@@ -359,7 +359,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
       } else if (object$dist == 'Gaussian') {
         out$y.0.samples[, j, k] <- rnorm(n.post, out$mu.0.samples[, j, k], 
 	                                 sqrt(tau.sq.samples))
-      } else if (object$dist == 'Gaussian-hurdle') {
+      } else if (object$dist == 'zi-Gaussian') {
         out$y.0.samples[, j, k] <- ifelse(z.0.samples[, j] == 1, 
 					  rnorm(n.post, out$mu.0.samples[, j, k], 
 						sqrt(tau.sq.samples)), 
@@ -370,7 +370,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
     }
   }
   # If Gaussian, collapse to a matrix
-  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     out$y.0.samples <- out$y.0.samples[, , 1]  
     out$mu.0.samples <- out$mu.0.samples[, , 1]  
   }
@@ -414,7 +414,7 @@ summary.spAbund <- function(object,
   if (object$dist %in% c('Poisson', 'NB')) {
     cat("Abundance (log scale): \n")
   }
-  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     cat("Abundance: \n")
   }
   tmp.1 <- t(apply(object$beta.samples, 2,
@@ -431,7 +431,7 @@ summary.spAbund <- function(object,
     if (object$dist %in% c('Poisson', 'NB')) {
       cat("Abundance Random Effect Variances (log scale): \n")
     }
-    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
       cat("Abundance Random Effect Variances: \n")
     }
     tmp.1 <- t(apply(object$sigma.sq.mu.samples, 2,
@@ -470,7 +470,7 @@ summary.spAbund <- function(object,
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
   }
   
-  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     cat("\n")
     cat("Residual variance: \n")
     tmp.1 <- t(apply(object$tau.sq.samples, 2,
@@ -489,7 +489,7 @@ predict.spAbund <- function(object, X.0, coords.0,
 			    n.omp.threads = 1, verbose = TRUE, n.report = 100,
 			    ignore.RE = FALSE, z.0.samples, ...) {
 
-  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     predict.svcAbund(object, X.0, coords.0, n.omp.threads, 
 		     verbose, n.report, ignore.RE, z.0.samples)
   } else {
@@ -783,7 +783,7 @@ summary.msAbund <- function(object,
     if (object$dist %in% c('Poisson', 'NB')) {
       cat("Abundance Means (log scale): \n")
     }
-    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
       cat("Abundance Means: \n")
     }
     tmp.1 <- t(apply(object$beta.comm.samples, 2,
@@ -799,7 +799,7 @@ summary.msAbund <- function(object,
     if (object$dist %in% c('Poisson', 'NB')) {
       cat("\nAbundance Variances (log scale): \n")
     }
-    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
       cat("\nAbundance Variances: \n")
     }
     tmp.1 <- t(apply(object$tau.sq.beta.samples, 2,
@@ -815,7 +815,7 @@ summary.msAbund <- function(object,
       if (object$dist %in% c('Poisson', 'NB')) {
         cat("Abundance Random Effect Variances (log scale): \n")
       }
-      if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+      if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
         cat("Abundance Random Effect Variances: \n")
       }
       tmp.1 <- t(apply(object$sigma.sq.mu.samples, 2,
@@ -838,7 +838,7 @@ summary.msAbund <- function(object,
     if (object$dist %in% c('Poisson', 'NB')) {
       cat("Abundance (log scale): \n")
     }
-    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
       cat("Abundance: \n")
     }
     tmp.1 <- t(apply(object$beta.samples, 2,
@@ -868,7 +868,7 @@ summary.msAbund <- function(object,
     }
   }
 
-  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     cat("\n")
     cat("----------------------------------------\n");
     cat("\tResidual variance\n");
@@ -925,7 +925,7 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
     dimnames(X.0)[[3]] <- tmp
   }
   # Predictions -----------------------------------------------------------
-  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     p.abund <- dim(object$X)[2]
   } else {
     p.abund <- dim(object$X)[3]
@@ -967,7 +967,7 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
     beta.star.samples <- object$beta.star.samples
     re.level.names <- object$re.level.names
     # Get columns in design matrix with random effects
-    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
       x.re.names <- dimnames(object$X.re)[[2]]
     } else {
       x.re.names <- dimnames(object$X.re)[[3]]
@@ -1050,9 +1050,9 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
   }
   family <- object$dist
 
-  if (family == 'Gaussian-hurdle') {
+  if (family == 'zi-Gaussian') {
     if (missing(z.0.samples)) {
-      stop("z.0.samples must be supplied for a Gaussian-hurdle model")
+      stop("z.0.samples must be supplied for a zi-Gaussian model")
     }
     if (length(dim(z.0.samples)) != 3) {
       stop(paste("z.0.samples must be a three-dimensional array with dimensions of ", 
@@ -1079,7 +1079,7 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
       mu.long[, i, ] <- exp(t(X.fix %*% t(beta.samples[, sp.indx == i]) + 
 	                    t(beta.star.sites.0.samples[, i, ])))
     }
-    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
       mu.long[, i, ] <- t(X.fix %*% t(beta.samples[, sp.indx == i]) + 
 	                    t(beta.star.sites.0.samples[, i, ]))
     }
@@ -1102,7 +1102,7 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
           out$y.0.samples[, i, j, k] <- rnorm(n.post, out$mu.0.samples[, i, j, k], 
 	                                      sqrt(object$tau.sq.samples[, i]))
 	}
-	if (object$dist == 'Gaussian-hurdle') {
+	if (object$dist == 'zi-Gaussian') {
           out$y.0.samples[, i, j, k] <- ifelse(z.0.samples[, i, j] == 1, 
 	  				  rnorm(n.post, out$mu.0.samples[, i, j, k], 
 	  					sqrt(object$tau.sq.samples[, i])), 
@@ -1115,7 +1115,7 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
   }
   out$call <- cl
   # If Gaussian, collapse to a 3D array 
-  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     out$y.0.samples <- out$y.0.samples[, , , 1]  
     out$mu.0.samples <- out$mu.0.samples[, , , 1]  
   }
@@ -1160,7 +1160,7 @@ summary.sfMsAbund <- function(object, level = 'both',
     if (object$dist %in% c('Poisson', 'NB')) {
       cat("Abundance Means (log scale): \n")
     }
-    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
       cat("Abundance Means: \n")
     }
     tmp.1 <- t(apply(object$beta.comm.samples, 2,
@@ -1176,7 +1176,7 @@ summary.sfMsAbund <- function(object, level = 'both',
     if (object$dist %in% c('Poisson', 'NB')) {
       cat("\nAbundance Variances (log scale): \n")
     }
-    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
       cat("\nAbundance Variances: \n")
     }
     tmp.1 <- t(apply(object$tau.sq.beta.samples, 2,
@@ -1193,7 +1193,7 @@ summary.sfMsAbund <- function(object, level = 'both',
       if (object$dist %in% c('Poisson', 'NB')) {
         cat("Abundance Random Effect Variances (log scale): \n")
       }
-      if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+      if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
         cat("Abundance Random Effect Variances: \n")
       }
       tmp.1 <- t(apply(object$sigma.sq.mu.samples, 2,
@@ -1216,7 +1216,7 @@ summary.sfMsAbund <- function(object, level = 'both',
     if (object$dist %in% c('Poisson', 'NB')) {
       cat("Abundance (log scale): \n")
     }
-    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
       cat("Abundance: \n")
     }
     tmp.1 <- t(apply(object$beta.samples, 2,
@@ -1259,7 +1259,7 @@ summary.sfMsAbund <- function(object, level = 'both',
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
   }
 
-  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     cat("\n")
     cat("----------------------------------------\n");
     cat("\tResidual variance\n");
@@ -1285,7 +1285,7 @@ predict.sfMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
 			      verbose = TRUE, n.report = 100,
 			      ignore.RE = FALSE, z.0.samples, ...) {
 
-  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     predict.svcMsAbund(object, X.0, coords.0, n.omp.threads, 
 		       verbose, n.report, ignore.RE, z.0.samples)
   } else {
@@ -3607,7 +3607,7 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
     dimnames(X.0)[[3]] <- tmp
   }
   # Predictions -----------------------------------------------------------
-  if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     p.abund <- dim(object$X)[2]
   } else {
     p.abund <- dim(object$X)[3]
@@ -3658,7 +3658,7 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
     re.level.names <- object$re.level.names
     # Get columns in design matrix with random effects
     # Get columns in design matrix with random effects
-    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
       x.re.names <- dimnames(object$X.re)[[2]]
     } else {
       x.re.names <- dimnames(object$X.re)[[3]]
@@ -3751,9 +3751,9 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
   sites.link[which(!is.na(match.indx))] <- coords.indx
   family <- object$dist
 
-  if (family == 'Gaussian-hurdle') {
+  if (family == 'zi-Gaussian') {
     if (missing(z.0.samples)) {
-      stop("z.0.samples must be supplied for a Gaussian-hurdle model")
+      stop("z.0.samples must be supplied for a zi-Gaussian model")
     }
     if (length(dim(z.0.samples)) != 3) {
       stop(paste("z.0.samples must be a three-dimensional array with dimensions of ", 
@@ -3796,7 +3796,7 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
 	                    t(beta.star.sites.0.samples[, i, ]) + 
 			    t(w.star.0.samples[, i, sites.0.indx])))
     }
-    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
       mu.long[, i, ] <- t(X.fix %*% t(beta.samples[, sp.indx == i]) + 
 	                    t(beta.star.sites.0.samples[, i, ]) + 
                           t(w.star.0.samples[, i, sites.0.indx]))
@@ -3820,7 +3820,7 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
           out$y.0.samples[, i, j, k] <- rnorm(n.post, out$mu.0.samples[, i, j, k], 
 	                                      sqrt(object$tau.sq.samples[, i]))
 	}
-	if (object$dist == 'Gaussian-hurdle') {
+	if (object$dist == 'zi-Gaussian') {
           out$y.0.samples[, i, j, k] <- ifelse(z.0.samples[, i, j] == 1, 
 	  				  rnorm(n.post, out$mu.0.samples[, i, j, k], 
 	  					sqrt(object$tau.sq.samples[, i])), 
@@ -4446,7 +4446,7 @@ predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
   p.abund <- ncol(object$X)
   p.design <- p.abund
   X <- object$X
-  if (is(object, 'spAbund') & object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (is(object, 'spAbund') & object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     svc.cols <- 1
     p.svc <- 1
     X.w.0 <- matrix(1, nrow = nrow(X.0), ncol = 1)
@@ -4462,7 +4462,7 @@ predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
   beta.samples <- as.matrix(object$beta.samples)
   n.post <- object$n.post * object$n.chains
   family <- object$dist
-  family.c <- ifelse(family == 'Gaussian-hurdle', 3, 2)
+  family.c <- ifelse(family == 'zi-Gaussian', 3, 2)
   theta.samples <- object$theta.samples
   w.samples <- object$w.samples
   n.neighbors <- object$n.neighbors
@@ -4570,7 +4570,7 @@ predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
   # Example: site 1, svc 1, iter 1, site 1, svc 2, iter 1, ..., site 2, svc 1, iter 1
   w.samples <- t(w.samples)
   beta.star.sites.0.samples <- t(beta.star.sites.0.samples)
-  if (family %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (family %in% c('Gaussian', 'zi-Gaussian')) {
     tau.sq.samples <- t(object$tau.sq.samples)
   } else {
     tau.sq.samples <- matrix(0, 1, n.post)
@@ -4586,9 +4586,9 @@ predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
   sites.link <- sites.link - 1
 
   # Check stage 1 samples
-  if (family == 'Gaussian-hurdle') {
+  if (family == 'zi-Gaussian') {
     if (missing(z.0.samples)) {
-      stop("z.0.samples must be supplied for a Gaussian-hurdle model")
+      stop("z.0.samples must be supplied for a zi-Gaussian model")
     }
     if (!is.matrix(z.0.samples)) {
       stop(paste("z.0.samples must be a matrix with ", n.post, " rows and ", 
@@ -4651,7 +4651,7 @@ predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
   out$mu.0.samples <- mcmc(t(out$mu.0.samples))
   out$w.0.samples <- array(out$w.0.samples, dim = c(p.svc, J.0, n.post))
   out$w.0.samples <- aperm(out$w.0.samples, c(3, 1, 2))
-  if (is(object, 'spAbund') & object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (is(object, 'spAbund') & object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     out$w.0.samples <- matrix(out$w.0.samples[, 1, ], n.post, J.0)
   }
   out$call <- cl
@@ -4711,7 +4711,7 @@ predict.svcMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
   p.abund <- ncol(object$X)
   p.design <- p.abund
   X <- object$X
-  if (is(object, 'sfMsAbund') & object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (is(object, 'sfMsAbund') & object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     svc.cols <- 1
     p.svc <- 1
     X.w.0 <- matrix(1, nrow = nrow(X.0), ncol = 1)
@@ -4737,7 +4737,7 @@ predict.svcMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
   n.neighbors <- object$n.neighbors
   cov.model.indx <- object$cov.model.indx
   family <- object$dist
-  family.c <- ifelse(family == 'Gaussian-hurdle', 3, 2)
+  family.c <- ifelse(family == 'zi-Gaussian', 3, 2)
   re.cols <- object$re.cols
   sp.type <- object$type
   X.0 <- as.matrix(X.0)
@@ -4839,7 +4839,7 @@ predict.svcMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
   } else {
     kappa.samples <- matrix(0, n.sp, n.post)
   }
-  if (family %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (family %in% c('Gaussian', 'zi-Gaussian')) {
     tau.sq.samples <- t(object$tau.sq.samples)
   } else {
     tau.sq.samples <- matrix(0, 1, n.post)
@@ -4865,9 +4865,9 @@ predict.svcMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
   # For C
   sites.link <- sites.link - 1
 
-  if (family == 'Gaussian-hurdle') {
+  if (family == 'zi-Gaussian') {
     if (missing(z.0.samples)) {
-      stop("z.0.samples must be supplied for a Gaussian-hurdle model")
+      stop("z.0.samples must be supplied for a zi-Gaussian model")
     }
     if (length(dim(z.0.samples)) != 3) {
       stop(paste("z.0.samples must be a three-dimensional array with dimensions of ", 

@@ -65,7 +65,7 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
     }
   }
 
-  if (family == 'Gaussian-hurdle') {
+  if (family == 'zi-Gaussian') {
     two.stage <- TRUE
   } else {
     two.stage <- FALSE

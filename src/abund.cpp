@@ -19,7 +19,7 @@
 
 extern "C" {
   SEXP abund(SEXP y_r, SEXP X_r, SEXP XRE_r, SEXP XRandom_r,
-             SEXP consts_r, SEXP K_r, SEXP nAbundRELong_r, 
+             SEXP consts_r,SEXP nAbundRELong_r, 
              SEXP betaStarting_r, SEXP kappaStarting_r, 
 	     SEXP sigmaSqMuStarting_r, SEXP betaStarStarting_r, 
              SEXP siteIndx_r, SEXP betaStarIndx_r, SEXP betaLevelIndx_r, 
@@ -33,13 +33,8 @@ extern "C" {
     /**********************************************************************
      * Initial constants
      * *******************************************************************/
-    int i, g, t, j, s, r, l, k, ll, info, nProtect=0;
+    int g, t, j, s, l, k, ll, nProtect=0;
     const int inc = 1;
-    const double one = 1.0;
-    const double zero = 0.0;
-    char const *lower = "L";
-    char const *ntran = "N";
-    char const *ytran = "T";
     
     /**********************************************************************
      * Get Inputs
@@ -64,7 +59,6 @@ extern "C" {
     double *sigmaSqMuA = REAL(sigmaSqMuA_r); 
     double *sigmaSqMuB = REAL(sigmaSqMuB_r); 
     int *nAbundRELong = INTEGER(nAbundRELong_r); 
-    double *K = REAL(K_r); 
     int *betaStarIndx = INTEGER(betaStarIndx_r); 
     int *betaLevelIndx = INTEGER(betaLevelIndx_r);
     int nBatch = INTEGER(nBatch_r)[0]; 
@@ -104,9 +98,9 @@ extern "C" {
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
 	if (family == 1) {
-          Rprintf("Negative Binomial Abundance model fit with %i sites.\n\n", J);
+          Rprintf("Negative binomial abundance model fit with %i sites.\n\n", J);
 	} else {
-          Rprintf("Poisson Abundance model fit with %i sites.\n\n", J);
+          Rprintf("Poisson abundance model fit with %i sites.\n\n", J);
 	}
         Rprintf("Samples per Chain: %i (%i batches of length %i)\n", nSamples, nBatch, batchLength);
         Rprintf("Burn-in: %i \n", nBurn); 
@@ -151,39 +145,38 @@ extern "C" {
      * *******************************************************************/
     SEXP betaSamples_r;
     PROTECT(betaSamples_r = allocMatrix(REALSXP, pAbund, nPost)); nProtect++;
+    zeros(REAL(betaSamples_r), pAbund * nPost);
     SEXP yRepSamples_r; 
     PROTECT(yRepSamples_r = allocMatrix(REALSXP, nObs, nPost)); nProtect++; 
+    zeros(REAL(yRepSamples_r), nObs * nPost);
     SEXP muSamples_r; 
     PROTECT(muSamples_r = allocMatrix(REALSXP, nObs, nPost)); nProtect++; 
+    zeros(REAL(muSamples_r), nObs * nPost);
     SEXP kappaSamples_r;
     if (family == 1) {
       PROTECT(kappaSamples_r = allocMatrix(REALSXP, inc, nPost)); nProtect++;
+      zeros(REAL(kappaSamples_r), nPost);
     }
     // Abundance random effects
     SEXP sigmaSqMuSamples_r; 
     SEXP betaStarSamples_r; 
     if (pAbundRE > 0) {
       PROTECT(sigmaSqMuSamples_r = allocMatrix(REALSXP, pAbundRE, nPost)); nProtect++;
+      zeros(REAL(sigmaSqMuSamples_r), pAbundRE * nPost);
       PROTECT(betaStarSamples_r = allocMatrix(REALSXP, nAbundRE, nPost)); nProtect++;
+      zeros(REAL(betaStarSamples_r), nAbundRE * nPost);
     }
     // Likelihood samples for WAIC. 
     SEXP likeSamples_r;
     PROTECT(likeSamples_r = allocMatrix(REALSXP, nObs, nPost)); nProtect++;
+    zeros(REAL(likeSamples_r), nObs * nPost);
     
     /********************************************************************
       Some constants and temporary variables to be used later
     ********************************************************************/
-    int JpAbund = J * pAbund; 
-    int nObspAbund = nObs * pAbund;
+    int nObspAbundRE = nObs * pAbundRE;
     double tmp_0; 
-    double *tmp_one = (double *) R_alloc(inc, sizeof(double)); 
-    double *tmp_ppAbund = (double *) R_alloc(ppAbund, sizeof(double)); 
-    double *tmp_pAbund = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_pAbund2 = (double *) R_alloc(pAbund, sizeof(double));
     double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
-    double *tmp_nObspAbund = (double *) R_alloc(nObspAbund, sizeof(double)); 
-    double *tmp_JpAbund = (double *) R_alloc(JpAbund, sizeof(double));
-    double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
    
     // For latent abundance and WAIC
     double *like = (double *) R_alloc(nObs, sizeof(double)); zeros(like, nObs);
@@ -195,7 +188,6 @@ extern "C" {
     ********************************************************************/
     double logPostBetaCurr = 0.0, logPostBetaCand = 0.0;
     double logPostKappaCurr = 0.0, logPostKappaCand = 0.0;
-    double logPostEpsilonCurr = 0.0, logPostEpsilonCand = 0.0;
     double *logPostBetaStarCand = (double *) R_alloc(nAbundRE, sizeof(double));
     double *logPostBetaStarCurr = (double *) R_alloc(nAbundRE, sizeof(double));
     for (j = 0; j < nAbundRE; j++) {
@@ -238,11 +230,12 @@ extern "C" {
     double *betaStarSites = (double *) R_alloc(nObs, sizeof(double)); 
     zeros(betaStarSites, nObs); 
     double *betaStarSitesCand = (double *) R_alloc(nObs, sizeof(double)); 
+    int *betaStarLongIndx = (int *) R_alloc(nObspAbundRE, sizeof(int));
     // Initial sums
     for (j = 0; j < nObs; j++) {
       for (l = 0; l < pAbundRE; l++) {
-        betaStarSites[j] += betaStar[which(XRE[l * nObs + j], betaLevelIndx, nAbundRE)] * 
-		            XRandom[l * nObs + j];
+        betaStarLongIndx[l * nObs + j] = which(XRE[l * nObs + j], betaLevelIndx, nAbundRE);
+        betaStarSites[j] += betaStar[betaStarLongIndx[l * nObs + j]] * XRandom[l * nObs + j];
       }
       betaStarSitesCand[j] = betaStarSites[j];
     }
@@ -314,8 +307,7 @@ extern "C" {
                 // Candidate
                 betaStarSitesCand[j] = 0.0;
                 for (ll = 0; ll < pAbundRE; ll++) {
-                  betaStarSitesCand[j] += betaStarCand[which(XRE[ll * nObs + j], 
-				                         betaLevelIndx, nAbundRE)] * 
+                  betaStarSitesCand[j] += betaStarCand[betaStarLongIndx[ll * nObs + j]] * 
 	                              XRandom[ll * nObs + j];
                 }
                 tmp_nObs[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, beta, &inc) + 
@@ -328,8 +320,7 @@ extern "C" {
 		// Current
                 betaStarSites[j] = 0.0;
                 for (ll = 0; ll < pAbundRE; ll++) {
-                  betaStarSites[j] += betaStar[which(XRE[ll * nObs + j], 
-				               betaLevelIndx, nAbundRE)] * 
+                  betaStarSites[j] += betaStar[betaStarLongIndx[ll * nObs + j]] * 
 	                              XRandom[ll * nObs + j];
                 }
                 tmp_nObs[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, beta, &inc) + 

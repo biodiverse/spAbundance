@@ -32,7 +32,7 @@ extern "C" {
     /**********************************************************************
      * Initial constants
      * *******************************************************************/
-    int i, j, l, ll, ii, k, s, r, q, info, nProtect=0;
+    int i, j, l, ll, s, r, q, info, nProtect=0;
     int status = 0; // For AMCMC. 
     const int inc = 1;
     const double one = 1.0;
@@ -76,7 +76,6 @@ extern "C" {
     int nPost = INTEGER(samplesInfo_r)[2]; 
     int currChain = INTEGER(chainInfo_r)[0];
     int nChain = INTEGER(chainInfo_r)[1];
-    double acceptRate = REAL(acceptRate_r)[0];
     int nThreads = INTEGER(nThreads_r)[0];
     int verbose = INTEGER(verbose_r)[0];
     int nReport = INTEGER(nReport_r)[0];
@@ -101,7 +100,7 @@ extern "C" {
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
 	if (JZero > 0) {
-          Rprintf("Gaussian hurdle model with %i sites past the hurdle.\n\n", J);
+          Rprintf("Zero-inflated Gaussian model with %i non-zero sites.\n\n", J);
 	} else {
           Rprintf("Gaussian model with %i sites.\n\n", J);
 	}
@@ -167,8 +166,6 @@ extern "C" {
      * Other initial starting stuff
      * *******************************************************************/
     int Jp = J * p; 
-    int JJ = J * J; 
-    int jj, kk;
     double tmp_0, tmp_02; 
     double *tmp_pp = (double *) R_alloc(pp, sizeof(double)); 
     double *tmp_p = (double *) R_alloc(p, sizeof(double));
@@ -182,7 +179,6 @@ extern "C" {
     double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
    
     // For latent occupancy
-    double muNum; 
     double *mu = (double *) R_alloc(J, sizeof(double)); 
     zeros(mu, J); 
     double *like = (double *) R_alloc(J, sizeof(double)); zeros(like, J);
@@ -318,7 +314,7 @@ extern "C" {
         /********************************************************************
          *Update tau.sq
          *******************************************************************/
-        for(j = 0; j < J; j++){
+        for (j = 0; j < J; j++) {
 	  tmp_J1[j] = y[j] -  
 	      	F77_NAME(ddot)(&p, &X[j], &J, beta, &inc) - betaStarSites[j];
         }

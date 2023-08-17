@@ -245,8 +245,8 @@ ppcAbund <- function(object, fit.stat, group, ...) {
  
   # Single-species abundance models --------------------------------------- 
   if (class(object) %in% c('abund', 'spAbund', 'svcAbund')) {
-    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
-      stop("ppcAbund is not supported for Gaussian or Gaussian-hurdle GLM(M)s. These are linear (mixed) models, and classic tools for residual diagnostics can be applied using object$y and object$y.rep.samples to generate residuals")
+    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
+      stop("ppcAbund is not supported for Gaussian or zi-Gaussian GLM(M)s. These are linear (mixed) models, and classic tools for residual diagnostics can be applied using object$y and object$y.rep.samples to generate residuals")
     }
     y <- object$y
     J <- nrow(y)
@@ -306,8 +306,8 @@ ppcAbund <- function(object, fit.stat, group, ...) {
 
   # Multi-species abundance models ----------------------------------------
   if (class(object) %in% c('msAbund', 'lfMsAbund', 'sfMsAbund')) {
-    if (object$dist %in% c('Gaussian', 'Gaussian-hurdle')) {
-      stop("ppcAbund is not supported for Gaussian or Gaussian-hurdle GLM(M)s. These are linear (mixed) models, and classic tools for residual diagnostics can be applied using object$y and object$y.rep.samples to generate residuals")
+    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
+      stop("ppcAbund is not supported for Gaussian or zi-Gaussian GLM(M)s. These are linear (mixed) models, and classic tools for residual diagnostics can be applied using object$y and object$y.rep.samples to generate residuals")
     }
     y <- object$y
     J <- dim(y)[2] 

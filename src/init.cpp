@@ -5,7 +5,7 @@
 #include "spAbundance.h"
 
 static const R_CallMethodDef CallEntries[] = {
-    {"abund", (DL_FUNC) &abund, 30},
+    {"abund", (DL_FUNC) &abund, 29},
     {"spAbundNNGP", (DL_FUNC) &spAbundNNGP, 48},
     {"spAbundNNGPPredict", (DL_FUNC) &spAbundNNGPPredict, 24},
     {"msAbund", (DL_FUNC) &msAbund, 33},

@@ -4,7 +4,7 @@
 extern "C" {
 
   SEXP abund(SEXP y_r, SEXP X_r, SEXP XRE_r, SEXP XRandom_r,
-             SEXP consts_r, SEXP K_r, SEXP nAbundRELong_r, 
+             SEXP consts_r,SEXP nAbundRELong_r, 
              SEXP betaStarting_r, SEXP kappaStarting_r, 
 	     SEXP sigmaSqMuStarting_r, SEXP betaStarStarting_r, 
              SEXP siteIndx_r, SEXP betaStarIndx_r, SEXP betaLevelIndx_r, 

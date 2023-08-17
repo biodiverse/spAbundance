@@ -6,10 +6,10 @@ abund <- function(formula, data, inits, priors, tuning,
 
   ptm <- proc.time()
   
-  if (!(family) %in% c('Poisson', 'NB', 'Gaussian', 'Gaussian-hurdle')) {
-    stop("family must be either 'Poisson', 'NB', 'Gaussian', or 'Gaussian-hurdle'")
+  if (!(family) %in% c('Poisson', 'NB', 'Gaussian', 'zi-Gaussian')) {
+    stop("family must be either 'Poisson', 'NB', 'Gaussian', or 'zi-Gaussian'")
   }
-  if (family %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (family %in% c('Gaussian', 'zi-Gaussian')) {
     abundGaussian(formula, data, inits, priors, tuning, 
 		  n.batch, batch.length, accept.rate, family, 
 		  n.omp.threads, verbose, n.report, n.burn, n.thin, n.chains)
@@ -25,9 +25,6 @@ abund <- function(formula, data, inits, priors, tuning,
     # Functions ---------------------------------------------------------------
     logit <- function(theta, a = 0, b = 1) {log((theta-a)/(b-theta))}
     logit.inv <- function(z, a = 0, b = 1) {b-(b-a)/(1+exp(z))}
-    rigamma <- function(n, a, b){
-      1/rgamma(n = n, shape = a, rate = b)
-    }
 
     # Check for unused arguments ------------------------------------------
     formal.args <- names(formals(sys.function(sys.parent())))
@@ -466,7 +463,6 @@ abund <- function(formula, data, inits, priors, tuning,
     storage.mode(X) <- "double"
     consts <- c(J, n.obs, p.abund, p.abund.re, n.abund.re)
     storage.mode(consts) <- "integer"
-    storage.mode(K) <- "double"
     storage.mode(beta.inits) <- "double"
     storage.mode(kappa.inits) <- "double"
     storage.mode(site.indx) <- "integer"
@@ -520,7 +516,7 @@ abund <- function(formula, data, inits, priors, tuning,
       }
       storage.mode(chain.info) <- "integer"
       # Run the model in C
-      out.tmp[[i]] <- .Call("abund", y, X, X.re, X.random, consts, K, n.abund.re.long, 
+      out.tmp[[i]] <- .Call("abund", y, X, X.re, X.random, consts, n.abund.re.long, 
           		   beta.inits, kappa.inits, sigma.sq.mu.inits, beta.star.inits, 
         		           site.indx, beta.star.indx, 
         		           beta.level.indx, mu.beta, Sigma.beta, kappa.a, kappa.b,

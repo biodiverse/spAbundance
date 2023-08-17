@@ -13,7 +13,7 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
   # Check function inputs -------------------------------------------------
   J <- J.x * J.y
   # n.rep -----------------------------
-  if (family %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (family %in% c('Gaussian', 'zi-Gaussian')) {
     if (missing(n.rep)) {
       n.rep <- rep(1, J)
     }
@@ -29,12 +29,12 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
     stop("error: beta must be specified.")
   }
   # family ------------------------------
-  if (! (family %in% c('NB', 'Poisson', 'Gaussian', 'Gaussian-hurdle'))) {
-    stop("error: family must be one of: NB (negative binomial), Poisson, 'Gaussian', or 'Gaussian-hurdle'")
+  if (! (family %in% c('NB', 'Poisson', 'Gaussian', 'zi-Gaussian'))) {
+    stop("error: family must be one of: NB (negative binomial), Poisson, 'Gaussian', or 'zi-Gaussian'")
   }
-  if (family %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (family %in% c('Gaussian', 'zi-Gaussian')) {
     if (max(n.rep) != 1) {
-      stop("n.rep must be one for all sites for Gaussian or Gaussian-hurdle models")
+      stop("n.rep must be one for all sites for Gaussian or zi-Gaussian models")
     }
   }
   # kappa -----------------------------
@@ -47,9 +47,9 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
     message("overdispersion parameter (kappa) is ignored when family == 'Poisson'")
   }
   # tau.sq ----------------------------
-  if (family %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (family %in% c('Gaussian', 'zi-Gaussian')) {
     if (missing(tau.sq)) {
-      stop('error: tau.sq (residual variance) must be specified when family is Gaussian or Gaussian-hurdle')
+      stop('error: tau.sq (residual variance) must be specified when family is Gaussian or zi-Gaussian')
     }
   }
   # mu.RE ----------------------------
@@ -76,7 +76,7 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
     stop("error: if simulating data with spatially-varying coefficients, set sp = TRUE")
   }
   if (length(svc.cols) > 1 & family %in% c('Poisson', 'NB')) {
-    stop("spatially-varying coefficient models are only currently supported for Gaussian and Gaussian-hurdle models")
+    stop("spatially-varying coefficient models are only currently supported for Gaussian and zi-Gaussian models")
   }
   if (sp) {
     if(missing(sigma.sq)) {
@@ -110,9 +110,9 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
     }
   }
   # z values --------------------------
-  if (family == 'Gaussian-hurdle') {
+  if (family == 'zi-Gaussian') {
     if (missing(z)) {
-      stop('for a Gaussian hurdle model, you must supply the z values (binary 0s or 1s)')
+      stop('for a zero-inflated Gaussian model, you must supply the z values (binary 0s or 1s)')
     }
   }
 
@@ -246,13 +246,13 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
       if (family == 'Gaussian') {
         y[j, k] <- rnorm(1, mu[j, k], sqrt(tau.sq))
       }
-      if (family == 'Gaussian-hurdle') {
+      if (family == 'zi-Gaussian') {
         mu[j, k] <- mu[j, k] * z[j]
         y[j, k] <- rnorm(1, mu[j, k], ifelse(z[j] == 1, sqrt(tau.sq), 0))
       }
     } # k
   } # j
-  if (family %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (family %in% c('Gaussian', 'zi-Gaussian')) {
     y <- y[, 1]
     mu <- mu[, 1]
     X <- X[, 1, ]
