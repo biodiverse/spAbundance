@@ -774,7 +774,7 @@ extern "C" {
 	  // Only get relevant columns of t(W) %*% W
 	  for (k = 0; k < currDim; k++) {
             for (j = 0; j < currDim; j++) {
-              tmp_qq2[k * q + j] = tmp_qq[k * q + j];
+              tmp_qq2[k * currDim + j] = tmp_qq[k * q + j];
 	    } // j
           } // k
 
