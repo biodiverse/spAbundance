@@ -82,7 +82,7 @@ extern "C" {
     /**********************************************************************
      * Initial constants
      * *******************************************************************/
-    int i, j, l, ll, ii, k, s, r, q, info, nProtect=0;
+    int i, j, l, ll, k, s, r, q, info, nProtect=0;
     int status = 0; // For AMCMC. 
     const int inc = 1;
     const double one = 1.0;
@@ -169,7 +169,7 @@ extern "C" {
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
 	if (JZero > 0) {
-          Rprintf("Spatial NNGP Gaussian hurdle model with %i sites past the hurdle.\n\n", J);
+          Rprintf("Spatial NNGP zero-inflated Gaussian model with %i non-zero sites.\n\n", J);
 	} else {
           Rprintf("Spatial NNGP Gaussian model with %i sites.\n\n", J);
 	}
@@ -249,7 +249,6 @@ extern "C" {
      * Other initial starting stuff
      * *******************************************************************/
     int Jp = J * p; 
-    int JJ = J * J; 
     int jj, kk;
     double tmp_0, tmp_02; 
     double *tmp_pp = (double *) R_alloc(pp, sizeof(double)); 
@@ -264,7 +263,6 @@ extern "C" {
     double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
    
     // For latent occupancy
-    double muNum; 
     double *mu = (double *) R_alloc(J, sizeof(double)); 
     zeros(mu, J); 
     double *like = (double *) R_alloc(J, sizeof(double)); zeros(like, J);
@@ -323,7 +321,7 @@ extern "C" {
     PROTECT(tuningSamples_r = allocMatrix(REALSXP, nTheta, nBatch)); nProtect++; 
     SEXP thetaSamples_r; 
     PROTECT(thetaSamples_r = allocMatrix(REALSXP, nTheta, nPost)); nProtect++; 
-    double a, v, b, e, muNNGP, var, aij, aa; 
+    double a, v, b, e, muNNGP, var, aij; 
     theta[sigmaSqIndx] = sigmaSq;
     theta[phiIndx] = phi;
     if (corName == "matern") {

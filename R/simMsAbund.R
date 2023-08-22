@@ -33,8 +33,8 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(
     stop(paste("error: n.rep must be a vector of length ", J, sep = ''))
   }
   # family ------------------------------
-  if (! (family %in% c('NB', 'Poisson', 'Gaussian', 'Gaussian-hurdle'))) {
-    stop("error: family must be one of: NB (negative binomial), Poisson, 'Gaussian', or 'Gaussian-hurdle'")
+  if (! (family %in% c('NB', 'Poisson', 'Gaussian', 'zi-Gaussian'))) {
+    stop("error: family must be one of: NB (negative binomial), Poisson, 'Gaussian', or 'zi-Gaussian'")
   }
   # n.sp ---------------------------------
   if (missing(n.sp)) {
@@ -56,9 +56,9 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(
     message("overdispersion parameter (kappa) is ignored when family == 'Poisson'")
   }
   # tau.sq ----------------------------
-  if (family %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (family %in% c('Gaussian', 'zi-Gaussian')) {
     if (missing(tau.sq)) {
-      stop('error: tau.sq (residual variance) must be specified when family is Gaussian or Gaussian-hurdle')
+      stop('error: tau.sq (residual variance) must be specified when family is Gaussian or zi-Gaussian')
     }
     if (length(tau.sq) != n.sp) {
       stop(paste("error: tau.sq must be a numeric vector with ", n.sp, " values", sep = ''))
@@ -142,9 +142,9 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(
   }
 
   # z values --------------------------
-  if (family == 'Gaussian-hurdle') {
+  if (family == 'zi-Gaussian') {
     if (missing(z)) {
-      stop('for a Gaussian hurdle model, you must supply the z values (binary 0s or 1s)')
+      stop('for a zero-inflated Gaussian model, you must supply the z values (binary 0s or 1s)')
     }
     if (!is.matrix(z)) {
       stop(paste0("z must be a matrix with ", n.sp, " rows and ", J.x * J.y, " columns."))
@@ -187,14 +187,11 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(
   coords <- as.matrix(expand.grid(s.x, s.y))
   w.star <- matrix(0, nrow = n.sp, ncol = J)
   if (factor.model) {
-    # TODO: think about how you want to simulate these
     lambda <- matrix(rnorm(n.sp * n.factors), n.sp, n.factors) 
     # Set diagonals to 1
     diag(lambda) <- 1
     # Set upper tri to 0
     lambda[upper.tri(lambda)] <- 0
-    # TODO: testing
-    # lambda[-1, 1] <- 0
     w <- matrix(NA, n.factors, J)
     if (sp) { # sfMsPGOcc
       if (cov.model == 'matern') {
@@ -313,7 +310,7 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(
         if (family == 'Gaussian') {
           y[i, j, k] <- rnorm(1, mu[i, j, k], sqrt(tau.sq[i]))
         }
-        if (family == 'Gaussian-hurdle') {
+        if (family == 'zi-Gaussian') {
           mu[i, j, k] <- mu[i, j, k] * z[i, j]
           y[i, j, k] <- rnorm(1, mu[i, j, k], ifelse(z[i, j] == 1, sqrt(tau.sq[i]), 0))
         }
@@ -321,7 +318,7 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(
     } # k (replicate)
   } # j (site)
 
-  if (family %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (family %in% c('Gaussian', 'zi-Gaussian')) {
     y <- y[, , 1]
     mu <- mu[, , 1]
     X <- X[, 1, ]

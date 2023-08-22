@@ -6,7 +6,7 @@
 
 static const R_CallMethodDef CallEntries[] = {
     {"abund", (DL_FUNC) &abund, 29},
-    {"spAbundNNGP", (DL_FUNC) &spAbundNNGP, 48},
+    {"spAbundNNGP", (DL_FUNC) &spAbundNNGP, 47},
     {"spAbundNNGPPredict", (DL_FUNC) &spAbundNNGPPredict, 24},
     {"msAbund", (DL_FUNC) &msAbund, 33},
     {"lfMsAbund", (DL_FUNC) &lfMsAbund, 35},

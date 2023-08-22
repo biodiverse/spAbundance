@@ -74,14 +74,14 @@ spAbundGaussian <- function(formula, data, inits, priors, tuning,
   }
   coords <- as.matrix(data$coords)
 
-  if (family == 'Gaussian-hurdle') {
+  if (family == 'zi-Gaussian') {
     two.stage <- TRUE
   } else {
     two.stage <- FALSE
   }
   if (two.stage) {
     if (!'z' %in% names(data)) {
-      stop("error: z must be specified in data for a Gaussian-hurdle model")
+      stop("error: z must be specified in data for a zi-Gaussian model")
     }
     z <- data$z
   } else {
@@ -768,6 +768,7 @@ spAbundGaussian <- function(formula, data, inits, priors, tuning,
       colnames(out$theta.samples) <- c('sigma.sq', 'phi', 'nu')
     }
     out$tau.sq.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$tau.sq.samples))))
+    colnames(out$tau.sq.samples) <- 'tau.sq'
     # Get everything back in the original order
     out$coords <- coords[order(ord), ]
     if (!two.stage) {

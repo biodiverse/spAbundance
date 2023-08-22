@@ -479,6 +479,7 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   out$beta.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$beta.samples))))
   colnames(out$beta.samples) <- x.names
   out$tau.sq.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$tau.sq.samples))))
+  colnames(out$tau.sq.samples) <- 'tau.sq'
   # Get everything back in the original order
   if (!two.stage) {
     out$y.rep.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.samples))))

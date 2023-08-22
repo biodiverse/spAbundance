@@ -36,7 +36,6 @@ extern "C" {
     
     double *coords = REAL(coords_r);
     int J = INTEGER(J_r)[0];
-    int nObs = INTEGER(nObs_r)[0];
     int pAbund = INTEGER(pAbund_r)[0];
 
     double *X0 = REAL(X0_r);
@@ -82,7 +81,7 @@ extern "C" {
       Rprintf("Using the %s spatial correlation model.\n\n", corName.c_str());
       Rprintf("Using %i nearest neighbors.\n\n", m);
       Rprintf("Number of MCMC samples %i.\n\n", nSamples);
-      Rprintf("Predicting at %i locations.\n\n", J0);  
+      Rprintf("Predicting at %i locations.\n", J0);  
 #ifdef _OPENMP
       Rprintf("\nSource compiled with OpenMP support and model fit using %i threads.\n", nThreads);
 #else

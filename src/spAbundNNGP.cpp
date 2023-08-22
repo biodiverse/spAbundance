@@ -64,7 +64,7 @@ extern "C" {
   SEXP spAbundNNGP(SEXP y_r, SEXP X_r, SEXP coords_r, SEXP XRE_r, 
                    SEXP XRandom_r, SEXP consts_r, SEXP nAbundRELong_r, 
                    SEXP m_r, SEXP nnIndx_r, 
-                   SEXP nnIndxLU_r, SEXP uIndx_r, SEXP uIndxLU_r, SEXP uiIndx_r,
+                   SEXP nnIndxLU_r, SEXP uIndx_r, SEXP uIndxLU_r,
                    SEXP betaStarting_r, SEXP kappaStarting_r,
                    SEXP sigmaSqMuStarting_r, SEXP betaStarStarting_r, 
                    SEXP wStarting_r, SEXP phiStarting_r, SEXP sigmaSqStarting_r, 
@@ -83,13 +83,8 @@ extern "C" {
     /**********************************************************************
      * Initial constants
      * *******************************************************************/
-    int i, ii, g, t, j, kk, k, jj, s, r, l, ll, info, nProtect=0;
+    int i, g, t, j, k, jj, s, r, l, ll, nProtect=0;
     const int inc = 1;
-    const double one = 1.0;
-    const double zero = 0.0;
-    char const *lower = "L";
-    char const *ntran = "N";
-    char const *ytran = "T";
     
     /**********************************************************************
      * Get Inputs
@@ -134,7 +129,6 @@ extern "C" {
     int *nnIndxLU = INTEGER(nnIndxLU_r);
     int *uIndx = INTEGER(uIndx_r);
     int *uIndxLU = INTEGER(uIndxLU_r);
-    int *uiIndx = INTEGER(uiIndx_r);
     int covModel = INTEGER(covModel_r)[0];
     std::string corName = getCorName(covModel);
     int currChain = INTEGER(chainInfo_r)[0];
@@ -249,14 +243,7 @@ extern "C" {
     int JpAbund = J * pAbund; 
     int nObspAbund = nObs * pAbund;
     double tmp_0; 
-    double *tmp_one = (double *) R_alloc(inc, sizeof(double)); 
-    double *tmp_ppAbund = (double *) R_alloc(ppAbund, sizeof(double)); 
-    double *tmp_pAbund = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_pAbund2 = (double *) R_alloc(pAbund, sizeof(double));
     double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
-    double *tmp_nObspAbund = (double *) R_alloc(nObspAbund, sizeof(double)); 
-    double *tmp_JpAbund = (double *) R_alloc(JpAbund, sizeof(double));
-    double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
    
     // For latent abundance and WAIC
     double *like = (double *) R_alloc(nObs, sizeof(double)); zeros(like, nObs);
@@ -279,7 +266,7 @@ extern "C" {
     double *theta = (double *) R_alloc(nTheta, sizeof(double));
     SEXP thetaSamples_r; 
     PROTECT(thetaSamples_r = allocMatrix(REALSXP, nTheta, nPost)); nProtect++; 
-    double a, v, b, e, muNNGP, var, aij; 
+    double a, b, e; 
     // Initiate spatial values
     theta[sigmaSqIndx] = REAL(sigmaSqStarting_r)[0]; 
     theta[phiIndx] = REAL(phiStarting_r)[0]; 
@@ -313,7 +300,6 @@ extern "C" {
     ********************************************************************/
     double logPostBetaCurr = 0.0, logPostBetaCand = 0.0;
     double logPostKappaCurr = 0.0, logPostKappaCand = 0.0;
-    double logPostEpsilonCurr = 0.0, logPostEpsilonCand = 0.0;
     double logPostThetaCurr = 0.0, logPostThetaCand = 0.0;
     double *logPostWCand = (double *) R_alloc(J, sizeof(double));
     double *logPostWCurr = (double *) R_alloc(J, sizeof(double));

@@ -91,7 +91,7 @@ extern "C" {
     // ll = latent factor
     // h = coefficients
     // rr = spatially-varying coefficient. 
-    int i, j, k, s, g, t, h, r, l, info, nProtect=0, ii, ll, rr, rrr;    
+    int i, j, k, s, g, t, h, l, info, nProtect=0, ii, ll;    
 
     const int inc = 1;
     const double one = 1.0;
@@ -182,7 +182,7 @@ extern "C" {
 	if (family == 2) {
           Rprintf("Spatial Factor NNGP Multispecies Gaussian Model\nwith %i sites and %i species.\n\n", J, N);
 	} else {
-          Rprintf("Spatial Factor NNGP Multispecies Gaussian Hurdle Model\nwith %i sites and %i species.\n\n", J, N);
+          Rprintf("Spatial Factor NNGP Multispecies Zero-Inflated Gaussian Model\nwith %i sites and %i species.\n\n", J, N);
 	}
         Rprintf("Samples per chain: %i (%i batches of length %i)\n", nSamples, nBatch, batchLength);
         Rprintf("Burn-in: %i \n", nBurn); 
@@ -215,7 +215,6 @@ extern "C" {
     int JN = J * N;
     int Nq = N * q;
     int Jp = J * p; 
-    int JJ = J * J;
     int JpRE = J * pRE;
     int jj, kk;
     double tmp_0, tmp_02; 
@@ -744,7 +743,6 @@ extern "C" {
             if (z[j * N + i] == 1.0) {
               tmp_J[j] = y[j * N + i] - F77_NAME(ddot)(&p, &X[j], &J, &beta[i], &N) - 
 	                 betaStarSites[i * J + j];
-
 	      if (i < q) {
                 tmp_J[j] -= w[j * q + i];
               }
@@ -753,10 +751,10 @@ extern "C" {
 
 	  // S_beta %*% W' = tmp_Jq
 	  // aka multiply W[j, ] by omegaOcc[j] of the current species you're on. 
-	  for (j = 0, l = 0; j < J; j++) {
+	  for (j = 0; j < J; j++) {
             if (z[j * N + i] == 1.0) {
-              for (ll = 0; ll < q; ll++, l++) {
-                tmp_Jq[l] = w[j * q + ll] / tauSq[i];  
+              for (ll = 0; ll < q; ll++) {
+                tmp_Jq[j * q + ll] = w[j * q + ll] / tauSq[i];  
               }
 	    }
           }
@@ -774,9 +772,9 @@ extern "C" {
 	   *var
            *****************************/
 	  // Only get relevant columns of t(W) %*% W
-	  for (k = 0, l = 0; k < currDim; k++) {
-            for (j = 0; j < currDim; j++, l++) {
-              tmp_qq2[l] = tmp_qq[k * q + j];
+	  for (k = 0; k < currDim; k++) {
+            for (j = 0; j < currDim; j++) {
+              tmp_qq2[k * q + j] = tmp_qq[k * q + j];
 	    } // j
           } // k
 

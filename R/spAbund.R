@@ -8,10 +8,10 @@ spAbund <- function(formula, data, inits, priors, tuning,
 
   ptm <- proc.time()
 
-  if (!(family) %in% c('Poisson', 'NB', 'Gaussian', 'Gaussian-hurdle')) {
-    stop("family must be either 'Poisson', 'NB', 'Gaussian', or 'Gaussian-hurdle'")
+  if (!(family) %in% c('Poisson', 'NB', 'Gaussian', 'zi-Gaussian')) {
+    stop("family must be either 'Poisson', 'NB', 'Gaussian', or 'zi-Gaussian'")
   }
-  if (family %in% c('Gaussian', 'Gaussian-hurdle')) {
+  if (family %in% c('Gaussian', 'zi-Gaussian')) {
     spAbundGaussian(formula, data, inits, priors, tuning, cov.model, NNGP, 
 		    n.neighbors, search.type, n.batch, batch.length, accept.rate, 
 		    family, n.omp.threads, verbose, n.report, n.burn, n.thin,
@@ -821,7 +821,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
         # Run the model in C
         out.tmp[[i]] <- .Call("spAbundNNGP", y, X, coords, X.re, X.random, 
         		            consts, n.abund.re.long, 
-            	            n.neighbors, nn.indx, nn.indx.lu, u.indx, u.indx.lu, ui.indx, 
+            	            n.neighbors, nn.indx, nn.indx.lu, u.indx, u.indx.lu,  
             		    beta.inits, kappa.inits,
             		    sigma.sq.mu.inits, beta.star.inits, w.inits, phi.inits, 
           		    sigma.sq.inits, nu.inits, site.indx, beta.star.indx, 

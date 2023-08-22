@@ -18,7 +18,7 @@ extern "C" {
   SEXP spAbundNNGP(SEXP y_r, SEXP X_r, SEXP coords_r, SEXP XRE_r, 
                    SEXP XRandom_r, SEXP consts_r, SEXP nAbundRELong_r, 
                    SEXP m_r, SEXP nnIndx_r, 
-                   SEXP nnIndxLU_r, SEXP uIndx_r, SEXP uIndxLU_r, SEXP uiIndx_r,
+                   SEXP nnIndxLU_r, SEXP uIndx_r, SEXP uIndxLU_r,
                    SEXP betaStarting_r, SEXP kappaStarting_r,
                    SEXP sigmaSqMuStarting_r, SEXP betaStarStarting_r, 
                    SEXP wStarting_r, SEXP phiStarting_r, SEXP sigmaSqStarting_r, 

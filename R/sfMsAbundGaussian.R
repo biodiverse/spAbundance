@@ -71,7 +71,7 @@ sfMsAbundGaussian <- function(formula, data, inits, priors,
     stop("error: n.factors must be specified for a spatial factor model")
   }
 
-  if (family == 'Gaussian-hurdle') {
+  if (family == 'zi-Gaussian') {
     two.stage <- TRUE
   } else {
     two.stage <- FALSE
@@ -800,7 +800,7 @@ sfMsAbundGaussian <- function(formula, data, inits, priors,
     storage.mode(sigma.sq.mu.b) <- "double"
     storage.mode(beta.star.inits) <- "double"
     storage.mode(beta.star.indx) <- "integer"
-    # Gaussian = 2, Gaussian-hurdle = 3
+    # Gaussian = 2, zi-Gaussian = 3
     family.c <- ifelse(family == 'Gaussian', 2, 3)
     storage.mode(family.c) <- 'integer'
 
