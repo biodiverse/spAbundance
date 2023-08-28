@@ -342,4 +342,14 @@ extern "C" {
                              SEXP samplesInfo_r, SEXP chainInfo_r,
 			     SEXP z_r, SEXP family_r);
 
+  SEXP svcAbundNNGPPredict(SEXP coords_r, SEXP J_r, SEXP family_r, 
+		           SEXP pAbund_r, SEXP pTilde_r, 
+		           SEXP m_r, SEXP X0_r, SEXP Xw0_r, SEXP coords0_r, 
+			   SEXP J0_r, SEXP nnIndx0_r, SEXP betaSamples_r, 
+			   SEXP thetaSamples_r, SEXP tauSqSamples_r, SEXP wSamples_r, 
+			   SEXP betaStarSiteSamples_r, SEXP sitesLink_r, 
+			   SEXP sites0Sampled_r, SEXP sites0_r, SEXP nSamples_r, 
+			   SEXP covModel_r, SEXP nThreads_r, SEXP verbose_r, 
+			   SEXP nReport_r, SEXP z0Samples_r);
+
 }
