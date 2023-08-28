@@ -103,8 +103,8 @@ sfMsAbund <- function(formula, data, inits, priors,
       stop("error: n.factors must be specified for a spatial factor GLMM")
     }
 
-    if (family == 'NB') {
-      message('**NOTE**: spatial negative binomial models can be difficult to\nestimate as they contain two forms of overdispersion. If experiencing\nvery poor mixing/convergence of MCMC chains (particularly kappa and theta),\nconsider using a spatial Poisson model or more informative\npriors on kappa or phi.\n') 
+    if (family == 'NB' & verbose) {
+      message('**NOTE**: spatial negative binomial models can be difficult to\nestimate as they contain two forms of overdispersion. If experiencing\nvery poor mixing/convergence of MCMC chains (particularly kappa and phi),\nconsider using a spatial Poisson model or more informative\npriors on kappa or phi.\n') 
     }
 
     # Neighbors and Ordering ----------------------------------------------
@@ -158,8 +158,6 @@ sfMsAbund <- function(formula, data, inits, priors,
     }
 
     # Checking missing values ---------------------------------------------
-    # TODO: I believe these checks will fail if only site-level covariates on 
-    #       abundance
     # y -------------------------------
     y.na.test <- apply(y.mat, c(1, 2), function(a) sum(!is.na(a)))
     if (sum(y.na.test == 0) > 0) {

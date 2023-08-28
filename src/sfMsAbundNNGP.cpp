@@ -81,7 +81,7 @@ extern "C" {
     /**********************************************************************
      * Initial constants
      * *******************************************************************/
-    int i, j, s, t, g, l, h, r, ll, ii, jj, kk, k, info, nProtect=0;
+    int i, j, s, t, g, l, h, r, ll, ii, jj, k, info, nProtect=0;
     const int inc = 1;
     const double one = 1.0;
     const double zero = 0.0;
@@ -124,7 +124,6 @@ extern "C" {
     int *nnIndxLU = INTEGER(nnIndxLU_r);
     int *uIndx = INTEGER(uIndx_r);
     int *uIndxLU = INTEGER(uIndxLU_r);
-    int *uiIndx = INTEGER(uiIndx_r);
     int covModel = INTEGER(covModel_r)[0];
     std::string corName = getCorName(covModel);
     int *nAbundRELong = INTEGER(nAbundRELong_r); 
@@ -147,7 +146,6 @@ extern "C" {
     int status = 0; 
     int thinIndx = 0;
     int sPost = 0;  
-    int currDim = 0;
     // NB = 1, Poisson = 0;
     int family = INTEGER(family_r)[0];
 
@@ -204,35 +202,18 @@ extern "C" {
     int nObsnSp = nObs * nSp; 
     int nAbundREnSp = nAbundRE * nSp; 
     int JnSp = J * nSp;
-    int JpAbund = J * pAbund; 
-    int nObspAbund = nObs * pAbund;
     int nObspAbundRE = nObs * pAbundRE;
     int Jq = J * q;
-    int nObsq = nObs * q;
-    int qq = q * q;
     int nSpq = nSp * q;
     double tmp_0; 
-    double *tmp_one = (double *) R_alloc(inc, sizeof(double)); 
     double *tmp_ppAbund = (double *) R_alloc(ppAbund, sizeof(double)); 
     double *tmp_pAbund = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_beta = (double *) R_alloc(pAbund, sizeof(double));
     double *tmp_pAbund2 = (double *) R_alloc(pAbund, sizeof(double));
     int *tmp_JInt = (int *) R_alloc(J, sizeof(int));
     for (j = 0; j < J; j++) {
       tmp_JInt[j] = 0; 
     }
     double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
-    double *tmp_JpAbund = (double *) R_alloc(JpAbund, sizeof(double));
-    double *tmp_nObspAbund = (double *) R_alloc(nObspAbund, sizeof(double));
-    double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
-    double *tmp_qq = (double *) R_alloc(qq, sizeof(double));
-    double *tmp_q = (double *) R_alloc(q, sizeof(double));
-    double *tmp_q2 = (double *) R_alloc(q, sizeof(double));
-    double *tmp_qq2 = (double *) R_alloc(qq, sizeof(double));
-    double *tmp_Jq = (double *) R_alloc(Jq, sizeof(double));
-    double *tmp_nObsq = (double *) R_alloc(nObsq, sizeof(double));
-    double *tmp_nSpq = (double *) R_alloc(nSpq, sizeof(double));
-    double *tmp_nSp = (double *) R_alloc(nSp, sizeof(double));
 
     /**********************************************************************
      * Parameters
@@ -387,13 +368,9 @@ extern "C" {
       F77_NAME(dgemv)(ntran, &nSp, &q, &one, lambda, &nSp, &w[j*q], &inc, &zero, &wStar[j * nSp], &inc FCONE);
     }
     // For NNGP
-    double b, e, aij, aa; 
+    double b, e, aa; 
     double *a = (double *) R_alloc(q, sizeof(double));
     double *v = (double *) R_alloc(q, sizeof(double));
-    double *muNNGP = (double *) R_alloc(q, sizeof(double));
-    double *var = (double *) R_alloc(qq, sizeof(double));
-    double *ff = (double *) R_alloc(q, sizeof(double));
-    double *gg = (double *) R_alloc(q, sizeof(double));
 
     // Allocate for the U index vector that keep track of which locations have 
     // the i-th location as a neighbor
@@ -469,8 +446,6 @@ extern "C" {
     int betaStarAMCMCIndx = wAMCMCIndx + Jq;
     int kappaAMCMCIndx = betaStarAMCMCIndx + nAbundRE * nSp;
 
-    // TODO: will likely want to eliminate these and just overwrite them at each 
-    // iteration. With tuning w and lambda this becomes actually quite large. 
     double *accept = (double *) R_alloc(nAMCMC, sizeof(double)); zeros(accept, nAMCMC); 
     SEXP acceptSamples_r; 
     PROTECT(acceptSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
@@ -749,7 +724,7 @@ extern "C" {
 	    }
 	    a[ll] += b * b / F[ll * J + j];
 	    logPostWCurr[j * q + ll] = -0.5 * a[ll];
-	    // Likelihood for proposal
+	    // Likelihood component
 	    for (i = 0; i < nSp; i++) {
 	      wStarCand[j * nSp + i] = 0.0;
 	      for (ii = 0; ii < q; ii++) {

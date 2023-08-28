@@ -13,14 +13,11 @@ knitr::opts_chunk$set(
 
 # spAbundance 
 
-```{r, echo=FALSE, results='asis', message=FALSE, eval = TRUE}
-library(badger)
-cat(
-	# badger::badge_cran_release("spAbundance", "green"),
-	# badger::badge_cran_download("spAbundance", "grand-total", "blue"),
-    badger::badge_codecov(ref = "https://github.com/doserjef/spAbundance")
-)
-```
+# spAbundance 
+
+[![](http://cranlogs.r-pkg.org/badges/grand-total/spAbundance?color=blue)](https://CRAN.R-project.org/package=spAbundance)
+[![CRAN](https://www.r-pkg.org/badges/version/spAbundance)](https://CRAN.R-project.org/package=spAbundance)
+[![Codecov test coverage](https://codecov.io/gh/doserjef/spAbundance/branch/main/graph/badge.svg)](https://codecov.io/gh/doserjef/spAbundance?branch=main)
 
 `spAbundance` fits univariate (i.e., single-species) and multivariate (i.e., multi-species) spatial abundance models using Markov Chain Monte Carlo (MCMC). The package currently contains all functionality for it's first release on CRAN, and is currently undergoing extensive testing prior to the release on CRAN. `spAbundance` uses analogous syntax to its "sister package" [spOccupancy](https://www.jeffdoser.com/files/spoccupancy-web/) (Doser et al. 2022). 
 
@@ -50,7 +47,6 @@ Note that because we implement the MCMC in C++, you will need a C++ compiler on 
 |`sfMsDS()`         | Multi-species spatial distance sampling model with species correlations   |
 |`abund()`          | Single-species abundance GLM                                              |
 |`spAbund()`        | Single-species spatial abundance GLM                                      |
-|`svcAbund()`       | Single-species spatially-varying coefficient GLMMs (currently Gaussian)   |
 |`msAbund()`        | Multi-species abundance GLM                                               |
 |`lfMsAbund()`      | Multi-species abundance GLM with species correlations                     |
 |`sfMsAbund()`      | Multi-species spatial abundance GLM with species correlations             |
@@ -63,7 +59,7 @@ Note that because we implement the MCMC in C++, you will need a C++ compiler on 
 |`simDS()`          | Simulate single-species distance sampling data                            |
 |`simMsDS()`        | Simulate multi-species distance sampling data                             |
 
-All model fitting functions allow for Poisson and negative binomial distributions for the abundance portion of the model (with the exception of `svcAbund()`, which is currently only for Gaussian outcomes). All GLM(M)s also allow for Gaussian models.
+All model fitting functions allow for Poisson and negative binomial distributions for the abundance portion of the model. All GLM(M)s also allow for Gaussian models.
 
 ## Citing `spAbundance`
 

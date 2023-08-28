@@ -817,7 +817,7 @@ test_that("out$y == y", {
 # Check RE error ----------------------
 test_that("random effect gives error when non-numeric", {
   data.list$covs$factor.1 <- factor(data.list$covs$factor.1)
-  expect_error(out <- abund(formula = formula,
+  expect_error(out <- msAbund(formula = formula,
 	       data = data.list,
 	       n.batch = n.batch,
 	       batch.length = batch.length,
@@ -833,7 +833,7 @@ test_that("random effect gives error when non-numeric", {
 	       n.thin = n.thin,
 	       n.chains = 1))
   data.list$covs$factor.1 <- as.character(factor(data.list$covs$factor.1))
-  expect_error(out <- abund(formula = formula,
+  expect_error(out <- msAbund(formula = formula,
 	       data = data.list,
 	       n.batch = n.batch,
 	       batch.length = batch.length,
@@ -1040,7 +1040,7 @@ test_that("out$y == y", {
 # Check RE error ----------------------
 test_that("random effect gives error when non-numeric", {
   data.list$covs$factor.1 <- factor(data.list$covs$factor.1)
-  expect_error(out <- abund(formula = formula,
+  expect_error(out <- msAbund(formula = formula,
 	       data = data.list,
 	       n.batch = n.batch,
 	       batch.length = batch.length,
@@ -1056,7 +1056,7 @@ test_that("random effect gives error when non-numeric", {
 	       n.thin = n.thin,
 	       n.chains = 1))
   data.list$covs$factor.1 <- as.character(factor(data.list$covs$factor.1))
-  expect_error(out <- abund(formula = formula,
+  expect_error(out <- msAbund(formula = formula,
 	       data = data.list,
 	       n.batch = n.batch,
 	       batch.length = batch.length,
@@ -1265,7 +1265,7 @@ test_that("out$y == y", {
 # Check RE error ----------------------
 test_that("random effect gives error when non-numeric", {
   data.list$covs$factor.1 <- factor(data.list$covs$factor.1)
-  expect_error(out <- abund(formula = formula,
+  expect_error(out <- msAbund(formula = formula,
 	       data = data.list,
 	       n.batch = n.batch,
 	       batch.length = batch.length,
@@ -1281,7 +1281,7 @@ test_that("random effect gives error when non-numeric", {
 	       n.thin = n.thin,
 	       n.chains = 1))
   data.list$covs$factor.1 <- as.character(factor(data.list$covs$factor.1))
-  expect_error(out <- abund(formula = formula,
+  expect_error(out <- msAbund(formula = formula,
 	       data = data.list,
 	       n.batch = n.batch,
 	       batch.length = batch.length,
@@ -1489,7 +1489,7 @@ test_that("out$y == y", {
 # Check RE error ----------------------
 test_that("random effect gives error when non-numeric", {
   data.list$covs$factor.1 <- factor(data.list$covs$factor.1)
-  expect_error(out <- abund(formula = formula,
+  expect_error(out <- msAbund(formula = formula,
 	       data = data.list,
 	       n.batch = n.batch,
 	       batch.length = batch.length,
@@ -1505,7 +1505,7 @@ test_that("random effect gives error when non-numeric", {
 	       n.thin = n.thin,
 	       n.chains = 1))
   data.list$covs$factor.1 <- as.character(factor(data.list$covs$factor.1))
-  expect_error(out <- abund(formula = formula,
+  expect_error(out <- msAbund(formula = formula,
 	       data = data.list,
 	       n.batch = n.batch,
 	       batch.length = batch.length,

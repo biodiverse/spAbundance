@@ -39,8 +39,8 @@ spAbund(formula, data, inits, priors, tuning,
     and number of columns equal to the maximum number of replicate observations at a 
     given site. \code{coords} is a \eqn{J \times 2}{J x 2} matrix of the observation coordinates. 
     Note that \code{spAbundance} assumes coordinates are specified 
-    in a projected coordinate system. For Gaussian hurdle models, the tag \code{z} is
-    used to specify the binary component of the hurdle model and should have the same
+    in a projected coordinate system. For zero-inflated Gaussian models, the tag \code{z} is
+    used to specify the binary component of the zero-inflated model and should have the same
     length as \code{y}.}
   
   \item{inits}{a list with each tag corresponding to a parameter name.
@@ -49,7 +49,7 @@ spAbund(formula, data, inits, priors, tuning,
     \code{nu} is only specified if \code{cov.model = "matern"}, \code{sigma.sq.mu}
     is only specified if there are random effects in \code{formula}, and
     \code{kappa} is only specified when \code{family = 'NB'}. 
-    \code{tau.sq} is only specified when \code{family = 'Gaussian'} or \code{family = 'Gaussian-hurdle'}.
+    \code{tau.sq} is only specified when \code{family = 'Gaussian'} or \code{family = 'zi-Gaussian'}.
     The value portion of each tag is the parameter's initial value. See \code{priors}
     description for definition of each parameter name.
     Additionally, the tag \code{fix} can be set to \code{TRUE} 
@@ -84,7 +84,7 @@ spAbund(formula, data, inits, priors, tuning,
     respectively, which are each specified as vectors of length equal to the 
     number of random effects or of length one if priors are the same for all
     random effect variances. \code{tau.sq} is the residual variance 
-    for Gaussian (or Gaussian hurdle) models, and it is assigned 
+    for Gaussian (or zero-inflated Gaussian) models, and it is assigned 
     an inverse-Gamma prior. The hyperparameters of the inverse-Gamma are passed as a vector
     of length two, with the first and second element corresponding to the shape and 
     scale parameters, respectively.}
@@ -100,7 +100,7 @@ spAbund(formula, data, inits, priors, tuning,
   random effect values), \code{kappa}, \code{phi}, 
   and \code{nu}. See Roberts and Rosenthal (2009) for details. Note that only \code{phi} 
   and \code{nu} are the only parameters that require tuning for a Gaussian or 
-  Gaussian hurdle model.}
+  zero-inflated Gaussian model.}
 
   \item{NNGP}{if \code{TRUE}, model is fit with an NNGP. See Datta et al. (2016) and 
     Finley et al. (2019) for more information. Currently only NNGP is supported,
@@ -136,7 +136,7 @@ spAbund(formula, data, inits, priors, tuning,
 
   \item{family}{the distribution to use for the latent abundance process. Currently 
     supports \code{'NB'} (negative binomial), \code{'Poisson'}, \code{'Gaussian'}, 
-    and \code{'Gaussian-hurdle'}.} 
+    and \code{'zi-Gaussian'}.} 
 
   \item{n.omp.threads}{a positive integer indicating
    the number of threads to use for SMP parallel processing. The package must
@@ -202,7 +202,7 @@ spAbund(formula, data, inits, priors, tuning,
 
   \item{tau.sq.samples}{a \code{coda} object of posterior samples
     for the Gaussian residual variance parameter. Only included when
-    \code{family = 'Gaussian'} or \code{family = 'Gaussian-hurdle'}.}
+    \code{family = 'Gaussian'} or \code{family = 'zi-Gaussian'}.}
 
   \item{y.rep.samples}{a two or three-dimensional object of posterior samples 
     for the abundance replicate (fitted) values with dimensions 

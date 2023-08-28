@@ -899,7 +899,6 @@ extern "C" {
 	    } else {
               mu[j * N + i] = 0.0;
 	      yRep[j * N + i] = rnorm(mu[j * N + i], sqrt(0.0001));
-	      // TODO: may want to think about this some more.
 	      like[j * N + i] = 1.0;
 	    }
 	  } // j

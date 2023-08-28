@@ -58,8 +58,14 @@ lfMsAbundGaussian <- function(formula, data, inits, priors, tuning, n.factors,
       stop("error: covs must be a list, data frame, or matrix")
     }
   }
-
-  if (family == 'Gaussian-hurdle') {
+  if (!'coords' %in% names(data)) {
+    stop("error: coords must be specified in data for a spatial abundance model.")
+  }
+  if (!is.matrix(data$coords) & !is.data.frame(data$coords)) {
+    stop("error: coords must be a matrix or data frame")
+  }
+  coords <- as.matrix(data$coords)
+  if (family == 'zi-Gaussian') {
     two.stage <- TRUE
   } else {
     two.stage <- FALSE
@@ -577,7 +583,7 @@ lfMsAbundGaussian <- function(formula, data, inits, priors, tuning, n.factors,
   storage.mode(sigma.sq.mu.b) <- "double"
   storage.mode(beta.star.inits) <- "double"
   storage.mode(beta.star.indx) <- "integer"
-  # Gaussian = 2, Gaussian-hurdle = 3
+  # Gaussian = 2, zi-Gaussian = 3
   family.c <- ifelse(family == 'Gaussian', 2, 3)
   storage.mode(family.c) <- 'integer'
 
@@ -719,6 +725,7 @@ lfMsAbundGaussian <- function(formula, data, inits, priors, tuning, n.factors,
   out$n.burn <- n.burn
   out$n.chains <- n.chains
   out$dist <- family
+  out$coords <- coords
   out$re.cols <- re.cols
   out$q <- q
   if (p.re > 0) {

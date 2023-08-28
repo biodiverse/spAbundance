@@ -34,14 +34,14 @@ msAbund(formula, data, inits, priors, tuning,
     are specified as a vector of length \eqn{J}{J}, while observation-level covariates
     are specified as a matrix or data frame with the number of rows equal to \eqn{J}{J}
     and number of columns equal to the maximum number of replicate observations at a 
-    given site. For Gaussian hurdle models, the tag \code{z} is used to specify the 
-  binary component of the hurdle model and should have the same dimensions as \code{y}.}
+    given site. For zero-inflated Gaussian models, the tag \code{z} is used to specify the 
+  binary component of the model and should have the same dimensions as \code{y}.}
 
   \item{inits}{a list with each tag corresponding to a parameter name.
     Valid tags are \code{beta.comm}, \code{beta}, 
     \code{tau.sq.beta}, \code{sigma.sq.mu}, \code{kappa}, \code{tau.sq}. 
     \code{kappa} is only specified if \code{family = 'NB'}, \code{tau.sq} is only
-    specified for Gaussian or Gaussian-hurdle models, 
+    specified for Gaussian or zero-inflated Gaussian models, 
     and \code{sigma.sq.mu} is only specified if random effects are included in \code{formula}. 
     The value portion of each tag is 
     the parameter's initial value. See \code{priors} description for definition
@@ -80,7 +80,7 @@ msAbund(formula, data, inits, priors, tuning,
   lower and upper bounds of the uniform distribution, respectively, which are each 
   specified as vectors of length equal to the number of species or of length one
   if priors are the same for all species-specific dispersion parameters. \code{tau.sq} is the 
-  species-specific residual variance for Gaussian (or Gaussian hurdle) models, and it is assigned 
+  species-specific residual variance for Gaussian (or zero-inflated Gaussian) models, and it is assigned 
   an inverse-Gamma prior. The hyperparameters of the inverse-Gamma are passed as a list 
   of length two, with the first and second element corresponding to the shape and 
   scale parameters, respectively, which are each specified as vectors of length
@@ -90,7 +90,7 @@ msAbund(formula, data, inits, priors, tuning,
   whose value defines the initial variance of the adaptive sampler.
   Valid tags are \code{beta}, \code{beta.star} (the abundance
   random effect values), and \code{kappa}. See Roberts and Rosenthal (2009) for details. 
-  Note that no tuning is necessary for Gaussian or Gaussian hurdle models.}
+  Note that no tuning is necessary for Gaussian or zero-inflated Gaussian models.}
 
   \item{n.batch}{the number of MCMC batches  in each chain to run for the Adaptive MCMC 
     sampler. See Roberts and Rosenthal (2009) for details.}
@@ -103,7 +103,7 @@ msAbund(formula, data, inits, priors, tuning,
 
   \item{family}{the distribution to use for the latent abundance process. Currently 
     supports \code{'NB'} (negative binomial), \code{'Poisson'}, \code{'Gaussian'}, 
-    and \code{'Gaussian-hurdle'}.} 
+    and \code{'zi-Gaussian'}.} 
   
   \item{n.omp.threads}{a positive integer indicating
    the number of threads to use for SMP parallel processing. The package must
@@ -164,7 +164,7 @@ msAbund(formula, data, inits, priors, tuning,
 
   \item{tau.sq.samples}{a \code{coda} object of posterior samples
     for the Gaussian residual variance parameter. Only included when
-    \code{family = 'Gaussian'} or \code{family = 'Gaussian-hurdle'}.}
+    \code{family = 'Gaussian'} or \code{family = 'zi-Gaussian'}.}
 
   \item{y.rep.samples}{a three or four-dimensional array of posterior samples for
     the fitted (replicate) values for each species with dimensions corresponding

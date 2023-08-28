@@ -3833,6 +3833,11 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
   }
   out$w.0.samples <- w.0.samples
   out$call <- cl
+  # If Gaussian, collapse to a 3D array 
+  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
+    out$y.0.samples <- out$y.0.samples[, , , 1]  
+    out$mu.0.samples <- out$mu.0.samples[, , , 1]  
+  }
 
   class(out) <- "predict.lfMsAbund"
   out

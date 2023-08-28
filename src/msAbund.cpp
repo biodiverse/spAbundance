@@ -34,12 +34,11 @@ extern "C" {
     /**********************************************************************
      * Initial constants
      * *******************************************************************/
-    int i, j, s, t, g, l, h, r, ll, ii, jj, kk, k, info, nProtect=0;
+    int i, j, s, t, g, l, h, ll, k, info, nProtect=0;
     const int inc = 1;
     const double one = 1.0;
     const double zero = 0.0;
     char const *lower = "L";
-    char const *ntran = "N";
     char const *ytran = "T";
     
     /**********************************************************************
@@ -67,7 +66,6 @@ extern "C" {
     double *kappaA = REAL(kappaA_r); 
     double *kappaB = REAL(kappaB_r); 
     int *nAbundRELong = INTEGER(nAbundRELong_r); 
-    int *siteIndx = INTEGER(siteIndx_r); 
     int *betaStarIndx = INTEGER(betaStarIndx_r);
     int *betaLevelIndx = INTEGER(betaLevelIndx_r);
     int nBatch = INTEGER(nBatch_r)[0]; 
@@ -86,7 +84,6 @@ extern "C" {
     int status = 0; 
     int thinIndx = 0;
     int sPost = 0;  
-    int currDim = 0;
     // NB = 1, Poisson = 0;
     int family = INTEGER(family_r)[0];
 
@@ -139,25 +136,16 @@ extern "C" {
     int pAbundnSp = pAbund * nSp; 
     int nObsnSp = nObs * nSp; 
     int nAbundREnSp = nAbundRE * nSp; 
-    int JnSp = J * nSp;
-    int JpAbund = J * pAbund; 
-    int nObspAbund = nObs * pAbund;
     int nObspAbundRE = nObs * pAbundRE;
     double tmp_0; 
-    double *tmp_one = (double *) R_alloc(inc, sizeof(double)); 
     double *tmp_ppAbund = (double *) R_alloc(ppAbund, sizeof(double)); 
     double *tmp_pAbund = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_beta = (double *) R_alloc(pAbund, sizeof(double));
     double *tmp_pAbund2 = (double *) R_alloc(pAbund, sizeof(double));
     int *tmp_JInt = (int *) R_alloc(J, sizeof(int));
     for (j = 0; j < J; j++) {
       tmp_JInt[j] = 0; 
     }
     double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
-    double *tmp_JpAbund = (double *) R_alloc(JpAbund, sizeof(double));
-    double *tmp_nObspAbund = (double *) R_alloc(nObspAbund, sizeof(double));
-    double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
-    double *tmp_nSp = (double *) R_alloc(nSp, sizeof(double));
 
     /**********************************************************************
      * Parameters
@@ -374,7 +362,7 @@ extern "C" {
          *Species specific variables  
          *********************************************************************/
         for (i = 0; i < nSp; i++) {  
-          // beta is ordered by parameter, then species. 
+          // beta is ordered by parameter, then species within parameter. 
           /********************************************************************
            *Update Abundance Regression Coefficients
            *******************************************************************/
@@ -436,14 +424,14 @@ extern "C" {
 	  	    logPostBetaStarCand[l] += dpois(y[j * nSp + i], tmp_nObs[j], 1);
 	  	  }
 	  	  // Current
-                    betaStarSites[i * nObs + j] = 0.0;
-                    for (ll = 0; ll < pAbundRE; ll++) {
-                      betaStarSites[i * nObs + j] += betaStar[i * nAbundRE + betaStarLongIndx[ll * nObs + j]] * 
-	                                  XRandom[ll * nObs + j];
-                    }
-                    tmp_nObs[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, &beta[i], &nSp) + 
-	  	  		  betaStarSites[i * nObs + j]);
-                    if (family == 1) {
+                  betaStarSites[i * nObs + j] = 0.0;
+                  for (ll = 0; ll < pAbundRE; ll++) {
+                    betaStarSites[i * nObs + j] += betaStar[i * nAbundRE + betaStarLongIndx[ll * nObs + j]] * 
+	                                XRandom[ll * nObs + j];
+                  }
+                  tmp_nObs[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, &beta[i], &nSp) + 
+	  	      	  betaStarSites[i * nObs + j]);
+                  if (family == 1) {
 	  	    logPostBetaStarCurr[l] += dnbinom_mu(y[j * nSp + i], kappa[i], tmp_nObs[j], 1);
 	  	  } else {
 	  	    logPostBetaStarCurr[l] += dpois(y[j * nSp + i], tmp_nObs[j], 1);

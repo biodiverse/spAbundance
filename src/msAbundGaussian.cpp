@@ -42,7 +42,7 @@ extern "C" {
     // ll = latent factor
     // h = coefficients
     // rr = spatially-varying coefficient. 
-    int i, j, k, s, g, t, h, r, l, info, nProtect=0, ii, ll, rr, rrr;    
+    int i, j, s, g, t, h, l, info, nProtect=0, ll;    
 
     const int inc = 1;
     const double one = 1.0;
@@ -76,7 +76,6 @@ extern "C" {
     double *tauSqB = REAL(tauSqB_r); 
     double *sigmaSqMuA = REAL(sigmaSqMuA_r); 
     double *sigmaSqMuB = REAL(sigmaSqMuB_r); 
-    double *tuning = REAL(tuning_r); 
     int *nRELong = INTEGER(nRELong_r); 
     int *betaStarIndx = INTEGER(betaStarIndx_r); 
     int *betaLevelIndx = INTEGER(betaLevelIndx_r);
@@ -88,7 +87,6 @@ extern "C" {
     int nPost = INTEGER(samplesInfo_r)[2]; 
     int currChain = INTEGER(chainInfo_r)[0];
     int nChain = INTEGER(chainInfo_r)[1];
-    double acceptRate = REAL(acceptRate_r)[0];
     int nThreads = INTEGER(nThreads_r)[0];
     int verbose = INTEGER(verbose_r)[0];
     int nReport = INTEGER(nReport_r)[0];
@@ -117,9 +115,9 @@ extern "C" {
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
 	if (family == 2) {
-          Rprintf("Multispecies Gaussian Model\nwith %i sites and %i species.\n\n", J, N);
+          Rprintf("Multispecies Gaussian Model with %i sites and %i species.\n\n", J, N);
 	} else {
-          Rprintf("Multispecies Gaussian Hurdle Model\nwith %i sites and %i species.\n\n", J, N);
+          Rprintf("Multispecies Zero-Inflated Gaussian Model with %i sites and %i species.\n\n", J, N);
 	}
         Rprintf("Samples per chain: %i (%i batches of length %i)\n", nSamples, nBatch, batchLength);
         Rprintf("Burn-in: %i \n", nBurn); 
@@ -146,8 +144,6 @@ extern "C" {
     int JN = J * N;
     int Jp = J * p; 
     int JpRE = J * p;
-    int JJ = J * J;
-    int jj, kk;
     double tmp_0, tmp_02; 
     double *tmp_one = (double *) R_alloc(inc, sizeof(double)); 
     double *tmp_pp = (double *) R_alloc(pp, sizeof(double)); 
@@ -164,7 +160,6 @@ extern "C" {
     double *tmp_Jp = (double *) R_alloc(Jp, sizeof(double));
     double *tmp_N = (double *) R_alloc(N, sizeof(double)); zeros(tmp_N, N);
     double *tmp_N2 = (double *) R_alloc(N, sizeof(double)); zeros(tmp_N2, N);
-    int currDim = 0;
 
     /**********************************************************************
      * Parameters
@@ -466,7 +461,6 @@ extern "C" {
 	    } else {
               mu[j * N + i] = 0.0;
 	      yRep[j * N + i] = rnorm(mu[j * N + i], sqrt(0.0001));
-	      // TODO: may want to think about this some more.
 	      like[j * N + i] = 1.0;
 	    }
 	  } // j
@@ -564,5 +558,3 @@ extern "C" {
     return(result_r);
   }
 }
-
-

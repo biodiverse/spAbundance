@@ -6,11 +6,16 @@
 
 static const R_CallMethodDef CallEntries[] = {
     {"abund", (DL_FUNC) &abund, 29},
+    {"abundGaussian", (DL_FUNC) &abundGaussian, 26},
     {"spAbundNNGP", (DL_FUNC) &spAbundNNGP, 47},
+    {"spAbundGaussianNNGP", (DL_FUNC) &spAbundGaussianNNGP, 46},
     {"spAbundNNGPPredict", (DL_FUNC) &spAbundNNGPPredict, 24},
     {"msAbund", (DL_FUNC) &msAbund, 33},
+    {"msAbundGaussian", (DL_FUNC) &msAbundGaussian, 33},
     {"lfMsAbund", (DL_FUNC) &lfMsAbund, 35},
+    {"lfMsAbundGaussian", (DL_FUNC) &lfMsAbundGaussian, 35},
     {"sfMsAbundNNGP", (DL_FUNC) &sfMsAbundNNGP, 49},
+    {"sfMsAbundGaussianNNGP", (DL_FUNC) &sfMsAbundGaussianNNGP, 49},
     {"sfMsAbundNNGPPredict", (DL_FUNC) &sfMsAbundNNGPPredict, 27},
     {"NMix", (DL_FUNC) &NMix, 45},
     {"spNMixNNGP", (DL_FUNC) &spNMixNNGP, 63},
@@ -22,10 +27,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"DS", (DL_FUNC) &DS, 49},
     {"spDSNNGP", (DL_FUNC) &spDSNNGP, 63},
     {"waicAbund", (DL_FUNC) &waicAbund, 13},
-    {"svcAbundNNGP", (DL_FUNC) &svcAbundNNGP, 46},
-    {"abundGaussian", (DL_FUNC) &abundGaussian, 26},
-    {"svcAbundNNGPPredict", (DL_FUNC) &svcAbundNNGPPredict, 25},
-    {"spAbundGaussianNNGP", (DL_FUNC) &spAbundGaussianNNGP, 46},
     {NULL, NULL, 0}
 };
 

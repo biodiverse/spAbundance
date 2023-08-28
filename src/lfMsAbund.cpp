@@ -34,7 +34,7 @@ extern "C" {
     /**********************************************************************
      * Initial constants
      * *******************************************************************/
-    int i, j, s, t, g, l, h, r, ll, ii, jj, kk, k, info, nProtect=0;
+    int i, j, s, t, g, l, h, r, ll, ii, k, info, nProtect=0;
     const int inc = 1;
     const double one = 1.0;
     const double zero = 0.0;
@@ -87,7 +87,6 @@ extern "C" {
     int status = 0; 
     int thinIndx = 0;
     int sPost = 0;  
-    int currDim = 0;
     // NB = 1, Poisson = 0;
     int family = INTEGER(family_r)[0];
 
@@ -118,7 +117,7 @@ extern "C" {
         Rprintf("Thinning Rate: %i \n", nThin); 
 	Rprintf("Number of Chains: %i \n", nChain);
         Rprintf("Total Posterior Samples: %i \n\n", nPost * nChain); 
-        Rprintf("Using %i latent factors.\n\n", q);
+        Rprintf("Using %i latent factors.\n", q);
 #ifdef _OPENMP
         Rprintf("\nSource compiled with OpenMP support and model fit using %i thread(s).\n\n", nThreads);
 #else
@@ -142,35 +141,18 @@ extern "C" {
     int nObsnSp = nObs * nSp; 
     int nAbundREnSp = nAbundRE * nSp; 
     int JnSp = J * nSp;
-    int JpAbund = J * pAbund; 
-    int nObspAbund = nObs * pAbund;
     int nObspAbundRE = nObs * pAbundRE;
     int Jq = J * q;
-    int nObsq = nObs * q;
-    int qq = q * q;
     int nSpq = nSp * q;
     double tmp_0; 
-    double *tmp_one = (double *) R_alloc(inc, sizeof(double)); 
     double *tmp_ppAbund = (double *) R_alloc(ppAbund, sizeof(double)); 
     double *tmp_pAbund = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_beta = (double *) R_alloc(pAbund, sizeof(double));
     double *tmp_pAbund2 = (double *) R_alloc(pAbund, sizeof(double));
     int *tmp_JInt = (int *) R_alloc(J, sizeof(int));
     for (j = 0; j < J; j++) {
       tmp_JInt[j] = 0; 
     }
     double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
-    double *tmp_JpAbund = (double *) R_alloc(JpAbund, sizeof(double));
-    double *tmp_nObspAbund = (double *) R_alloc(nObspAbund, sizeof(double));
-    double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
-    double *tmp_qq = (double *) R_alloc(qq, sizeof(double));
-    double *tmp_q = (double *) R_alloc(q, sizeof(double));
-    double *tmp_q2 = (double *) R_alloc(q, sizeof(double));
-    double *tmp_qq2 = (double *) R_alloc(qq, sizeof(double));
-    double *tmp_Jq = (double *) R_alloc(Jq, sizeof(double));
-    double *tmp_nObsq = (double *) R_alloc(nObsq, sizeof(double));
-    double *tmp_nSpq = (double *) R_alloc(nSpq, sizeof(double));
-    double *tmp_nSp = (double *) R_alloc(nSp, sizeof(double));
 
     /**********************************************************************
      * Parameters
@@ -333,8 +315,6 @@ extern "C" {
     int betaStarAMCMCIndx = wAMCMCIndx + Jq;
     int kappaAMCMCIndx = betaStarAMCMCIndx + nAbundRE * nSp;
 
-    // TODO: will likely want to eliminate these and just overwrite them at each 
-    // iteration. With tuning w and lambda this becomes actually quite large. 
     double *accept = (double *) R_alloc(nAMCMC, sizeof(double)); zeros(accept, nAMCMC); 
     SEXP acceptSamples_r; 
     PROTECT(acceptSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 

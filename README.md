@@ -3,7 +3,12 @@
 
 # spAbundance
 
-[![](https://codecov.io/gh/https://github.com/doserjef/spAbundance/branch/main/graph/badge.svg)](https://codecov.io/gh/https://github.com/doserjef/spAbundance)
+# spAbundance
+
+[![](http://cranlogs.r-pkg.org/badges/grand-total/spAbundance?color=blue)](https://CRAN.R-project.org/package=spAbundance)
+[![CRAN](https://www.r-pkg.org/badges/version/spAbundance)](https://CRAN.R-project.org/package=spAbundance)
+[![Codecov test
+coverage](https://codecov.io/gh/doserjef/spAbundance/branch/main/graph/badge.svg)](https://codecov.io/gh/doserjef/spAbundance?branch=main)
 
 `spAbundance` fits univariate (i.e., single-species) and multivariate
 (i.e., multi-species) spatial abundance models using Markov Chain Monte
@@ -46,7 +51,6 @@ C++ on a Mac, you can install `XCode` from the Mac app store.
 | `sfMsDS()`             | Multi-species spatial distance sampling model with species correlations |
 | `abund()`              | Single-species abundance GLM                                            |
 | `spAbund()`            | Single-species spatial abundance GLM                                    |
-| `svcAbund()`           | Single-species spatially-varying coefficient GLMMs (currently Gaussian) |
 | `msAbund()`            | Multi-species abundance GLM                                             |
 | `lfMsAbund()`          | Multi-species abundance GLM with species correlations                   |
 | `sfMsAbund()`          | Multi-species spatial abundance GLM with species correlations           |
@@ -60,9 +64,8 @@ C++ on a Mac, you can install `XCode` from the Mac app store.
 | `simMsDS()`            | Simulate multi-species distance sampling data                           |
 
 All model fitting functions allow for Poisson and negative binomial
-distributions for the abundance portion of the model (with the exception
-of `svcAbund()`, which is currently only for Gaussian outcomes). All
-GLM(M)s also allow for Gaussian models.
+distributions for the abundance portion of the model. All GLM(M)s also
+allow for Gaussian models.
 
 ## Citing `spAbundance`
 

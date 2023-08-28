@@ -43,7 +43,7 @@ extern "C" {
     // ll = latent factor
     // h = coefficients
     // rr = spatially-varying coefficient. 
-    int i, j, k, s, g, t, h, r, l, info, nProtect=0, ii, ll, rr, rrr;    
+    int i, j, k, s, g, t, h, l, info, nProtect=0, ii, ll;    
 
     const int inc = 1;
     const double one = 1.0;
@@ -78,7 +78,6 @@ extern "C" {
     double *tauSqB = REAL(tauSqB_r); 
     double *sigmaSqMuA = REAL(sigmaSqMuA_r); 
     double *sigmaSqMuB = REAL(sigmaSqMuB_r); 
-    double *tuning = REAL(tuning_r); 
     int *nRELong = INTEGER(nRELong_r); 
     int *betaStarIndx = INTEGER(betaStarIndx_r); 
     int *betaLevelIndx = INTEGER(betaLevelIndx_r);
@@ -90,7 +89,6 @@ extern "C" {
     int nPost = INTEGER(samplesInfo_r)[2]; 
     int currChain = INTEGER(chainInfo_r)[0];
     int nChain = INTEGER(chainInfo_r)[1];
-    double acceptRate = REAL(acceptRate_r)[0];
     int nThreads = INTEGER(nThreads_r)[0];
     int verbose = INTEGER(verbose_r)[0];
     int nReport = INTEGER(nReport_r)[0];
@@ -121,7 +119,7 @@ extern "C" {
 	if (family == 2) {
           Rprintf("Latent Factor Multispecies Gaussian Model\nwith %i sites and %i species.\n\n", J, N);
 	} else {
-          Rprintf("Latent Factor Multispecies Gaussian Hurdle Model\nwith %i sites and %i species.\n\n", J, N);
+          Rprintf("Latent Factor Multispecies Zero-Inflated Gaussian Model\nwith %i sites and %i species.\n\n", J, N);
 	}
         Rprintf("Samples per chain: %i (%i batches of length %i)\n", nSamples, nBatch, batchLength);
         Rprintf("Burn-in: %i \n", nBurn); 
@@ -149,8 +147,6 @@ extern "C" {
     int JN = J * N;
     int Jp = J * p; 
     int JpRE = J * p;
-    int JJ = J * J;
-    int jj, kk;
     int Jq = J * q;
     int qq = q * q;
     int Nq = N * q;
@@ -634,7 +630,6 @@ extern "C" {
 	    } else {
               mu[j * N + i] = 0.0;
 	      yRep[j * N + i] = rnorm(mu[j * N + i], sqrt(0.0001));
-	      // TODO: may want to think about this some more.
 	      like[j * N + i] = 1.0;
 	    }
 	  } // j
