@@ -46,7 +46,6 @@ extern "C" {
     const double one = 1.0;
     const double zero = 0.0;
     char const *lower = "L";
-    char const *ntran = "N";
     char const *ytran = "T";
     
     /**********************************************************************
@@ -166,9 +165,7 @@ extern "C" {
     int nAbundREnSp = nAbundRE * nSp; 
     int nDetREnSp = nDetRE * nSp; 
     int JnSp = J * nSp;
-    int JpAbund = J * pAbund; 
     int JpAbundRE = J * pAbundRE;
-    int nObspDet = nObs * pDet;
     int nObspDetRE = nObs * pDetRE;
     double tmp_0, tmp_02; 
     double *tmp_ppDet = (double *) R_alloc(ppDet, sizeof(double));

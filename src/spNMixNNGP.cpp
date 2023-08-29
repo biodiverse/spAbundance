@@ -85,13 +85,10 @@ extern "C" {
     /**********************************************************************
      * Initial constants
      * *******************************************************************/
-    int i, g, t, j, s, r, l, k, jj, ii, kk, ll, info, nProtect=0;
+    int i, g, t, j, s, r, l, k, jj, ll, nProtect=0;
     const int inc = 1;
     const double one = 1.0;
     const double zero = 0.0;
-    char const *lower = "L";
-    char const *ntran = "N";
-    char const *ytran = "T";
     
     /**********************************************************************
      * Get Inputs
@@ -162,7 +159,6 @@ extern "C" {
     int *nnIndxLU = INTEGER(nnIndxLU_r);
     int *uIndx = INTEGER(uIndx_r);
     int *uIndxLU = INTEGER(uIndxLU_r);
-    int *uiIndx = INTEGER(uiIndx_r);
     int covModel = INTEGER(covModel_r)[0];
     std::string corName = getCorName(covModel);
     int status = 0; 
@@ -281,24 +277,11 @@ extern "C" {
     /********************************************************************
       Some constants and temporary variables to be used later
     ********************************************************************/
-    int JpAbund = J * pAbund; 
-    int nObspDet = nObs * pDet;
     double tmp_0, tmp_02; 
-    double *tmp_one = (double *) R_alloc(inc, sizeof(double)); 
-    double *tmp_ppDet = (double *) R_alloc(ppDet, sizeof(double));
-    double *tmp_ppAbund = (double *) R_alloc(ppAbund, sizeof(double)); 
-    double *tmp_pDet = (double *) R_alloc(pDet, sizeof(double));
-    double *tmp_pAbund = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_pDet2 = (double *) R_alloc(pDet, sizeof(double));
-    double *tmp_pAbund2 = (double *) R_alloc(pAbund, sizeof(double));
     double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
-    double *tmp_JpAbund = (double *) R_alloc(JpAbund, sizeof(double));
-    double *tmp_nObspDet = (double *) R_alloc(nObspDet, sizeof(double));
     double *tmp_J = (double *) R_alloc(J, sizeof(double));
-    double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
    
     // For latent abundance and WAIC
-    double muNum; 
     double *detProb = (double *) R_alloc(nObs, sizeof(double)); zeros(detProb, nObs);
     double *mu = (double *) R_alloc(J, sizeof(double)); 
     zeros(mu, J); 
@@ -317,7 +300,7 @@ extern "C" {
     double *theta = (double *) R_alloc(nTheta, sizeof(double));
     SEXP thetaSamples_r; 
     PROTECT(thetaSamples_r = allocMatrix(REALSXP, nTheta, nPost)); nProtect++; 
-    double a, v, aa, b, e, muNNGP, var, aij; 
+    double a, b, e; 
     // Initiate spatial values
     theta[sigmaSqIndx] = REAL(sigmaSqStarting_r)[0]; 
     theta[phiIndx] = REAL(phiStarting_r)[0]; 

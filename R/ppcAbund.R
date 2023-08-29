@@ -1,4 +1,4 @@
-ppcAbund <- function(object, fit.stat, group, ...) {
+ppcAbund <- function(object, fit.stat, group, type = 'marginal', ...) {
 
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -32,6 +32,10 @@ ppcAbund <- function(object, fit.stat, group, ...) {
     stop("error: fit.stat must be either 'chi-squared' or 'freeman-tukey'")
   }
   fit.stat <- tolower(fit.stat)
+  # Type ------------------------------
+  if (!(type %in% c('marginal', 'conditional'))) {
+    stop("type must be either 'marginal' or 'conditional'")
+  }
   # Group -----------------------------
   if (missing(group)) {
     stop("error: group must be specified")
@@ -53,11 +57,16 @@ ppcAbund <- function(object, fit.stat, group, ...) {
     y <- object$y
     J <- nrow(y)
     if (is(object, 'NMix')) {
-      fitted.out <- fitted.NMix(object)
+      fitted.out <- fitted.NMix(object, type = type)
     } else {
-      fitted.out <- fitted.spNMix(object)
+      fitted.out <- fitted.spNMix(object, type = type)
     }
-    N.samples <- object$N.samples
+    if (type == 'marginal') {
+      abund.samples <- object$mu.samples
+    }
+    if (type == 'conditional') {
+      abund.samples <- object$N.samples
+    }
     y.rep.samples <- fitted.out$y.rep.samples
     det.prob <- fitted.out$p.samples
     n.samples <- object$n.post * object$n.chains
@@ -71,7 +80,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
         fit.big.y <- array(NA, dim = c(J, max(K), n.samples))
         for (i in 1:n.samples) {
 	  for (j in 1:J) {
-            E <- det.prob[i, j, 1:K[j]] * N.samples[i, j]
+            E <- det.prob[i, j, 1:K[j]] * abund.samples[i, j]
 	    fit.big.y.rep[j, 1:K[j], i] <- (y.rep.samples[i, j, 1:K[j]] - E)^2 / (E + e)
 	    fit.big.y[j, 1:K[j], i] <- (y[j, 1:K[j]] - E)^2 / (E + e)
 	  } # j
@@ -83,7 +92,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
         fit.big.y <- array(NA, dim = c(J, max(K), n.samples))
         for (i in 1:n.samples) {
 	  for (j in 1:J) {
-            E <- det.prob[i, j, 1:K[j]] * N.samples[i, j]
+            E <- det.prob[i, j, 1:K[j]] * abund.samples[i, j]
 	    fit.big.y.rep[j, 1:K[j], i] <- (sqrt(y.rep.samples[i, j, 1:K[j]]) - sqrt(E))^2
 	    fit.big.y[j, 1:K[j], i] <- (sqrt(y[j, 1:K[j]]) - sqrt(E))^2
 	  } # j
@@ -100,7 +109,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
       fit.big.y <- matrix(NA, length(y.grouped), n.samples)
       if (fit.stat %in% c('chi-squared', 'chi-square')) {
         for (i in 1:n.samples) {
-          E.grouped <- apply(det.prob[i, , , drop = FALSE] * N.samples[i, ], 2, sum, na.rm = TRUE)
+          E.grouped <- apply(det.prob[i, , , drop = FALSE] * abund.samples[i, ], 2, sum, na.rm = TRUE)
           fit.big.y[, i] <- (y.grouped - E.grouped)^2 / (E.grouped + e)
           fit.y[i] <- sum(fit.big.y[, i])
 	  fit.big.y.rep[, i] <- (y.rep.grouped[i,] - E.grouped)^2 / (E.grouped + e)
@@ -108,7 +117,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
         }
       } else if (fit.stat == 'freeman-tukey') {
         for (i in 1:n.samples) {
-          E.grouped <- apply(det.prob[i, , , drop = FALSE] * N.samples[i, ], 2, sum, na.rm = TRUE)
+          E.grouped <- apply(det.prob[i, , , drop = FALSE] * abund.samples[i, ], 2, sum, na.rm = TRUE)
           fit.big.y[, i] <- (sqrt(y.grouped) - sqrt(E.grouped))^2 
           fit.y[i] <- sum(fit.big.y[, i])
 	  fit.big.y.rep[, i] <- (sqrt(y.rep.grouped[i,]) - sqrt(E.grouped))^2 
@@ -122,7 +131,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
       fit.big.y.rep <- matrix(NA, length(y.grouped), n.samples)
       if (fit.stat %in% c('chi-squared', 'chi-square')) {
         for (i in 1:n.samples) {
-          E.grouped <- apply(det.prob[i, , , drop = FALSE] * N.samples[i, ], 3, sum, na.rm = TRUE)
+          E.grouped <- apply(det.prob[i, , , drop = FALSE] * abund.samples[i, ], 3, sum, na.rm = TRUE)
           fit.big.y[, i] <- (y.grouped - E.grouped)^2 / (E.grouped + e)
           fit.y[i] <- sum(fit.big.y[, i])
 	  fit.big.y.rep[, i] <- (y.rep.grouped[i,] - E.grouped)^2 / (E.grouped + e)
@@ -130,7 +139,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
         }
       } else if (fit.stat == 'freeman-tukey') {
         for (i in 1:n.samples) {
-          E.grouped <- apply(det.prob[i, , , drop = FALSE] * N.samples[i, ], 3, sum, na.rm = TRUE)
+          E.grouped <- apply(det.prob[i, , , drop = FALSE] * abund.samples[i, ], 3, sum, na.rm = TRUE)
           fit.big.y[, i] <- (sqrt(y.grouped) - sqrt(E.grouped))^2 
           fit.y[i] <- sum(fit.big.y[, i])
 	  fit.big.y.rep[, i] <- (sqrt(y.rep.grouped[i,]) - sqrt(E.grouped))^2 
@@ -370,10 +379,15 @@ ppcAbund <- function(object, fit.stat, group, ...) {
     J <- dim(y)[2]
     n.sp <- dim(y)[1]
     # Fitted function is the same for all multispecies N-mixtures. 
-    fitted.out <- fitted.msNMix(object)
+    fitted.out <- fitted.msNMix(object, type = type)
     y.rep.samples <- fitted.out$y.rep.samples
     det.prob <- fitted.out$p.samples
-    N.samples <- object$N.samples
+    if (type == 'marginal') {
+      abund.samples <- object$mu.samples
+    }
+    if (type == 'conditional') {
+      abund.samples <- object$N.samples
+    }
     n.samples <- object$n.post * object$n.chains
     fit.y <- matrix(NA, n.samples, n.sp)
     fit.y.rep <- matrix(NA, n.samples, n.sp)
@@ -388,7 +402,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
         if (fit.stat %in% c('chi-squared', 'chi-square')) {
             for (j in 1:n.samples) {
               for (k in 1:J) {
-                E.grouped <- det.prob[j, i, k, 1:K[k]] * N.samples[j, i, k]
+                E.grouped <- det.prob[j, i, k, 1:K[k]] * abund.samples[j, i, k]
                 fit.big.y[j, i, k, 1:K[k]] <- (y[i, k, 1:K[k]] - E.grouped)^2 / (E.grouped + e)
                 fit.y[j, i] <- sum(fit.big.y[j, i, , ], na.rm = TRUE)
                 fit.big.y.rep[j, i, k, 1:K[k]] <- (y.rep.samples[j, i, k, 1:K[k]] - E.grouped)^2 / (E.grouped + e)
@@ -398,7 +412,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
         } else if (fit.stat == 'freeman-tukey') {
           for (j in 1:n.samples) {
             for (k in 1:J) {
-              E.grouped <- det.prob[j, i, k, 1:K[k]] * N.samples[j, i, k]
+              E.grouped <- det.prob[j, i, k, 1:K[k]] * abund.samples[j, i, k]
               fit.big.y[j, i, k, 1:K[k]] <- (sqrt(y[i, k, 1:K[k]]) - sqrt(E.grouped))^2 
               fit.y[j, i] <- sum(fit.big.y[j, i, , ], na.rm = TRUE)
               fit.big.y.rep[j, i, k, 1:K[k]] <- (sqrt(y.rep.samples[j, i, k, 1:K[k]]) - sqrt(E.grouped))^2 
@@ -417,7 +431,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
         message(noquote(paste("Currently on species ", i, " out of ", n.sp, sep = '')))
         if (fit.stat %in% c('chi-squared', 'chi-square')) {
             for (j in 1:n.samples) {
-              E.grouped <- apply(det.prob[j, i, , , drop = FALSE] * N.samples[j, i, ], 3, sum, na.rm = TRUE)
+              E.grouped <- apply(det.prob[j, i, , , drop = FALSE] * abund.samples[j, i, ], 3, sum, na.rm = TRUE)
               fit.big.y[j, i, ] <- (y.grouped[i, ] - E.grouped)^2 / (E.grouped + e)
               fit.y[j, i] <- sum(fit.big.y[j, i, ])
               fit.big.y.rep[j, i, ] <- (y.rep.grouped[j, i, ] - E.grouped)^2 / (E.grouped + e)
@@ -425,7 +439,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
             }
         } else if (fit.stat == 'freeman-tukey') {
           for (j in 1:n.samples) {
-            E.grouped <- apply(det.prob[j, i, , , drop = FALSE] * N.samples[j, i, ], 3, sum, na.rm = TRUE)
+            E.grouped <- apply(det.prob[j, i, , , drop = FALSE] * abund.samples[j, i, ], 3, sum, na.rm = TRUE)
             fit.big.y[j, i, ] <- (sqrt(y.grouped[i, ]) - sqrt(E.grouped))^2 
             fit.y[j, i] <- sum(fit.big.y[j, i, ])
             fit.big.y.rep[j, i, ] <- (sqrt(y.rep.grouped[j, i, ]) - sqrt(E.grouped))^2 
@@ -442,7 +456,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
         message(noquote(paste("Currently on species ", i, " out of ", n.sp, sep = '')))
         if (fit.stat %in% c('chi-squared', 'chi-square')) {
           for (j in 1:n.samples) {
-            E.grouped <- apply(det.prob[j, i, , , drop = FALSE] * N.samples[j, i, ], 4, sum, na.rm = TRUE)
+            E.grouped <- apply(det.prob[j, i, , , drop = FALSE] * abund.samples[j, i, ], 4, sum, na.rm = TRUE)
             fit.big.y[j, i, ] <- (y.grouped[i, ] - E.grouped)^2 / (E.grouped + e)
             fit.y[j, i] <- sum(fit.big.y[j, i, ])
             fit.big.y.rep[j, i, ] <- (y.rep.grouped[j, i, ] - E.grouped)^2 / (E.grouped + e)
@@ -450,7 +464,7 @@ ppcAbund <- function(object, fit.stat, group, ...) {
           }
         } else if (fit.stat == 'freeman-tukey') {
           for (j in 1:n.samples) {
-            E.grouped <- apply(det.prob[j, i, , , drop = FALSE] * N.samples[j, i, ], 4, sum, na.rm = TRUE)
+            E.grouped <- apply(det.prob[j, i, , , drop = FALSE] * abund.samples[j, i, ], 4, sum, na.rm = TRUE)
             fit.big.y[j, i, ] <- (sqrt(y.grouped[i, ]) - sqrt(E.grouped))^2 
             fit.y[j, i] <- sum(fit.big.y[j, i, ])
             fit.big.y.rep[j, i, ] <- (sqrt(y.rep.grouped[j, i, ]) - sqrt(E.grouped))^2 

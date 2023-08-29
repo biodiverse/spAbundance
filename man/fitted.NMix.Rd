@@ -9,11 +9,12 @@
 }
 
 \usage{
-\method{fitted}{NMix}(object, \dots)
+\method{fitted}{NMix}(object, type = 'marginal', \dots)
 }
 
 \arguments{
   \item{object}{object of class \code{NMix}.}
+  \item{type}{a character string indicating whether fitted values should be generated conditional on the estimated latent abundance values (\code{type = 'conditional'}) estimated during the model or based on the marginal expected abundance values (\code{type = 'marginal'}).}
   \item{\dots}{currently no additional arguments}
 }
 

@@ -3,7 +3,7 @@
 \title{Function for performing posterior predictive checks}
 
 \usage{
-ppcAbund(object, fit.stat, group, ...)
+ppcAbund(object, fit.stat, group, type = 'marginal', ...)
 }
 
 \description{
@@ -27,6 +27,8 @@ abundance data for the posterior predictive check. Value
 1 will group values by row (site), and value 2 will group values by 
 column (replicate).} 
 
+\item{type}{a character string indicating whether fitted values should be generated conditional on the estimated latent abundance values (\code{type = 'conditional'}) estimated during the model or based on the marginal expected abundance values (\code{type = 'marginal'}).}
+
 \item{...}{currently no additional arguments}
 }
 
@@ -35,7 +37,7 @@ column (replicate).}
 }
 
 \note{
-  \code{ppcAbund} will return an error for Gaussian or Gaussian hurdle models. 
+  \code{ppcAbund} will return an error for Gaussian or zero-inflated Gaussian models. 
   For Gaussian models, standard residual diagnostics can be used to assess model fit.
 }
 

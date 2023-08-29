@@ -1569,7 +1569,7 @@ print.NMix <- function(x, ...) {
       "", sep = "\n")
 }
 
-fitted.NMix <- function(object, ...) {
+fitted.NMix <- function(object, type = 'marginal', ...) {
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
   elip.args <- names(list(...))
@@ -1591,6 +1591,9 @@ fitted.NMix <- function(object, ...) {
   if (!(class(object) %in% c("NMix", "spNMix"))) {
     stop("error: object must be one of class NMix or spNMix\n")
   }
+  if (!(type %in% c('marginal', 'conditional'))) {
+    stop("type must be either 'marginal', or 'conditional'")
+  }
   n.post <- object$n.post * object$n.chains
   X.p <- object$X.p
   y <- object$y
@@ -1606,7 +1609,21 @@ fitted.NMix <- function(object, ...) {
   }
   y <- c(y)
   y <- y[!is.na(y)]
-  N.samples <- object$N.samples
+  if (type == 'conditional') {
+    N.samples <- object$N.samples
+  }
+  if (type == 'marginal') {
+    N.samples <- array(NA, dim = dim(object$N.samples))
+    for (i in 1:n.post) {
+      if (object$dist == 'Poisson') {
+        N.samples[i, ] <- rpois(J, object$mu.samples[i, ])
+      } else if (object$dist == 'NB') {
+        N.samples[i, ] <- rnbinom(J, object$kappa.samples[i], 
+				  mu = object$mu.samples[i, ])
+      }
+    }
+  }
+  mu.samples <- object$mu.samples
   alpha.samples <- object$alpha.samples
   det.prob.samples <- matrix(NA, n.post, length(y))
   if (object$pRE) {
@@ -2097,8 +2114,8 @@ summary.spNMix <- function(object,
   }
 }
 
-fitted.spNMix <- function(object, ...) {
-  fitted.NMix(object)
+fitted.spNMix <- function(object, type = 'marginal', ...) {
+  fitted.NMix(object, type = type)
 }
 
 predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1, 
@@ -2519,7 +2536,7 @@ summary.msNMix <- function(object,
 }
 
 
-fitted.msNMix <- function(object, ...) {
+fitted.msNMix <- function(object, type = 'marginal', ...) {
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
   elip.args <- names(list(...))
@@ -2541,6 +2558,9 @@ fitted.msNMix <- function(object, ...) {
   if (!(class(object) %in% c('msNMix', 'spMsNMix', 'lfMsNMix', 'sfMsNMix'))) {
     stop("error: object must be of class msNMix, spMsNMix, lfMsNMix, or sfMsNMix\n")
   }
+  if (!(type %in% c('marginal', 'conditional'))) {
+    stop("type must be either 'marginal', or 'conditional'")
+  }
   n.post <- object$n.post * object$n.chains
   X.p <- object$X.p
   y <- object$y
@@ -2550,7 +2570,22 @@ fitted.msNMix <- function(object, ...) {
   n.sp <- dim(y)[1]
   N.long.indx <- rep(1:J, dim(y)[3])
   N.long.indx <- N.long.indx[!is.na(c(y[1, , ]))]
-  N.samples <- object$N.samples
+  if (type == 'conditional') {
+    N.samples <- object$N.samples
+  }
+  if (type == 'marginal') {
+    N.samples <- array(NA, dim = dim(object$N.samples))
+    for (j in 1:n.post) {
+      for (i in 1:n.sp) {
+        if (object$dist == 'Poisson') {
+          N.samples[j, i, ] <- rpois(J, object$mu.samples[j, i, ])
+        } else if (object$dist == 'NB') {
+          N.samples[j, i, ] <- rnbinom(J, object$kappa.samples[j, i], 
+          			  mu = object$mu.samples[j, i, ])
+        }
+      }
+    }
+  }
   alpha.samples <- object$alpha.samples
   n.obs <- nrow(X.p)
   det.prob.samples <- array(NA, dim = c(n.obs, n.sp, n.post))
