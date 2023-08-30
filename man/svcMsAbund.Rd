@@ -1,14 +1,14 @@
-\name{sfMsAbund}
-\alias{sfMsAbund}
-\title{Function for Fitting Spatial Factor Multi-Species Abundance GLMs}
+\name{svcMsAbund}
+\alias{svcMsAbund}
+\title{Function for Fitting Spatially-Varying Coefficient Multi-Species Abundance GLMs}
 
 \description{
-  The function \code{sfMsAbund} fits multi-species spatial abundance GLMs with species correlations (i.e., a spatially-explicit abundace-based joint species distribution model). We use  a spatial factor modeling approach. Currently, models are implemented using a Nearest Neighbor Gaussian Process. Future development may allow for running the models using full Gaussian Processes. 
+  The function \code{svcMsAbund} fits multi-species spatially-varying coefficient GLMs with species correlations (i.e., a spatially-explicit abundace-based joint species distribution model). We use  a spatial factor modeling approach. Currently, models are implemented using a Nearest Neighbor Gaussian Process. Future development may allow for running the models using full Gaussian Processes. 
 }
 
 \usage{
-sfMsAbund(formula, data, inits, priors,  
-         tuning, cov.model = 'exponential', NNGP = TRUE, 
+svcMsAbund(formula, data, inits, priors, tuning,
+         svc.cols = 1, cov.model = 'exponential', NNGP = TRUE, 
          n.neighbors = 15, search.type = 'cb', n.factors,
          n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
 	 n.omp.threads = 1, verbose = TRUE, n.report = 100, 
@@ -110,6 +110,15 @@ sfMsAbund(formula, data, inits, priors,
   See Roberts and Rosenthal (2009) for details. Note that only \code{phi} and \code{nu}
   are tuned for Gaussian or zero-inflated Gaussian models.}
 
+\item{svc.cols}{a vector indicating the variables whose effects will be 
+  estimated as spatially-varying coefficients. \code{svc.cols} can be an 
+  integer vector with values indicating the order of covariates specified 
+  in the model formula (with 1 being the intercept if specified), or it can 
+  be specified as a character vector with names corresponding to variable 
+  names in \code{occ.covs} (for the intercept, use \code{'(Intercept)'}). \code{svc.cols}
+  default argument of 1 results in a spatial factor model analogous to 
+  \code{sfMsAbund} (assuming an intercept is included in the model).} 
+
   \item{cov.model}{a quoted keyword that specifies the covariance
     function used to model the spatial dependence structure among the
     observations.  Supported covariance model key words are:
@@ -156,8 +165,7 @@ sfMsAbund(formula, data, inits, priors,
     0.43. See Roberts and Rosenthal (2009) for details.}
 
   \item{family}{the distribution to use for the abundance. Currently 
-    supports \code{'NB'} (negative binomial), \code{'Poisson'} (Poisson), \code{'Gaussian'} (Gaussian), 
-    and \code{'zi-Gaussian'} (zero-inflated Gaussian).}
+    supports \code{'NB'} (negative binomial) and \code{'Poisson'}.}
   
   \item{n.omp.threads}{a positive integer indicating
    the number of threads to use for SMP parallel processing. The package must
@@ -216,7 +224,7 @@ sfMsAbund(formula, data, inits, priors,
 }
 
 \value{
-  An object of class \code{sfMsAbund} that is a list comprised of: 
+  An object of class \code{svcMsAbund} that is a list comprised of: 
 
   \item{beta.comm.samples}{a \code{coda} object of posterior samples
     for the community level regression coefficients.}

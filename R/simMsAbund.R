@@ -1,5 +1,6 @@
 simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(), 
-		       sp = FALSE, cov.model, sigma.sq, phi, nu, family = 'Poisson',
+		       sp = FALSE, cov.model, svc.cols = 1, 
+		       sigma.sq, phi, nu, family = 'Poisson',
 		       factor.model = FALSE, n.factors, z, ...) {
 
   # Check for unused arguments ------------------------------------------
@@ -74,20 +75,22 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(
   if (nrow(beta) != n.sp) {
     stop(paste("error: beta must be a numeric matrix with ", n.sp, " rows", sep = ''))
   }
+  # Check spatial stuff ---------------
   if (sp & !factor.model) {
+    N.p.svc <- N * length(svc.cols)
     # sigma.sq --------------------------
     if (missing(sigma.sq)) {
       stop("error: sigma.sq must be specified when sp = TRUE")
     }
-    if (length(sigma.sq) != n.sp) {
-      stop(paste("error: sigma.sq must be a vector of length ", n.sp, sep = ''))
+    if (length(sigma.sq) != N.p.svc) {
+      stop(paste("error: sigma.sq must be a vector of length ", N.p.svc, sep = ''))
     }
     # phi -------------------------------
     if(missing(phi)) {
       stop("error: phi must be specified when sp = TRUE")
     }
-    if (length(phi) != n.sp) {
-      stop(paste("error: phi must be a vector of length ", n.sp, sep = ''))
+    if (length(phi) != N.p.svc) {
+      stop(paste("error: phi must be a vector of length ", N.p.svc, sep = ''))
     }
   }
   if (sp) {
@@ -104,11 +107,13 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(
       stop("error: nu must be specified when cov.model = 'matern'")
     }
   }
+  p.svc <- length(svc.cols)
   if (factor.model) {
     # n.factors -----------------------
     if (missing(n.factors)) {
       stop("error: n.factors must be specified when factor.model = TRUE")
     }
+    q.p.svc <- n.factors * length(svc.cols)
     if (sp) {
       if (!missing(sigma.sq)) {
         message("sigma.sq is specified but will be set to 1 for spatial latent factor model")
@@ -116,9 +121,12 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(
       if(missing(phi)) {
         stop("error: phi must be specified when sp = TRUE")
       }
-      if (length(phi) != n.factors) {
-        stop(paste("error: phi must be a vector of length ", n.factors, sep = ''))
+      if (length(phi) != q.p.svc) {
+        stop(paste("error: phi must be a vector of length ", q.p.svc, sep = ''))
       }
+    }
+    if (!sp & length(svc.cols) > 1) {
+      stop("error: length(svc.cols) > 1 when sp = FALSE. Set sp = TRUE to simulate data with spatially-varying coefficients")
     }
   }
   # mu.RE ----------------------------
@@ -185,53 +193,64 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(
   s.x <- seq(0, 1, length.out = J.x)
   s.y <- seq(0, 1, length.out = J.y)
   coords <- as.matrix(expand.grid(s.x, s.y))
-  w.star <- matrix(0, nrow = n.sp, ncol = J)
-  if (factor.model) {
-    lambda <- matrix(rnorm(n.sp * n.factors), n.sp, n.factors) 
-    # Set diagonals to 1
-    diag(lambda) <- 1
-    # Set upper tri to 0
-    lambda[upper.tri(lambda)] <- 0
-    w <- matrix(NA, n.factors, J)
-    if (sp) { # sfMsPGOcc
-      if (cov.model == 'matern') {
-        theta <- cbind(phi, nu)
-      } else {
-        theta <- as.matrix(phi)
-      }
-      for (ll in 1:n.factors) {
-        Sigma <- mkSpCov(coords, as.matrix(1), as.matrix(0), 
-            	     theta[ll, ], cov.model)
-        w[ll, ] <- rmvn(1, rep(0, J), Sigma)
-      }
+  w.star <- vector(mode = "list", length = p.svc)
+  w <- vector(mode = "list", length = p.svc)
+  lambda <- vector(mode = "list", length = p.svc)
+  # Form spatial process for each spatially-varying covariate
+  for (i in 1:p.svc) {
+    w.star[[i]] <- matrix(0, nrow = n.sp, ncol = J)
+    if (factor.model) {
+      lambda[[i]] <- matrix(rnorm(n.sp * n.factors, 0, 1), n.sp, n.factors) 
+      # Set diagonals to 1
+      diag(lambda[[i]]) <- 1
+      # Set upper tri to 0
+      lambda[[i]][upper.tri(lambda[[i]])] <- 0
+      w[[i]] <- matrix(NA, n.factors, J)
+      if (sp) { # sfMsPGOcc
+        if (cov.model == 'matern') {
+          # Assume all spatial parameters ordered by svc first, then factor
+          theta <- cbind(phi[((i - 1) * n.factors + 1):(i * n.factors)], 
+			 nu[((i - 1) * n.factors + 1):(i * n.factors)])
+        } else {
+          theta <- as.matrix(phi[((i - 1) * n.factors + 1):(i * n.factors)])
+        }
+        for (ll in 1:n.factors) {
+          Sigma <- mkSpCov(coords, as.matrix(1), as.matrix(0), 
+              	     theta[ll, ], cov.model)
+          w[[i]][ll, ] <- rmvn(1, rep(0, J), Sigma)
+        }
 
-    } else { # lsMsPGOcc
-      for (ll in 1:n.factors) {
-        w[ll, ] <- rnorm(J)
-      } # ll  
-    }
-    for (j in 1:J) {
-      w.star[, j] <- lambda %*% w[, j]
-    }
-  } else {
-    if (sp) { # spMsPGOcc
+      } else { # lsMsPGOcc
+        for (ll in 1:n.factors) {
+          w[[i]][ll, ] <- rnorm(J)
+        } # ll  
+      }
+      for (j in 1:J) {
+        w.star[[i]][, j] <- lambda[[i]] %*% w[[i]][, j]
+      }
+    } else {
+      if (sp) { # spMsPGOcc
+        lambda <- NA
+        if (cov.model == 'matern') {
+          theta <- cbind(phi[((i - 1) * n.sp + 1):(i * n.sp)], 
+			 nu[((i - 1) * n.sp + 1):(i * n.sp)])
+        } else {
+          theta <- as.matrix(phi[((i - 1) * n.sp + 1):(i * n.sp)])
+        }
+        # Spatial random effects for each species
+        for (ll in 1:n.sp) {
+          Sigma <- mkSpCov(coords, as.matrix(sigma.sq[(i - 1) * n.sp + ll]), as.matrix(0), 
+              	     theta[ll, ], cov.model)
+          w.star[[i]][ll, ] <- rmvn(1, rep(0, J), Sigma)
+        }
+      }
+      # For naming consistency
+      w <- w.star
       lambda <- NA
-      if (cov.model == 'matern') {
-        theta <- cbind(phi, nu)
-      } else {
-        theta <- as.matrix(phi)
-      }
-      # Spatial random effects for each species
-      for (i in 1:n.sp) {
-        Sigma <- mkSpCov(coords, as.matrix(sigma.sq[i]), as.matrix(0), 
-            	     theta[i, ], cov.model)
-        w.star[i, ] <- rmvn(1, rep(0, J), Sigma)
-      }
     }
-    # For naming consistency
-    w <- w.star
-    lambda <- NA
-  }
+  } # i (spatially-varying coefficient)
+  # Design matrix for spatially-varying coefficients
+  X.w <- X[, , svc.cols, drop = FALSE]
 
   # Random effects --------------------------------------------------------
   if (length(mu.RE) > 0) {
@@ -286,10 +305,11 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(
     for (k in 1:n.rep[j]) {
       for (i in 1:n.sp) {
         if (sp | factor.model) {
+          w.star.curr.mat <- sapply(w.star, function(a) a[i, j])
           if (length(mu.RE) > 0) {
-            mu[i, j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]) + w.star[i, j] + beta.star.sites[i, j, k]
+            mu[i, j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]) + X.w[j, k, ] %*% w.star.curr.mat + beta.star.sites[i, j, k]
           } else {
-            mu[i, j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]) + w.star[i, j]
+            mu[i, j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta[i, ]) + X.w[j, k, ] %*% w.star.curr.mat 
           }
         } else {
           if (length(mu.RE) > 0) {
@@ -322,6 +342,7 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(
     y <- y[, , 1]
     mu <- mu[, , 1]
     X <- X[, 1, ]
+    X.w <- X.w[, 1, ]
     if (length(mu.RE) > 0) {
       X.re <- X.re[, 1, ]
       beta.star.sites <- beta.star.sites[, , 1]
@@ -330,6 +351,6 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(
 
   return(
     list(X = X, coords = coords, w = w, lambda = lambda, y = y, 
-	 X.re = X.re, beta.star = beta.star, mu = mu)
+	 X.re = X.re, beta.star = beta.star, mu = mu, X.w = X.w)
   )
 }

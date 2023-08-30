@@ -4702,6 +4702,20 @@ predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
 }
 
 # svcMsAbund --------------------------------------------------------------
+print.svcMsAbund <- function(x, ...) {
+  cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)),
+      "", sep = "\n")
+}
+summary.svcMsAbund <- function(object, level = 'both',
+                              quantiles = c(0.025, 0.5, 0.975),
+                              digits = max(3L, getOption("digits") - 3L), ...) {
+  summary.sfMsAbund(object, level = 'both', 
+		    quantiles = c(0.025, 0.5, 0.975), 
+		    digits = max(3L, getOption("digits") - 3L))
+}
+fitted.svcMsAbund <- function(object, ...) {
+  return(object$y.rep.samples)
+}
 predict.svcMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
 			      verbose = TRUE, n.report = 100,
 			      ignore.RE = FALSE, z.0.samples, ...) {

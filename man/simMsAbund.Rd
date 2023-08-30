@@ -8,7 +8,7 @@
 
 \usage{
 simMsAbund(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(), 
-          sp = FALSE, cov.model, 
+          sp = FALSE, cov.model, svc.cols = 1,
           sigma.sq, phi, nu, family = 'Poisson',
           factor.model = FALSE, n.factors, z, ...)
 }
@@ -34,6 +34,11 @@ simMsAbund(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(),
 \item{sp}{a logical value indicating whether to simulate a spatially-explicit model with a Gaussian process. By default set to \code{FALSE}.}
 
 \item{cov.model}{a quoted keyword that specifies the covariance function used to model the spatial dependence structure among the abundance values.  Supported covariance model key words are: \code{"exponential"}, \code{"matern"}, \code{"spherical"}, and \code{"gaussian"}.}
+
+\item{svc.cols}{a vector indicating the variables whose effects will be
+  estimated as spatially-varying coefficients. \code{svc.cols} is an
+  integer vector with values indicating the order of covariates specified
+  in the model formula (with 1 being the intercept if specified).}
 
 \item{sigma.sq}{a numeric vector of length \code{n.sp} containing the spatial variance parameter for each species. Ignored when \code{sp = FALSE} or when \code{factor.model = TRUE}.}
 
