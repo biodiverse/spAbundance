@@ -117,9 +117,9 @@ extern "C" {
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
 	if (family == 2) {
-          Rprintf("Latent Factor Multispecies Gaussian Model\nwith %i sites and %i species.\n\n", J, N);
+          Rprintf("Latent Factor Multi-species Gaussian Model\nwith %i sites and %i species.\n\n", J, N);
 	} else {
-          Rprintf("Latent Factor Multispecies Zero-Inflated Gaussian Model\nwith %i sites and %i species.\n\n", J, N);
+          Rprintf("Latent Factor Multi-species Zero-Inflated Gaussian Model\nwith %i sites and %i species.\n\n", J, N);
 	}
         Rprintf("Samples per chain: %i (%i batches of length %i)\n", nSamples, nBatch, batchLength);
         Rprintf("Burn-in: %i \n", nBurn); 

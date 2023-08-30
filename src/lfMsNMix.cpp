@@ -43,7 +43,7 @@ extern "C" {
     /**********************************************************************
      * Initial constants
      * *******************************************************************/
-    int i, j, k, s, t, ll, g, l, r, ii, jj, info, nProtect=0;
+    int i, j, k, s, t, ll, g, l, r, ii, info, nProtect=0;
     const int inc = 1;
     const double one = 1.0;
     const double zero = 0.0;
@@ -135,9 +135,9 @@ extern "C" {
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
 	if (family == 1) {
-          Rprintf("Latent Factor Multispecies Negative Binomial N-Mixture model fit with %i sites and %i species.\n\n", J, nSp);
+          Rprintf("Latent Factor Multi-species Negative Binomial N-Mixture model fit with %i sites and %i species.\n\n", J, nSp);
 	} else {
-          Rprintf("Latent Factor Multispecies Poisson N-Mixture model fit with %i sites and %i species.\n\n", J, nSp);
+          Rprintf("Latent Factor Multi-species Poisson N-Mixture model fit with %i sites and %i species.\n\n", J, nSp);
 	}
         Rprintf("Samples per Chain: %i \n", nSamples);
         Rprintf("Burn-in: %i \n", nBurn); 
@@ -170,21 +170,15 @@ extern "C" {
     int nAbundREnSp = nAbundRE * nSp; 
     int nDetREnSp = nDetRE * nSp; 
     int JnSp = J * nSp;
-    int JpAbund = J * pAbund; 
     int JpAbundRE = J * pAbundRE;
-    int nObspDet = nObs * pDet;
     int nObspDetRE = nObs * pDetRE;
     int Jq = J * q;
-    int qq = q * q;
     int nSpq = nSp * q;
     double tmp_0, tmp_02; 
-    double *tmp_one = (double *) R_alloc(inc, sizeof(double)); 
     double *tmp_ppDet = (double *) R_alloc(ppDet, sizeof(double));
     double *tmp_ppAbund = (double *) R_alloc(ppAbund, sizeof(double)); 
     double *tmp_pDet = (double *) R_alloc(pDet, sizeof(double));
     double *tmp_pAbund = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_beta = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_alpha = (double *) R_alloc(pDet, sizeof(double));
     double *tmp_pDet2 = (double *) R_alloc(pDet, sizeof(double));
     double *tmp_pAbund2 = (double *) R_alloc(pAbund, sizeof(double));
     int *tmp_JInt = (int *) R_alloc(J, sizeof(int));
@@ -192,12 +186,8 @@ extern "C" {
       tmp_JInt[j] = 0; 
     }
     double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
-    double *tmp_JpAbund = (double *) R_alloc(JpAbund, sizeof(double));
-    double *tmp_nObspDet = (double *) R_alloc(nObspDet, sizeof(double));
     double *tmp_J = (double *) R_alloc(J, sizeof(double));
     zeros(tmp_J, J);
-    double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
-    double *tmp_nSp = (double *) R_alloc(nSp, sizeof(double));
 
     /**********************************************************************
      * Parameters
@@ -492,8 +482,6 @@ extern "C" {
     for (j = 0; j < J; j++) {
       NCand[j] = N[j];
     }
-    // TODO: will likely want to eliminate these and just overwrite them, 
-    //       since tuning w and lambda can actually make this quite large.
     SEXP acceptSamples_r; 
     PROTECT(acceptSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
     SEXP tuningSamples_r; 

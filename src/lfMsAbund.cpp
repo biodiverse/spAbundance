@@ -108,9 +108,9 @@ extern "C" {
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
 	if (family == 1) {
-          Rprintf("Latent Factor Multispecies Negative Binomial\nAbundance model fit with %i sites and %i species.\n\n", J, nSp);
+          Rprintf("Latent Factor Multi-species Negative Binomial\nAbundance model fit with %i sites and %i species.\n\n", J, nSp);
 	} else {
-          Rprintf("Latent Factor Multispecies Poisson Abundance\nmodel fit with %i sites and %i species.\n\n", J, nSp);
+          Rprintf("Latent Factor Multi-species Poisson Abundance\nmodel fit with %i sites and %i species.\n\n", J, nSp);
 	}
         Rprintf("Samples per Chain: %i \n", nSamples);
         Rprintf("Burn-in: %i \n", nBurn); 

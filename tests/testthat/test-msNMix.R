@@ -678,8 +678,8 @@ beta.mean <- c(0, 0.2, -0.3)
 p.abund <- length(beta.mean)
 tau.sq.beta <- c(0.3, 0.3, 0.5)
 # Detection
-alpha.mean <- c(0, -0.5, 0.5)
-tau.sq.alpha <- c(0.2, 0.6, 0.4)
+alpha.mean <- c(0, -0.5)
+tau.sq.alpha <- c(0.2, 0.6)
 p.det <- length(alpha.mean)
 # Random effects
 mu.RE <- list()

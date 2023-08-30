@@ -115,9 +115,9 @@ extern "C" {
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
 	if (family == 2) {
-          Rprintf("Multispecies Gaussian Model with %i sites and %i species.\n\n", J, N);
+          Rprintf("Multi-species Gaussian Model with %i sites and %i species.\n\n", J, N);
 	} else {
-          Rprintf("Multispecies Zero-Inflated Gaussian Model with %i sites and %i species.\n\n", J, N);
+          Rprintf("Multi-species Zero-Inflated Gaussian Model with %i sites and %i species.\n\n", J, N);
 	}
         Rprintf("Samples per chain: %i (%i batches of length %i)\n", nSamples, nBatch, batchLength);
         Rprintf("Burn-in: %i \n", nBurn); 
