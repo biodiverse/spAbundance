@@ -142,8 +142,6 @@ lfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
   }
 
   # Checking missing values ---------------------------------------------
-  # TODO: I believe these checks will fail if only site-level covariates on 
-  #       abundance
   # y -------------------------------
   y.na.test <- apply(y.mat, c(1, 2), function(a) sum(!is.na(a)))
   if (sum(y.na.test == 0) > 0) {

@@ -81,13 +81,13 @@ extern "C" {
       Rprintf("----------------------------------------\n");
       Rprintf("\tPrediction description\n");
       Rprintf("----------------------------------------\n");
-      Rprintf("Spatial Factor NNGP Multispecies N-mixture model with %i observations.\n\n", J);
+      Rprintf("Spatial Factor NNGP Multi-species N-mixture model with %i observations.\n\n", J);
       Rprintf("Number of covariates %i (including intercept if specified).\n\n", pAbund);
       Rprintf("Using the %s spatial correlation model.\n\n", corName.c_str());
       Rprintf("Using %i nearest neighbors.\n", m);
       Rprintf("Using %i latent spatial factors.\n\n", q);
       Rprintf("Number of MCMC samples %i.\n\n", nSamples);
-      Rprintf("Predicting at %i non-sampled locations.\n\n", JStr);  
+      Rprintf("Predicting at %i non-sampled locations.\n", JStr);  
 #ifdef _OPENMP
       Rprintf("\nSource compiled with OpenMP support and model fit using %i threads.\n", nThreads);
 #else

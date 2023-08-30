@@ -102,7 +102,7 @@ sfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
   }
 
   if (family == 'NB' & verbose) {
-    message('**NOTE**: spatial negative binomial models can be difficult to\nestimate as they contain two forms of overdispersion. If experiencing\nvery poor mixing/convergence of MCMC chains (particularly kappa and theta),\nconsider using a spatial Poisson model or more informative\npriors on kappa or phi.\n') 
+    message('**NOTE**: spatial negative binomial models can be difficult to\nestimate as they contain two forms of overdispersion. If experiencing\nvery poor mixing/convergence of MCMC chains (particularly kappa and phi),\nconsider using a spatial Poisson model or more informative\npriors on kappa or phi.\n') 
   }
 
   # Neighbors and Ordering ----------------------------------------------
@@ -165,8 +165,6 @@ sfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
   }
 
   # Checking missing values ---------------------------------------------
-  # TODO: I believe these checks will fail if only site-level covariates on 
-  #       abundance
   # y -------------------------------
   y.na.test <- apply(y.mat, c(1, 2), function(a) sum(!is.na(a)))
   if (sum(y.na.test == 0) > 0) {
@@ -1520,7 +1518,7 @@ sfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
     tmp <- tmp[order(ord), , ]
     out$X.p.re <- matrix(tmp, J * K.max, p.det.re)
     out$X.p.re <- out$X.p.re[apply(out$X.p.re, 1, function(a) sum(is.na(a))) == 0, , drop = FALSE]
-    colnames(out$X.p.re) <- x.p.re.names
+    colnames(out$X.p.re) <- colnames(X.p.re)
     tmp <- matrix(NA, J * K.max, p.det.re)
     tmp[names.long, ] <- X.p.random
     tmp <- array(tmp, dim = c(J, K.max, p.det.re))

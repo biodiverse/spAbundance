@@ -146,7 +146,6 @@ extern "C" {
     int *nnIndxLU = INTEGER(nnIndxLU_r);
     int *uIndx = INTEGER(uIndx_r);
     int *uIndxLU = INTEGER(uIndxLU_r);
-    int *uiIndx = INTEGER(uiIndx_r);
     int covModel = INTEGER(covModel_r)[0];
     std::string corName = getCorName(covModel);
     int *nAbundRELong = INTEGER(nAbundRELong_r); 
@@ -193,9 +192,9 @@ extern "C" {
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
 	if (family == 1) {
-          Rprintf("Spatial Factor NNGP Multispecies Negative Binomial N-Mixture model fit with %i sites and %i species.\n\n", J, nSp);
+          Rprintf("Spatial Factor NNGP Multi-species Negative Binomial N-Mixture model fit with %i sites and %i species.\n\n", J, nSp);
 	} else {
-          Rprintf("Spatial Factor NNGP Multispecies Poisson N-Mixture model fit with %i sites and %i species.\n\n", J, nSp);
+          Rprintf("Spatial Factor NNGP Multi-species Poisson N-Mixture model fit with %i sites and %i species.\n\n", J, nSp);
 	}
         Rprintf("Samples per Chain: %i \n", nSamples);
         Rprintf("Burn-in: %i \n", nBurn); 
@@ -230,21 +229,15 @@ extern "C" {
     int nAbundREnSp = nAbundRE * nSp; 
     int nDetREnSp = nDetRE * nSp; 
     int JnSp = J * nSp;
-    int JpAbund = J * pAbund; 
     int JpAbundRE = J * pAbundRE;
-    int nObspDet = nObs * pDet;
     int nObspDetRE = nObs * pDetRE;
     int Jq = J * q;
-    int qq = q * q;
     int nSpq = nSp * q;
     double tmp_0, tmp_02; 
-    double *tmp_one = (double *) R_alloc(inc, sizeof(double)); 
     double *tmp_ppDet = (double *) R_alloc(ppDet, sizeof(double));
     double *tmp_ppAbund = (double *) R_alloc(ppAbund, sizeof(double)); 
     double *tmp_pDet = (double *) R_alloc(pDet, sizeof(double));
     double *tmp_pAbund = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_beta = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_alpha = (double *) R_alloc(pDet, sizeof(double));
     double *tmp_pDet2 = (double *) R_alloc(pDet, sizeof(double));
     double *tmp_pAbund2 = (double *) R_alloc(pAbund, sizeof(double));
     int *tmp_JInt = (int *) R_alloc(J, sizeof(int));
@@ -252,12 +245,8 @@ extern "C" {
       tmp_JInt[j] = 0; 
     }
     double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
-    double *tmp_JpAbund = (double *) R_alloc(JpAbund, sizeof(double));
-    double *tmp_nObspDet = (double *) R_alloc(nObspDet, sizeof(double));
     double *tmp_J = (double *) R_alloc(J, sizeof(double));
     zeros(tmp_J, J);
-    double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
-    double *tmp_nSp = (double *) R_alloc(nSp, sizeof(double));
 
     /**********************************************************************
      * Parameters
@@ -470,13 +459,9 @@ extern "C" {
       F77_NAME(dgemv)(ntran, &nSp, &q, &one, lambda, &nSp, &w[j*q], &inc, &zero, &wStar[j * nSp], &inc FCONE);
     }
     // For NNGP
-    double b, e, aij, aa; 
+    double b, e, aa; 
     double *a = (double *) R_alloc(q, sizeof(double));
     double *v = (double *) R_alloc(q, sizeof(double));
-    double *muNNGP = (double *) R_alloc(q, sizeof(double));
-    double *var = (double *) R_alloc(qq, sizeof(double));
-    double *ff = (double *) R_alloc(q, sizeof(double));
-    double *gg = (double *) R_alloc(q, sizeof(double));
 
     // Allocate for the U index vector that keep track of which locations have 
     // the i-th location as a neighbor
@@ -634,8 +619,6 @@ extern "C" {
     for (j = 0; j < J; j++) {
       NCand[j] = N[j];
     }
-    // TODO: will likely want to eliminate these and just overwrite them, 
-    //       since tuning w and lambda can actually make this quite large.
     SEXP acceptSamples_r; 
     PROTECT(acceptSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
     SEXP tuningSamples_r; 
