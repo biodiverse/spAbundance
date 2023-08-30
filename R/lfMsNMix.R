@@ -96,7 +96,7 @@ lfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
     stop("family must be either 'Poisson' or 'NB'")
   }
 
-  if (family == 'NB') {
+  if (family == 'NB' & verbose) {
     message('**NOTE**: latent factor negative binomial models can be difficult to\nestimate as they contain two forms of overdispersion. If experiencing\nvery poor mixing/convergence of MCMC chains (particularly kappa),\nconsider using a latent factor Poisson model or more informative\npriors on kappa.\n') 
   }
 

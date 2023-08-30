@@ -101,7 +101,7 @@ sfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
     stop("family must be either 'Poisson' or 'NB'")
   }
 
-  if (family == 'NB') {
+  if (family == 'NB' & verbose) {
     message('**NOTE**: spatial negative binomial models can be difficult to\nestimate as they contain two forms of overdispersion. If experiencing\nvery poor mixing/convergence of MCMC chains (particularly kappa and theta),\nconsider using a spatial Poisson model or more informative\npriors on kappa or phi.\n') 
   }
 

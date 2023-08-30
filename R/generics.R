@@ -3085,8 +3085,8 @@ summary.sfMsNMix <- function(object, level = 'both',
     }
 }
 # 
-fitted.sfMsNMix <- function(object, ...) {
-  fitted.msNMix(object)
+fitted.sfMsNMix <- function(object, type = 'marginal', ...) {
+  fitted.msNMix(object, type)
 }
 
 predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
@@ -3375,8 +3375,8 @@ summary.lfMsNMix <- function(object,
   summary.msNMix(object, level, quantiles, digits)
 }
 
-fitted.lfMsNMix <- function(object, ...) {
-  fitted.msNMix(object)
+fitted.lfMsNMix <- function(object, type = 'marginal', ...) {
+  fitted.msNMix(object, type)
 }
 predict.lfMsNMix <- function(object, X.0, coords.0, ignore.RE = FALSE, 
 			  type = 'abundance', k.fold.offset, ...) {
