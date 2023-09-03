@@ -10,9 +10,9 @@
 svcMsAbund(formula, data, inits, priors, tuning,
          svc.cols = 1, cov.model = 'exponential', NNGP = TRUE, 
          n.neighbors = 15, search.type = 'cb', n.factors,
-         n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
+         n.batch, batch.length, accept.rate = 0.43, family = 'Gaussian',
 	 n.omp.threads = 1, verbose = TRUE, n.report = 100, 
-         n.burn = round(.10 * n.samples), n.thin = 1, n.chains = 1,
+         n.burn = round(.10 * n.batch * batch.length), n.thin = 1, n.chains = 1,
          ...)
 }
 

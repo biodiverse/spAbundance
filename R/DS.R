@@ -21,20 +21,12 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     1/rgamma(n = n, shape = a, rate = b)
   }
   # Half-normal detection function
-  halfNormal <- function(x, sigma, transect) {
-    if (transect == 'line') {
-      exp(-x^2 / (2 * sigma^2))
-    } else {
-      exp(-x^2 / (2 * sigma^2)) * x
-    }
+  halfNormal <- function(x, sigma) {
+    exp(-x^2 / (2 * sigma^2))
   }
   # Negative exponential detection function
-  negExp <- function(x, sigma, transect) {
-    if (transect == 'line') {
-      exp(-x / sigma)
-    } else {
-      exp(-x / sigma) * x
-    }
+  negExp <- function(x, sigma) {
+    exp(-x / sigma)
   }
 
   # Check for unused arguments ------------------------------------------
@@ -515,6 +507,25 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       message("alpha is not specified in initial values.\nSetting initial values to random values from a standard normal distribution\n")
     }
   }
+  alpha.inits.keep <- FALSE
+  while(!alpha.inits.keep) {
+    # Check alpha initial values to try and prevent alpha from getting stuck 
+    # at pi = 0.
+    tmp.x <- seq(0, max(dist.breaks), length.out = J)
+    sigma <- as.vector(exp(alpha.inits %*% t(X.p)))
+    if (det.func == 'halfnormal') {
+      tmp.det <- halfNormal(tmp.x, sigma)
+    } else if (det.func == 'negexp') {
+      tmp.det <- negExp(tmp.x, sigma)
+    }
+    if (mean(tmp.det < 0.1) > 0.3 | mean(tmp.det) < 0.1 | sum(tmp.det == 0) > 0) {
+      alpha.inits.keep <- FALSE
+      alpha.inits <- rnorm(p.det) 
+    } else {
+      alpha.inits.keep <- TRUE
+    }
+  }
+
   # sigma.sq.mu -------------------
   if (p.abund.re > 0) {
     if ("sigma.sq.mu" %in% names(inits)) {
@@ -568,7 +579,6 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       }
     }
     alpha.star.indx <- rep(0:(p.det.re - 1), n.det.re.long)
-    # alpha.star.inits <- rnorm(n.det.re, sqrt(sigma.sq.p.inits[alpha.star.indx + 1]))
     alpha.star.inits <- rep(0, n.det.re)
   } else {
     sigma.sq.p.inits <- 0
@@ -608,7 +618,7 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   if (missing(tuning)) {
     beta.tuning <- rep(1, p.abund)
     beta.star.tuning <- rep(1, n.abund.re)
-    alpha.tuning <- rep(1, p.det)
+    alpha.tuning <- rep(0.5, p.det)
     alpha.star.tuning <- rep(1, n.det.re)
     kappa.tuning <- 1
   } else {
@@ -777,13 +787,30 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     if ((i > 1) & (!fix.inits)) {
       beta.inits <- rnorm(p.abund)
       alpha.inits <- rnorm(p.det)
+      alpha.inits.keep <- FALSE
+      while(!alpha.inits.keep) {
+        # Check alpha initial values to try and prevent alpha from getting stuck.
+        tmp.x <- seq(0, max(dist.breaks), length.out = J)
+        sigma <- as.vector(exp(alpha.inits %*% t(X.p)))
+        if (det.func == 'halfnormal') {
+          tmp.det <- halfNormal(tmp.x, sigma)
+        } else if (det.func == 'negexp') {
+          tmp.det <- negExp(tmp.x, sigma)
+        }
+        if (mean(tmp.det < 0.1) > 0.3 | mean(tmp.det) < 0.1 | sum(tmp.det == 0) > 0) {
+          alpha.inits.keep <- FALSE
+          alpha.inits <- rnorm(p.det) 
+        } else {
+          alpha.inits.keep <- TRUE
+        }
+      }
       if (p.abund.re > 0) {
         sigma.sq.mu.inits <- runif(p.abund.re, 0.05, 1)
         beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
       }
       if (p.det.re > 0) {
-        sigma.sq.p.inits <- runif(p.det.re, 0.05, 1)
-        alpha.star.inits <- rnorm(n.det.re, sqrt(sigma.sq.p.inits[alpha.star.indx + 1]))
+        sigma.sq.p.inits <- runif(p.det.re, 0.05, 0.5)
+        alpha.star.inits <- runif(n.det.re, -0.5, 0.5)
       }
       if (family == 'NB') {
         kappa.inits <- runif(1, kappa.a, kappa.b)

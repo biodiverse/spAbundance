@@ -77,7 +77,7 @@ simMsAbund <- function(J.x, J.y, n.rep, n.sp, beta, kappa, tau.sq, mu.RE = list(
   }
   # Check spatial stuff ---------------
   if (sp & !factor.model) {
-    N.p.svc <- N * length(svc.cols)
+    N.p.svc <- n.sp * length(svc.cols)
     # sigma.sq --------------------------
     if (missing(sigma.sq)) {
       stop("error: sigma.sq must be specified when sp = TRUE")

@@ -39,13 +39,8 @@ extern "C" {
     /**********************************************************************
      * Initial constants
      * *******************************************************************/
-    int i, g, t, j, s, r, l, k, ll, info, nProtect=0;
+    int i, g, t, j, s, l, k, ll, nProtect=0;
     const int inc = 1;
-    const double one = 1.0;
-    const double zero = 0.0;
-    char const *lower = "L";
-    char const *ntran = "N";
-    char const *ytran = "T";
     
     /**********************************************************************
      * Get Inputs
@@ -87,7 +82,6 @@ extern "C" {
     int *nAbundRELong = INTEGER(nAbundRELong_r); 
     int *nDetRELong = INTEGER(nDetRELong_r); 
     int K = INTEGER(K_r)[0]; 
-    int *NLongIndx = INTEGER(NLongIndx_r); 
     int *alphaStarIndx = INTEGER(alphaStarIndx_r); 
     int *alphaLevelIndx = INTEGER(alphaLevelIndx_r);
     int *betaStarIndx = INTEGER(betaStarIndx_r); 
@@ -225,27 +219,13 @@ extern "C" {
     /********************************************************************
       Some constants and temporary variables to be used later
     ********************************************************************/
-    int JpAbund = J * pAbund; 
-    int nObspDet = nObs * pDet;
     int JpAbundRE = J * pAbundRE;
     int JpDetRE = J * pDetRE;
     double tmp_0, tmp_02; 
-    double *tmp_one = (double *) R_alloc(inc, sizeof(double)); 
-    double *tmp_ppDet = (double *) R_alloc(ppDet, sizeof(double));
-    double *tmp_ppAbund = (double *) R_alloc(ppAbund, sizeof(double)); 
-    double *tmp_pDet = (double *) R_alloc(pDet, sizeof(double));
-    double *tmp_pAbund = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_pDet2 = (double *) R_alloc(pDet, sizeof(double));
-    double *tmp_pAbund2 = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
-    double *tmp_JpAbund = (double *) R_alloc(JpAbund, sizeof(double));
-    double *tmp_nObspDet = (double *) R_alloc(nObspDet, sizeof(double));
     double *tmp_J = (double *) R_alloc(J, sizeof(double));
-    double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
     double *tmp_KFull = (double *) R_alloc(KFull, sizeof(double));
    
     // For latent abundance
-    double muNum; 
     double *mu = (double *) R_alloc(J, sizeof(double)); 
     zeros(mu, J); 
 
@@ -764,7 +744,12 @@ extern "C" {
                 tmp_KFull[k] = piFull[k * J + j];
 		REAL(piFullSamples_r)[sPost * nObsFull + j * KFull + k] = piFull[k * J + j];
 	      } 
-	      rmultinom(N[j], tmp_KFull, KFull, 
+	      if (family == 0) {
+                tmp_0 = rpois(mu[j]);
+	      } else {
+                tmp_0 = rnbinom_mu(mu[j], kappa);
+	      }
+	      rmultinom(tmp_0, tmp_KFull, KFull, 
                         &INTEGER(yRepSamples_r)[sPost * nObsFull + j * KFull]);
 	    }
             if (pAbundRE > 0) {
