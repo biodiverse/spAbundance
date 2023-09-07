@@ -23,20 +23,12 @@ spDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     1/rgamma(n = n, shape = a, rate = b)
   }
   # Half-normal detection function
-  halfNormal <- function(x, sigma, transect) {
-    if (transect == 'line') {
-      exp(-x^2 / (2 * sigma^2))
-    } else {
-      exp(-x^2 / (2 * sigma^2)) * x
-    }
+  halfNormal <- function(x, sigma) {
+    exp(-x^2 / (2 * sigma^2))
   }
   # Negative exponential detection function
-  negExp <- function(x, sigma, transect) {
-    if (transect == 'line') {
-      exp(-x / sigma)
-    } else {
-      exp(-x / sigma) * x
-    }
+  negExp <- function(x, sigma) {
+    exp(-x / sigma)
   }
 
   # Check for unused arguments ------------------------------------------
@@ -125,6 +117,10 @@ spDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     stop("error: coords must be a matrix or data frame")
   }
   coords <- as.matrix(data$coords)
+
+  if (family == 'NB' & verbose) {
+    message('**NOTE**: spatial negative binomial models can be difficult to\nestimate as they contain two forms of overdispersion. If experiencing\nvery poor mixing/convergence of MCMC chains (particularly kappa and phi),\nconsider using a spatial Poisson model or more informative\npriors on kappa or phi.\n') 
+  }
 
   # Neighbors and Ordering ----------------------------------------------
   if (NNGP) {
@@ -568,9 +564,9 @@ spDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       beta.inits <- rep(beta.inits, p.abund)
     }
   } else {
-    beta.inits <- runif(p.abund, -1, 1)
+    beta.inits <- rnorm(p.abund)
     if (verbose) {
-      message('beta is not specified in initial values.\nSetting initial values to random values from a uniform(-1, 1) distribution\n')
+      message('beta is not specified in initial values.\nSetting initial values to random values from a standard normal distribution\n')
     }
   }
   # alpha -----------------------
@@ -589,9 +585,28 @@ spDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       alpha.inits <- rep(alpha.inits, p.det)
     }
   } else {
-    alpha.inits <- runif(p.det, -1, 1)
+    alpha.inits <- rnorm(p.det)
     if (verbose) {
-      message("alpha is not specified in initial values.\nSetting initial values to random values from a uniform(-1, 1) distribution\n")
+      message("alpha is not specified in initial values.\nSetting initial values to random values from a standard normal distribution\n")
+    }
+  }
+  alpha.inits.keep <- FALSE
+  while(!alpha.inits.keep) {
+    # Check alpha initial values to try and prevent alpha from getting stuck 
+    # at pi = 0.
+    tmp.x <- seq(0, max(dist.breaks), length.out = J)
+    sigma <- as.vector(exp(alpha.inits %*% t(X.p)))
+    if (det.func == 'halfnormal') {
+      tmp.det <- halfNormal(tmp.x, sigma)
+    } else if (det.func == 'negexp') {
+      tmp.det <- negExp(tmp.x, sigma)
+    }
+    if (mean(tmp.det > 0.8) > 0.8 | mean(tmp.det < 0.1) > 0.3 | 
+        mean(tmp.det) < 0.1 | sum(tmp.det == 0) > 0) {
+      alpha.inits.keep <- FALSE
+      alpha.inits <- rnorm(p.det) 
+    } else {
+      alpha.inits.keep <- TRUE
     }
   }
   # sigma.sq.mu -------------------
@@ -641,9 +656,9 @@ spDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
         sigma.sq.p.inits <- rep(sigma.sq.p.inits, p.det.re)
       }
     } else {
-      sigma.sq.p.inits <- runif(p.det.re, 0.05, 1)
+      sigma.sq.p.inits <- runif(p.det.re, 0.05, 0.5)
       if (verbose) {
-        message("sigma.sq.p is not specified in initial values.\nSetting initial values to random values between 0.05 and 1\n")
+        message("sigma.sq.p is not specified in initial values.\nSetting initial values to random values between 0.05 and 0.5\n")
       }
     }
     alpha.star.indx <- rep(0:(p.det.re - 1), n.det.re.long)
@@ -690,12 +705,12 @@ spDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     }
   } else {
     if (sigma.sq.ig) {
-    sigma.sq.inits <- runif(1, 0.05, 3)
+    sigma.sq.inits <- runif(1, 0.05, 1)
     } else {
       sigma.sq.inits <- runif(1, sigma.sq.a, sigma.sq.b)
     }
     if (verbose) {
-      message("sigma.sq is not specified in initial values.\nSetting initial value to random value between 0.05 and 3 or the user-specified bounds if using a uniform prior.\n")
+      message("sigma.sq is not specified in initial values.\nSetting initial value to random value between 0.05 and 1 or the user-specified bounds if using a uniform prior.\n")
     }
   }
   # w -----------------------------
@@ -1057,15 +1072,33 @@ spDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     for (i in 1:n.chains) {
       # Change initial values if i > 1
       if ((i > 1) & (!fix.inits)) {
-        beta.inits <- runif(p.abund, -1, 1)
-        alpha.inits <- runif(p.det, -1, 1)
+        beta.inits <- rnorm(p.abund)
+        alpha.inits <- rnorm(p.det)
+        alpha.inits.keep <- FALSE
+        while(!alpha.inits.keep) {
+          # Check alpha initial values to try and prevent alpha from getting stuck.
+          tmp.x <- seq(0, max(dist.breaks), length.out = J)
+          sigma <- as.vector(exp(alpha.inits %*% t(X.p)))
+          if (det.func == 'halfnormal') {
+            tmp.det <- halfNormal(tmp.x, sigma)
+          } else if (det.func == 'negexp') {
+            tmp.det <- negExp(tmp.x, sigma)
+          }
+          if (mean(tmp.det > 0.8) > 0.8 | mean(tmp.det < 0.1) > 0.3 | 
+	      mean(tmp.det) < 0.1 | sum(tmp.det == 0) > 0) {
+            alpha.inits.keep <- FALSE
+            alpha.inits <- rnorm(p.det) 
+          } else {
+            alpha.inits.keep <- TRUE
+          }
+        }
         if (p.abund.re > 0) {
           sigma.sq.mu.inits <- runif(p.abund.re, 0.05, 1)
           beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
         }
         if (p.det.re > 0) {
-          sigma.sq.p.inits <- runif(p.det.re, 0.05, 1)
-          alpha.star.inits <- rnorm(n.det.re, sqrt(sigma.sq.p.inits[alpha.star.indx + 1]))
+          sigma.sq.p.inits <- runif(p.det.re, 0.05, 0.5)
+          alpha.star.inits <- runif(n.det.re, -0.5, 0.5)
         }
         if (family == 'NB') {
           kappa.inits <- runif(1, kappa.a, kappa.b)
@@ -1073,7 +1106,7 @@ spDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
           if (!sigma.sq.ig) {
             sigma.sq.inits <- runif(1, sigma.sq.a, sigma.sq.b)
           } else {
-            sigma.sq.inits <- runif(1, 0.05, 3)
+            sigma.sq.inits <- runif(1, 0.05, 1)
           }
           phi.inits <- runif(1, phi.a, phi.b)
           if (cov.model == 'matern') {

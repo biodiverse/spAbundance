@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 
 ## Installation
 
-`spAbundance` is not yet on CRAN, with a planned initial submission date in early June, 2023. To download the development version of the package, you can use `devtools` as follows:  
+`spAbundance` is not yet on CRAN, with a planned initial submission date in Fall 2023. To download the development version of the package, you can use `devtools` as follows:  
 
 ```{r, eval = FALSE}
 devtools::install_github("doserjef/spAbundance")

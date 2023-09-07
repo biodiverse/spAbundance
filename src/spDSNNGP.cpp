@@ -85,13 +85,8 @@ extern "C" {
     /**********************************************************************
      * Initial constants
      * *******************************************************************/
-    int i, g, t, j, s, r, l, k, ll, jj, info, nProtect=0;
+    int i, g, t, j, s, r, l, k, ll, jj, nProtect=0;
     const int inc = 1;
-    const double one = 1.0;
-    const double zero = 0.0;
-    char const *lower = "L";
-    char const *ntran = "N";
-    char const *ytran = "T";
     
     /**********************************************************************
      * Get Inputs
@@ -139,7 +134,6 @@ extern "C" {
     int *nAbundRELong = INTEGER(nAbundRELong_r); 
     int *nDetRELong = INTEGER(nDetRELong_r); 
     int K = INTEGER(K_r)[0]; 
-    int *NLongIndx = INTEGER(NLongIndx_r); 
     int *alphaStarIndx = INTEGER(alphaStarIndx_r); 
     int *alphaLevelIndx = INTEGER(alphaLevelIndx_r);
     int *betaStarIndx = INTEGER(betaStarIndx_r); 
@@ -164,7 +158,6 @@ extern "C" {
     int *nnIndxLU = INTEGER(nnIndxLU_r);
     int *uIndx = INTEGER(uIndx_r);
     int *uIndxLU = INTEGER(uIndxLU_r);
-    int *uiIndx = INTEGER(uiIndx_r);
     int covModel = INTEGER(covModel_r)[0];
     std::string corName = getCorName(covModel);
     int status = 0; 
@@ -294,25 +287,13 @@ extern "C" {
     /********************************************************************
       Some constants and temporary variables to be used later
     ********************************************************************/
-    int JpAbund = J * pAbund; 
-    int nObspDet = nObs * pDet;
+    int JpAbundRE = J * pAbundRE;
+    int JpDetRE = J * pDetRE;
     double tmp_0, tmp_02; 
-    double *tmp_one = (double *) R_alloc(inc, sizeof(double)); 
-    double *tmp_ppDet = (double *) R_alloc(ppDet, sizeof(double));
-    double *tmp_ppAbund = (double *) R_alloc(ppAbund, sizeof(double)); 
-    double *tmp_pDet = (double *) R_alloc(pDet, sizeof(double));
-    double *tmp_pAbund = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_pDet2 = (double *) R_alloc(pDet, sizeof(double));
-    double *tmp_pAbund2 = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
-    double *tmp_JpAbund = (double *) R_alloc(JpAbund, sizeof(double));
-    double *tmp_nObspDet = (double *) R_alloc(nObspDet, sizeof(double));
     double *tmp_J = (double *) R_alloc(J, sizeof(double));
-    double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
     double *tmp_KFull = (double *) R_alloc(KFull, sizeof(double));
    
     // For latent abundance
-    double muNum; 
     double *mu = (double *) R_alloc(J, sizeof(double)); 
     zeros(mu, J); 
 
@@ -330,7 +311,7 @@ extern "C" {
     double *theta = (double *) R_alloc(nTheta, sizeof(double));
     SEXP thetaSamples_r; 
     PROTECT(thetaSamples_r = allocMatrix(REALSXP, nTheta, nPost)); nProtect++; 
-    double a, v, b, e, muNNGP, var, aij; 
+    double a, b, e; 
     // Initiate spatial values
     theta[sigmaSqIndx] = REAL(sigmaSqStarting_r)[0]; 
     theta[phiIndx] = REAL(phiStarting_r)[0]; 
@@ -409,6 +390,8 @@ extern "C" {
     int wAMCMCIndx = nuAMCMCIndx + 1;
     int kappaAMCMCIndx = wAMCMCIndx + J;
     double *accept = (double *) R_alloc(nAMCMC, sizeof(double)); zeros(accept, nAMCMC);
+    double betaAccept = 1;
+    double alphaAccept = 1;
     // Set the initial candidate values for everything to the inital values. 
     double *betaCand = (double *) R_alloc(pAbund, sizeof(double)); 
     for (j = 0; j < pAbund; j++) {
@@ -455,10 +438,12 @@ extern "C" {
     double *betaStarSites = (double *) R_alloc(J, sizeof(double)); 
     zeros(betaStarSites, J); 
     double *betaStarSitesCand = (double *) R_alloc(J, sizeof(double)); 
+    int *betaStarLongIndx = (int *) R_alloc(JpAbundRE, sizeof(int));
     // Initial sums
     for (j = 0; j < J; j++) {
       for (l = 0; l < pAbundRE; l++) {
-        betaStarSites[j] += betaStar[which(XRE[l * J + j], betaLevelIndx, nAbundRE)] * 
+        betaStarLongIndx[l * J + j] = which(XRE[l * J + j], betaLevelIndx, nAbundRE);
+        betaStarSites[j] += betaStar[betaStarLongIndx[l * J + j]] * 
                             XRandom[l * J + j];
       }
       betaStarSitesCand[j] = betaStarSites[j];
@@ -467,10 +452,12 @@ extern "C" {
     double *alphaStarSites = (double *) R_alloc(J, sizeof(double)); 
     zeros(alphaStarSites, J); 
     double *alphaStarSitesCand = (double *) R_alloc(J, sizeof(double));
+    int *alphaStarLongIndx = (int *) R_alloc(JpDetRE, sizeof(int));
     // Get sums of the current REs for each site/visit combo
     for (j = 0; j < J; j++) {
       for (l = 0; l < pDetRE; l++) {
-        alphaStarSites[j] += alphaStar[which(XpRE[l * J + j], alphaLevelIndx, nDetRE)] * 
+        alphaStarLongIndx[l * J + j] = which(XpRE[l * J + j], alphaLevelIndx, nDetRE);
+        alphaStarSites[j] += alphaStar[alphaStarLongIndx[l * J + j]] * 
                            XpRandom[l * J + j];
       }
       alphaStarSitesCand[j] = alphaStarSites[j];
@@ -492,9 +479,6 @@ extern "C" {
     double *sigma = (double *) R_alloc(J, sizeof(double));
     double *p = (double *) R_alloc(nObs, sizeof(double)); zeros(p, nObs);
     // Number of break points for integration
-    // TODO: may want to make this be an argument eventually. The smaller it is 
-    // the faster the code, but the worse the approximation. Note that this is the
-    // number of break points for integration within each bin. 
     int nInt = 5;
     double *binWidth = (double *) R_alloc(K, sizeof(double));
     double stripWidth = 0.0;
@@ -527,11 +511,15 @@ extern "C" {
         // Proposal
         for (k = 0; k < pAbund; k++) {
           logPostBetaCand = 0.0;
-	  logPostBetaCurr = 0.0;
+	  if (betaAccept == 1) {
+	    logPostBetaCurr = 0.0;
+	  }
           betaCand[k] = rnorm(beta[k], exp(tuning[betaAMCMCIndx + k]));
           for (i = 0; i < pAbund; i++) {
             logPostBetaCand += dnorm(betaCand[i], muBeta[i], sqrt(SigmaBeta[i * pAbund + i]), 1);
-	    logPostBetaCurr += dnorm(beta[i], muBeta[i], sqrt(SigmaBeta[i * pAbund + i]), 1);
+	    if (betaAccept == 1) {
+	      logPostBetaCurr += dnorm(beta[i], muBeta[i], sqrt(SigmaBeta[i * pAbund + i]), 1);
+	    }
           }
           for (j = 0; j < J; j++) {
             tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, betaCand, &inc) + 
@@ -542,22 +530,27 @@ extern "C" {
 	    } else {
               logPostBetaCand += poisson_logpost(N[j], tmp_J[j], offset[j]);
 	    }
-            tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, beta, &inc) + 
-			   betaStarSites[j] + 
-			   w[j]);
-	    if (family == 1) {
-              logPostBetaCurr += nb_logpost(kappa, N[j], tmp_J[j], offset[j]);
-	    } else {
-              logPostBetaCurr += poisson_logpost(N[j], tmp_J[j], offset[j]);
+	    if (betaAccept == 1) {
+              tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, beta, &inc) + 
+	          	   betaStarSites[j] + 
+	          	   w[j]);
+	      if (family == 1) {
+                logPostBetaCurr += nb_logpost(kappa, N[j], tmp_J[j], offset[j]);
+	      } else {
+                logPostBetaCurr += poisson_logpost(N[j], tmp_J[j], offset[j]);
+	      }
 	    }
           }
           if (runif(0.0, 1.0) <= exp(logPostBetaCand - logPostBetaCurr)) {
             beta[k] = betaCand[k];
             accept[betaAMCMCIndx + k]++;
+	    betaAccept = 1;
           } else {
             betaCand[k] = beta[k];
+	    betaAccept = 0;
 	  }
         }
+	betaAccept = 1;
 
 	/********************************************************************
          *Update Detection Regression Coefficients
@@ -565,10 +558,16 @@ extern "C" {
         // Proposal
 	for (l = 0; l < pDet; l++) {
           logPostAlphaCand = 0.0;
-	  logPostAlphaCurr = 0.0;
+	  if (alphaAccept == 1) {
+	    logPostAlphaCurr = 0.0;
+	  }
           alphaCand[l] = rnorm(alpha[l], exp(tuning[alphaAMCMCIndx + l]));
-          logPostAlphaCand += dnorm(alphaCand[l], muAlpha[l], sqrt(SigmaAlpha[l * pDet + l]), 1);
-	  logPostAlphaCurr += dnorm(alpha[l], muAlpha[l], sqrt(SigmaAlpha[l * pDet + l]), 1);
+	  for (i = 0; i < pDet; i++ ) {
+            logPostAlphaCand += dnorm(alphaCand[i], muAlpha[i], sqrt(SigmaAlpha[i * pDet + i]), 1);
+	    if (alphaAccept == 1) {
+	      logPostAlphaCurr += dnorm(alpha[i], muAlpha[i], sqrt(SigmaAlpha[i * pDet + i]), 1);
+	    }
+	  }
 	  for (j = 0; j < J; j++) {
             /********************************
              * Candidate 
@@ -595,35 +594,40 @@ extern "C" {
             /********************************
              * Current 
              *******************************/
-            tmp_0 = 0.0; 
-	    likeVal = 0.0;
-            sigma[j] = exp(F77_NAME(ddot)(&pDet, &Xp[j], &J, alpha, &inc) + 
-                           alphaStarSites[j]);
-            for (k = 0; k < K; k++) {
-              p[k * J + j] = integrate(detModel, distBreaks[k], distBreaks[k + 1], sigma[j], 
-                                       nInt, transect); 
-	      if (transect == 0) {
-                p[k * J + j] /= (distBreaks[k + 1] - distBreaks[k]);
-	      } else {
-                p[k * J + j] = p[k * J + j] * 2.0 / (pow(distBreaks[k + 1], 2) - pow(distBreaks[k], 2));
-	      }
-	      piFull[k * J + j] = p[k * J + j] * psi[k];
-	      tmp_0 += piFull[k * J + j];
-	      likeVal += y[k * J + j] * log(piFull[k * J + j]);
-	    } // k (bins)
-	    piFull[K * J + j] = 1.0 - tmp_0;
-	    likeVal += (N[j] - yMax[j]) * log(piFull[K * J + j]);
-	    logPostAlphaCurr += likeVal;
+	    if (alphaAccept == 1) {
+              tmp_0 = 0.0; 
+	      likeVal = 0.0;
+              sigma[j] = exp(F77_NAME(ddot)(&pDet, &Xp[j], &J, alpha, &inc) + 
+                             alphaStarSites[j]);
+              for (k = 0; k < K; k++) {
+                p[k * J + j] = integrate(detModel, distBreaks[k], distBreaks[k + 1], sigma[j], 
+                                         nInt, transect); 
+	        if (transect == 0) {
+                  p[k * J + j] /= (distBreaks[k + 1] - distBreaks[k]);
+	        } else {
+                  p[k * J + j] = p[k * J + j] * 2.0 / (pow(distBreaks[k + 1], 2) - pow(distBreaks[k], 2));
+	        }
+	        piFull[k * J + j] = p[k * J + j] * psi[k];
+	        tmp_0 += piFull[k * J + j];
+	        likeVal += y[k * J + j] * log(piFull[k * J + j]);
+	      } // k (bins)
+	      piFull[K * J + j] = 1.0 - tmp_0;
+	      likeVal += (N[j] - yMax[j]) * log(piFull[K * J + j]);
+	      logPostAlphaCurr += likeVal;
+	    }
 	  } // j (sites)
           if (runif(0.0, 1.0) <= exp(logPostAlphaCand - logPostAlphaCurr)) {
             alpha[l] = alphaCand[l];
             accept[alphaAMCMCIndx + l]++;
+	    alphaAccept = 1;
 	    F77_NAME(dcopy)(&nObsFull, piFullCand, &inc, piFull, &inc);
           } else {
             alphaCand[l] = alpha[l];
 	    F77_NAME(dcopy)(&nObsFull, piFull, &inc, piFullCand, &inc);
+	    alphaAccept = 0;
 	  }
 	}
+	alphaAccept = 1;
 
         /********************************************************************
          *Update abundance random effects variance
@@ -658,8 +662,7 @@ extern "C" {
                 // Candidate
                 betaStarSitesCand[j] = 0.0;
                 for (ll = 0; ll < pAbundRE; ll++) {
-                  betaStarSitesCand[j] += betaStarCand[which(XRE[ll * J + j], 
-				                         betaLevelIndx, nAbundRE)] * 
+                  betaStarSitesCand[j] += betaStarCand[betaStarLongIndx[ll * J + j]] * 
 	                              XRandom[ll * J + j];
                 }
                 tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, beta, &inc) + 
@@ -673,8 +676,7 @@ extern "C" {
 		// Current
                 betaStarSites[j] = 0.0;
                 for (ll = 0; ll < pAbundRE; ll++) {
-                  betaStarSites[j] += betaStar[which(XRE[ll * J + j], 
-				               betaLevelIndx, nAbundRE)] * 
+                  betaStarSites[j] += betaStar[betaStarLongIndx[ll * J + j]] * 
 	                              XRandom[ll * J + j];
                 }
                 tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, beta, &inc) + 
@@ -717,8 +719,7 @@ extern "C" {
                  *******************************/
                 alphaStarSitesCand[j] = 0.0;
                 for (ll = 0; ll < pDetRE; ll++) {
-                  alphaStarSitesCand[j] += alphaStarCand[which(XpRE[ll * J + j], 
-				                         alphaLevelIndx, nDetRE)] * 
+                  alphaStarSitesCand[j] += alphaStarCand[alphaStarLongIndx[ll * J + j]] * 
 	                              XpRandom[ll * J + j];
                 }
                 sigma[j] = exp(F77_NAME(ddot)(&pDet, &Xp[j], &J, alpha, &inc) + 
@@ -745,8 +746,7 @@ extern "C" {
 		tmp_0 = 0.0;
                 alphaStarSites[j] = 0.0;
                 for (ll = 0; ll < pDetRE; ll++) {
-                  alphaStarSites[j] += alphaStar[which(XpRE[ll * J + j], 
-				                         alphaLevelIndx, nDetRE)] * 
+                  alphaStarSites[j] += alphaStar[alphaStarLongIndx[ll * J + j]] * 
 	                              XpRandom[ll * J + j];
                 }
                 sigma[j] = exp(F77_NAME(ddot)(&pDet, &Xp[j], &J, alpha, &inc) + 

@@ -270,6 +270,17 @@ sfMsAbund <- function(formula, data, inits, priors,
     }
     names(priors) <- tolower(names(priors))
 
+    # Independent beta parameters -----
+    if ('independent.betas' %in% names(priors)) {
+      if (priors$independent.betas == TRUE) {
+        message("Beta parameters will be estimated independently\n")
+        ind.betas <- TRUE
+      } else if (priors$independent.betas == FALSE) {
+        ind.betas <- FALSE 
+      }
+    } else {
+      ind.betas <- TRUE
+    }
     # beta.comm -----------------------
     if ("beta.comm.normal" %in% names(priors)) {
       if (!is.list(priors$beta.comm.normal) | length(priors$beta.comm.normal) != 2) {
@@ -303,7 +314,7 @@ sfMsAbund <- function(formula, data, inits, priors,
       }
       Sigma.beta.comm <- sigma.beta.comm * diag(p.abund)
     } else {
-      if (verbose) {
+      if (verbose & !ind.betas) {
         message("No prior specified for beta.comm.normal.\nSetting prior mean to 0 and prior variance to 100\n")
       }
       mu.beta.comm <- rep(0, p.abund)
@@ -343,7 +354,7 @@ sfMsAbund <- function(formula, data, inits, priors,
         tau.sq.beta.b <- rep(tau.sq.beta.b, p.abund)
       }
     } else {
-      if (verbose) {	    
+      if (verbose & !ind.betas) {	    
         message("No prior specified for tau.sq.beta.ig.\nSetting prior shape to 0.1 and prior scale to 0.1\n")
       }
       tau.sq.beta.a <- rep(0.1, p.abund)
@@ -883,7 +894,7 @@ sfMsAbund <- function(formula, data, inits, priors,
       storage.mode(y) <- "double"
       storage.mode(X) <- "double"
       storage.mode(coords) <- "double"
-      consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re, q)
+      consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re, q, ind.betas)
       storage.mode(consts) <- "integer"
       storage.mode(beta.inits) <- "double"
       storage.mode(kappa.inits) <- "double"
@@ -946,8 +957,10 @@ sfMsAbund <- function(formula, data, inits, priors,
       for (i in 1:n.chains) {
         # Change initial values if i > 1
         if ((i > 1) & (!fix.inits)) {
-          beta.comm.inits <- rnorm(p.abund, 0, 1)
-          tau.sq.beta.inits <- runif(p.abund, 0.05, 1)
+          if (!ind.betas) {
+            beta.comm.inits <- rnorm(p.abund, 0, 1)
+            tau.sq.beta.inits <- runif(p.abund, 0.05, 1)
+	  }
           beta.inits <- matrix(rnorm(n.sp * p.abund, beta.comm.inits, 
                 		     sqrt(tau.sq.beta.inits)), n.sp, p.abund)
           if (family == 'NB') {
@@ -990,12 +1003,17 @@ sfMsAbund <- function(formula, data, inits, priors,
       out$rhat <- list()
       if (n.chains > 1) {
         # as.vector removes the "Upper CI" when there is only 1 variable. 
+        if (!ind.betas) {
         out$rhat$beta.comm <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
         					      mcmc(t(a$beta.comm.samples)))), 
         			     autoburnin = FALSE)$psrf[, 2])
         out$rhat$tau.sq.beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
         					      mcmc(t(a$tau.sq.beta.samples)))), 
         			     autoburnin = FALSE)$psrf[, 2])
+	} else {
+          out$rhat$beta.comm <- rep(NA, p.abund)
+	  out$rhat$tau.sq.beta <- rep(NA, p.abund)
+	}
         out$rhat$beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
         					         mcmc(t(a$beta.samples)))), 
         			     autoburnin = FALSE)$psrf[, 2])

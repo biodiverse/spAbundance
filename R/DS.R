@@ -518,7 +518,8 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     } else if (det.func == 'negexp') {
       tmp.det <- negExp(tmp.x, sigma)
     }
-    if (mean(tmp.det < 0.1) > 0.3 | mean(tmp.det) < 0.1 | sum(tmp.det == 0) > 0) {
+    if (mean(tmp.det > 0.8) > 0.8 | mean(tmp.det < 0.1) > 0.3 | 
+        mean(tmp.det) < 0.1 | sum(tmp.det == 0) > 0) {
       alpha.inits.keep <- FALSE
       alpha.inits <- rnorm(p.det) 
     } else {
@@ -573,9 +574,9 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
         sigma.sq.p.inits <- rep(sigma.sq.p.inits, p.det.re)
       }
     } else {
-      sigma.sq.p.inits <- runif(p.det.re, 0.05, 1)
+      sigma.sq.p.inits <- runif(p.det.re, 0.05, 0.5)
       if (verbose) {
-        message("sigma.sq.p is not specified in initial values.\nSetting initial values to random values between 0.05 and 1\n")
+        message("sigma.sq.p is not specified in initial values.\nSetting initial values to random values between 0.05 and 0.5\n")
       }
     }
     alpha.star.indx <- rep(0:(p.det.re - 1), n.det.re.long)
@@ -797,7 +798,8 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
         } else if (det.func == 'negexp') {
           tmp.det <- negExp(tmp.x, sigma)
         }
-        if (mean(tmp.det < 0.1) > 0.3 | mean(tmp.det) < 0.1 | sum(tmp.det == 0) > 0) {
+        if (mean(tmp.det > 0.8) > 0.8 | mean(tmp.det < 0.1) > 0.3 | 
+            mean(tmp.det) < 0.1 | sum(tmp.det == 0) > 0) {
           alpha.inits.keep <- FALSE
           alpha.inits <- rnorm(p.det) 
         } else {

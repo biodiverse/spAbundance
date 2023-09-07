@@ -106,6 +106,7 @@ extern "C" {
     int pAbundRE = INTEGER(consts_r)[4];
     int nAbundRE = INTEGER(consts_r)[5];
     int q = INTEGER(consts_r)[6]; 
+    int indBetas = INTEGER(consts_r)[7];
     int ppAbund = pAbund * pAbund; 
     double *muBetaComm = REAL(muBetaComm_r); 
     double *SigmaBetaCommInv = (double *) R_alloc(ppAbund, sizeof(double));   
@@ -506,50 +507,54 @@ extern "C" {
         /********************************************************************
          Update Community level Abundance Coefficients
          *******************************************************************/
-        /********************************
-         Compute b.beta.comm
-         *******************************/
-        zeros(tmp_pAbund, pAbund); 
-        for (i = 0; i < nSp; i++) {
-          F77_NAME(dgemv)(ytran, &pAbund, &pAbund, &one, TauBetaInv, &pAbund, &beta[i], &nSp, &one, tmp_pAbund, &inc FCONE); 
-        } // i
-        for (h = 0; h < pAbund; h++) {
-          tmp_pAbund[h] += SigmaBetaCommInvMuBeta[h];  
-        } // j
+        if (indBetas == 0) {
+          /********************************
+           Compute b.beta.comm
+           *******************************/
+          zeros(tmp_pAbund, pAbund); 
+          for (i = 0; i < nSp; i++) {
+            F77_NAME(dgemv)(ytran, &pAbund, &pAbund, &one, TauBetaInv, &pAbund, &beta[i], &nSp, &one, tmp_pAbund, &inc FCONE); 
+          } // i
+          for (h = 0; h < pAbund; h++) {
+            tmp_pAbund[h] += SigmaBetaCommInvMuBeta[h];  
+          } // j
 
-        /********************************
-         Compute A.beta.comm
-         *******************************/
-        for (h = 0; h < ppAbund; h++) {
-          tmp_ppAbund[h] = SigmaBetaCommInv[h] + nSp * TauBetaInv[h]; 
-        }
-        F77_NAME(dpotrf)(lower, &pAbund, tmp_ppAbund, &pAbund, &info FCONE); 
-        if(info != 0){error("c++ error: dpotrf ABetaComm failed\n");}
-        F77_NAME(dpotri)(lower, &pAbund, tmp_ppAbund, &pAbund, &info FCONE); 
-        if(info != 0){error("c++ error: dpotri ABetaComm failed\n");}
-        F77_NAME(dsymv)(lower, &pAbund, &one, tmp_ppAbund, &pAbund, tmp_pAbund, &inc, &zero, tmp_pAbund2, &inc FCONE);
-        F77_NAME(dpotrf)(lower, &pAbund, tmp_ppAbund, &pAbund, &info FCONE); 
-        if(info != 0){error("c++ error: dpotrf ABetaComm failed\n");}
-        mvrnorm(betaComm, tmp_pAbund2, tmp_ppAbund, pAbund);
+          /********************************
+           Compute A.beta.comm
+           *******************************/
+          for (h = 0; h < ppAbund; h++) {
+            tmp_ppAbund[h] = SigmaBetaCommInv[h] + nSp * TauBetaInv[h]; 
+          }
+          F77_NAME(dpotrf)(lower, &pAbund, tmp_ppAbund, &pAbund, &info FCONE); 
+          if(info != 0){error("c++ error: dpotrf ABetaComm failed\n");}
+          F77_NAME(dpotri)(lower, &pAbund, tmp_ppAbund, &pAbund, &info FCONE); 
+          if(info != 0){error("c++ error: dpotri ABetaComm failed\n");}
+          F77_NAME(dsymv)(lower, &pAbund, &one, tmp_ppAbund, &pAbund, tmp_pAbund, &inc, &zero, tmp_pAbund2, &inc FCONE);
+          F77_NAME(dpotrf)(lower, &pAbund, tmp_ppAbund, &pAbund, &info FCONE); 
+          if(info != 0){error("c++ error: dpotrf ABetaComm failed\n");}
+          mvrnorm(betaComm, tmp_pAbund2, tmp_ppAbund, pAbund);
+	}
 
         /********************************************************************
          Update Community Abundance Variance Parameter
         ********************************************************************/
-        for (h = 0; h < pAbund; h++) {
-          tmp_0 = 0.0;  
-          for (i = 0; i < nSp; i++) {
-            tmp_0 += (beta[h * nSp + i] - betaComm[h]) * (beta[h * nSp + i] - betaComm[h]);
-          } // i
-          tmp_0 *= 0.5;
-          tauSqBeta[h] = rigamma(tauSqBetaA[h] + nSp / 2.0, tauSqBetaB[h] + tmp_0); 
-        } // h
-        for (h = 0; h < pAbund; h++) {
-          TauBetaInv[h * pAbund + h] = tauSqBeta[h]; 
-        } // h
-        F77_NAME(dpotrf)(lower, &pAbund, TauBetaInv, &pAbund, &info FCONE); 
-        if(info != 0){error("c++ error: dpotrf TauBetaInv failed\n");}
-        F77_NAME(dpotri)(lower, &pAbund, TauBetaInv, &pAbund, &info FCONE); 
-        if(info != 0){error("c++ error: dpotri TauBetaInv failed\n");}
+	if (indBetas == 0) {
+          for (h = 0; h < pAbund; h++) {
+            tmp_0 = 0.0;  
+            for (i = 0; i < nSp; i++) {
+              tmp_0 += (beta[h * nSp + i] - betaComm[h]) * (beta[h * nSp + i] - betaComm[h]);
+            } // i
+            tmp_0 *= 0.5;
+            tauSqBeta[h] = rigamma(tauSqBetaA[h] + nSp / 2.0, tauSqBetaB[h] + tmp_0); 
+          } // h
+          for (h = 0; h < pAbund; h++) {
+            TauBetaInv[h * pAbund + h] = tauSqBeta[h]; 
+          } // h
+          F77_NAME(dpotrf)(lower, &pAbund, TauBetaInv, &pAbund, &info FCONE); 
+          if(info != 0){error("c++ error: dpotrf TauBetaInv failed\n");}
+          F77_NAME(dpotri)(lower, &pAbund, TauBetaInv, &pAbund, &info FCONE); 
+          if(info != 0){error("c++ error: dpotri TauBetaInv failed\n");}
+	}
 
         /********************************************************************
          *Update Abundance random effects variance

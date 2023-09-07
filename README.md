@@ -22,8 +22,8 @@ et al. 2022).
 ## Installation
 
 `spAbundance` is not yet on CRAN, with a planned initial submission date
-in early June, 2023. To download the development version of the package,
-you can use `devtools` as follows:
+in Fall 2023. To download the development version of the package, you
+can use `devtools` as follows:
 
 ``` r
 devtools::install_github("doserjef/spAbundance")
