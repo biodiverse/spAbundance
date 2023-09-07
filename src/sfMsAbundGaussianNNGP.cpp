@@ -118,7 +118,7 @@ extern "C" {
     int pRE = INTEGER(consts_r)[3];
     int nRE = INTEGER(consts_r)[4];
     int q = INTEGER(consts_r)[5]; 
-    int indBetas = INTEGER(consts_r)[7];
+    int indBetas = INTEGER(consts_r)[6];
     int pp = p * p; 
     double *muBetaComm = REAL(muBetaComm_r); 
     double *SigmaBetaCommInv = (double *) R_alloc(pp, sizeof(double));   
