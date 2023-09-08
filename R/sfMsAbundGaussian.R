@@ -874,8 +874,8 @@ sfMsAbundGaussian <- function(formula, data, inits, priors,
         					      mcmc(t(a$tau.sq.beta.samples)))), 
         			     autoburnin = FALSE)$psrf[, 2])
       } else {
-        out$rhat$beta.comm <- rep(NA, p.abund)
-        out$rhat$tau.sq.beta <- rep(NA, p.abund)
+        out$rhat$beta.comm <- rep(NA, p)
+        out$rhat$tau.sq.beta <- rep(NA, p)
       }
       out$rhat$tau.sq <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
       					      mcmc(t(a$tau.sq.samples)))), 
