@@ -1023,6 +1023,7 @@ test_that("posterior predictive checks work for spDS", {
 })
 
 # Interactions on both ----------------------------------------------------
+load_all()
 J.x <- 10
 J.y <- 10
 J <- J.x * J.y
@@ -1098,8 +1099,8 @@ inits.list <- list(alpha = 0,
 		   N = apply(y, 1, sum, na.rm = TRUE),
 		   kappa = 1)
 
-tuning <- list(beta = 0.1, alpha = 0.1, beta.star = 0.3, alpha.star = 0.1,
-               kappa = 0.2, w = 0.5, phi = 0.5, nu = 0.5)
+tuning <- list(beta = 0.1, alpha = 0.2, beta.star = 0.3, alpha.star = 0.4,
+               kappa = 0.5, w = 0.6, phi = 0.7, nu = 0.8)
 
 n.batch <- 50
 batch.length <- 25
@@ -1109,29 +1110,13 @@ n.chains <- 2
 abund.formula <- ~ abund.cov.1 * abund.cov.2 
 det.formula <- ~ det.cov.1 + det.cov.2 * det.cov.3
 
-# TODO: testing. There is some bug here that appears to be a misalignment of tuning
-#       values. The weird thing is is that it doesn't seem to occur in other models.
-data <- data.list
-inits <- inits.list
-cov.model = 'matern'
-n.neighbors = 5
-NNGP <- TRUE
-family = 'NB'
-det.func = 'halfnormal'
-priors = prior.list
-accept.rate <- 0.43
-n.omp.threads <- 1
-verbose = FALSE
-n.report <- 100
-search.type <- 'cb'
-
 out <- spDS(abund.formula = abund.formula,
 	    det.formula = det.formula,
 	    data = data.list,
 	    n.batch = n.batch,
 	    batch.length = batch.length,
 	    inits = inits.list,
-	    cov.model = 'matern',
+	    cov.model = 'exponential',
 	    n.neighbors = 5,
 	    family = 'NB',
 	    det.func = 'halfnormal',
@@ -1337,10 +1322,10 @@ y <- dat$y[-pred.indx, , drop = FALSE]
 y.0 <- dat$y[pred.indx, , drop = FALSE]
 # Occupancy covariates
 X <- dat$X[-pred.indx, , drop = FALSE]
-# X.re <- dat$X.re[-pred.indx, , drop = FALSE]
+X.re <- dat$X.re[-pred.indx, , drop = FALSE]
 # Prediction covariates
 X.0 <- dat$X[pred.indx, , drop = FALSE]
-# X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
+X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
 # Detection covariates
 X.p <- dat$X.p[-pred.indx, , drop = FALSE]
 # X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
@@ -1620,10 +1605,10 @@ y <- dat$y[-pred.indx, , drop = FALSE]
 y.0 <- dat$y[pred.indx, , drop = FALSE]
 # Occupancy covariates
 X <- dat$X[-pred.indx, , drop = FALSE]
-# X.re <- dat$X.re[-pred.indx, , drop = FALSE]
+X.re <- dat$X.re[-pred.indx, , drop = FALSE]
 # Prediction covariates
 X.0 <- dat$X[pred.indx, , drop = FALSE]
-# X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
+X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
 # Detection covariates
 X.p <- dat$X.p[-pred.indx, , drop = FALSE]
 # X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
@@ -1903,10 +1888,10 @@ y <- dat$y[-pred.indx, , drop = FALSE]
 y.0 <- dat$y[pred.indx, , drop = FALSE]
 # Occupancy covariates
 X <- dat$X[-pred.indx, , drop = FALSE]
-# X.re <- dat$X.re[-pred.indx, , drop = FALSE]
+X.re <- dat$X.re[-pred.indx, , drop = FALSE]
 # Prediction covariates
 X.0 <- dat$X[pred.indx, , drop = FALSE]
-# X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
+X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
 # Detection covariates
 X.p <- dat$X.p[-pred.indx, , drop = FALSE]
 # X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
@@ -2188,10 +2173,10 @@ y <- dat$y[-pred.indx, , drop = FALSE]
 y.0 <- dat$y[pred.indx, , drop = FALSE]
 # Occupancy covariates
 X <- dat$X[-pred.indx, , drop = FALSE]
-# X.re <- dat$X.re[-pred.indx, , drop = FALSE]
+X.re <- dat$X.re[-pred.indx, , drop = FALSE]
 # Prediction covariates
 X.0 <- dat$X[pred.indx, , drop = FALSE]
-# X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
+X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
 # Detection covariates
 X.p <- dat$X.p[-pred.indx, , drop = FALSE]
 # X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
@@ -2481,7 +2466,7 @@ X.0 <- dat$X[pred.indx, , drop = FALSE]
 # X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
 # Detection covariates
 X.p <- dat$X.p[-pred.indx, , drop = FALSE]
-# X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
+X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
 coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 dist.breaks <- dat$dist.breaks
@@ -2767,7 +2752,7 @@ X.0 <- dat$X[pred.indx, , drop = FALSE]
 # X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
 # Detection covariates
 X.p <- dat$X.p[-pred.indx, , drop = FALSE]
-# X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
+X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
 coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 dist.breaks <- dat$dist.breaks
@@ -3052,7 +3037,7 @@ X.0 <- dat$X[pred.indx, , drop = FALSE]
 # X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
 # Detection covariates
 X.p <- dat$X.p[-pred.indx, , drop = FALSE]
-# X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
+X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
 coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 dist.breaks <- dat$dist.breaks
@@ -3337,7 +3322,7 @@ X.0 <- dat$X[pred.indx, , drop = FALSE]
 # X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
 # Detection covariates
 X.p <- dat$X.p[-pred.indx, , drop = FALSE]
-# X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
+X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
 coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 dist.breaks <- dat$dist.breaks
@@ -3616,13 +3601,13 @@ y <- dat$y[-pred.indx, , drop = FALSE]
 y.0 <- dat$y[pred.indx, , drop = FALSE]
 # Occupancy covariates
 X <- dat$X[-pred.indx, , drop = FALSE]
-# X.re <- dat$X.re[-pred.indx, , drop = FALSE]
+X.re <- dat$X.re[-pred.indx, , drop = FALSE]
 # Prediction covariates
 X.0 <- dat$X[pred.indx, , drop = FALSE]
-# X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
+X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
 # Detection covariates
 X.p <- dat$X.p[-pred.indx, , drop = FALSE]
-# X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
+X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
 coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 dist.breaks <- dat$dist.breaks
@@ -3903,13 +3888,13 @@ y <- dat$y[-pred.indx, , drop = FALSE]
 y.0 <- dat$y[pred.indx, , drop = FALSE]
 # Occupancy covariates
 X <- dat$X[-pred.indx, , drop = FALSE]
-# X.re <- dat$X.re[-pred.indx, , drop = FALSE]
+X.re <- dat$X.re[-pred.indx, , drop = FALSE]
 # Prediction covariates
 X.0 <- dat$X[pred.indx, , drop = FALSE]
-# X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
+X.re.0 <- dat$X.re[pred.indx, , drop = FALSE]
 # Detection covariates
 X.p <- dat$X.p[-pred.indx, , drop = FALSE]
-# X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
+X.p.re <- dat$X.p.re[-pred.indx, , drop = FALSE]
 coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 dist.breaks <- dat$dist.breaks

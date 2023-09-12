@@ -365,7 +365,7 @@ extern "C" {
       logPostWCurr[j] = R_NegInf;
       logPostWCand[j] = logPostWCurr[j];
     }
-    int nAMCMC = pAbund + pDet * nTheta + J;
+    int nAMCMC = pAbund + pDet + nTheta + J;
     if (pAbundRE > 0) {
       nAMCMC += nAbundRE;
     }
