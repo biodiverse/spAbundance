@@ -4739,8 +4739,8 @@ predict.svcMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
   if (missing(object)) {
     stop("error: predict expects object\n")
   }
-  if (!(class(object) %in% c('sfMsAbund'))) {
-    stop("error: requires an output object of class sfMsAbund\n")
+  if (!(class(object) %in% c('sfMsAbund', 'svcMsAbund'))) {
+    stop("error: requires an output object of class sfMsAbund or svcMsAbund\n")
   }
 
   # Check X.0 -------------------------------------------------------------
