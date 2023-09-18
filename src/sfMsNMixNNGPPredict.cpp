@@ -19,7 +19,7 @@
 extern "C" {
 
   SEXP sfMsNMixNNGPPredict(SEXP coords_r, SEXP J_r, SEXP family_r, SEXP nSp_r, SEXP q_r,
-		           SEXP pAbund_r, SEXP m_r, SEXP offset0_r, SEXP X0_r, SEXP coords0_r, 
+		           SEXP pAbund_r, SEXP m_r, SEXP X0_r, SEXP coords0_r, 
 			   SEXP JStr_r, SEXP nnIndx0_r, SEXP betaSamples_r, 
 			   SEXP thetaSamples_r, SEXP kappaSamples_r, SEXP lambdaSamples_r, 
 			   SEXP wSamples_r, SEXP betaStarSiteSamples_r, 
@@ -46,7 +46,6 @@ extern "C" {
 
     double *X0 = REAL(X0_r);
     double *coords0 = REAL(coords0_r);
-    double *offset0 = REAL(offset0_r);
     int JStr = INTEGER(JStr_r)[0];
     int JStrnSp = JStr * nSp;
     int JStrq = JStr * q;
@@ -244,9 +243,9 @@ extern "C" {
 	  for (i = 0; i < nSp; i++) {
 	    mu0[s * JStrnSp + j * nSp + i] = exp(F77_NAME(ddot)(&pAbund, &X0[j], &JStr, &beta[s*pAbundnSp + i], &nSp) + w0Star[s * JStrnSp + j * nSp + i] + betaStarSite[s*JStrnSp + j * nSp + i]);
 	    if (family == 1) {
-	      N0[s * JStrnSp + j * nSp + i] = rnbinom_mu(kappa[s * nSp + i], mu0[s * JStrnSp + j * nSp + i] * offset0[i]);
+	      N0[s * JStrnSp + j * nSp + i] = rnbinom_mu(kappa[s * nSp + i], mu0[s * JStrnSp + j * nSp + i]);
 	    } else {
-	      N0[s * JStrnSp + j * nSp + i] = rpois(mu0[s * JStrnSp + j * nSp + i] * offset0[i]);
+	      N0[s * JStrnSp + j * nSp + i] = rpois(mu0[s * JStrnSp + j * nSp + i]);
 	    }
 	  } // i
       } // s

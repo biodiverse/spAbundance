@@ -488,6 +488,7 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
   # alpha -----------------------
   if ("alpha" %in% names(inits)) {
+    alpha.input <- TRUE
     alpha.inits <- inits[["alpha"]]
     if (length(alpha.inits) != p.det & length(alpha.inits) != 1) {
       if (p.det == 1) {
@@ -502,28 +503,10 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       alpha.inits <- rep(alpha.inits, p.det)
     }
   } else {
-    alpha.inits <- rnorm(p.det) 
+    alpha.input <- FALSE
+    alpha.inits <- runif(p.det, -10, 10) 
     if (verbose) {
-      message("alpha is not specified in initial values.\nSetting initial values to random values from a standard normal distribution\n")
-    }
-  }
-  alpha.inits.keep <- FALSE
-  while(!alpha.inits.keep) {
-    # Check alpha initial values to try and prevent alpha from getting stuck 
-    # at pi = 0.
-    tmp.x <- seq(0, max(dist.breaks), length.out = J)
-    sigma <- as.vector(exp(alpha.inits %*% t(X.p)))
-    if (det.func == 'halfnormal') {
-      tmp.det <- halfNormal(tmp.x, sigma)
-    } else if (det.func == 'negexp') {
-      tmp.det <- negExp(tmp.x, sigma)
-    }
-    if (mean(tmp.det > 0.8) > 0.8 | mean(tmp.det < 0.1) > 0.3 | 
-        mean(tmp.det) < 0.1 | sum(tmp.det == 0) > 0) {
-      alpha.inits.keep <- FALSE
-      alpha.inits <- rnorm(p.det) 
-    } else {
-      alpha.inits.keep <- TRUE
+      message("alpha is not specified in initial values.\nSetting initial values to random values from a Uniform(-10, 10)\n")
     }
   }
 
@@ -787,25 +770,7 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     # Change initial values if i > 1
     if ((i > 1) & (!fix.inits)) {
       beta.inits <- rnorm(p.abund)
-      alpha.inits <- rnorm(p.det)
-      alpha.inits.keep <- FALSE
-      while(!alpha.inits.keep) {
-        # Check alpha initial values to try and prevent alpha from getting stuck.
-        tmp.x <- seq(0, max(dist.breaks), length.out = J)
-        sigma <- as.vector(exp(alpha.inits %*% t(X.p)))
-        if (det.func == 'halfnormal') {
-          tmp.det <- halfNormal(tmp.x, sigma)
-        } else if (det.func == 'negexp') {
-          tmp.det <- negExp(tmp.x, sigma)
-        }
-        if (mean(tmp.det > 0.8) > 0.8 | mean(tmp.det < 0.1) > 0.3 | 
-            mean(tmp.det) < 0.1 | sum(tmp.det == 0) > 0) {
-          alpha.inits.keep <- FALSE
-          alpha.inits <- rnorm(p.det) 
-        } else {
-          alpha.inits.keep <- TRUE
-        }
-      }
+      alpha.inits <- runif(p.det, -10, 10)
       if (p.abund.re > 0) {
         sigma.sq.mu.inits <- runif(p.abund.re, 0.05, 1)
         beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
@@ -819,6 +784,25 @@ DS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       }
     }
     storage.mode(chain.info) <- "integer"
+    # Check alpha initial values
+    tmp <- .Call("checkAlphaDS", y, X.p, X.p.re, X.p.random, y.max, 
+			 consts, K, n.det.re.long, alpha.inits, 
+			 sigma.sq.p.inits, alpha.star.inits, N.inits, 
+			 N.long.indx, alpha.star.indx, alpha.level.indx, 
+			 mu.alpha, Sigma.alpha, det.func.indx, transect.c, dist.breaks)
+    alpha.check <- ifelse(is.nan(tmp$alpha.like.val)[1, 1], TRUE, FALSE)
+    if (i == 1 & alpha.input & alpha.check & verbose) {
+      message("user-supplied initial values for alpha result in an invalid\nlikelihood. Re-drawing alpha initial values from a Uniform(-10, 10).") 
+    }
+    while(alpha.check) {
+      alpha.inits <- runif(p.det, -10, 10)
+      tmp <- .Call("checkAlphaDS", y, X.p, X.p.re, X.p.random, y.max, 
+                   consts, K, n.det.re.long, alpha.inits, 
+                   sigma.sq.p.inits, alpha.star.inits, N.inits, 
+                   N.long.indx, alpha.star.indx, alpha.level.indx, 
+                   mu.alpha, Sigma.alpha, det.func.indx, transect.c, dist.breaks)
+      alpha.check <- ifelse(is.nan(tmp$alpha.like.val)[1, 1], TRUE, FALSE)
+    }
     # Run the model in C
     out.tmp[[i]] <- .Call("DS", y, X, X.p, X.re, X.p.re, X.random, X.p.random, 
         		  y.max, offset, consts, K, n.abund.re.long, 

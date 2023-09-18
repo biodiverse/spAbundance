@@ -8,7 +8,7 @@
 
 \usage{
 \method{predict}{lfMsNMix}(object, X.0, coords.0, ignore.RE = FALSE, 
-                           type = 'abundance', k.fold.offset, ...)
+                           type = 'abundance', ...)
 }
 
 \arguments{
@@ -18,13 +18,11 @@
   \item{X.0}{the design matrix of covariates at the prediction locations. This should include a column of 1s for the intercept if an intercept is included in the model. If random effects are included in the abundance (or detection if \code{type = 'detection'}) portion of the model, the levels of the random effects at the new locations should be included as a column in the design matrix. The ordering of the levels should match the ordering used to fit the data in \code{lfMsNMix}. Columns should correspond to the order of how covariates were specified in the corresponding formula argument of \code{lfMsNMix}. Column names must match the names of the variables used to fit the model (for the intercept, use \code{'(Intercept)'}).}
 
   \item{coords.0}{the spatial coordinates corresponding to \code{X.0}. Note that \code{spOccupancy} assumes coordinates are specified 
-  in a projected coordinate system.}
+  in a projected coordinate system. This is not a required argument, but can be used if some of the prediction sites are the same sites as those used to fit the data, in which case the latent factors estimated during model fitting can be used to improve the predictions. If predicting at different sites than those used to fit the data, this argument will not have any influence on model results.}
 
   \item{ignore.RE}{a logical value indicating whether to include unstructured random effects for prediction. If TRUE, random effects will be ignored and prediction will only use the fixed effects. If FALSE, random effects will be included in the prediction for both observed and unobserved levels of the random effect.}
 
   \item{type}{a quoted keyword indicating what type of prediction to produce. Valid keywords are 'abundance' to predict expected abundance and latent abundance values (this is the default), or 'detection' to predict detection probability given new values of detection covariates.}
-
-  \item{k.fold.offset}{offset used when performing cross-validation. This should not be specified by the user.} 
   
   \item{...}{currently no additional arguments}
 }

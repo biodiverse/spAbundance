@@ -20,7 +20,7 @@ extern "C" {
 
   SEXP spNMixNNGPPredict(SEXP coords_r, SEXP J_r, SEXP family_r,
 		         SEXP pAbund_r, SEXP m_r, SEXP X0_r, SEXP coords0_r, 
-			 SEXP offset0_r, SEXP J0_r, SEXP nnIndx0_r, SEXP betaSamples_r, 
+			 SEXP J0_r, SEXP nnIndx0_r, SEXP betaSamples_r, 
 			 SEXP thetaSamples_r, SEXP kappaSamples_r, SEXP wSamples_r, 
 			 SEXP betaStarSiteSamples_r, 
                          SEXP sitesLink_r, SEXP sites0Sampled_r, SEXP sites0_r,
@@ -40,7 +40,6 @@ extern "C" {
 
     double *X0 = REAL(X0_r);
     double *coords0 = REAL(coords0_r);
-    double *offset0 = REAL(offset0_r);
     int J0 = INTEGER(J0_r)[0];
     int m = INTEGER(m_r)[0]; 
     int mm = m * m; 
@@ -224,9 +223,9 @@ extern "C" {
     for(i = 0; i < J0; i++){
       for(s = 0; s < nSamples; s++){
         if (family == 1) {   
-          N0[s * J0 + i] = rnbinom_mu(kappa[s], mu0[s * J0 + i] * offset0[i]);
+          N0[s * J0 + i] = rnbinom_mu(kappa[s], mu0[s * J0 + i]);
 	} else {
-          N0[s * J0 + i] = rpois(mu0[s * J0 + i] * offset0[i]);
+          N0[s * J0 + i] = rpois(mu0[s * J0 + i]);
 	}
       } // s
     } // i

@@ -21,20 +21,12 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     1/rgamma(n = n, shape = a, rate = b)
   }
   # Half-normal detection function
-  halfNormal <- function(x, sigma, transect) {
-    if (transect == 'line') {
-      exp(-x^2 / (2 * sigma^2))
-    } else {
-      exp(-x^2 / (2 * sigma^2)) * x
-    }
+  halfNormal <- function(x, sigma) {
+    exp(-x^2 / (2 * sigma^2))
   }
   # Negative exponential detection function
-  negExp <- function(x, sigma, transect) {
-    if (transect == 'line') {
-      exp(-x / sigma)
-    } else {
-      exp(-x / sigma) * x
-    }
+  negExp <- function(x, sigma) {
+    exp(-x / sigma)
   }
 
   # Check for unused arguments ------------------------------------------
@@ -676,6 +668,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
   # alpha ----------------------------
   if ("alpha" %in% names(inits)) {
+    alpha.input <- TRUE
     alpha.inits <- inits[["alpha"]]
     if (is.matrix(alpha.inits)) {
       if (ncol(alpha.inits) != p.det | nrow(alpha.inits) != n.sp) {
@@ -691,9 +684,10 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       alpha.inits <- matrix(alpha.inits, n.sp, p.det)
     }
   } else {
-    alpha.inits <- matrix(rnorm(n.sp * p.det, alpha.comm.inits, sqrt(tau.sq.alpha.inits)), n.sp, p.det)
+    alpha.input <- FALSE
+    alpha.inits <- matrix(runif(n.sp * p.det, -10, 10), n.sp, p.det)
     if (verbose) {
-      message('alpha is not specified in initial values.\nSetting initial values to random values from the community-level normal distribution\n')
+      message('alpha is not specified in initial values.\nSetting initial values to random values from a Uniform(-10, 10)\n')
     }
   }
   # sigma.sq.mu -------------------
@@ -750,7 +744,8 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       }
     }
     alpha.star.indx <- rep(0:(p.det.re - 1), n.det.re.long)
-    alpha.star.inits <- rnorm(n.det.re, sqrt(sigma.sq.p.inits[alpha.star.indx + 1]))
+    alpha.star.inits <- runif(n.det.re, -0.5, 0.5)
+    alpha.star.inits <- rep(0, n.det.re)
     alpha.star.inits <- rep(alpha.star.inits, n.sp)
   } else {
     sigma.sq.p.inits <- 0
@@ -981,16 +976,16 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       tau.sq.alpha.inits <- runif(p.det, 0.05, 1)
       beta.inits <- matrix(rnorm(n.sp * p.abund, beta.comm.inits, 
             		     sqrt(tau.sq.beta.inits)), n.sp, p.abund)
-      alpha.inits <- matrix(rnorm(n.sp * p.det, alpha.comm.inits, 
-            		      sqrt(tau.sq.alpha.inits)), n.sp, p.det)
+      alpha.inits <- matrix(runif(n.sp * p.det, -10, 10), n.sp, p.det)
       if (p.abund.re > 0) {
         sigma.sq.mu.inits <- runif(p.abund.re, 0.05, 1)
         beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
         beta.star.inits <- rep(beta.star.inits, n.sp)
       }
       if (p.det.re > 0) {
-        sigma.sq.p.inits <- runif(p.det.re, 0.05, 1)
-        alpha.star.inits <- rnorm(n.det.re, sqrt(sigma.sq.p.inits[alpha.star.indx + 1]))
+        sigma.sq.p.inits <- runif(p.det.re, 0.05, 0.5)
+        # alpha.star.inits <- runif(n.det.re, -0.5, 0.5)
+        alpha.star.inits <- rep(0, n.det.re)
         alpha.star.inits <- rep(alpha.star.inits, n.sp)
       }
       if (family == 'NB') {
@@ -998,6 +993,33 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       }
     }
     storage.mode(chain.info) <- "integer"
+    # Check alpha initial values
+    tmp <- .Call("checkMSAlphaDS", y, X.p, X.p.re, X.p.random, y.max, 
+			 consts, K, alpha.inits, alpha.comm.inits,
+			 tau.sq.alpha.inits,
+			 sigma.sq.p.inits, alpha.star.inits, N.inits, 
+			 alpha.star.indx, alpha.level.indx, 
+			 mu.alpha.comm, Sigma.alpha.comm, 
+			 det.func.indx, transect.c, dist.breaks)
+    alpha.message <- FALSE
+    for (j in 1:n.sp) {
+      alpha.check <- ifelse(is.nan(tmp$alpha.like.val)[j, 1], TRUE, FALSE)
+      if (i == 1 & alpha.input & alpha.check & verbose & !alpha.message) {
+        message("user-supplied initial values for alpha result in an invalid\nlikelihood. Re-drawing alpha initial values from a Uniform(-10, 10).") 
+        alpha.message <- TRUE
+      }
+      while(alpha.check) {
+        alpha.inits[j, ] <- runif(p.det, -10, 10)
+        tmp <- .Call("checkMSAlphaDS", y, X.p, X.p.re, X.p.random, y.max, 
+			 consts, K, alpha.inits, alpha.comm.inits,
+			 tau.sq.alpha.inits,
+			 sigma.sq.p.inits, alpha.star.inits, N.inits, 
+			 alpha.star.indx, alpha.level.indx, 
+			 mu.alpha.comm, Sigma.alpha.comm, 
+			 det.func.indx, transect.c, dist.breaks)
+        alpha.check <- ifelse(is.nan(tmp$alpha.like.val)[j, 1], TRUE, FALSE)
+      }
+    }
     # Run the model in C
     out.tmp[[i]] <- .Call("msDS", y, X, X.p, X.re, X.p.re, X.random, X.p.random, 
         		    y.max, offset, consts, K, n.abund.re.long, 

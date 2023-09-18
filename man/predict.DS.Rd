@@ -7,7 +7,7 @@
 }
 
 \usage{
-\method{predict}{DS}(object, X.0, ignore.RE = FALSE, type = 'abundance', k.fold.offset, ...)
+\method{predict}{DS}(object, X.0, ignore.RE = FALSE, type = 'abundance', ...)
 }
 
 \arguments{
@@ -19,8 +19,6 @@
   \item{ignore.RE}{logical value that specifies whether or not to remove random abundance (or detection if \code{type = 'detection'}) effects from the subsequent predictions. If \code{TRUE}, random effects will be included. If \code{FALSE}, random effects will be set to 0 and predictions will only be generated from the fixed effects.}
 
   \item{type}{a quoted keyword indicating what type of prediction to produce. Valid keywords are 'abundance' to predict latent abundance and expected abundance values (this is the default), or 'detection' to predict detection probability given new values of detection covariates.}
-
-  \item{k.fold.offset}{offset used when performing cross-validation. This should not be specified by the user.} 
 
   \item{...}{currently no additional arguments}
 }

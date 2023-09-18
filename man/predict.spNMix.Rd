@@ -9,7 +9,7 @@
 \usage{
 \method{predict}{spNMix}(object, X.0, coords.0, n.omp.threads = 1, 
                          verbose = TRUE, n.report = 100, ignore.RE = FALSE, 
-                         k.fold.offset, type = 'abundance', include.sp = TRUE, ...)
+                         type = 'abundance', include.sp = TRUE, ...)
 }
 
 \arguments{
@@ -36,8 +36,6 @@
   \item{ignore.RE}{logical value that specifies whether or not to remove random abundance (or detection if \code{type = 'detection'}) effects from the subsequent predictions. If \code{TRUE}, random effects will be included. If \code{FALSE}, random effects will be set to 0 and predictions will only be generated from the fixed effects.}
 
   \item{type}{a quoted keyword indicating what type of prediction to produce. Valid keywords are 'abundance' to predict latent abundance and expected abundance values (this is the default), or 'detection' to predict detection probability given new values of detection covariates.}
-
-  \item{k.fold.offset}{offset used when performing cross-validation. This should not be specified by the user.} 
 
   \item{include.sp}{a logical value used to indicate whether spatial random effects should be included in the predictions. By default, this is set to \code{TRUE}. If set to \code{FALSE}, predictions are given using the covariates and any unstructured random effects in the model. If \code{FALSE}, the \code{coords} argument is not required.}
 

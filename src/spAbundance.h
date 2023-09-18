@@ -136,7 +136,7 @@ extern "C" {
 
   SEXP spNMixNNGPPredict(SEXP coords_r, SEXP J_r, SEXP family_r,
 		         SEXP pAbund_r, SEXP m_r, SEXP X0_r, SEXP coords0_r, 
-			 SEXP offset0_r, SEXP J0_r, SEXP nnIndx0_r, SEXP betaSamples_r, 
+			 SEXP J0_r, SEXP nnIndx0_r, SEXP betaSamples_r, 
 			 SEXP thetaSamples_r, SEXP kappaSamples_r, SEXP wSamples_r, 
 			 SEXP betaStarSiteSamples_r, 
                          SEXP sitesLink_r, SEXP sites0Sampled_r, SEXP sites0_r,
@@ -365,5 +365,30 @@ extern "C" {
 			             SEXP nSamples_r, SEXP covModel_r, 
 			             SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r, 
 				     SEXP z0Samples_r);
+
+  SEXP checkAlphaDS(SEXP y_r, SEXP Xp_r, SEXP XpRE_r, 
+                    SEXP XpRandom_r, SEXP yMax_r, 
+                    SEXP consts_r, SEXP K_r, SEXP nDetRELong_r,
+                    SEXP alphaStarting_r, 
+                    SEXP sigmaSqPStarting_r,
+                    SEXP alphaStarStarting_r, SEXP NStarting_r,
+                    SEXP NLongIndx_r,  
+                    SEXP alphaStarIndx_r, SEXP alphaLevelIndx_r,
+                    SEXP muAlpha_r, SEXP SigmaAlpha_r, 
+                    SEXP detModel_r, 
+	            SEXP transect_r, SEXP distBreaks_r);
+
+  SEXP checkMSAlphaDS(SEXP y_r, SEXP Xp_r,  SEXP XpRE_r, 
+                      SEXP XpRandom_r, SEXP yMax_r, 
+                      SEXP consts_r, SEXP K_r, 
+                      SEXP alphaStarting_r, 
+                      SEXP alphaCommStarting_r,
+	              SEXP tauSqAlphaStarting_r,
+                      SEXP sigmaSqPStarting_r,
+                      SEXP alphaStarStarting_r, SEXP NStarting_r,
+                      SEXP alphaStarIndx_r, SEXP alphaLevelIndx_r,
+                      SEXP muAlphaComm_r, SEXP SigmaAlphaComm_r, 
+	              SEXP detModel_r, 
+	              SEXP transect_r, SEXP distBreaks_r);
 
 }

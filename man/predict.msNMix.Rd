@@ -8,7 +8,7 @@
 
 \usage{
 \method{predict}{msNMix}(object, X.0, ignore.RE = FALSE, type = 'abundance', 
-                         k.fold.offset, ...)
+                         ...)
 }
 
 \arguments{
@@ -22,8 +22,6 @@
   \item{...}{currently no additional arguments}
 
   \item{type}{a quoted keyword indicating what type of prediction to produce. Valid keywords are 'abundance' to predict expected abundance and latent abundance values (this is the default), or 'detection' to predict detection probability given new values of detection covariates.}
-
-  \item{k.fold.offset}{offset used when performing cross-validation. This should not be specified by the user.} 
 
 }
 

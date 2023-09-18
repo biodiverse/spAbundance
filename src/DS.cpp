@@ -346,9 +346,6 @@ extern "C" {
     double *sigma = (double *) R_alloc(J, sizeof(double));
     double *p = (double *) R_alloc(nObs, sizeof(double)); zeros(p, nObs);
     // Number of break points for integration
-    // TODO: may want to make this be an argument eventually. The smaller it is 
-    // the faster the code, but the worse the approximation. Note that this is the
-    // number of break points for integration within each bin. 
     int nInt = 5;
     double *binWidth = (double *) R_alloc(K, sizeof(double));
     double stripWidth = 0.0;

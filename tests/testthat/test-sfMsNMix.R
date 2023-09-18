@@ -2161,6 +2161,8 @@ test_that("posterior predictive checks work for sfMsNMix", {
 })
 
 # Multiple random intercepts, covariates, and random slopes ---------------
+# TODO: looks like there is some problem here with things over multiple chains
+set.seed(100)
 J.x <- 10
 J.y <- 10
 J <- J.x * J.y
