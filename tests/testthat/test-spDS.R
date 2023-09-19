@@ -1023,7 +1023,6 @@ test_that("posterior predictive checks work for spDS", {
 })
 
 # Interactions on both ----------------------------------------------------
-load_all()
 J.x <- 10
 J.y <- 10
 J <- J.x * J.y

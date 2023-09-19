@@ -742,9 +742,9 @@ extern "C" {
 		REAL(piFullSamples_r)[sPost * nObsFull + j * KFull + k] = piFull[k * J + j];
 	      } 
 	      if (family == 0) {
-                tmp_0 = rpois(mu[j]);
+                tmp_0 = rpois(mu[j] * offset[j]);
 	      } else {
-                tmp_0 = rnbinom_mu(mu[j], kappa);
+                tmp_0 = rnbinom_mu(mu[j] * offset[j], kappa);
 	      }
 	      rmultinom(tmp_0, tmp_KFull, KFull, 
                         &INTEGER(yRepSamples_r)[sPost * nObsFull + j * KFull]);

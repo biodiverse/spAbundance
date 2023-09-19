@@ -1093,7 +1093,12 @@ extern "C" {
                 tmp_KFull[k] = piFull[k * J + j];
 		REAL(piFullSamples_r)[sPost * nObsFull + j * KFull + k] = piFull[k * J + j];
 	      } 
-	      rmultinom(N[j], tmp_KFull, KFull, 
+	      if (family == 0) {
+                tmp_0 = rpois(mu[j] * offset[j]);
+	      } else {
+                tmp_0 = rnbinom_mu(mu[j] * offset[j], kappa);
+	      }
+	      rmultinom(tmp_0, tmp_KFull, KFull, 
                         &INTEGER(yRepSamples_r)[sPost * nObsFull + j * KFull]);
 	    }
             if (pAbundRE > 0) {

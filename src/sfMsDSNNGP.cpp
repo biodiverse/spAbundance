@@ -1413,7 +1413,12 @@ extern "C" {
                   tmp_KFull[k] = piFull[k * JnSp + j * nSp + i];
 	          REAL(piFullSamples_r)[sPost * nObsFullnSp + k * JnSp + j * nSp + i] = piFull[k * JnSp + j * nSp + i];
 	        } 
-	        rmultinom(N[j * nSp + i], tmp_KFull, KFull, tmp_KFullInt);
+	        if (family == 0) {
+                  tmp_0 = rpois(mu[j * nSp + i] * offset[j]);
+	        } else {
+                  tmp_0 = rnbinom_mu(mu[j * nSp + i] * offset[j], kappa[i]);
+	        }
+	        rmultinom(tmp_0, tmp_KFull, KFull, tmp_KFullInt);
 		for (k = 0; k < KFull; k++) {
                   INTEGER(yRepSamples_r)[sPost * nObsFullnSp + k * JnSp + j * nSp + i] = tmp_KFullInt[k];
 		}

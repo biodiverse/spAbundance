@@ -219,14 +219,16 @@ summary(out, quantiles = c(0.25, 0.5, 0.75))
 
 The model summary also provides information on convergence of the MCMC chains in the form of the Gelman-Rubin diagnostic [@brooks1998] and the effective sample size (ESS) of the posterior samples. Here we find all Rhat values are less than 1.1 and the ESS values are substantially large for all parameters. The ESS values are also adequately high for all model parameters, indicating adequate mixing of the MCMC chains.
 
+We can also use the `plot()` function to generate a simple trace plot of the MCMC chains to provide additional confidence in the convergence (or non-convergence) of the model. The plotting functionality for each model type in `spAbundance` takes three arguments: `x` (the resulting object from fitting the model), `param` (the parameter name that you want to display), and `density` (a logical value indicating whether to also generate a density plot in addition to the traceplot). To see the parameter names available to use with `plot()` for a given model type, you can look at the manual page for the function, which for models generated from `NMix()` can be accessed with `?plot.NMix`. 
+
 ```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
-# Abundance parameters
-plot(out$beta.samples, density = FALSE)
+# Abundance regression coefficients
+plot(out, param = 'beta', density = FALSE)
 ```
 
 ```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
-# Detection parameters
-plot(out$alpha.samples, density = FALSE)
+# Detection regression coefficients
+plot(out, param = 'alpha', density = FALSE)
 ```
 
 ## Posterior predictive checks
@@ -719,7 +721,7 @@ str(out.pred)
 
 Notice that `mu.0.samples` (expected abundances) and `N.0.samples` (mean abundances) are now three-dimensional arrays, with dimensions corresponding to posterior sample, species, and site. Now, we make a marginal effect plot for each species. 
 
-```{r}
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
 mu.0.quants <- apply(out.pred$mu.0.samples, c(2, 3), quantile,
 		                  prob = c(0.025, 0.5, 0.975))
 # Put stuff together for plotting with ggplot2
@@ -884,7 +886,7 @@ waicAbund(out.ms, by.sp = TRUE)
 
 Prediction proceeds exactly as before with the multi-species N-mixture model, so we can simply copy the code from above and re-run it with our latent factor model. 
 
-```{r}
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
 out.pred <- predict(out.lf.ms, X.0, ignore.RE = TRUE)
 # Look at the resulting object
 str(out.pred)
@@ -1057,7 +1059,7 @@ waicAbund(out.sf.ms, by.sp = FALSE)
 We can again use the `predict()` function to predict abundance at a set of new locations to generate a species distribution map or to generate a marginal effects plot. Here, we again predict abundance for the purpose of generating a marginal effects plot, and so we set the argument `include.sp = FALSE` to ignore the spatial random effects. See the distance sampling vignette for an example of how to generate a map of abundance across some region of interest. 
 
 
-```{r}
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
 # Recall what the prediction design matrix looks like
 str(X.0)
 out.pred <- predict(out.sf.ms, X.0, ignore.RE = TRUE, include.sp = FALSE)

@@ -2249,7 +2249,7 @@ inits.list <- list(alpha = 0, alpha.comm = 0,
 		   N = apply(y, c(1, 2), max, na.rm = TRUE))
 tuning <- list(beta = 0.1, alpha = 0.1, beta.star = 0.1, alpha.star = 0.1,
                kappa = 0.2, w = 0.5, lambda = 0.5, phi = 0.5, nu = 0.5)
-n.batch <- 50
+n.batch <- 100
 batch.length <- 25
 n.burn <- 750
 n.thin <- 2
