@@ -552,7 +552,7 @@ out.sp <- spDS(abund.formula = abund.formula,
 summary(out.sp)
 ```
 
-Looking at the model summary we see adequate convergence of all model parameters. The `summary()` output looks the same as what we saw previously, with the additional section titled "Spatial Covariance". There we see the estimate of the spatial variance (`sigma.sq`) and spatial decay (`phi`) parameters. The spatial variance is around 0.35, which indicates only a moderate amount of spatial variability in abundance that is not explained by the covariates. Interpretation of the spatial variance parameter can follow interpretation of variance parameters in "regular" (i.e., unstructured) random effect variances: when the variance is close to 0, that indicates little support for inclusion of the spatial random effect. When the variance is large, it indicates substantial support for the spatial random effect. What indicates "large" vs. "small" isn't necessarily straightforward, and remember that we are working on the log scale. We can also look at the magnitude of the spatial random effect estimates themselves to give an indication as to how much residual spatial autocorrelation there is in the abundance estimates. The posterior samples for the spatial random effects are stored in the `w.samples` tag of the resulting model fit list. Here we calculate the means of the spatial random effects and plot a histogram of their values.
+Looking at the model summary we see adequate convergence of most model parameters with the exception of the abundance intercept, so in a complete analysis we would run this model longer to ensure all Rhat values were less than 1.1. The `summary()` output looks the same as what we saw previously, with the additional section titled "Spatial Covariance". There we see the estimate of the spatial variance (`sigma.sq`) and spatial decay (`phi`) parameters. The spatial variance is around 0.35, which indicates only a moderate amount of spatial variability in abundance that is not explained by the covariates. Interpretation of the spatial variance parameter can follow interpretation of variance parameters in "regular" (i.e., unstructured) random effect variances: when the variance is close to 0, that indicates little support for inclusion of the spatial random effect. When the variance is large, it indicates substantial support for the spatial random effect. What indicates "large" vs. "small" isn't necessarily straightforward, and remember that we are working on the log scale. We can also look at the magnitude of the spatial random effect estimates themselves to give an indication as to how much residual spatial autocorrelation there is in the abundance estimates. The posterior samples for the spatial random effects are stored in the `w.samples` tag of the resulting model fit list. Here we calculate the means of the spatial random effects and plot a histogram of their values.
 
 ```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
 w.means <- apply(out.sp$w.samples, 2, mean)
@@ -789,7 +789,7 @@ We could of course also run the same model with a negative binomial distribution
 
 ## Prediction
 
-Prediction proceeds exactly as we have seen previously with the single-species non-spatial HDS model. 
+Prediction proceeds exactly as we have seen previously with the single-species non-spatial HDS model. Below we provide code to predict abundance and generate a map of total expected abundance across all species as a simple measure of "how many birds" we could expect at any given location (note the code is not run and can take a fair amount of memory).
 
 ```{r, include = FALSE, message = FALSE, warning = FALSE}
 # Clean things up so this whole thing can run.
@@ -797,17 +797,12 @@ rm(out.pred, out.sp.pred, out, out.sp, ppc.out, ppc.out.sp)
 gc()
 ```
 
-```{r}
+```{r, eval = FALSE}
 # Recall what is in the prediction design matrix X.0
 str(X.0)
 out.ms.pred <- predict(out.ms, X.0)
 # Note this takes a fair amount of memory to execute
 str(out.ms.pred)
-```
-
-Notice that the predictions of average abundance (`mu.0.samples`) and latent abundance (`N.0.samples`) are now three-dimensional arrays, with the dimensions corresponding to MCMC sample, species, and site. We can generate plots of species-specific abundance as we have before, or we could generate some sort of community wide summary using either the expected abundance or latent abundance measures. For example, we could imagine summarizing the latent abundance values to get estimates of species richness, or perhaps some abundance-weighted metric of diversity. Alternatively, we could plot the total expected abundance summed across all species as a simple measure of "how many birds" we could expect at any given location. We generate this plot below. 
-
-```{r}
 # Total expected abundance across all species at each site.
 mu.sum.samples <- apply(out.ms.pred$mu.0.samples, c(1, 3), sum)
 # Average total abundance at each site
@@ -816,7 +811,7 @@ plot.df <- data.frame(Easting = neonPredData$easting,
 		      Northing = neonPredData$northing,
 		      mu.sum.means = mu.sum.means)
 coords.stars <- st_as_stars(plot.df, crs = st_crs(32617))
-coords.sf <- st_as_sf(as.data.frame(neonDWP$coords), coords = c('easting', 'northing'), 
+coords.sf <- st_as_sf(as.data.frame(neonDWP$coords), coords = c('easting', 'northing'),
 		      crs = st_crs(32617))
 # Plot of median estimate
 ggplot() +
@@ -824,11 +819,10 @@ ggplot() +
   geom_sf(data = coords.sf) +
   scale_fill_viridis_c(na.value = NA) +
   theme_bw(base_size = 14) +
-  labs(fill = 'Individuals\nper ha', x = 'Longitude', y = 'Latitude', 
+  labs(fill = 'Individuals\nper ha', x = 'Longitude', y = 'Latitude',
        title = 'Average total density of birds')
 ```
 
-Not surprisingly, this plot is pretty similar to the plot for EATO, which is the most common bird in the data set, and thus it's spatial variation in abundance contributes the most to the spatial variation in total abundance across the group of species. 
 
 # Latent factor multi-species HDS models
 

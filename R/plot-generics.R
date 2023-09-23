@@ -64,10 +64,10 @@ overallPlot <- function(x, param, density = TRUE, ...) {
     }
   }
   if (param == 'theta') {
-    if (class(x) %in% c('spAbund', 'sfMsAbund', 
+    if (!(class(x) %in% c('spAbund', 'sfMsAbund', 
 			     'svcAbund', 'svcMsAbund', 
 			     'spNMix', 'sfMsNMix', 
-			     'spDS', 'sfMsDS')) {
+			     'spDS', 'sfMsDS'))) {
       stop("theta is not a parameter in the fitted model")
     }
     for (i in 1:n.chains) {

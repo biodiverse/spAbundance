@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# spAbundance
+# spAbundance <a href='https://www.jeffdoser.com/files/spaccupancy-web/'><img src="man/figures/logo.png" align="right" height="139" width="120"/></a>
 
 [![](http://cranlogs.r-pkg.org/badges/grand-total/spAbundance?color=blue)](https://CRAN.R-project.org/package=spAbundance)
 [![CRAN](https://www.r-pkg.org/badges/version/spAbundance)](https://CRAN.R-project.org/package=spAbundance)
@@ -49,9 +49,11 @@ C++ on a Mac, you can install `XCode` from the Mac app store.
 | `sfMsDS()`             | Multi-species spatial distance sampling model with species correlations |
 | `abund()`              | Single-species abundance GLM                                            |
 | `spAbund()`            | Single-species spatial abundance GLM                                    |
+| `svcAbund()`           | Single-species spatially-varying coefficient abundance GLM              |
 | `msAbund()`            | Multi-species abundance GLM                                             |
 | `lfMsAbund()`          | Multi-species abundance GLM with species correlations                   |
 | `sfMsAbund()`          | Multi-species spatial abundance GLM with species correlations           |
+| `svcMsAbund()`         | Multi-species spatially-varying coefficient abundance GLM               |
 | `ppcAbund()`           | Posterior predictive check using Bayesian p-values                      |
 | `waicAbund()`          | Calculate Widely Applicable Information Criterion (WAIC)                |
 | `simNMix()`            | Simulate single-species repeated count data                             |
@@ -63,14 +65,16 @@ C++ on a Mac, you can install `XCode` from the Mac app store.
 
 All model fitting functions allow for Poisson and negative binomial
 distributions for the abundance portion of the model. All GLM(M)s also
-allow for Gaussian models.
+allow for Gaussian and zero-inflated Gaussian models. Note the two
+functions for fitting spatailly-varying coefficient models are only
+available for Gaussian and zero-inflated Gaussian models.
 
 ## Citing `spAbundance`
 
 Please cite `spAbundance` as:
 
 Doser, J. W. and Finley, A. O. (2023). spAbundance: Univariate and
-Multivariate Spatial Modeling of Species Abundance". R package version
+Multivariate Spatial Modeling of Species Abundance. R package version
 0.1.0. <https://github.com/doserjef/spAbundance>
 
 ## References

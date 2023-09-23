@@ -646,6 +646,7 @@ extern "C" {
         /********************************************************************
          *Update w (spatial random effects)
          *******************************************************************/
+	// J is number of spatial locations
 	for (j = 0; j < J; j++) {
           // Proposal
           a = 0.0;
@@ -677,16 +678,17 @@ extern "C" {
           a += b*b/F[j];
           logPostWCand[j] = -0.5*a;
 
+	  // Likelihood component.
+	  // betaStarSites is the component related to unstructured random intercepts and/or slopes
 	  tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, beta, &inc) + 
 			 betaStarSites[j] + 
 			 wCand[j]);
+	  // N[j] is the response at site j, kappa the NB dispersion parameter.
           if (family == 1) {
             logPostWCand[j] += dnbinom_mu(N[j], kappa, tmp_J[j], 1);
 	  } else {
             logPostWCand[j] += dpois(N[j], tmp_J[j], 1);
 	  }
-	  // Rprintf("logPostWCand[%i]: %f\n", j, logPostWCand[j]);
-	  // Rprintf("logPostWCurr[%i]: %f\n", j, logPostWCurr[j]);
           
 	  a = 0.0;
 	  // MVN for any neighbors of j
@@ -714,6 +716,8 @@ extern "C" {
           a += b*b/F[j];
           logPostWCurr[j] = -0.5*a;
 
+	  // Likelihood component
+	  // betaStarSites is the component related to unstructured random intercepts and/or slopes
 	  tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, beta, &inc) + 
 			 betaStarSites[j] + 
 			 w[j]);
@@ -997,9 +1001,6 @@ extern "C" {
 	  if (corName == "matern") {
 	    Rprintf("\tnu\t\t%3.1f\t\t%1.5f\n", 100.0*REAL(acceptSamples_r)[s * nAMCMC + nuAMCMCIndx], exp(tuning[nuAMCMCIndx]));
 	  }
-	  // for (j = 0; j < J; j++) {
-	  //   Rprintf("\tw[%i]\t\t%3.1f\t\t%1.5f\n", j, 100.0*REAL(acceptSamples_r)[s * nAMCMC + wAMCMCIndx + j], exp(tuning[wAMCMCIndx]));
-	  // }
           Rprintf("-------------------------------------------------\n");
           #ifdef Win32
           R_FlushConsole();
