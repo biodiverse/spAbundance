@@ -164,7 +164,6 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
     elpd <- rep(NA, n.sp)
     pD <- rep(NA, n.sp)
     p.samples <- fitted.msNMix(object)$p.samples
-    # TODO: you can probably parallelize this.
     for (i in 1:n.sp) {
       message(noquote(paste("Currently on species ", i, " out of ", n.sp, sep = '')))
       N.samples <- object$N.samples[, i, ]
@@ -175,7 +174,6 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
         y <- as.matrix(y)
       }
       y.max <- apply(y, 1, max, na.rm = TRUE)
-      # TODO: 
       # y.max <- ifelse(y.max == 0, 1, y.max)
       K <- apply(y, 1, function(a) sum(!is.na(a)))
       K.max <- max(K)
@@ -226,8 +224,6 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
     y <- object$y
     J <- nrow(y)
     y.sum <- apply(y, 1, sum, na.rm = TRUE)
-    # TODO: 
-    # y.max <- ifelse(y.max == 0, 1, y.max)
     # The number of distance bins
     K <- apply(y, 1, function(a) sum(!is.na(a)))
     K.max <- max(K)
@@ -273,19 +269,16 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
     n.sp <- nrow(object$y)
     elpd <- rep(NA, n.sp)
     pD <- rep(NA, n.sp)
-    # TODO: you can probably parallelize this.
     for (i in 1:n.sp) {
       message(noquote(paste("Currently on species ", i, " out of ", n.sp, sep = '')))
       N.samples <- object$N.samples[, i, ]
       n.samples <- object$n.post * object$n.chains
-      kappa.samples <- object$kappa.samples[, i, ]
+      kappa.samples <- object$kappa.samples[, i]
       y <- object$y[i, , ]
       if (length(dim(y)) == 1) {
         y <- as.matrix(y)
       }
       y.sum <- apply(y, 1, sum, na.rm = TRUE)
-      # TODO: 
-      # y.max <- ifelse(y.max == 0, 1, y.max)
       J <- nrow(y)
       K <- apply(y, 1, function(a) sum(!is.na(a)))
       K.max <- max(K)

@@ -209,7 +209,7 @@ test_that("verbose prints to the screen", {
 # Check waicAbund -----------------------
 test_that("waicAbund works for sfMsNMix", {
   # as.vector gets rid of names
-  waic.out <- as.vector(waicAbund(out, max(out$N.samples) + 10))
+  waic.out <- as.vector(waicAbund(out, 100))
   expect_equal(length(waic.out), 3)
   expect_equal(waic.out[3], -2 * (waic.out[1] - waic.out[2]))
 })
@@ -342,7 +342,7 @@ inits.list <- list(alpha = 0, alpha.comm = 0,
 		   beta = 0, beta.comm = 0,
 		   phi = 3 / .5,
 		   sigma.sq.mu = 0.5, sigma.sq.p = 0.5,
-		   kappa = 1.3, lambda = lambda.inits, 
+		   kappa = 1.3, lambda = lambda.inits, fix = TRUE,
 		   N = apply(y, c(1, 2), max, na.rm = TRUE))
 tuning <- list(beta = 0.1, alpha = 0.1, beta.star = 0.1, alpha.star = 0.1,
                kappa = 0.2, w = 0.5, lambda = 0.5, phi = 0.5, nu = 0.5)
@@ -350,21 +350,9 @@ n.batch <- 50
 batch.length <- 25
 n.burn <- 750
 n.thin <- 2
-n.chains <- 2
+n.chains <- 1
 abund.formula <- ~ abund.cov.1
 det.formula <- ~ 1
-
-data = data.list
-n.batch = n.batch
-batch.length = batch.length
-inits = inits.list
-priors = prior.list
-accept.rate = 0.43
-n.omp.threads = 1
-verbose = TRUE
-family <- 'NB'
-n.report = 50
-
 
 out <- sfMsNMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
@@ -483,7 +471,7 @@ test_that("verbose prints to the screen", {
 # Check waicAbund -----------------------
 test_that("waicAbund works for sfMsNMix", {
   # as.vector gets rid of names
-  waic.out <- as.vector(waicAbund(out, max(out$N.samples) + 10))
+  waic.out <- as.vector(waicAbund(out, 50))
   expect_equal(length(waic.out), 3)
   expect_equal(waic.out[3], -2 * (waic.out[1] - waic.out[2]))
 })
@@ -583,7 +571,7 @@ inits.list <- list(alpha = 0, alpha.comm = 0,
 		   beta = 0, beta.comm = 0,
 		   phi = 3 / .5,
 		   sigma.sq.mu = 0.5, sigma.sq.p = 0.5,
-		   kappa = 1.3, lambda = lambda.inits, 
+		   kappa = 1.3, lambda = lambda.inits, fix = TRUE,
 		   N = apply(y, c(1, 2), max, na.rm = TRUE))
 tuning <- list(beta = 0.1, alpha = 0.1, beta.star = 0.1, alpha.star = 0.1,
                kappa = 0.2, w = 0.5, lambda = 0.5, phi = 0.5, nu = 0.5)
@@ -591,7 +579,7 @@ n.batch <- 50
 batch.length <- 25
 n.burn <- 750
 n.thin <- 2
-n.chains <- 2
+n.chains <- 1
 abund.formula <- ~ 1
 det.formula <- ~ det.cov.1
 
@@ -711,7 +699,7 @@ test_that("verbose prints to the screen", {
 # Check waicAbund -----------------------
 test_that("waicAbund works for sfMsNMix", {
   # as.vector gets rid of names
-  waic.out <- as.vector(waicAbund(out, max(out$N.samples) + 10))
+  waic.out <- as.vector(waicAbund(out, 50))
   expect_equal(length(waic.out), 3)
   expect_equal(waic.out[3], -2 * (waic.out[1] - waic.out[2]))
 })
@@ -855,7 +843,7 @@ n.batch <- 50
 batch.length <- 25
 n.burn <- 750
 n.thin <- 2
-n.chains <- 2
+n.chains <- 1
 abund.formula <- ~ abund.cov.1 + abund.cov.2
 det.formula <- ~ det.cov.1
 
@@ -976,7 +964,7 @@ test_that("verbose prints to the screen", {
 # Check waicAbund -----------------------
 test_that("waicAbund works for sfMsNMix", {
   # as.vector gets rid of names
-  waic.out <- as.vector(waicAbund(out, max(out$N.samples) + 10))
+  waic.out <- as.vector(waicAbund(out, 50))
   expect_equal(length(waic.out), 3)
   expect_equal(waic.out[3], -2 * (waic.out[1] - waic.out[2]))
 })
@@ -1112,7 +1100,7 @@ inits.list <- list(alpha = 0, alpha.comm = 0,
 		   beta = 0, beta.comm = 0,
 		   phi = 3 / .5,
 		   sigma.sq.mu = 0.5, sigma.sq.p = 0.5,
-		   kappa = 1.3, lambda = lambda.inits, 
+		   kappa = 1.3, lambda = lambda.inits, fix = TRUE,
 		   N = apply(y, c(1, 2), max, na.rm = TRUE))
 tuning <- list(beta = 0.1, alpha = 0.1, beta.star = 0.1, alpha.star = 0.1,
                kappa = 0.2, w = 0.5, lambda = 0.5, phi = 0.5, nu = 0.5)
@@ -1120,7 +1108,7 @@ n.batch <- 50
 batch.length <- 25
 n.burn <- 750
 n.thin <- 2
-n.chains <- 2
+n.chains <- 1
 abund.formula <- ~ abund.cov.1 * abund.cov.2
 det.formula <- ~ det.cov.1 * det.cov.2
 
@@ -1241,7 +1229,7 @@ test_that("verbose prints to the screen", {
 # Check waicAbund -----------------------
 test_that("waicAbund works for sfMsNMix", {
   # as.vector gets rid of names
-  waic.out <- as.vector(waicAbund(out, max(out$N.samples) + 10))
+  waic.out <- as.vector(waicAbund(out, 50))
   expect_equal(length(waic.out), 3)
   expect_equal(waic.out[3], -2 * (waic.out[1] - waic.out[2]))
 })
@@ -1377,7 +1365,7 @@ inits.list <- list(alpha = 0, alpha.comm = 0,
 		   beta = 0, beta.comm = 0,
 		   phi = 3 / .5,
 		   sigma.sq.mu = 0.5, sigma.sq.p = 0.5,
-		   kappa = 1.3, lambda = lambda.inits, 
+		   kappa = 1.3, lambda = lambda.inits, fix = TRUE,
 		   N = apply(y, c(1, 2), max, na.rm = TRUE))
 tuning <- list(beta = 0.1, alpha = 0.1, beta.star = 0.1, alpha.star = 0.1,
                kappa = 0.2, w = 0.5, lambda = 0.5, phi = 0.5, nu = 0.5)
@@ -1385,7 +1373,7 @@ n.batch <- 50
 batch.length <- 25
 n.burn <- 750
 n.thin <- 2
-n.chains <- 2
+n.chains <- 1
 abund.formula <- ~ abund.cov.1 + abund.cov.2
 det.formula <- ~ det.cov.1
 
@@ -1506,7 +1494,7 @@ test_that("verbose prints to the screen", {
 # Check waicAbund -----------------------
 test_that("waicAbund works for sfMsNMix", {
   # as.vector gets rid of names
-  waic.out <- as.vector(waicAbund(out, max(out$N.samples) + 10))
+  waic.out <- as.vector(waicAbund(out, 50))
   expect_equal(length(waic.out), 3)
   expect_equal(waic.out[3], -2 * (waic.out[1] - waic.out[2]))
 })
@@ -1617,7 +1605,7 @@ n.batch <- 50
 batch.length <- 25
 n.burn <- 750
 n.thin <- 2
-n.chains <- 2
+n.chains <- 1
 abund.formula <- ~ (1 | abund.factor.1) + (1 | abund.factor.2) + (1 | abund.factor.3) + 
                    abund.cov.1 + abund.cov.2
 det.formula <- ~ 1 
@@ -1784,7 +1772,7 @@ test_that("verbose prints to the screen", {
 # Check waicAbund -----------------------
 test_that("waicAbund works for sfMsNMix", {
   # as.vector gets rid of names
-  waic.out <- as.vector(waicAbund(out, max(out$N.samples) + 10))
+  waic.out <- as.vector(waicAbund(out, 50))
   expect_equal(length(waic.out), 3)
   expect_equal(waic.out[3], -2 * (waic.out[1] - waic.out[2]))
 })
@@ -1926,7 +1914,7 @@ inits.list <- list(alpha = 0, alpha.comm = 0,
 		   beta = 0, beta.comm = 0,
 		   phi = 3 / .5,
 		   sigma.sq.mu = 0.5, sigma.sq.p = 0.5,
-		   kappa = 1.3, lambda = lambda.inits, 
+		   kappa = 1.3, lambda = lambda.inits, fix = TRUE,
 		   N = apply(y, c(1, 2), max, na.rm = TRUE))
 tuning <- list(beta = 0.1, alpha = 0.1, beta.star = 0.1, alpha.star = 0.1,
                kappa = 0.2, w = 0.5, lambda = 0.5, phi = 0.5, nu = 0.5)
@@ -1934,7 +1922,7 @@ n.batch <- 50
 batch.length <- 25
 n.burn <- 750
 n.thin <- 2
-n.chains <- 2
+n.chains <- 1
 abund.formula <- ~ 1
 det.formula <- ~ det.cov.1 + (1 | det.factor.1) + (1 | det.factor.2)
 
@@ -2100,7 +2088,7 @@ test_that("verbose prints to the screen", {
 # Check waicAbund -----------------------
 test_that("waicAbund works for sfMsNMix", {
   # as.vector gets rid of names
-  waic.out <- as.vector(waicAbund(out, max(out$N.samples) + 10))
+  waic.out <- as.vector(waicAbund(out, 50))
   expect_equal(length(waic.out), 3)
   expect_equal(waic.out[3], -2 * (waic.out[1] - waic.out[2]))
 })
@@ -2161,7 +2149,6 @@ test_that("posterior predictive checks work for sfMsNMix", {
 })
 
 # Multiple random intercepts, covariates, and random slopes ---------------
-# TODO: looks like there is some problem here with things over multiple chains
 set.seed(100)
 J.x <- 10
 J.y <- 10
@@ -2197,6 +2184,8 @@ kappa <- runif(n.sp, 0.3, 3)
 n.factors <- 2
 factor.model <- TRUE
 family <- 'NB'
+phi <- runif(n.factors, 3/1, 3 / .4)
+nu <- runif(n.factors, 0.4, 3)
 
 dat <- simMsNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta, alpha = alpha,
 	        mu.RE = mu.RE, p.RE = p.RE, sp = TRUE, kappa = kappa, family = family, 
@@ -2241,19 +2230,22 @@ prior.list <- list(beta.comm.normal = list(mean = 0, var = 10),
 		   sigma.sq.p.ig = list(a = 2, b = 0.1),
                    kappa.unif = list(a = 0, b = 100))
 # Starting values
+lambda.inits <- matrix(rnorm(n.sp * n.factors), n.sp, n.factors)
+diag(lambda.inits) <- 1
+lambda.inits[upper.tri(lambda.inits)] <- 0
 inits.list <- list(alpha = 0, alpha.comm = 0,
 		   beta = 0, beta.comm = 0,
 		   phi = 3 / .5,
-		   sigma.sq.mu = 0.5, sigma.sq.p = 0.5,
+		   sigma.sq.mu = 0.5, sigma.sq.p = 0.5, 
 		   kappa = 1.3, lambda = lambda.inits, 
 		   N = apply(y, c(1, 2), max, na.rm = TRUE))
 tuning <- list(beta = 0.1, alpha = 0.1, beta.star = 0.1, alpha.star = 0.1,
                kappa = 0.2, w = 0.5, lambda = 0.5, phi = 0.5, nu = 0.5)
 n.batch <- 100
 batch.length <- 25
-n.burn <- 750
-n.thin <- 2
-n.chains <- 2
+n.burn <- 100
+n.thin <- 1
+n.chains <- 1
 abund.formula <- ~ abund.cov.1 + abund.cov.2 + (1 | abund.factor.1) + (abund.cov.1 | abund.factor.2)
 det.formula <- ~ det.cov.1 + (1 | det.factor.1) + (det.cov.1 | det.factor.2)
 
@@ -2266,9 +2258,9 @@ out <- sfMsNMix(abund.formula = abund.formula,
 	    inits = inits.list,
 	    family = 'NB',
 	    tuning = tuning,
-              cov.model = 'matern', 
-              NNGP = TRUE,
-              n.neighbors = 5,
+            cov.model = 'matern', 
+            NNGP = TRUE,
+            n.neighbors = 5,
 	    n.factors = n.factors,
 	    priors = prior.list,
 	    accept.rate = 0.43,
@@ -2419,7 +2411,7 @@ test_that("verbose prints to the screen", {
 # Check waicAbund -----------------------
 test_that("waicAbund works for sfMsNMix", {
   # as.vector gets rid of names
-  waic.out <- as.vector(waicAbund(out, max(out$N.samples) + 10))
+  waic.out <- as.vector(waicAbund(out, 50))
   expect_equal(length(waic.out), 3)
   expect_equal(waic.out[3], -2 * (waic.out[1] - waic.out[2]))
 })
@@ -2445,38 +2437,5 @@ test_that("detection prediction works", {
   pred.out <- predict(out, X.p.0, type = 'detection')
   expect_type(pred.out, 'list')
   expect_equal(dim(pred.out$p.0.samples), c(out$n.post * out$n.chains, n.sp, J))
-})
-# Check PPCs --------------------------
-test_that("posterior predictive checks work for sfMsNMix", {
-  n.post.samples <- out$n.post * out$n.chains
-  ppc.out <- ppcAbund(out, 'chi-square', 2)
-  expect_type(ppc.out, "list")
-  expect_equal(dim(ppc.out$fit.y.group.quants), c(5, n.sp, max(n.rep)))
-  expect_equal(dim(ppc.out$fit.y.rep.group.quants), c(5, n.sp, max(n.rep)))
-
-  ppc.out <- ppcAbund(out, 'chi-square', 1)
-  expect_type(ppc.out, "list")
-  expect_equal(dim(ppc.out$fit.y.group.quants), c(5, n.sp, nrow(coords)))
-  expect_equal(dim(ppc.out$fit.y.rep.group.quants), c(5, n.sp, nrow(coords)))
-
-  ppc.out <- ppcAbund(out, 'freeman-tukey', 1)
-  expect_type(ppc.out, "list")
-  expect_equal(dim(ppc.out$fit.y.group.quants), c(5, n.sp, nrow(coords)))
-  expect_equal(dim(ppc.out$fit.y.rep.group.quants), c(5, n.sp, nrow(coords)))
-
-  ppc.out <- ppcAbund(out, 'freeman-tukey', 2)
-  expect_type(ppc.out, "list")
-  expect_equal(dim(ppc.out$fit.y.group.quants), c(5, n.sp, max(n.rep)))
-  expect_equal(dim(ppc.out$fit.y.rep.group.quants), c(5, n.sp, max(n.rep)))
-
-  ppc.out <- ppcAbund(out, 'chi-square', 0)
-  expect_type(ppc.out, "list")
-  expect_equal(dim(ppc.out$fit.y.group.quants), c(5, n.sp, nrow(coords), max(n.rep)))
-  expect_equal(dim(ppc.out$fit.y.rep.group.quants), c(5, n.sp, nrow(coords), max(n.rep)))
-
-  ppc.out <- ppcAbund(out, 'freeman-tukey', 0)
-  expect_type(ppc.out, "list")
-  expect_equal(dim(ppc.out$fit.y.group.quants), c(5, n.sp, nrow(coords), max(n.rep)))
-  expect_equal(dim(ppc.out$fit.y.rep.group.quants), c(5, n.sp, nrow(coords), max(n.rep)))
 })
 

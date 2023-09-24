@@ -26,7 +26,7 @@ extern "C" {
     /**********************************************************************
      * Initial constants
      * *******************************************************************/
-    int i, g, t, j, k, s, r, l, info, nProtect=0;
+    int i, t, j, k, nProtect=0;
     const int inc = 1;
     /**********************************************************************
      * Get inputs
@@ -37,12 +37,10 @@ extern "C" {
     int modelType = INTEGER(modelType_r)[0];
     double *y = REAL(y_r);
     int nSamples = INTEGER(nSamples_r)[0]; 
-    double *NSamples = REAL(NSamples_r);
     double *kappaSamples = REAL(kappaSamples_r);
     double *muSamples = REAL(muSamples_r);
     double *pSamples = REAL(pSamples_r);
     int *NMax = INTEGER(NMax_r);
-    int KMax = INTEGER(KMax_r)[0];
     int *yMax = INTEGER(yMax_r);
 
     /**********************************************************************
@@ -94,7 +92,6 @@ extern "C" {
     /**********************************
      * Distance sampling
      **********************************/
-    // TODO: think about if you need the offset here. 
     if (modelType == 1) {
       for (i = 0; i < nSamples; i++) {
         zeros(like, J);
