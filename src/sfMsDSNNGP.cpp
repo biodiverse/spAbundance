@@ -153,10 +153,8 @@ extern "C" {
     int *nnIndxLU = INTEGER(nnIndxLU_r);
     int *uIndx = INTEGER(uIndx_r);
     int *uIndxLU = INTEGER(uIndxLU_r);
-    int *uiIndx = INTEGER(uiIndx_r);
     int *nAbundRELong = INTEGER(nAbundRELong_r); 
     int *nDetRELong = INTEGER(nDetRELong_r); 
-    int *NLongIndx = INTEGER(NLongIndx_r); 
     int *alphaStarIndx = INTEGER(alphaStarIndx_r); 
     int *alphaLevelIndx = INTEGER(alphaLevelIndx_r);
     int *betaStarIndx = INTEGER(betaStarIndx_r); 
@@ -232,39 +230,28 @@ extern "C" {
     ********************************************************************/
     int pAbundnSp = pAbund * nSp; 
     int pDetnSp = pDet * nSp; 
-    int nObsnSp = nObs * nSp; 
     int nAbundREnSp = nAbundRE * nSp; 
     int nDetREnSp = nDetRE * nSp; 
     int JnSp = J * nSp;
-    int JpAbund = J * pAbund;
     int JpAbundRE = J * pAbundRE;
     int JpDetRE = J * pDetRE;
-    int nObspDet = nObs * pDet;
-    int nObspDetRE = nObs * pDetRE;
     int KFull = K + 1;
     int nObsFull = KFull * J;
     int nObsFullnSp = nObsFull * nSp;
     int Jq = J * q;
-    int qq = q * q;
     int nSpq = nSp * q;
     double tmp_0, tmp_02; 
-    double *tmp_one = (double *) R_alloc(inc, sizeof(double)); 
     double *tmp_ppDet = (double *) R_alloc(ppDet, sizeof(double));
     double *tmp_ppAbund = (double *) R_alloc(ppAbund, sizeof(double)); 
     double *tmp_pDet = (double *) R_alloc(pDet, sizeof(double));
     double *tmp_pAbund = (double *) R_alloc(pAbund, sizeof(double));
     double *tmp_pDet2 = (double *) R_alloc(pDet, sizeof(double));
     double *tmp_pAbund2 = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
-    double *tmp_JpAbund = (double *) R_alloc(JpAbund, sizeof(double));
-    double *tmp_nObspDet = (double *) R_alloc(nObspDet, sizeof(double));
     double *tmp_J = (double *) R_alloc(J, sizeof(double));
-    double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
     double *tmp_KFull = (double *) R_alloc(KFull, sizeof(double));
     int *tmp_KFullInt = (int *) R_alloc(KFull, sizeof(int));
    
     // For latent abundance
-    double muNum; 
     double *mu = (double *) R_alloc(JnSp, sizeof(double)); 
     zeros(mu, JnSp); 
 
@@ -435,13 +422,9 @@ extern "C" {
       F77_NAME(dgemv)(ntran, &nSp, &q, &one, lambda, &nSp, &w[j*q], &inc, &zero, &wStar[j * nSp], &inc FCONE);
     }
     // For NNGP
-    double b, e, aij, aa; 
+    double b, e, aa; 
     double *a = (double *) R_alloc(q, sizeof(double));
     double *v = (double *) R_alloc(q, sizeof(double));
-    double *muNNGP = (double *) R_alloc(q, sizeof(double));
-    double *var = (double *) R_alloc(qq, sizeof(double));
-    double *ff = (double *) R_alloc(q, sizeof(double));
-    double *gg = (double *) R_alloc(q, sizeof(double));
 
     // Allocate for the U index vector that keep track of which locations have 
     // the i-th location as a neighbor
@@ -654,9 +637,6 @@ extern "C" {
     double *sigma = (double *) R_alloc(J, sizeof(double));
     double *p = (double *) R_alloc(nObs, sizeof(double)); zeros(p, nObs);
     // Number of break points for integration
-    // TODO: may want to make this be an argument eventually. The smaller it is 
-    // the faster the code, but the worse the approximation. Note that this is the
-    // number of break points for integration within each bin. 
     int nInt = 5;
     double *binWidth = (double *) R_alloc(K, sizeof(double));
     double stripWidth = 0.0;
