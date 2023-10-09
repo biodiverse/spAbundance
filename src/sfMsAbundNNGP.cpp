@@ -76,7 +76,7 @@ extern "C" {
 	            SEXP tuning_r, SEXP covModel_r, 
 		    SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r,
 	            SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r, 
-	            SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r){
+	            SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r, SEXP offset_r){
    
     /**********************************************************************
      * Initial constants
@@ -94,6 +94,7 @@ extern "C" {
      * *******************************************************************/
     double *y = REAL(y_r);
     double *X = REAL(X_r);
+    double *offset = REAL(offset_r);
     double *coords = REAL(coords_r); 
     int *XRE = INTEGER(XRE_r); 
     double *XRandom = REAL(XRandom_r);
@@ -587,16 +588,16 @@ extern "C" {
               tmp_nObs[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, &betaCand[i], &nSp) + 
                                 betaStarSites[i * nObs + j] + wStar[siteIndx[j] * nSp + i]);
 	      if (family == 1) {
-                logPostBetaCand += dnbinom_mu(y[j * nSp + i], kappa[i], tmp_nObs[j], 1);
+                logPostBetaCand += dnbinom_mu(y[j * nSp + i], kappa[i], tmp_nObs[j] * offset[j], 1);
 	      } else {
-                logPostBetaCand += dpois(y[j * nSp + i], tmp_nObs[j], 1);
+                logPostBetaCand += dpois(y[j * nSp + i], tmp_nObs[j] * offset[j], 1);
 	      }
               tmp_nObs[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, &beta[i], &nSp) + 
                                 betaStarSites[i * nObs + j] + wStar[siteIndx[j] * nSp + i]);
 	      if (family == 1) {
-                logPostBetaCurr += dnbinom_mu(y[j * nSp + i], kappa[i], tmp_nObs[j], 1);
+                logPostBetaCurr += dnbinom_mu(y[j * nSp + i], kappa[i], tmp_nObs[j] * offset[j], 1);
 	      } else {
-                logPostBetaCurr += dpois(y[j * nSp + i], tmp_nObs[j], 1);
+                logPostBetaCurr += dpois(y[j * nSp + i], tmp_nObs[j] * offset[j], 1);
 	      }
             }
             if (runif(0.0, 1.0) <= exp(logPostBetaCand - logPostBetaCurr)) {
@@ -628,9 +629,10 @@ extern "C" {
                   tmp_nObs[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, &beta[i], &nSp) + 
 	  			  betaStarSitesCand[i * nObs + j] + wStar[siteIndx[j] * nSp + i]);
                   if (family == 1) {
-	  	    logPostBetaStarCand[l] += dnbinom_mu(y[j * nSp + i], kappa[i], tmp_nObs[j], 1);
+	  	    logPostBetaStarCand[l] += dnbinom_mu(y[j * nSp + i], kappa[i], 
+                                                         tmp_nObs[j] * offset[j], 1);
 	  	  } else {
-	  	    logPostBetaStarCand[l] += dpois(y[j * nSp + i], tmp_nObs[j], 1);
+	  	    logPostBetaStarCand[l] += dpois(y[j * nSp + i], tmp_nObs[j] * offset[j], 1);
 	  	  }
 	  	  // Current
                     betaStarSites[i * nObs + j] = 0.0;
@@ -641,9 +643,10 @@ extern "C" {
                     tmp_nObs[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, &beta[i], &nSp) + 
 	  	  		  betaStarSites[i * nObs + j] + wStar[siteIndx[j] * nSp + i]);
                     if (family == 1) {
-	  	    logPostBetaStarCurr[l] += dnbinom_mu(y[j * nSp + i], kappa[i], tmp_nObs[j], 1);
+	  	    logPostBetaStarCurr[l] += dnbinom_mu(y[j * nSp + i], kappa[i], 
+                                                         tmp_nObs[j] * offset[j], 1);
 	  	  } else {
-	  	    logPostBetaStarCurr[l] += dpois(y[j * nSp + i], tmp_nObs[j], 1);
+	  	    logPostBetaStarCurr[l] += dpois(y[j * nSp + i], tmp_nObs[j] * offset[j], 1);
 	  	  }
 	        }
 	      }
@@ -743,9 +746,10 @@ extern "C" {
                   tmp_nObs[r] = exp(F77_NAME(ddot)(&pAbund, &X[r], &nObs, &beta[i], &nSp) + 
                                     betaStarSites[i * nObs + r] + wStarCand[j * nSp + i]);
 	          if (family == 1) {
-                    logPostWCand[j * q + ll] += dnbinom_mu(y[r * nSp + i], kappa[i], tmp_nObs[r], 1);
+                    logPostWCand[j * q + ll] += dnbinom_mu(y[r * nSp + i], kappa[i], 
+                                                           tmp_nObs[r] * offset[r], 1);
 	          } else {
-                    logPostWCand[j * q + ll] += dpois(y[r * nSp + i], tmp_nObs[r], 1);
+                    logPostWCand[j * q + ll] += dpois(y[r * nSp + i], tmp_nObs[r] * offset[r], 1);
 	          }
                   /*****************************
 	           *Current
@@ -753,9 +757,10 @@ extern "C" {
                   tmp_nObs[r] = exp(F77_NAME(ddot)(&pAbund, &X[r], &nObs, &beta[i], &nSp) + 
                                     betaStarSites[i * nObs + r] + wStar[j * nSp + i]);
 	          if (family == 1) {
-                    logPostWCurr[j * q + ll] += dnbinom_mu(y[r * nSp + i], kappa[i], tmp_nObs[r], 1);
+                    logPostWCurr[j * q + ll] += dnbinom_mu(y[r * nSp + i], kappa[i], 
+                                                           tmp_nObs[r] * offset[r], 1);
 	          } else {
-                    logPostWCurr[j * q + ll] += dpois(y[r * nSp + i], tmp_nObs[r], 1);
+                    logPostWCurr[j * q + ll] += dpois(y[r * nSp + i], tmp_nObs[r] * offset[r], 1);
 	          }
 	        }
 	      } // r
@@ -797,17 +802,19 @@ extern "C" {
                 tmp_nObs[r] = exp(F77_NAME(ddot)(&pAbund, &X[r], &nObs, &beta[i], &nSp) + 
                                   betaStarSites[i * nObs + r] + wStarCand[siteIndx[r] * nSp + i]);
 	        if (family == 1) {
-                  logPostLambdaCand[ll * nSp + i] += dnbinom_mu(y[r * nSp + i], kappa[i], tmp_nObs[r], 1);
+                  logPostLambdaCand[ll * nSp + i] += dnbinom_mu(y[r * nSp + i], kappa[i], 
+                                                                tmp_nObs[r] * offset[r], 1);
 	        } else {
-                  logPostLambdaCand[ll * nSp + i] += dpois(y[r * nSp + i], tmp_nObs[r], 1);
+                  logPostLambdaCand[ll * nSp + i] += dpois(y[r * nSp + i], tmp_nObs[r] * offset[r], 1);
 	        }
 		// Current
                 tmp_nObs[r] = exp(F77_NAME(ddot)(&pAbund, &X[r], &nObs, &beta[i], &nSp) + 
                                   betaStarSites[i * nObs + r] + wStar[siteIndx[r] * nSp + i]);
 	        if (family == 1) {
-                  logPostLambdaCurr[ll * nSp + i] += dnbinom_mu(y[r * nSp + i], kappa[i], tmp_nObs[r], 1);
+                  logPostLambdaCurr[ll * nSp + i] += dnbinom_mu(y[r * nSp + i], kappa[i], 
+                                                                tmp_nObs[r] * offset[r], 1);
 	        } else {
-                  logPostLambdaCurr[ll * nSp + i] += dpois(y[r * nSp + i], tmp_nObs[r], 1);
+                  logPostLambdaCurr[ll * nSp + i] += dpois(y[r * nSp + i], tmp_nObs[r] * offset[r], 1);
 	        }
 	      } // r
               if (runif(0.0, 1.0) <= exp(logPostLambdaCand[ll * nSp + i] - 
@@ -926,8 +933,8 @@ extern "C" {
 	    for (j = 0; j < nObs; j++) {
               mu[j * nSp + i] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, &beta[i], &nSp) + 
                           betaStarSites[i * nObs + j] + wStar[siteIndx[j] * nSp + i]);
-              logPostKappaCurr += dnbinom_mu(y[j * nSp + i], kappa[i], mu[j * nSp + i], 1);
-	      logPostKappaCand += dnbinom_mu(y[j * nSp + i], kappaCand, mu[j * nSp + i], 1);
+              logPostKappaCurr += dnbinom_mu(y[j * nSp + i], kappa[i], mu[j * nSp + i] * offset[j], 1);
+	      logPostKappaCand += dnbinom_mu(y[j * nSp + i], kappaCand, mu[j * nSp + i] * offset[j], 1);
 	    }
 	    // Jacobian adjustment
 	    logPostKappaCurr += log(kappa[i] - kappaA[i]) + log(kappaB[i] - kappa[i]);
@@ -945,11 +952,11 @@ extern "C" {
 	    if (family == 0) {
               mu[r * nSp + i] = exp(F77_NAME(ddot)(&pAbund, &X[r], &nObs, &beta[i], &nSp) + 
                                     betaStarSites[i * nObs + r] + wStar[siteIndx[r] * nSp + i]);
-              yRep[r * nSp + i] = rpois(mu[r * nSp + i]);
-              like[r * nSp + i] = dpois(y[r * nSp + i], mu[r * nSp + i], 0);
+              yRep[r * nSp + i] = rpois(mu[r * nSp + i] * offset[r]);
+              like[r * nSp + i] = dpois(y[r * nSp + i], mu[r * nSp + i] * offset[r], 0);
 	    } else {
-              yRep[r * nSp + i] = rnbinom_mu(kappa[i], mu[r * nSp + i]);
-              like[r * nSp + i] = dnbinom_mu(y[r * nSp + i], kappa[i], mu[r * nSp + i], 0);
+              yRep[r * nSp + i] = rnbinom_mu(kappa[i], mu[r * nSp + i] * offset[r]);
+              like[r * nSp + i] = dnbinom_mu(y[r * nSp + i], kappa[i], mu[r * nSp + i] * offset[r], 0);
 	    }
           }
 	} // i (species)

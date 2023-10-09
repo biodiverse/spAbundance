@@ -15,9 +15,6 @@ ppcAbund <- function(object, fit.stat, group, type = 'marginal', ...) {
   if (missing(object)) {
     stop("error: object must be specified")
   }
-  # if (class(object) %in% c('lfCount', 'sfCount')) {
-  #   stop("error: ppcOcc is not implemented for lfCount and sfCount")
-  # }
   if (!(class(object) %in% c('NMix', 'spNMix', 'abund', 'spAbund', 
 			     'msAbund', 'lfMsAbund', 'sfMsAbund', 
 			     'msNMix', 'spNMix', 'lfMsNMix', 'sfMsNMix', 
@@ -61,40 +58,53 @@ ppcAbund <- function(object, fit.stat, group, type = 'marginal', ...) {
     } else {
       fitted.out <- fitted.spNMix(object, type = type)
     }
+    n.samples <- object$n.post * object$n.chains
     if (type == 'marginal') {
       abund.samples <- object$mu.samples
+      for (i in 1:n.samples) {
+        if (object$dist == 'Poisson') {
+          abund.samples[i, ] <- rpois(J, object$mu.samples[i, ] * object$offset)
+	} else if (object$dist == 'NB') {
+          abund.samples[i, ] <- rnbinom(J, object$kappa.samples[i], 
+				        mu = object$mu.samples[i, ] * object$offset)
+	}
+      }
     }
     if (type == 'conditional') {
       abund.samples <- object$N.samples
     }
     y.rep.samples <- fitted.out$y.rep.samples
     det.prob <- fitted.out$p.samples
-    n.samples <- object$n.post * object$n.chains
     fit.y <- rep(NA, n.samples)
     fit.y.rep <- rep(NA, n.samples)
     K <- apply(y, 1, function(a) sum(!is.na(a)))
     e <- 0.0001
+    rep.indx <- vector(mode = 'list', length = J)
+    for (j in 1:J) {
+      rep.indx[[j]] <- which(!is.na(y[j, ]))
+    }
+    K.max <- ncol(y)
     if (group == 0) {
       if (fit.stat %in% c('chi-squared', 'chi-square')) {
-        fit.big.y.rep <- array(NA, dim = c(J, max(K), n.samples))
-        fit.big.y <- array(NA, dim = c(J, max(K), n.samples))
+        fit.big.y.rep <- array(NA, dim = c(J, K.max, n.samples))
+        fit.big.y <- array(NA, dim = c(J, K.max, n.samples))
         for (i in 1:n.samples) {
 	  for (j in 1:J) {
-            E <- det.prob[i, j, 1:K[j]] * abund.samples[i, j]
-	    fit.big.y.rep[j, 1:K[j], i] <- (y.rep.samples[i, j, 1:K[j]] - E)^2 / (E + e)
-	    fit.big.y[j, 1:K[j], i] <- (y[j, 1:K[j]] - E)^2 / (E + e)
+            E <- det.prob[i, j, rep.indx[[j]]] * abund.samples[i, j]
+	    fit.big.y.rep[j, rep.indx[[j]], i] <- (y.rep.samples[i, j, rep.indx[[j]]] - E)^2 / (E + e)
+	    fit.big.y[j, rep.indx[[j]], i] <- (y[j, rep.indx[[j]]] - E)^2 / (E + e)
 	  } # j
 	  fit.y[i] <- sum(fit.big.y[, , i], na.rm = TRUE)
 	  fit.y.rep[i] <- sum(fit.big.y.rep[, , i], na.rm = TRUE)
 	} # i
       } else if (fit.stat == 'freeman-tukey') {
-        fit.big.y.rep <- array(NA, dim = c(J, max(K), n.samples))
-        fit.big.y <- array(NA, dim = c(J, max(K), n.samples))
+        fit.big.y.rep <- array(NA, dim = c(J, K.max, n.samples))
+        fit.big.y <- array(NA, dim = c(J, K.max, n.samples))
         for (i in 1:n.samples) {
 	  for (j in 1:J) {
-            E <- det.prob[i, j, 1:K[j]] * abund.samples[i, j]
-	    fit.big.y.rep[j, 1:K[j], i] <- (sqrt(y.rep.samples[i, j, 1:K[j]]) - sqrt(E))^2
-	    fit.big.y[j, 1:K[j], i] <- (sqrt(y[j, 1:K[j]]) - sqrt(E))^2
+            E <- det.prob[i, j, rep.indx[[j]]] * abund.samples[i, j]
+	    fit.big.y.rep[j, rep.indx[[j]], i] <- (sqrt(y.rep.samples[i, j, rep.indx[[j]]]) - sqrt(E))^2
+	    fit.big.y[j, rep.indx[[j]], i] <- (sqrt(y[j, rep.indx[[j]]]) - sqrt(E))^2
 	  } # j
 	  fit.y[i] <- sum(fit.big.y[, , i], na.rm = TRUE)
 	  fit.y.rep[i] <- sum(fit.big.y.rep[, , i], na.rm = TRUE)
@@ -269,28 +279,33 @@ ppcAbund <- function(object, fit.stat, group, type = 'marginal', ...) {
     fit.y <- rep(NA, n.samples)
     fit.y.rep <- rep(NA, n.samples)
     K <- apply(y, 1, function(a) sum(!is.na(a)))
+    rep.indx <- vector(mode = 'list', length = J)
+    for (j in 1:J) {
+      rep.indx[[j]] <- which(!is.na(y[j, ]))
+    }
+    K.max <- ncol(object$y)
     e <- 0.0001
     if (group == 0) {
       if (fit.stat %in% c('chi-squared', 'chi-square')) {
-        fit.big.y.rep <- array(NA, dim = c(J, max(K), n.samples))
-        fit.big.y <- array(NA, dim = c(J, max(K), n.samples))
+        fit.big.y.rep <- array(NA, dim = c(J, K.max, n.samples))
+        fit.big.y <- array(NA, dim = c(J, K.max, n.samples))
         for (i in 1:n.samples) {
 	  for (j in 1:J) {
-            E <- mu.samples[i, j, 1:K[j]]
-	    fit.big.y.rep[j, 1:K[j], i] <- (y.rep.samples[i, j, 1:K[j]] - E)^2 / (E + e)
-	    fit.big.y[j, 1:K[j], i] <- (y[j, 1:K[j]] - E)^2 / (E + e)
+            E <- mu.samples[i, j, rep.indx[[j]]] * object$offset[j, rep.indx[[j]]]
+	    fit.big.y.rep[j, rep.indx[[j]], i] <- (y.rep.samples[i, j, rep.indx[[j]]] - E)^2 / (E + e)
+	    fit.big.y[j, rep.indx[[j]], i] <- (y[j, rep.indx[[j]]] - E)^2 / (E + e)
 	  } # j
 	  fit.y[i] <- sum(fit.big.y[, , i], na.rm = TRUE)
 	  fit.y.rep[i] <- sum(fit.big.y.rep[, , i], na.rm = TRUE)
 	} # i
       } else if (fit.stat == 'freeman-tukey') {
-        fit.big.y.rep <- array(NA, dim = c(J, max(K), n.samples))
-        fit.big.y <- array(NA, dim = c(J, max(K), n.samples))
+        fit.big.y.rep <- array(NA, dim = c(J, K.max, n.samples))
+        fit.big.y <- array(NA, dim = c(J, K.max, n.samples))
         for (i in 1:n.samples) {
 	  for (j in 1:J) {
-            E <- mu.samples[i, j, 1:K[j]]
-	    fit.big.y.rep[j, 1:K[j], i] <- (sqrt(y.rep.samples[i, j, 1:K[j]]) - sqrt(E))^2
-	    fit.big.y[j, 1:K[j], i] <- (sqrt(y[j, 1:K[j]]) - sqrt(E))^2
+            E <- mu.samples[i, j, rep.indx[[j]]] * object$offset[j, rep.indx[[j]]]
+	    fit.big.y.rep[j, rep.indx[[j]], i] <- (sqrt(y.rep.samples[i, j, rep.indx[[j]]]) - sqrt(E))^2
+	    fit.big.y[j, rep.indx[[j]], i] <- (sqrt(y[j, rep.indx[[j]]]) - sqrt(E))^2
 	  } # j
 	  fit.y[i] <- sum(fit.big.y[, , i], na.rm = TRUE)
 	  fit.y.rep[i] <- sum(fit.big.y.rep[, , i], na.rm = TRUE)
@@ -329,17 +344,23 @@ ppcAbund <- function(object, fit.stat, group, type = 'marginal', ...) {
     fit.y.rep <- matrix(NA, n.samples, n.sp)
     K <- apply(y[1, , , drop = FALSE], 2, function(a) sum(!is.na(a)))
     e <- 0.0001
+    rep.indx <- vector(mode = 'list', length = J)
+    # Note this assumes the same missingness across species.
+    for (j in 1:J) {
+      rep.indx[[j]] <- which(!is.na(y[1, j, ]))
+    }
+    K.max <- dim(y)[3]
     if (group == 0) {
-      fit.big.y.rep <- array(NA, dim = c(n.sp, J, max(K), n.samples))
-      fit.big.y <- array(NA, dim = c(n.sp, J, max(K), n.samples))
+      fit.big.y.rep <- array(NA, dim = c(n.sp, J, K.max, n.samples))
+      fit.big.y <- array(NA, dim = c(n.sp, J, K.max, n.samples))
       for (i in 1:n.sp) {
         message(noquote(paste("Currently on species ", i, " out of ", n.sp, sep = '')))
         if (fit.stat %in% c('chi-squared', 'chi-square')) {
           for (t in 1:n.samples) {
             for (j in 1:J) {
-              E <- mu.samples[t, i, j, 1:K[j]]
-              fit.big.y.rep[i, j, 1:K[j], t] <- (y.rep.samples[t, i, j, 1:K[j]] - E)^2 / (E + e)
-              fit.big.y[i, j, 1:K[j], t] <- (y[i, j, 1:K[j]] - E)^2 / (E + e)
+              E <- mu.samples[t, i, j, rep.indx[[j]]] * object$offset[j, rep.indx[[j]]]
+              fit.big.y.rep[i, j, rep.indx[[j]], t] <- (y.rep.samples[t, i, j, rep.indx[[j]]] - E)^2 / (E + e)
+              fit.big.y[i, j, rep.indx[[j]], t] <- (y[i, j, rep.indx[[j]]] - E)^2 / (E + e)
             } # j
             fit.y[t, i] <- sum(fit.big.y[i, , , t], na.rm = TRUE)
             fit.y.rep[t, i] <- sum(fit.big.y.rep[i, , , t], na.rm = TRUE)
@@ -347,9 +368,9 @@ ppcAbund <- function(object, fit.stat, group, type = 'marginal', ...) {
         } else if (fit.stat == 'freeman-tukey') {
           for (t in 1:n.samples) {
             for (j in 1:J) {
-              E <- mu.samples[t, i, j, 1:K[j]]
-              fit.big.y.rep[i, j, 1:K[j], t] <- (sqrt(y.rep.samples[t, i, j, 1:K[j]]) - sqrt(E))^2
-              fit.big.y[i, j, 1:K[j], t] <- (sqrt(y[i, j, 1:K[j]]) - sqrt(E))^2
+              E <- mu.samples[t, i, j, rep.indx[[j]]] * object$offset[j, rep.indx[[j]]]
+              fit.big.y.rep[i, j, rep.indx[[j]], t] <- (sqrt(y.rep.samples[t, i, j, rep.indx[[j]]]) - sqrt(E))^2
+              fit.big.y[i, j, rep.indx[[j]], t] <- (sqrt(y[i, j, rep.indx[[j]]]) - sqrt(E))^2
             } # j
             fit.y[t, i] <- sum(fit.big.y[i, , , t], na.rm = TRUE)
             fit.y.rep[t, i] <- sum(fit.big.y.rep[i, , , t], na.rm = TRUE)
@@ -382,17 +403,32 @@ ppcAbund <- function(object, fit.stat, group, type = 'marginal', ...) {
     fitted.out <- fitted.msNMix(object, type = type)
     y.rep.samples <- fitted.out$y.rep.samples
     det.prob <- fitted.out$p.samples
+    n.samples <- object$n.post * object$n.chains
     if (type == 'marginal') {
       abund.samples <- object$mu.samples
+      for (i in 1:n.sp) {
+        for (j in 1:n.samples) {
+          if (object$dist == 'Poisson') {
+            abund.samples[j, i, ] <- rpois(J, object$mu.samples[j, i, ] * object$offset)
+	  } else if (object$dist == 'NB') {
+            abund.samples[j, i, ] <- rnbinom(J, object$kappa.samples[j, i], 
+					     mu = object$mu.samples[j, i, ] * object$offset)
+	  }
+	}
+      }
     }
     if (type == 'conditional') {
       abund.samples <- object$N.samples
     }
-    n.samples <- object$n.post * object$n.chains
     fit.y <- matrix(NA, n.samples, n.sp)
     fit.y.rep <- matrix(NA, n.samples, n.sp)
     K <- apply(y[1, , ], 1, function(a) sum(!is.na(a)))
     e <- 0.0001
+    rep.indx <- vector(mode = 'list', length = J)
+    # Note this assume the same misingness across species
+    for (j in 1:J) {
+      rep.indx[[j]] <- which(!is.na(y[1, j, ]))
+    }
     # Do the stuff 
     if (group == 0) {
       fit.big.y.rep <- array(NA, dim = dim(y.rep.samples))
@@ -402,20 +438,20 @@ ppcAbund <- function(object, fit.stat, group, type = 'marginal', ...) {
         if (fit.stat %in% c('chi-squared', 'chi-square')) {
             for (j in 1:n.samples) {
               for (k in 1:J) {
-                E.grouped <- det.prob[j, i, k, 1:K[k]] * abund.samples[j, i, k]
-                fit.big.y[j, i, k, 1:K[k]] <- (y[i, k, 1:K[k]] - E.grouped)^2 / (E.grouped + e)
+                E.grouped <- det.prob[j, i, k, rep.indx[[k]]] * abund.samples[j, i, k]
+                fit.big.y[j, i, k, rep.indx[[k]]] <- (y[i, k, rep.indx[[k]]] - E.grouped)^2 / (E.grouped + e)
                 fit.y[j, i] <- sum(fit.big.y[j, i, , ], na.rm = TRUE)
-                fit.big.y.rep[j, i, k, 1:K[k]] <- (y.rep.samples[j, i, k, 1:K[k]] - E.grouped)^2 / (E.grouped + e)
+                fit.big.y.rep[j, i, k, rep.indx[[k]]] <- (y.rep.samples[j, i, k, rep.indx[[k]]] - E.grouped)^2 / (E.grouped + e)
                 fit.y.rep[j, i] <- sum(fit.big.y.rep[j, i, , ], na.rm = TRUE)
 	      }
             }
         } else if (fit.stat == 'freeman-tukey') {
           for (j in 1:n.samples) {
             for (k in 1:J) {
-              E.grouped <- det.prob[j, i, k, 1:K[k]] * abund.samples[j, i, k]
-              fit.big.y[j, i, k, 1:K[k]] <- (sqrt(y[i, k, 1:K[k]]) - sqrt(E.grouped))^2 
+              E.grouped <- det.prob[j, i, k, rep.indx[[k]]] * abund.samples[j, i, k]
+              fit.big.y[j, i, k, rep.indx[[k]]] <- (sqrt(y[i, k, rep.indx[[k]]]) - sqrt(E.grouped))^2 
               fit.y[j, i] <- sum(fit.big.y[j, i, , ], na.rm = TRUE)
-              fit.big.y.rep[j, i, k, 1:K[k]] <- (sqrt(y.rep.samples[j, i, k, 1:K[k]]) - sqrt(E.grouped))^2 
+              fit.big.y.rep[j, i, k, rep.indx[[k]]] <- (sqrt(y.rep.samples[j, i, k, rep.indx[[k]]]) - sqrt(E.grouped))^2 
               fit.y.rep[j, i] <- sum(fit.big.y.rep[j, i, , ], na.rm = TRUE)
 	    }
           }

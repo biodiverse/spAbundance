@@ -1598,7 +1598,7 @@ fitted.NMix <- function(object, type = 'marginal', ...) {
   X.p <- object$X.p
   y <- object$y
   n.rep <- apply(y, 1, function(a) sum(!is.na(a)))
-  K.max <- max(n.rep)
+  K.max <- dim(y)[2]
   J <- nrow(y)
   N.long.indx <- rep(1:J, K.max)
   N.long.indx <- N.long.indx[!is.na(c(y))]
@@ -1616,10 +1616,10 @@ fitted.NMix <- function(object, type = 'marginal', ...) {
     N.samples <- array(NA, dim = dim(object$N.samples))
     for (i in 1:n.post) {
       if (object$dist == 'Poisson') {
-        N.samples[i, ] <- rpois(J, object$mu.samples[i, ])
+        N.samples[i, ] <- rpois(J, object$mu.samples[i, ] * object$offset)
       } else if (object$dist == 'NB') {
         N.samples[i, ] <- rnbinom(J, object$kappa.samples[i], 
-				  mu = object$mu.samples[i, ])
+				  mu = object$mu.samples[i, ] * object$offset)
       }
     }
   }
@@ -2440,9 +2440,9 @@ summary.msNMix <- function(object,
 
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
     if (is(object, 'msNMix')) {
-      cat("Detection Variances (logit scale): \n")
+      cat("\nDetection Variances (logit scale): \n")
     } else if (is(object, 'msDS')) {
-      cat("Detection Variances (log scale): \n")
+      cat("\nDetection Variances (log scale): \n")
     }
     tmp.1 <- t(apply(object$tau.sq.alpha.samples, 2,
           	   function(x) c(mean(x), sd(x))))
@@ -2564,10 +2564,10 @@ fitted.msNMix <- function(object, type = 'marginal', ...) {
     for (j in 1:n.post) {
       for (i in 1:n.sp) {
         if (object$dist == 'Poisson') {
-          N.samples[j, i, ] <- rpois(J, object$mu.samples[j, i, ])
+          N.samples[j, i, ] <- rpois(J, object$mu.samples[j, i, ] * object$offset)
         } else if (object$dist == 'NB') {
           N.samples[j, i, ] <- rnbinom(J, object$kappa.samples[j, i], 
-          			  mu = object$mu.samples[j, i, ])
+          			  mu = object$mu.samples[j, i, ] * object$offset)
         }
       }
     }

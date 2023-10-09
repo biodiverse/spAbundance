@@ -52,6 +52,18 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     stop("error: data y must be specified in data")
   }
   y <- as.matrix(data$y) 
+  # Offset
+  if ('offset' %in% names(data)) {
+    offset <- data$offset
+    if (length(offset) != nrow(y) & length(offset) != 1) {
+      stop(paste("error: data$offset must be of length 1 or ", nrow(y), sep = ''))
+    }
+    if (length(offset) == 1) {
+      offset <- rep(offset, nrow(y))
+    }
+  } else {
+    offset <- rep(1, nrow(y))
+  }
   if (!'abund.covs' %in% names(data)) {
     if (abund.formula == ~ 1) {
       if (verbose) {
@@ -120,6 +132,8 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     coords <- coords[ord, , drop = FALSE]
     # Abundance covariates
     data$abund.covs <- data$abund.covs[ord, , drop = FALSE]
+    # Offset
+    offset <- offset[ord]
     for (i in 1:length(data$det.covs)) {
       if (!is.null(dim(data$det.covs[[i]]))) {
         data$det.covs[[i]] <- data$det.covs[[i]][ord, , drop = FALSE]
@@ -257,7 +271,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   # Number of replicates at each site
   n.rep <- apply(y, 1, function(a) sum(!is.na(a)))
   # Max number of repeat visits
-  K.max <- max(n.rep)
+  K.max <- dim(y.mat)[2]
   # Because I like K better than n.rep
   K <- n.rep
 
@@ -937,7 +951,6 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
 
   if (!NNGP) {
-    # TODO: 
     stop("spNMix is currently only implemented with NNGPs. Please set NNGP = TRUE")
   } else {
     # Nearest Neighbor Search ---------------------------------------------
@@ -996,6 +1009,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     storage.mode(X.p) <- "double"
     storage.mode(coords) <- "double"
     storage.mode(y.max) <- "double"
+    storage.mode(offset) <- "double"
     consts <- c(J, n.obs, p.abund, p.abund.re, n.abund.re, 
                 p.det, p.det.re, n.det.re)
     storage.mode(consts) <- "integer"
@@ -1111,7 +1125,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
           		    sigma.sq.p.a, sigma.sq.p.b, kappa.a, kappa.b, 
         		    tuning.c, cov.model.indx, n.batch, batch.length, accept.rate, 
         		    n.omp.threads, verbose, n.report, samples.info, chain.info, 
-        		    sigma.sq.ig, family.c)
+        		    sigma.sq.ig, family.c, offset)
       chain.info[1] <- chain.info[1] + 1
     } # i   
     # Calculate R-Hat ---------------
@@ -1238,6 +1252,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     out$X <- X[order(ord), , drop = FALSE]
     out$X.re <- X.re[order(ord), , drop = FALSE]
     out$y <- y.mat[order(ord), , drop = FALSE]
+    out$offset <- offset[order(ord)]
     out$n.samples <- n.samples
     out$call <- cl
     out$n.neighbors <- n.neighbors

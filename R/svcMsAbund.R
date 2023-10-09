@@ -230,7 +230,7 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
       ind.betas <- FALSE 
     }
   } else {
-    ind.betas <- TRUE
+    ind.betas <- FALSE 
   }
   # beta.comm -----------------------
   if ("beta.comm.normal" %in% names(priors)) {

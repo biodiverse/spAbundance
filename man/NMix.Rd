@@ -26,7 +26,7 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
   and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
 \item{data}{a list containing data necessary for model fitting.
-  Valid tags are \code{y}, \code{abund.covs}, and \code{det.covs}. \code{y}
+  Valid tags are \code{y}, \code{abund.covs}, \code{det.covs}, and \code{offset}. \code{y}
   is a matrix or data frame of the observed count values, 
   with first dimension equal to the number of 
   sites (\eqn{J}{J}) and second dimension equal to the maximum number of 
@@ -38,7 +38,9 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
   observational-level. Site-level covariates are specified as a vector 
   of length \eqn{J}{J} while observation-level covariates are specified 
   as a matrix or data frame with the number of rows equal to \eqn{J}{J} and 
-  number of columns equal to the maximum number of replicates at a given site.}
+  number of columns equal to the maximum number of replicates at a given site. \code{offset}
+  is an offset to use in the abundance model (e.g., an area offset). This can be either a single
+  value or a vector with an offset for each site (e.g., if survey area differed in size).}
 
 \item{inits}{a list with each tag corresponding to a parameter name.
   Valid tags are \code{N}, \code{beta}, \code{alpha}, \code{kappa}, 
@@ -73,10 +75,10 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
   Gamma distribution. The hyperparameters of the inverse-Gamma distribution
   are passed as a list of length two with first and second elements corresponding
   to the shape and scale parameters, respectively, which are each specified as
-  vectors of length equal to the number of random intercepts or of length one 
+  vectors of length equal to the number of random intercepts/slopes or of length one 
   if priors are the same for all random effect variances.}
 
-\item{tuning}{a list with each tag corresponding to a parameter name, whose
+\item{tuning}{a list with each tag corresponding to a parameter name, 
   whose value defines the initial variance of the adaptive sampler. 
   Valid tags are \code{beta}, \code{alpha}, \code{beta.star} (the abundance 
   random effect values), \code{alpha.star} (the detection random effect values), and 
@@ -174,10 +176,6 @@ NMix(abund.formula, det.formula, data, inits, priors, tuning,
     for the detection random effects. Only included if random effects 
     are specified in \code{det.formula}.}
 
-  \item{like.samples}{a \code{coda} object of posterior samples
-    for the likelihood value associated with each site. Used for calculating
-    WAIC.}
-
   \item{rhat}{a list of Gelman-Rubin diagnostic values for some of the model
     parameters.}
 
@@ -211,7 +209,7 @@ sp <- FALSE
 cov.model <- 'exponential'
 dist <- 'NB'
 dat <- simNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta, alpha = alpha,
-	       kappa = kappa, mu.RE = mu.RE, p.RE = p.RE, sp = sp, 
+               kappa = kappa, mu.RE = mu.RE, p.RE = p.RE, sp = sp, 
                phi = phi, sigma.sq = sigma.sq, cov.model = cov.model, 
                family = 'NB')
 
@@ -223,23 +221,23 @@ abund.covs <- X
 colnames(abund.covs) <- c('int', 'abund.cov.1')
 
 det.covs <- list(det.cov.1 = X.p[, , 2], 
-		 det.cov.2 = X.p[, , 3])
+                 det.cov.2 = X.p[, , 3])
 
 data.list <- list(y = y, 
-		  abund.covs = abund.covs,
-		  det.covs = det.covs)
+                  abund.covs = abund.covs,
+                  det.covs = det.covs)
 
 # Priors
 prior.list <- list(beta.normal = list(mean = rep(0, p.abund), 
-				      var = rep(100, p.abund)),
-		   alpha.normal = list(mean = rep(0, p.det),
-			               var = rep(2.72, p.det)), 
+                                      var = rep(100, p.abund)),
+                   alpha.normal = list(mean = rep(0, p.det),
+                                       var = rep(2.72, p.det)), 
                    kappa.unif = c(0, 10)) 
 # Starting values
 inits.list <- list(alpha = 0,
-		   beta = 0,
-		   kappa = kappa, 
-		   N = apply(y, 1, max, na.rm = TRUE))
+                   beta = 0,
+                   kappa = kappa, 
+                   N = apply(y, 1, max, na.rm = TRUE))
 
 n.batch <- 4
 batch.length <- 25
@@ -248,17 +246,17 @@ n.thin <- 1
 n.chains <- 1
 
 out <- NMix(abund.formula = ~ abund.cov.1,
-	    det.formula = ~ det.cov.1 + det.cov.2, 
-	    data = data.list, 
-	    n.batch = n.batch, 
-	    batch.length = batch.length, 
-	    inits = inits.list, 
-	    priors = prior.list, 
-	    accept.rate = 0.43, 
-	    n.omp.threads = 1, 
-	    verbose = TRUE, 
-	    n.report = 1,
-	    n.burn = n.burn,
-	    n.thin = n.thin,
-	    n.chains = n.chains) 
+            det.formula = ~ det.cov.1 + det.cov.2, 
+            data = data.list, 
+            n.batch = n.batch, 
+            batch.length = batch.length, 
+            inits = inits.list, 
+            priors = prior.list, 
+            accept.rate = 0.43, 
+            n.omp.threads = 1, 
+            verbose = TRUE, 
+            n.report = 1,
+            n.burn = n.burn,
+            n.thin = n.thin,
+            n.chains = n.chains) 
 }

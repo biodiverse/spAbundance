@@ -701,7 +701,7 @@ extern "C" {
               logPostCurrN[j] += nb_logpost(kappa, N[j], mu[j], offset[j]);
 	    }
 	    // MH contribution for assymetric proposal distribution.
-	    logPostCurrN[j] += dpois(NCand[j], N[j] + epsilonN, 1);
+	    logPostCurrN[j] += poisson_logpost(NCand[j], N[j] + epsilonN, 1.0);
             /********************************
              * Candidate
              *******************************/
@@ -715,7 +715,7 @@ extern "C" {
               logPostCandN[j] += nb_logpost(kappa, NCand[j], mu[j], offset[j]);
 	    }
 	    // MH contribution for assymetric proposal distribution.
-	    logPostCandN[j] += dpois(N[j], NCand[j] + epsilonN, 1);
+	    logPostCandN[j] += poisson_logpost(N[j], NCand[j] + epsilonN, 1.0);
             if (runif(0.0,1.0) <= exp(logPostCandN[j] - logPostCurrN[j])) {
               N[j] = NCand[j];
             }

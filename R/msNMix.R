@@ -45,6 +45,18 @@ msNMix <- function(abund.formula, det.formula, data, inits, priors,
   y <- data$y
   y.mat <- y
   sp.names <- attr(y, 'dimnames')[[1]]
+  # Offset
+  if ('offset' %in% names(data)) {
+    offset <- data$offset
+    if (length(offset) != ncol(y) & length(offset) != 1) {
+      stop(paste("error: data$offset must be of length 1 or ", ncol(y), sep = ''))
+    }
+    if (length(offset) == 1) {
+      offset <- rep(offset, ncol(y))
+    }
+  } else {
+    offset <- rep(1, ncol(y))
+  }
   if (!'abund.covs' %in% names(data)) {
     if (abund.formula == ~ 1) {
       if (verbose) {
@@ -223,7 +235,7 @@ msNMix <- function(abund.formula, det.formula, data, inits, priors,
   # Note this assumes equivalent detection histories for all species. 
   # May want to change this at some point. 
   n.rep <- apply(y.mat[1, , , drop = FALSE], 2, function(a) sum(!is.na(a)))
-  K.max <- max(n.rep)
+  K.max <- dim(y.mat)[3]
   # Because I like K better than n.rep
   K <- n.rep
 
@@ -915,6 +927,7 @@ msNMix <- function(abund.formula, det.formula, data, inits, priors,
   storage.mode(X.p) <- "double"
   storage.mode(X) <- "double"
   storage.mode(K) <- "double"
+  storage.mode(offset) <- "double"
   storage.mode(y.max) <- "double"
   consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re, p.det, p.det.re, n.det.re)
   storage.mode(consts) <- "integer"
@@ -1020,7 +1033,7 @@ msNMix <- function(abund.formula, det.formula, data, inits, priors,
       	                  tau.sq.alpha.b, sigma.sq.mu.a, sigma.sq.mu.b, 
       		          sigma.sq.p.a, sigma.sq.p.b,
     	                  tuning.c, n.batch, batch.length, accept.rate, n.omp.threads, 
-    	                  verbose, n.report, samples.info, chain.info, family.c)
+    	                  verbose, n.report, samples.info, chain.info, family.c, offset)
     chain.info[1] <- chain.info[1] + 1
   }
   # Calculate R-Hat ---------------
@@ -1100,7 +1113,7 @@ msNMix <- function(abund.formula, det.formula, data, inits, priors,
   colnames(out$alpha.samples) <- coef.names.det
   if (family == 'NB') {
     out$kappa.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$kappa.samples))))
-    colnames(out$kappa.samples) <- paste('kappa', 1:n.sp, sep = '') 
+    colnames(out$kappa.samples) <- paste('kappa', sp.names, sep = '-') 
   }
   out$N.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$N.samples, 
     								dim = c(n.sp, J, n.post.samples))))
@@ -1156,6 +1169,7 @@ msNMix <- function(abund.formula, det.formula, data, inits, priors,
   out$X.p.random <- X.p.random
   out$X.random <- X.random
   out$y <- y.mat
+  out$offset <- offset
   out$call <- cl
   out$n.samples <- n.samples
   out$x.names <- x.names

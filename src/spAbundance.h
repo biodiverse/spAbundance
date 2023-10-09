@@ -13,7 +13,7 @@ extern "C" {
 	     SEXP sigmaSqMuB_r, SEXP tuning_r,
 	     SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r, SEXP nThreads_r, 
              SEXP verbose_r, SEXP nReport_r, SEXP samplesInfo_r,
-	     SEXP chainInfo_r, SEXP family_r);
+	     SEXP chainInfo_r, SEXP family_r, SEXP offset_r);
 
   SEXP spAbundNNGP(SEXP y_r, SEXP X_r, SEXP coords_r, SEXP XRE_r, 
                    SEXP XRandom_r, SEXP consts_r, SEXP nAbundRELong_r, 
@@ -32,7 +32,7 @@ extern "C" {
                    SEXP covModel_r,
                    SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r, SEXP nThreads_r, 
                    SEXP verbose_r, SEXP nReport_r, SEXP samplesInfo_r,
-                   SEXP chainInfo_r, SEXP sigmaSqIG_r, SEXP family_r);
+                   SEXP chainInfo_r, SEXP sigmaSqIG_r, SEXP family_r, SEXP offset_r);
 
   SEXP spAbundNNGPPredict(SEXP coords_r, SEXP J_r, SEXP nObs_r,
 		          SEXP pAbund_r, SEXP m_r, SEXP X0_r, SEXP coords0_r,
@@ -55,7 +55,7 @@ extern "C" {
                SEXP sigmaSqMuA_r, SEXP sigmaSqMuB_r, SEXP tuning_r,  
                SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r,
                SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r, 
-               SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r);
+               SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r, SEXP offset_r);
 
   SEXP lfMsAbund(SEXP y_r, SEXP X_r, SEXP XRE_r, SEXP XRandom_r,
 	         SEXP consts_r, SEXP nAbundRELong_r, 
@@ -68,7 +68,7 @@ extern "C" {
 	         SEXP sigmaSqMuA_r, SEXP sigmaSqMuB_r, SEXP tuning_r,  
 		 SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r,
 	         SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r, 
-	         SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r);
+	         SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r, SEXP offset_r);
 
   SEXP sfMsAbundNNGP(SEXP y_r, SEXP X_r, SEXP coords_r, SEXP XRE_r, SEXP XRandom_r,
 	            SEXP consts_r, SEXP nAbundRELong_r, SEXP m_r, SEXP nnIndx_r, 
@@ -85,7 +85,7 @@ extern "C" {
 	            SEXP tuning_r, SEXP covModel_r, 
 		    SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r,
 	            SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r, 
-	            SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r);
+	            SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r, SEXP offset_r);
 
   SEXP sfMsAbundNNGPPredict(SEXP coords_r, SEXP J_r, SEXP nObs_r, SEXP family_r, SEXP nSp_r, 
 		            SEXP q_r, SEXP pAbund_r, SEXP m_r, SEXP X0_r, SEXP coords0_r, 
@@ -111,7 +111,7 @@ extern "C" {
 	    SEXP kappaA_r, SEXP kappaB_r, SEXP tuning_r,
 	    SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r, SEXP nThreads_r, 
             SEXP verbose_r, SEXP nReport_r, SEXP samplesInfo_r,
-	    SEXP chainInfo_r, SEXP family_r);
+	    SEXP chainInfo_r, SEXP family_r, SEXP offset_r);
 
   SEXP spNMixNNGP(SEXP y_r, SEXP X_r, SEXP Xp_r, SEXP coords_r, SEXP XRE_r, SEXP XpRE_r, 
 		  SEXP XRandom_r, SEXP XpRandom_r, SEXP yMax_r,
@@ -132,7 +132,7 @@ extern "C" {
 	          SEXP kappaA_r, SEXP kappaB_r, SEXP tuning_r, SEXP covModel_r,
 	          SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r, SEXP nThreads_r, 
                   SEXP verbose_r, SEXP nReport_r, SEXP samplesInfo_r,
-	          SEXP chainInfo_r, SEXP sigmaSqIG_r, SEXP family_r);
+	          SEXP chainInfo_r, SEXP sigmaSqIG_r, SEXP family_r, SEXP offset_r);
 
   SEXP spNMixNNGPPredict(SEXP coords_r, SEXP J_r, SEXP family_r,
 		         SEXP pAbund_r, SEXP m_r, SEXP X0_r, SEXP coords0_r, 
@@ -161,7 +161,7 @@ extern "C" {
 	      SEXP sigmaSqPA_r, SEXP sigmaSqPB_r, 
 	      SEXP tuning_r, SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r,
 	      SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r, 
-	      SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r);
+	      SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r, SEXP offset_r);
 
   SEXP lfMsNMix(SEXP y_r, SEXP X_r, SEXP Xp_r, SEXP XRE_r, SEXP XpRE_r, 
                 SEXP XRandom_r, SEXP XpRandom_r, SEXP yMax_r, 
@@ -183,7 +183,7 @@ extern "C" {
 	        SEXP sigmaSqPA_r, SEXP sigmaSqPB_r, SEXP tuning_r, 
 		SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r,
 	        SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r, 
-	        SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r);
+	        SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r, SEXP offset_r);
 
   SEXP sfMsNMixNNGP(SEXP y_r, SEXP X_r, SEXP Xp_r, SEXP coords_r, SEXP XRE_r, SEXP XpRE_r, 
                     SEXP XRandom_r, SEXP XpRandom_r, SEXP yMax_r, 
@@ -205,9 +205,9 @@ extern "C" {
 	            SEXP spatialPriors_r, SEXP sigmaSqMuA_r, SEXP sigmaSqMuB_r, 
 	            SEXP sigmaSqPA_r, SEXP sigmaSqPB_r, 
 	            SEXP tuning_r, SEXP covModel_r, 
-		    SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r,
+		    SEXP batchInfo_r, SEXP acceptRate_r, 
 	            SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r, 
-	            SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r);
+	            SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r, SEXP offset_r);
 
   SEXP sfMsNMixNNGPPredict(SEXP coords_r, SEXP J_r, SEXP family_r, SEXP nSp_r, SEXP q_r,
 		           SEXP pAbund_r, SEXP m_r, SEXP X0_r, SEXP coords0_r, 

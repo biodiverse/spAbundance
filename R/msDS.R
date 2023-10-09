@@ -1116,7 +1116,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   colnames(out$alpha.samples) <- coef.names.det
   if (family == 'NB') {
     out$kappa.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$kappa.samples))))
-    colnames(out$kappa.samples) <- paste('kappa', 1:n.sp, sep = '') 
+    colnames(out$kappa.samples) <- paste('kappa', sp.names, sep = '-') 
   }
   out$N.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$N.samples, 
     								dim = c(n.sp, J, n.post.samples))))

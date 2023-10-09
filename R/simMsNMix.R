@@ -1,5 +1,5 @@
-simMsNMix <- function(J.x, J.y, n.rep, n.sp, beta, alpha, kappa, mu.RE = list(), 
-		      p.RE = list(), sp = FALSE, cov.model, 
+simMsNMix <- function(J.x, J.y, n.rep, n.rep.max, n.sp, beta, alpha, kappa, mu.RE = list(), 
+		      p.RE = list(), offset = 1, sp = FALSE, cov.model, 
 		      sigma.sq, phi, nu, family = 'Poisson',
 		      factor.model = FALSE, n.factors, ...) {
 
@@ -32,6 +32,9 @@ simMsNMix <- function(J.x, J.y, n.rep, n.sp, beta, alpha, kappa, mu.RE = list(),
   }
   if (length(n.rep) != J) {
     stop(paste("error: n.rep must be a vector of length ", J, sep = ''))
+  }
+  if (missing(n.rep.max)) {
+    n.rep.max <- max(n.rep)
   }
   # family ------------------------------
   if (! (family %in% c('NB', 'Poisson'))) {
@@ -187,12 +190,17 @@ simMsNMix <- function(J.x, J.y, n.rep, n.sp, beta, alpha, kappa, mu.RE = list(),
 
   # Form detection covariate (if any) -------------------------------------
   p.det <- ncol(alpha)
-  X.p <- array(NA, dim = c(J, max(n.rep), p.det))
+  X.p <- array(NA, dim = c(J, n.rep.max, p.det))
   X.p[, , 1] <- 1
+  # Get index of surveyed replicates for each site. 
+  rep.indx <- list()
+  for (j in 1:J) {
+    rep.indx[[j]] <- sample(1:n.rep.max, n.rep[j], replace = FALSE)
+  }
   if (p.det > 1) {
     for (i in 2:p.det) {
       for (j in 1:J) {
-        X.p[j, 1:n.rep[j], i] <- rnorm(n.rep[j])
+        X.p[j, rep.indx[[j]], i] <- rnorm(n.rep[j])
       } # j
     } # i
   }
@@ -204,9 +212,7 @@ simMsNMix <- function(J.x, J.y, n.rep, n.sp, beta, alpha, kappa, mu.RE = list(),
   coords <- as.matrix(expand.grid(s.x, s.y))
   w.star <- matrix(0, nrow = n.sp, ncol = J)
   if (factor.model) {
-    # TODO: 
-    # lambda <- matrix(rnorm(n.sp * n.factors, 0, 1), n.sp, n.factors) 
-    lambda <- matrix(rnorm(n.sp * n.factors, 0, 0.25), n.sp, n.factors) 
+    lambda <- matrix(rnorm(n.sp * n.factors, 0, 1), n.sp, n.factors) 
     # Set diagonals to 1
     diag(lambda) <- 1
     # Set upper tri to 0
@@ -304,16 +310,16 @@ simMsNMix <- function(J.x, J.y, n.rep, n.sp, beta, alpha, kappa, mu.RE = list(),
     alpha.star.indx <- rep(1:p.det.re, n.det.re.long)
     alpha.star <- matrix(0, n.sp, n.det.re)
     X.p.random <- X.p[, , unlist(p.RE$alpha.indx), drop = FALSE]
-    X.p.re <- array(NA, dim = c(J, max(n.rep), p.det.re))
+    X.p.re <- array(NA, dim = c(J, n.rep.max, p.det.re))
     for (l in 1:p.det.re) {
-      X.p.re[, , l] <- matrix(sample(1:p.RE$levels[l], J * max(n.rep), replace = TRUE), 
-		              J, max(n.rep))	      
+      X.p.re[, , l] <- matrix(sample(1:p.RE$levels[l], J * n.rep.max, replace = TRUE), 
+		              J, n.rep.max)	      
       for (i in 1:n.sp) {
         alpha.star[i, which(alpha.star.indx == l)] <- rnorm(p.RE$levels[l], 0, sqrt(p.RE$sigma.sq.p[l]))
       }
     }
     for (j in 1:J) {
-      X.p.re[j, -(1:n.rep[j]), ] <- NA
+      X.p.re[j, -rep.indx[[j]], ] <- NA
     }
     indx.mat <- X.p.re[, , p.re.col.indx, drop = FALSE]
     if (p.det.re > 1) {
@@ -326,10 +332,10 @@ simMsNMix <- function(J.x, J.y, n.rep, n.sp, beta, alpha, kappa, mu.RE = list(),
         indx.mat[, , j] <- indx.mat[, , j] + max(indx.mat[, , j - 1], na.rm = TRUE) 
       }
     }
-    alpha.star.sites <- array(NA, c(n.sp, J, max(n.rep)))
+    alpha.star.sites <- array(NA, c(n.sp, J, n.rep.max))
     for (i in 1:n.sp) {
       for (j in 1:J) {
-        for (k in 1:n.rep[j]) {
+        for (k in rep.indx[[j]]) {
           alpha.star.sites[i, j, k] <- alpha.star[i, indx.mat[j, k, ]] %*% X.p.random[j, k,] 
 	}
       }
@@ -357,7 +363,7 @@ simMsNMix <- function(J.x, J.y, n.rep, n.sp, beta, alpha, kappa, mu.RE = list(),
           mu[i, ] <- exp(X %*% as.matrix(beta[i, ]))
         }
       }
-      N[i, ] <- rnbinom(J, size = kappa[i], mu = mu[i, ])
+      N[i, ] <- rnbinom(J, size = kappa[i], mu = mu[i, ] * offset)
     }
   } else if (family == 'Poisson') {
     for (i in 1:n.sp) {
@@ -374,23 +380,23 @@ simMsNMix <- function(J.x, J.y, n.rep, n.sp, beta, alpha, kappa, mu.RE = list(),
           mu[i, ] <- exp(X %*% as.matrix(beta[i, ]))
         }
       }
-      N[i, ] <- rpois(J, lambda = mu[i, ])
+      N[i, ] <- rpois(J, lambda = mu[i, ] * offset)
     }
 
   }
 
   # Data Formation --------------------------------------------------------
-  p <- array(NA, dim = c(n.sp, J, max(n.rep)))
-  y <- array(NA, dim = c(n.sp, J, max(n.rep)))
+  p <- array(NA, dim = c(n.sp, J, n.rep.max))
+  y <- array(NA, dim = c(n.sp, J, n.rep.max))
   for (i in 1:n.sp) {
     for (j in 1:J) {
       if (length(p.RE) > 0) {
-        p[i, j, 1:n.rep[j]] <- logit.inv(X.p[j, 1:n.rep[j], ] %*% as.matrix(alpha[i, ]) + alpha.star.sites[i, j, 1:n.rep[j]])
+        p[i, j, rep.indx[[j]]] <- logit.inv(X.p[j, rep.indx[[j]], ] %*% as.matrix(alpha[i, ]) + alpha.star.sites[i, j, rep.indx[[j]]])
       } else {
-        p[i, j, 1:n.rep[j]] <- logit.inv(X.p[j, 1:n.rep[j], ] %*% as.matrix(alpha[i, ]))
+        p[i, j, rep.indx[[j]]] <- logit.inv(X.p[j, rep.indx[[j]], ] %*% as.matrix(alpha[i, ]))
       }
  
-        y[i, j, 1:n.rep[j]] <- rbinom(n.rep[j], N[i, j], p[i, j, 1:n.rep[j]]) 
+        y[i, j, rep.indx[[j]]] <- rbinom(n.rep[j], N[i, j], p[i, j, rep.indx[[j]]]) 
     } # j
   } # i
   return(

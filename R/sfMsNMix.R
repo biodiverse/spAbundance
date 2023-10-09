@@ -50,6 +50,18 @@ sfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
   }
   y <- data$y
   sp.names <- attr(y, 'dimnames')[[1]]
+  # Offset
+  if ('offset' %in% names(data)) {
+    offset <- data$offset
+    if (length(offset) != ncol(y) & length(offset) != 1) {
+      stop(paste("error: data$offset must be of length 1 or ", ncol(y), sep = ''))
+    }
+    if (length(offset) == 1) {
+      offset <- rep(offset, ncol(y))
+    }
+  } else {
+    offset <- rep(1, ncol(y))
+  }
   if (!'abund.covs' %in% names(data)) {
     if (abund.formula == ~ 1) {
       if (verbose) {
@@ -115,6 +127,7 @@ sfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
     coords <- coords[ord, , drop = FALSE]
     # Occupancy covariates
     data$abund.covs <- data$abund.covs[ord, , drop = FALSE]
+    offset <- offset[ord]
     for (i in 1:length(data$det.covs)) {
       if (!is.null(dim(data$det.covs[[i]]))) {
         data$det.covs[[i]] <- data$det.covs[[i]][ord, , drop = FALSE]
@@ -267,12 +280,11 @@ sfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
   # Note this assumes equivalent detection histories for all species. 
   # May want to change this at some point. 
   n.rep <- apply(y.mat[1, , , drop = FALSE], 2, function(a) sum(!is.na(a)))
-  K.max <- max(n.rep)
+  K.max <- dim(y.mat)[3]
   # Because I like K better than n.rep
   K <- n.rep
 
   # Get indices to map N to y -------------------------------------------
-  # N.long.indx <- rep(1:J, K.max)
   N.long.indx <- rep(1:J, dim(y.mat)[3]) 
   N.long.indx <- N.long.indx[!is.na(c(y.mat[1, , ]))]
   # Subtract 1 for indices in C
@@ -1220,6 +1232,7 @@ sfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
     storage.mode(coords) <- "double"
     storage.mode(X.p) <- "double"
     storage.mode(X) <- "double"
+    storage.mode(offset) <- "double"
     storage.mode(K) <- "double"
     storage.mode(y.max) <- "double"
     consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re, p.det, p.det.re, n.det.re, q)
@@ -1250,6 +1263,8 @@ sfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
     storage.mode(spatial.priors) <- "double"
     storage.mode(n.batch) <- "integer"
     storage.mode(batch.length) <- "integer"
+    batch.info <- c(n.batch, batch.length)
+    storage.mode(batch.info) <- 'integer'
     storage.mode(accept.rate) <- "double"
     storage.mode(tuning.c) <- "double"
     storage.mode(n.omp.threads) <- "integer"
@@ -1347,9 +1362,9 @@ sfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
           		    kappa.b, tau.sq.beta.a, tau.sq.beta.b, tau.sq.alpha.a, 
         	            tau.sq.alpha.b, spatial.priors, 
         		    sigma.sq.mu.a, sigma.sq.mu.b, sigma.sq.p.a, sigma.sq.p.b,
-      	                    tuning.c, cov.model.indx, n.batch, batch.length, 
+      	                    tuning.c, cov.model.indx, batch.info, 
         		    accept.rate, n.omp.threads, 
-      	                    verbose, n.report, samples.info, chain.info, family.c)
+      	                    verbose, n.report, samples.info, chain.info, family.c, offset)
       chain.info[1] <- chain.info[1] + 1
     }
     # Calculate R-Hat ---------------
@@ -1447,7 +1462,7 @@ sfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
     colnames(out$theta.samples) <- theta.names
     if (family == 'NB') {
       out$kappa.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$kappa.samples))))
-      colnames(out$kappa.samples) <- paste('kappa', 1:n.sp, sep = '') 
+      colnames(out$kappa.samples) <- paste('kappa', sp.names, sep = '-') 
     }
     out$w.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$w.samples, 
       								dim = c(q, J, n.post.samples))))
@@ -1530,6 +1545,7 @@ sfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
     out$X.re <- X.re[order(ord), , drop = FALSE]
     out$X.random <- X.random[order(ord), , drop = FALSE]
     out$y <- y.mat[, order(ord), , drop = FALSE]
+    out$offset <- offset[order(ord)]
     out$call <- cl
     out$n.samples <- n.samples
     out$x.names <- x.names

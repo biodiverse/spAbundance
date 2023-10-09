@@ -40,11 +40,12 @@
 
   \item{mu.0.samples}{a three or four-dimensional object of posterior predictive samples for the
     expected abundance values with dimensions corresponding to posterior predictive
-    sample, species, site, and replicate.}
+    sample, species, site, and replicate. Note if an offset was used when fitting the model
+    with \code{lfMsAbund}, the abundance values are reported per unit of the offset.}
 
   \item{y.0.samples}{a three or four-dimensional object of posterior predictive samples for the
     abundance values with dimensions corresponding to posterior predictive sample, species, site, 
-    and replicate.}
+    and replicate. These will be in the same units as \code{mu.0.samples}.}
 
   \item{w.0.samples}{a three-dimensional array of posterior predictive samples for the
     latent factors.}

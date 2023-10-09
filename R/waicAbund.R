@@ -121,7 +121,7 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
     y.max <- apply(y, 1, max, na.rm = TRUE)
     K <- apply(y, 1, function(a) sum(!is.na(a)))
     K.max <- max(K)
-    mu.samples <- object$mu.samples
+    mu.samples <- t(apply(object$mu.samples, 1, function(a) a * object$offset))
     if (is(object, 'NMix')) {
       p.samples <- fitted.NMix(object)$p.samples
     } else {
@@ -178,6 +178,7 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
       K <- apply(y, 1, function(a) sum(!is.na(a)))
       K.max <- max(K)
       mu.samples <- object$mu.samples[, i, ]
+      mu.samples <- t(apply(mu.samples, 1, function(a) a * object$offset))
       p.samples.curr <- p.samples[, i, , ]
       # dist == 1 for NB, 0 for Poisson
       dist <- object$dist

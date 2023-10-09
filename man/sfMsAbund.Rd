@@ -24,7 +24,7 @@ sfMsAbund(formula, data, inits, priors,
   and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
   \item{data}{a list containing data necessary for model fitting.
-    Valid tags are \code{y}, \code{covs}, \code{coords}. 
+    Valid tags are \code{y}, \code{covs}, \code{coords}, and \code{offset}. 
     \code{y} is a two or three-dimensional array of observed count data. The
     first dimension of the array is equal to the 
     number of species and the second dimension is equal to the number of sites. If
@@ -40,7 +40,11 @@ sfMsAbund(formula, data, inits, priors,
     \eqn{J \times 2}{J x 2} matrix of the observation coordinates. Note that 
     \code{spAbundance} assumes coordinates are specified in a projected coordinate system. 
     For zero-inflated Gaussian models, the tag \code{z} is used to specify the 
-    binary component of the model and should have the same dimensions as \code{y}.}
+    binary component of the model and should have the same dimensions as \code{y}. 
+    \code{offset} is an offset to use in the abundance model (e.g., an area offset). 
+    This can be either a single value, a vector with an offset for each site (e.g., if survey 
+    area differed in size), or a site x replicate matrix if more than one count is available 
+    at a given site.}
 
   \item{inits}{a list with each tag corresponding to a parameter name.
     Valid tags are \code{beta.comm}, \code{beta}, 

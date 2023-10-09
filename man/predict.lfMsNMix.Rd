@@ -39,10 +39,11 @@
   A list object of class \code{predict.lfMsNMix}. When \code{type = 'abundance'}, the list consists of:  
 
   \item{mu.0.samples}{a three-dimensional array of posterior predictive samples for the
-    expected abundance values.}
+    expected abundance values. Note these will be per unit area if an offset was used when 
+    fitting the model with \code{lfMsNMix()}.}
 
   \item{N.0.samples}{a three-dimensional array of posterior predictive samples for the
-    latent abundance values.}
+    latent abundance values. These will be in the same units as \code{mu.0.samples}.}
 
   When \code{type = 'detection'}, the list consists of: 
 

@@ -59,6 +59,27 @@ spAbund <- function(formula, data, inits, priors, tuning,
       stop("error: data y must be specified in data")
     }
     y <- as.matrix(data$y) 
+    # Offset
+    if ('offset' %in% names(data)) {
+      offset <- data$offset
+      if (length(offset) == 1) {
+        offset <- matrix(offset, nrow(y), ncol(y)) 
+      } else if (length(dim(offset)) == 1) { # Value for each site
+        if (length(offset) != nrow(y)) {
+          stop(paste0("offset must be a single value, vector of length ", nrow(y), " or a matrix with ", 
+                     nrow(y), " rows and ", ncol(y), " columns."))	
+        }
+        offset <- matrix(offset, nrow(y), ncol(y))
+      } else if (length(dim(offset)) == 2) { # Value for each site/obs
+        if (nrow(offset) != nrow(y) | ncol(offset) != ncol(y)) {
+          stop(paste0("offset must be a single value, vector of length ", nrow(y), " or a matrix with ", 
+                      nrow(y), " rows and ", ncol(y), " columns."))	
+
+        }
+      }
+    } else {
+      offset <- matrix(1, nrow(y), ncol(y))
+    }
     if (!'covs' %in% names(data)) {
       if (formula == ~ 1) {
         if (verbose) {
@@ -108,6 +129,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
       ord <- order(coords[,1]) 
       # Reorder everything to align with NN ordering
       y <- y[ord, , drop = FALSE]
+      offset <- offset[ord, , drop = FALSE]
       coords <- coords[ord, , drop = FALSE]
       # Covariates
       for (i in 1:length(data$covs)) {
@@ -119,6 +141,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
       }
     }
     y.mat <- y
+    offset.mat <- offset
   
     # First subset covariates to only use those that are included in the analysis. 
     # Get occurrence covariates in proper format
@@ -220,6 +243,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
     # Subtract 1 for indices in C
     site.indx <- site.indx - 1
     y <- c(y)
+    offset <- c(offset)
     names.long <- which(!is.na(y))
     # Remove missing observations when the covariate data are available but
     # there are missing abundance data. 
@@ -232,7 +256,8 @@ spAbund <- function(formula, data, inits, priors, tuning,
     if (nrow(X.random) == length(y) & p.abund.re > 0) {
       X.random <- X.random[!is.na(y), , drop = FALSE]
     }
-    y <- y[!is.na(y)]
+    y <- y[!is.na(y.mat)]
+    offset <- offset[!is.na(y.mat)]
     # Number of data points for the y vector
     n.obs <- nrow(X)
   
@@ -735,6 +760,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
       # Set storage for all variables ---------------------------------------
       storage.mode(y) <- "double"
       storage.mode(X) <- "double"
+      storage.mode(offset) <- "double"
       consts <- c(J, n.obs, p.abund, p.abund.re, n.abund.re)
       storage.mode(consts) <- "integer"
       storage.mode(coords) <- "double"
@@ -831,7 +857,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
           		    phi.a, phi.b, sigma.sq.a, sigma.sq.b, nu.a, nu.b,
           		    tuning.c, cov.model.indx, n.batch, batch.length, accept.rate, 
           		    n.omp.threads, verbose, n.report, samples.info, chain.info, sigma.sq.ig, 
-                              family.c)
+                              family.c, offset)
         chain.info[1] <- chain.info[1] + 1
       } # i   
   
@@ -937,6 +963,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
       out$X.re <- out$X.re[order(ord), , , drop = FALSE]
       out$coords <- coords[order(ord), ]
       out$y <- y.mat[order(ord), , drop = FALSE]
+      out$offset <- offset.mat[order(ord), , drop = FALSE]
       out$n.samples <- n.samples
       out$call <- cl
       out$n.post <- n.post.samples

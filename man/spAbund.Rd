@@ -41,7 +41,8 @@ spAbund(formula, data, inits, priors, tuning,
     Note that \code{spAbundance} assumes coordinates are specified 
     in a projected coordinate system. For zero-inflated Gaussian models, the tag \code{z} is
     used to specify the binary component of the zero-inflated model and should have the same
-    length as \code{y}.}
+    length as \code{y}. \code{offset} is an offset to use in the abundance model (e.g., an area offset). 
+  This can be either a single value, a vector with an offset for each site (e.g., if survey area differed in size), or a site x replicate matrix if more than one count is available at a given site.}
   
   \item{inits}{a list with each tag corresponding to a parameter name.
     Valid tags are \code{beta}, \code{sigma.sq}, 

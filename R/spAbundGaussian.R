@@ -73,6 +73,10 @@ spAbundGaussian <- function(formula, data, inits, priors, tuning,
     stop("error: coords must be a matrix or data frame")
   }
   coords <- as.matrix(data$coords)
+  # Give warning if an offset is specified
+  if ('offset' %in% names(data)) {
+    message("offsets are not supported with Gaussian or zi-Gaussian GLMMs.\nIgnoring data$offset when fitting the model.\n")
+  }
 
   if (family == 'zi-Gaussian') {
     two.stage <- TRUE
@@ -316,10 +320,10 @@ spAbundGaussian <- function(formula, data, inits, priors, tuning,
     tau.sq.b <- priors$tau.sq.ig[2]
   } else {
     if (verbose) {
-      message("No prior specified for tau.sq.\nUsing an inverse-Gamma prior with the shape parameter set to 2 and scale parameter to 0.5.\n")
+      message("No prior specified for tau.sq.\nUsing an inverse-Gamma prior with the shape parameter set to 0.01 and scale parameter to 0.01.\n")
     }
-    tau.sq.a <- 2
-    tau.sq.b <- 0.5
+    tau.sq.a <- 0.01
+    tau.sq.b <- 0.01
   }
 
   # sigma.sq.mu --------------------

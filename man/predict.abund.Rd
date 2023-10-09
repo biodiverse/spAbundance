@@ -37,11 +37,13 @@
   \item{mu.0.samples}{a three-dimensional object of posterior predictive samples for the
     expected abundance values with dimensions corresponding to posterior predictive
     sample, site, and replicate. When there is no replication, this will be a two-dimensional
-    matrix}
+    matrix. Note if an offset was used when fitting the model with \code{abund}, thes abundance
+    values are reported per unit of the offset.}
 
   \item{y.0.samples}{a three-dimensional object of posterior predictive samples for the
     abundance values with dimensions corresponding to posterior predictive sample, site, 
-    and replicate. When there is no replication, this will be a two-dimensional matrix.}
+    and replicate. When there is no replication, this will be a two-dimensional matrix.
+    These will be in the same units as \code{mu.0.samples}.}
 
   The return object will include additional objects used for standard 
   extractor functions. 

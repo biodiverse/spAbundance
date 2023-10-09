@@ -7,8 +7,8 @@
 }
 
 \usage{
-simNMix(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(), 
-       p.RE = list(), sp = FALSE, cov.model, sigma.sq, phi, nu, 
+simNMix(J.x, J.y, n.rep, n.rep.max, beta, alpha, kappa, mu.RE = list(), 
+       p.RE = list(), offset = 1, sp = FALSE, cov.model, sigma.sq, phi, nu, 
        family = 'Poisson', ...)
 }
 
@@ -19,6 +19,8 @@ simNMix(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(),
 
 \item{n.rep}{a numeric vector of length \eqn{J = J.x \times J.y}{J = J.x x J.y} indicating the number of repeat visits at each of the \eqn{J}{J} sites.}
 
+\item{n.rep.max}{a single numeric value indicating the maximum number of replicate surveys. This is an optional argument, with its default value set to \code{max(n.rep)}. This can be used to generate data sets with different types of missingness (e.g., simulate data across 20 days (replicate surveys) but sites are only sampled a maximum of ten times each).}
+
 \item{beta}{a numeric vector containing the intercept and regression coefficient parameters for the abundance portion of the single-species N-mixture model.}
 
 \item{alpha}{a numeric vector containing the intercept and regression coefficient parameters for the detection portion of the single-species N-mixture model.}
@@ -28,6 +30,8 @@ simNMix(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(),
 \item{mu.RE}{a list used to specify the non-spatial random effects included in the abundance portion of the model. The list must have two tags: \code{levels} and \code{sigma.sq.mu}. \code{levels} is a vector of length equal to the number of distinct random effects to include in the model and contains the number of levels there are in each effect. \code{sigma.sq.mu} is a vector of length equal to the number of distinct random effects to include in the model and contains the variances for each random effect. If not specified, no random effects are included in the abundance portion of the model. An optional third tag, \code{beta.indx}, is a list that contains integers denoting the corresponding value of \code{beta} that each random effect corresponds to. This allows specification of random intercepts as well as slopes. By default, all effects are assumed to be random intercepts.}
 
 \item{p.RE}{a list used to specify the non-spatial random effects included in the detection portion of the model. The list must have two tags: \code{levels} and \code{sigma.sq.p}. \code{levels} is a vector of length equal to the number of distinct random effects to include in the model and contains the number of levels there are in each effects. \code{sigma.sq.p} is a vector of length equal to the number of distinct random effects to include in the model and contains the variances for each random effect. If not specified, no random effects are included in the detection portion of the model. An optional third tag, \code{alpha.indx}, is a list that contains integers denoting the corresponding value of \code{alpha} that each random effect corresponds to. This allows specification of random intercepts as well as slopes. By default, all effects are assumed to be random intercepts.}
+
+\item{offset}{either a single numeric value or a vector of length \code{J} that contains the offset for each location in the data set.}
 
 \item{sp}{a logical value indicating whether to simulate a spatially-explicit N-mixture model with a Gaussian process. By default set to \code{FALSE}.}
 

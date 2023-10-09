@@ -1,6 +1,6 @@
 \name{msNMix}
 \alias{msNMix}
-\title{Function for Fitting Multi-Species N-mixture Models}
+\title{Function for Fitting Multi-species N-mixture Models}
 
 \description{
 Function for fitting multi-species N-mixture models. 
@@ -27,7 +27,7 @@ msNMix(abund.formula, det.formula, data, inits, priors,
   and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
 \item{data}{a list containing data necessary for model fitting.
-  Valid tags are \code{y}, \code{abund.covs}, and \code{det.covs}. \code{y}
+  Valid tags are \code{y}, \code{abund.covs}, \code{det.covs}, and \code{offset}. \code{y}
   is a three-dimensional array of observed count data with first dimension equal to the number 
   of species, second dimension equal to the number of sites, and third 
   dimension equal to the maximum number of replicates at a given site. 
@@ -39,7 +39,9 @@ msNMix(abund.formula, det.formula, data, inits, priors,
   Site-level covariates are specified as a vector of length \eqn{J}{J} while 
   observation-level covariates are specified as a matrix or data frame 
   with the number of rows equal to \eqn{J}{J} and number of columns equal 
-  to the maximum number of replicates at a given site.}
+  to the maximum number of replicates at a given site. \code{offset}
+  is an offset to use in the abundance model (e.g., an area offset). This can be either a single
+  value or a vector with an offset for each site (e.g., if survey area differed in size).}
 
 \item{inits}{a list with each tag corresponding to a parameter name.
   Valid tags are \code{alpha.comm}, \code{beta.comm}, \code{beta}, 
@@ -80,7 +82,7 @@ msNMix(abund.formula, det.formula, data, inits, priors,
   Gamma distribution. The hyperparameters of the inverse-Gamma distribution
   are passed as a list of length two with first and second elements corresponding
   to the shape and scale parameters, respectively, which are each specified as
-  vectors of length equal to the number of random intercepts or of length one 
+  vectors of length equal to the number of random intercepts/slopes or of length one 
   if priors are the same for all random effect variances. \code{kappa} is the 
   negative binomial dispersion parameter for each species and is assumed to 
   follow a uniform distribution. The hyperparameters of the uniform distribution
@@ -89,7 +91,7 @@ msNMix(abund.formula, det.formula, data, inits, priors,
   specified as vectors of length equal to the number of species or of length one
   if priors are the same for all species-specific dispersion parameters.}
 
-\item{tuning}{a list with each tag corresponding to a parameter name, whose
+\item{tuning}{a list with each tag corresponding to a parameter name,
   whose value defines the initial variance of the adaptive sampler. 
   Valid tags are \code{beta}, \code{alpha}, \code{beta.star} (the abundance 
   random effect values), \code{alpha.star} (the detection random effect values), and 
@@ -243,7 +245,7 @@ for (i in 1:p.det) {
 }
 
 dat <- simMsNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta, alpha = alpha,
-	         mu.RE = mu.RE, p.RE = p.RE, sp = FALSE, family = 'Poisson')
+                 mu.RE = mu.RE, p.RE = p.RE, sp = FALSE, family = 'Poisson')
 
 y <- dat$y
 X <- dat$X
@@ -255,20 +257,20 @@ X.p.re <- dat$X.p.re
 abund.covs <- X
 colnames(abund.covs) <- c('int', 'abund.cov.1')
 det.covs <- list(det.cov.1 = as.data.frame(X.p[, , 2]),
-		 det.cov.2 = as.data.frame(X.p[, , 3]))
+                 det.cov.2 = as.data.frame(X.p[, , 3]))
 data.list <- list(y = y,
-		  abund.covs = abund.covs,
-		  det.covs = det.covs)
+                  abund.covs = abund.covs,
+                  det.covs = det.covs)
 prior.list <- list(beta.comm.normal = list(mean = rep(0, p.abund), 
-					   var = rep(100, p.abund)),
-		   alpha.comm.normal = list(mean = rep(0, p.det),
-			               var = rep(2.72, p.det)),
+                                           var = rep(100, p.abund)),
+                   alpha.comm.normal = list(mean = rep(0, p.det),
+                                            var = rep(2.72, p.det)),
                    tau.sq.beta.ig = list(a = 0.1, b = 0.1),
                    tau.sq.alpha.ig = list(a = 0.1, b = 0.1))
 inits.list <- list(beta.comm = 0, alpha.comm = 0,
-		   beta = 0, alpha = 0,
-		   tau.sq.beta = 0.5, tau.sq.alpha = 0.5,
-		   N = apply(y, c(1, 2), max, na.rm = TRUE))
+                   beta = 0, alpha = 0,
+                   tau.sq.beta = 0.5, tau.sq.alpha = 0.5,
+                   N = apply(y, c(1, 2), max, na.rm = TRUE))
 tuning.list <- list(beta = 0.5, alpha = 0.5)
 
 n.batch <- 4
@@ -278,19 +280,19 @@ n.thin <- 1
 n.chains <- 1
 
 out <- msNMix(abund.formula = ~ abund.cov.1,
-	      det.formula = ~ det.cov.1 + det.cov.2,
-	      data = data.list,
-	      n.batch = n.batch,
-	      inits = inits.list,
-	      priors = prior.list,
-	      tuning = tuning.list,
-	      batch.length = batch.length,
-	      n.omp.threads = 1,
-	      verbose = TRUE,
-	      n.report = 1,
-	      n.burn = n.burn,
-	      n.thin = n.thin,
-	      n.chains = n.chains)
+              det.formula = ~ det.cov.1 + det.cov.2,
+              data = data.list,
+              n.batch = n.batch,
+              inits = inits.list,
+              priors = prior.list,
+              tuning = tuning.list,
+              batch.length = batch.length,
+              n.omp.threads = 1,
+              verbose = TRUE,
+              n.report = 1,
+              n.burn = n.burn,
+              n.thin = n.thin,
+              n.chains = n.chains)
 
 summary(out, level = 'community')
 }

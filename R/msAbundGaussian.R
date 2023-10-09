@@ -58,6 +58,10 @@ msAbundGaussian <- function(formula, data, inits, priors, tuning,
       stop("error: covs must be a list, data frame, or matrix")
     }
   }
+  # Give warning if an offset is specified
+  if ('offset' %in% names(data)) {
+    message("offsets are not supported with Gaussian or zi-Gaussian GLMMs.\nIgnoring data$offset when fitting the model.\n")
+  }
 
   if (family == 'zi-Gaussian') {
     two.stage <- TRUE
@@ -277,10 +281,10 @@ msAbundGaussian <- function(formula, data, inits, priors, tuning,
     }
   } else {
     if (verbose) {	    
-      message("No prior specified for tau.sq.ig.\nSetting prior shape to 0.1 and prior scale to 0.1\n")
+      message("No prior specified for tau.sq.ig.\nSetting prior shape to 0.01 and prior scale to 0.01\n")
     }
-    tau.sq.a <- rep(0.1, N)
-    tau.sq.b <- rep(0.1, N)
+    tau.sq.a <- rep(0.01, N)
+    tau.sq.b <- rep(0.01, N)
   }
 
   # sigma.sq.mu --------------------

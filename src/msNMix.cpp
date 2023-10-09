@@ -36,7 +36,7 @@ extern "C" {
 	      SEXP sigmaSqPA_r, SEXP sigmaSqPB_r, 
 	      SEXP tuning_r, SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r,
 	      SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r, 
-	      SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r){
+	      SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r, SEXP offset_r){
    
     /**********************************************************************
      * Initial constants
@@ -59,6 +59,7 @@ extern "C" {
     int *XpRE = INTEGER(XpRE_r); 
     double *XpRandom = REAL(XpRandom_r);
     double *yMax = REAL(yMax_r);
+    double *offset = REAL(offset_r);
     // Load constants
     int nSp = INTEGER(consts_r)[0]; 
     int J = INTEGER(consts_r)[1];
@@ -567,16 +568,16 @@ extern "C" {
               tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &betaCand[i], &nSp) + 
                                 betaStarSites[i * J + j]);
 	      if (family == 1) {
-                logPostBetaCand += dnbinom_mu(N[j * nSp + i], kappa[i], tmp_J[j], 1);
+                logPostBetaCand += nb_logpost(kappa[i], N[j * nSp + i], tmp_J[j], offset[j]);
 	      } else {
-                logPostBetaCand += dpois(N[j * nSp + i], tmp_J[j], 1);
+                logPostBetaCand += poisson_logpost(N[j * nSp + i], tmp_J[j], offset[j]);
 	      }
               tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
                                 betaStarSites[i * J + j]);
 	      if (family == 1) {
-                logPostBetaCurr += dnbinom_mu(N[j * nSp + i], kappa[i], tmp_J[j], 1);
+                logPostBetaCurr += nb_logpost(kappa[i], N[j * nSp + i], tmp_J[j], offset[j]);
 	      } else {
-                logPostBetaCurr += dpois(N[j * nSp + i], tmp_J[j], 1);
+                logPostBetaCurr += poisson_logpost(N[j * nSp + i], tmp_J[j], offset[j]);
 	      }
             }
             if (runif(0.0, 1.0) <= exp(logPostBetaCand - logPostBetaCurr)) {
@@ -641,9 +642,9 @@ extern "C" {
                   tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
 	  			  betaStarSitesCand[i * J + j]);
                   if (family == 1) {
-	  	    logPostBetaStarCand[l] += dnbinom_mu(N[j * nSp + i], kappa[i], tmp_J[j], 1);
+	  	    logPostBetaStarCand[l] += nb_logpost(kappa[i], N[j * nSp + i], tmp_J[j], offset[j]);
 	  	  } else {
-	  	    logPostBetaStarCand[l] += dpois(N[j * nSp + i], tmp_J[j], 1);
+	  	    logPostBetaStarCand[l] += poisson_logpost(N[j * nSp + i], tmp_J[j], offset[j]);
 	  	  }
 	  	  // Current
                     betaStarSites[i * J + j] = 0.0;
@@ -654,9 +655,9 @@ extern "C" {
                     tmp_J[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
 	  	  		  betaStarSites[i * J + j]);
                     if (family == 1) {
-	  	    logPostBetaStarCurr[l] += dnbinom_mu(N[j * nSp + i], kappa[i], tmp_J[j], 1);
+	  	    logPostBetaStarCurr[l] += nb_logpost(kappa[i], N[j * nSp + i], tmp_J[j], offset[j]);
 	  	  } else {
-	  	    logPostBetaStarCurr[l] += dpois(N[j * nSp + i], tmp_J[j], 1);
+	  	    logPostBetaStarCurr[l] += poisson_logpost(N[j * nSp + i], tmp_J[j], offset[j]);
 	  	  }
 	        }
 	      }
@@ -727,8 +728,8 @@ extern "C" {
 	    for (j = 0; j < J; j++) {
               mu[j * nSp + i] = exp(F77_NAME(ddot)(&pAbund, &X[j], &J, &beta[i], &nSp) + 
                           betaStarSites[i * J + j]);
-              logPostKappaCurr += dnbinom_mu(N[j * nSp + i], kappa[i], mu[j * nSp + i], 1);
-	      logPostKappaCand += dnbinom_mu(N[j * nSp + i], kappaCand, mu[j * nSp + i], 1);
+              logPostKappaCurr += nb_logpost(kappa[i], N[j * nSp + i], mu[j * nSp + i], offset[j]);
+	      logPostKappaCand += nb_logpost(kappaCand, N[j * nSp + i], mu[j * nSp + i], offset[j]);
 	    }
 	    // Jacobian adjustment
 	    logPostKappaCurr += log(kappa[i] - kappaA[i]) + log(kappaB[i] - kappa[i]);
@@ -769,22 +770,22 @@ extern "C" {
                *******************************/
 	      // Contribution from NB or Poisson
 	      if (family == 0) {
-	        logPostCurrN[j] += dpois(N[j * nSp + i], mu[j * nSp + i], 1);
+	        logPostCurrN[j] += poisson_logpost(N[j * nSp + i], mu[j * nSp + i], offset[j]);
 	      } else {
-	        logPostCurrN[j] += dnbinom_mu(N[j * nSp + i], kappa[i], mu[j * nSp + i], 1);
+	        logPostCurrN[j] += nb_logpost(kappa[i], N[j * nSp + i], mu[j * nSp + i], offset[j]);
 	      }
 	      // MH contribution for assymetric proposal distribution.
-	      logPostCurrN[j] += dpois(NCand[j], N[j * nSp + i] + epsilonN, 1);
+	      logPostCurrN[j] += poisson_logpost(NCand[j], N[j * nSp + i] + epsilonN, 1.0);
               /********************************
                * Candidate
                *******************************/
 	      if (family == 0) {
-                logPostCandN[j] += dpois(NCand[j], mu[j * nSp + i], 1);
+                logPostCandN[j] += poisson_logpost(NCand[j], mu[j * nSp + i], offset[j]);
 	      } else {
-                logPostCandN[j] += dnbinom_mu(NCand[j], kappa[i], mu[j * nSp + i], 1);
+                logPostCandN[j] += nb_logpost(kappa[i], NCand[j], mu[j * nSp + i], offset[j]);
 	      }
 	      // MH contribution for assymetric proposal distribution
-	      logPostCandN[j] += dpois(N[j * nSp + i], NCand[j] + epsilonN, 1);
+	      logPostCandN[j] += poisson_logpost(N[j * nSp + i], NCand[j] + epsilonN, 1.0);
               if (runif(0.0,1.0) <= exp(logPostCandN[j] - logPostCurrN[j])) {
                 N[j * nSp + i] = NCand[j];
               }

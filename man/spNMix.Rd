@@ -29,7 +29,7 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
   and random slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
   \item{data}{a list containing data necessary for model fitting.
-    Valid tags are \code{y}, \code{abund.covs}, \code{det.covs}, and \code{coords}. 
+    Valid tags are \code{y}, \code{abund.covs}, \code{det.covs}, \code{offset}, and \code{coords}. 
     \code{y} is the count data matrix or data frame with 
     first dimension equal to the number of sites (\eqn{J}{J}) and second 
     dimension equal to the maximum number of replicates at a given site. 
@@ -44,7 +44,9 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
     number of columns equal to the maximum number of replicates at a given site. 
     \code{coords} is a \eqn{J \times 2}{J x 2} matrix of the observation coordinates. 
     Note that \code{spAbundance} assumes coordinates are specified 
-    in a projected coordinate system.}
+    in a projected coordinate system. \code{offset} is an offset to use in 
+    the abundance model (e.g., an area offset). This can be either a single value or a 
+    vector with an offset for each site (e.g., if survey area differed in size).}
   
   \item{inits}{a list with each tag corresponding to a parameter name.
     Valid tags are \code{N}, \code{beta}, \code{alpha}, \code{sigma.sq}, 
@@ -88,7 +90,7 @@ spNMix(abund.formula, det.formula, data, inits, priors, tuning,
     the inverse-Gamma distribution are passed as a list of length two with the 
     first and second elements corresponding to the shape and scale parameters, 
     respectively, which are each specified as vectors of length equal to the 
-    number of random intercepts or of length one if priors are the same for all
+    number of random intercepts/slopes or of length one if priors are the same for all
     random effect variances.}
  
   \item{cov.model}{a quoted keyword that specifies the covariance
@@ -267,7 +269,7 @@ kappa <- 0.5
 sp <- TRUE 
 cov.model <- 'exponential'
 dat <- simNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta, alpha = alpha,
-	       kappa = kappa, mu.RE = mu.RE, p.RE = p.RE, sp = sp, 
+               kappa = kappa, mu.RE = mu.RE, p.RE = p.RE, sp = sp, 
                phi = phi, sigma.sq = sigma.sq, cov.model = cov.model, 
                family = 'NB')
 
@@ -282,27 +284,27 @@ abund.covs <- X
 colnames(abund.covs) <- c('int', 'abund.cov.1')
 
 det.covs <- list(det.cov.1 = X.p[, , 2], 
-		 det.cov.2 = X.p[, , 3]) 
+                 det.cov.2 = X.p[, , 3]) 
 
 data.list <- list(y = y, 
-		  abund.covs = abund.covs,
-		  det.covs = det.covs, 
+                  abund.covs = abund.covs,
+                  det.covs = det.covs, 
                   coords = coords)
 
 # Priors
 prior.list <- list(beta.normal = list(mean = rep(0, p.abund), 
-				      var = rep(100, p.abund)),
-		   alpha.normal = list(mean = rep(0, p.det),
-			               var = rep(2.72, p.det)), 
+                                      var = rep(100, p.abund)),
+                   alpha.normal = list(mean = rep(0, p.det),
+                                       var = rep(2.72, p.det)), 
                    kappa.unif = c(0, 10)) 
 # Starting values
 inits.list <- list(alpha = alpha,
-		   beta = beta,
-		   kappa = kappa, 
-		   w = rep(0, J),
-		   phi = 3 / 0.5,
-		   sigma.sq = 1,
-		   N = apply(y, 1, max, na.rm = TRUE))
+                   beta = beta,
+                   kappa = kappa, 
+                   w = rep(0, J),
+                   phi = 3 / 0.5,
+                   sigma.sq = 1,
+                   N = apply(y, 1, max, na.rm = TRUE))
 # Tuning values 
 tuning.list <- list(phi = 0.5, kappa = 0.5, beta = 0.1, alpha = 0.1, w = 0.1)
 
@@ -314,21 +316,21 @@ n.thin <- 1
 n.chains <- 1
 
 out <- spNMix(abund.formula = ~ abund.cov.1,
-	      det.formula = ~ det.cov.1 + det.cov.2, 
-	      data = data.list, 
-	      n.batch = n.batch, 
-	      batch.length = batch.length, 
-	      inits = inits.list, 
-	      priors = prior.list, 
-	      NNGP = TRUE,
-	      cov.model = 'spherical',
-	      n.neighbors = 10,
-	      accept.rate = 0.43, 
-	      n.omp.threads = 1, 
-	      verbose = TRUE, 
-	      n.report = 1,
-	      n.burn = n.burn,
-	      n.thin = n.thin,
-	      n.chains = n.chains)
+              det.formula = ~ det.cov.1 + det.cov.2, 
+              data = data.list, 
+              n.batch = n.batch, 
+              batch.length = batch.length, 
+              inits = inits.list, 
+              priors = prior.list, 
+              NNGP = TRUE,
+              cov.model = 'spherical',
+              n.neighbors = 10,
+              accept.rate = 0.43, 
+              n.omp.threads = 1, 
+              verbose = TRUE, 
+              n.report = 1,
+              n.burn = n.burn,
+              n.thin = n.thin,
+              n.chains = n.chains)
 summary(out)
 }

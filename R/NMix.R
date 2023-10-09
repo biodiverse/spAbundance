@@ -51,6 +51,18 @@ NMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
   y <- as.matrix(data$y) 
   y.mat <- y
+  # Offset
+  if ('offset' %in% names(data)) {
+    offset <- data$offset
+    if (length(offset) != nrow(y) & length(offset) != 1) {
+      stop(paste("error: data$offset must be of length 1 or ", nrow(y), sep = ''))
+    }
+    if (length(offset) == 1) {
+      offset <- rep(offset, nrow(y))
+    }
+  } else {
+    offset <- rep(1, nrow(y))
+  }
   if (!'abund.covs' %in% names(data)) {
     if (abund.formula == ~ 1) {
       if (verbose) {
@@ -225,7 +237,7 @@ NMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   # Number of replicates at each site
   n.rep <- apply(y, 1, function(a) sum(!is.na(a)))
   # Max number of repeat visits
-  K.max <- max(n.rep)
+  K.max <- dim(y.mat)[2]
   # Because I like K better than n.rep
   K <- n.rep
 
@@ -721,6 +733,7 @@ NMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   storage.mode(X) <- "double"
   storage.mode(X.p) <- "double"
   storage.mode(y.max) <- "double"
+  storage.mode(offset) <- 'double'
   consts <- c(J, n.obs, p.abund, p.abund.re, n.abund.re, 
 	      p.det, p.det.re, n.det.re)
   storage.mode(consts) <- "integer"
@@ -807,7 +820,8 @@ NMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       		          sigma.sq.mu.a, sigma.sq.mu.b, 
         		  sigma.sq.p.a, sigma.sq.p.b, kappa.a, kappa.b, 
       		          tuning.c, n.batch, batch.length, accept.rate, 
-      		          n.omp.threads, verbose, n.report, samples.info, chain.info, family.c)
+      		          n.omp.threads, verbose, n.report, samples.info, chain.info, family.c,
+                          offset)
     chain.info[1] <- chain.info[1] + 1
   } # i   
   # Calculate R-Hat ---------------
@@ -900,6 +914,7 @@ NMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   out$X.p.re <- X.p.re
   out$X.p.random <- X.p.random
   out$y <- y.mat
+  out$offset <- offset
   out$n.samples <- n.samples
   out$call <- cl
   out$n.post <- n.post.samples

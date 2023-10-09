@@ -48,8 +48,7 @@ data(dataNMixSim)
   J.x <- 15
   J.y <- 15
   J <- J.x * J.y
-  n.rep <- sample(5, size = J, replace = TRUE)
-  # n.rep <- rep(5, J) 
+  n.rep <- sample(3, size = J, replace = TRUE)
   n.sp <- 6
   # Community-level covariate effects
   # Occurrence

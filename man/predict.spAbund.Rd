@@ -54,11 +54,12 @@
 
   \item{mu.0.samples}{a three-dimensional object of posterior predictive samples for the
     expected spAbundance values with dimensions corresponding to posterior predictive
-    sample, site, and replicate.}
+    sample, site, and replicate. Note if an offset was used when fitting the model 
+    with \code{spAbund}, the abundance values are reported per unit of the offset.}
 
   \item{y.0.samples}{a three-dimensional object of posterior predictive samples for the
     spAbundance values with dimensions corresponding to posterior predictive sample, site, 
-    and replicate.}
+    and replicate. These will be in the same units as \code{mu.0.samples}.}
 
   \item{w.0.samples}{a \code{coda} object of posterior predictive samples 
     for the latent spatial random effects.}

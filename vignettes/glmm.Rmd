@@ -1,0 +1,1018 @@
+---
+title: "Fitting generalized linear mixed models in spAbundance"
+author: "Jeffrey W. Doser"
+description: Learn how to fit univariate and multivariate GLMMs in spAbundance 
+date: "2023"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+bibliography: [references.bib]
+biblio-style: apalike
+vignette: >
+  %\VignetteIndexEntry{glmm}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+options(rmarkdown.html_vignette.check_title = FALSE)
+knitr::opts_chunk$set(
+  comment = "", cache = TRUE
+)
+```
+
+\newcommand{\bm}{\boldsymbol} 
+
+# Introduction
+
+This vignette provides worked examples and explanations for fitting univariate and multivariate generalized linear mixed models in the `spAbundance` R package. We will provide step by step examples on how to fit the following models: 
+
+1. Univariate GLMM using `abund()`.
+2. Spatial univariate GLMM using `spAbund()`.
+3. Multivariate GLMM using `msAbund().
+4. Multivariate GLMM with residual correlations using `lfMsAbund()`.
+5. Spatial multivariate GLMM with residual correlations using `sfMsNMix()`.
+
+In this vignette we are only describing `spAbundance` functionality to fit generalized linear (mixed) models, with separate vignettes on fitting [hierarchical distance sampling models](https://www.jeffdoser.com/files/spabundance-web/articles/distancesampling) and [N-mixture models](https://www.jeffdoser.com/files/spabundance-web/articles/nmixturemodels). We fit all models in a Bayesian framework using custom Markov chain Monte Carlo (MCMC) samplers written in `C/C++` and called through `R`'s foreign language interface. Here we will provide a brief description of each model, with full statistical details provided in a separate vignette. As with all model types in `spAbundance`, we will show how to perform posterior predictive checks as a Goodness of Fit assessment, model comparison and assessment using the Widely Applicable Information Criterion (WAIC), and out-of-sample predictions using standard R helper functions (e.g., `predict()`). Note that syntax of N-mixture models in `spAbundance` closely follows syntax for fitting occupancy models in `spOccupancy` [@doser2022spoccupancy], and that this vignette closely follows the documentation on the [spOccupancy website](https://www.jeffdoser.com/files/spoccupancy-web/).
+
+Note that when we discussing GLMMs, we use the terms "univariate" and "multivariate" instead of "single-species" and "multi-species" as we do when discussing N-mixture models, hierarchical distance sampling models, and occupancy models. We use these potentially more confusing terms to highlight the fact that the GLMM functionality in `spAbundance` is not restricted to working only with data on counts of "species". Rather, the GLMM functionality in `spAbundance` can be used to model any sort of response that you could imagine fitting in a GLMM. Despite this, we will often use the term "species" when referring to the different response variables that we can model using the GLMM functionality in `spAbundance`, since modeling patterns in abundance is the primary purpose of the package.
+
+To get started, we load the `spAbundance` package, as well as the `coda` package, which we will use for some MCMC summary and diagnostics. We will also use the `stars` and `ggplot2` packages to create some basic plots of our results. We then set a seed so you can reproduce the same results as we do.
+
+```{r setup, message = FALSE, warning = FALSE}
+library(spAbundance)
+library(coda)
+library(stars)
+library(ggplot2)
+set.seed(111)
+```
+
+## Example data set: Six warbler species from the Breeding Bird Survey
+
+As an example data set throughout this vignette, we will use count data from the North American Breeding Bird Survey collected in 2018 in Pennsylvania, USA [@pardieck2020north]. Briefly, these data consist of the total number of individuals for six bird species (American Redstart, Blackburnian Warbler, Black-throated Blue Warbler, Black-throated Green Warbler, Hooded Warbler, Magnolia Warbler) at 95 40km routes across Pennsylvania. Additional details on the data set can be found on the [USGS Science Base website](https://www.sciencebase.gov/catalog/item/52b1dfa8e4b0d9b325230cd9). The data are included as part of the `spAbundance` package and are loaded with `data(bbsData)`. See the manual page using `help(bbsData)` for more information.
+
+```{r}
+# Load the data set.
+data(bbsData)
+# Get an overview of what's in the data
+str(bbsData)
+```
+
+The object `bbsData` is a list that is structured in the format needed for multivariate GLMMs in `spAbundance`. Specifically, `bbsData` is a list comprised of the count data for the 5 species (`y`), covariates to include on either abundance and/or detection (`covs`), and the spatial coordinates for each site (`coords`). Note the coordinates are only required for spatailly-explicit GLMMs. The matrix `y` consists of the count data for all 6 species in the data set, where the rows correspond to species and the columns correspond to sites. For single-species GLMMs, we will only use data for one species (Hooded Warbler; HOWA), so we next subset the `bbsData` list to only include data from HOWA in a new object `data.HOWA`.
+
+```{r}
+sp.names <- dimnames(bbsData$y)[[1]]
+data.HOWA <- bbsData
+data.HOWA$y <- data.HOWA$y[which(sp.names == "HOWA"), ]
+# Observed number of HOWA at each site
+data.HOWA$y
+```
+
+We see that HOWA appears to be quite common across the 95 sites, but that there is clear variation in the counts across the state.
+
+# Univariate GLMMs
+
+Let $y_j$ denote the observed count of a species of interest at site $j = 1, \dots, J$. We model $y_j$ according to 
+
+\begin{equation}
+  y_j \sim f(\mu_j, \cdot),
+\end{equation}
+
+where $f()$ denotes some probability distribution with mean $\mu_j$. The $\cdot$ represents additional dispersion parameter(s) that are only relevant for certain distributions. In `spAbundance`, we allow for $f()$ to be a Poisson distribution, a negative binomial (NB) distribution, or a Gaussian (normal) distribution. The Poisson distribution does not have any additional parameters. The negative binomial distribution has an additional positive dispersion parameter $\kappa$, which controls the amount of overdispersion in the count data. Smaller values of $\kappa$ indicate overdispersion in the count data, while higher values indicate minimal overdispersion in the counts relative to the Poisson distribution. Note that as $\kappa \rightarrow \infty$, a NB model "reverts" back to the simpler Poisson model. The Gaussian distribution has a variance parameter $\tau^2$ that controls the amount of variation in the observed data around the mean $\mu_j$. 
+
+Following the classic GLM framework, we allow for variation in the mean $\mu_j$ through the use of a link function $g()$ following
+
+\begin{equation}
+  g(\mu_j) = \bm{x}_j^\top\bm{\beta},
+\end{equation}
+
+where $\bm{\beta}$ is a vector of regression coefficients for a set of covariates $\bm{x}_j$ (including an intercept). When working with positive integer counts and using the Poisson or negative binomial distributions, we use a log link function. For Gaussian data, we use the identity link function, such that the right hand side of the previous equation simplifies to $\mu_j$ and covariates are directly related to the mean. Note that while not shown, unstructured random intercepts and slopes can be included in the equation for expected abundance. This may for instance be required for accommodating some sorts of "blocks", such as when sites are nested in a number of different regions.
+
+To complete the Bayesian specification of the model, we assign Gaussian priors for the regression coefficients ($\bm{\beta}$), a uniform prior for the negative binomial dispersion parameter (when applicable), and an inverse-Gamma prior for the Gaussian variance parameter (when applicable).
+
+## Fitting univariate GLMMs with `abund()`
+
+The `abund()` function fits univariate abundance models. `abund` has the following arguments. 
+
+```{r, eval = FALSE}
+abund(formula, data, inits, priors, tuning,
+      n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
+      n.omp.threads = 1, verbose = TRUE,
+      n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
+      n.chains = 1, ...)
+```
+
+The first argument `formula` uses standard R model syntax to denote the covariates to be included in the model. Only the right hand side of the formula is included. Random intercepts and slopes can be included in the model using `lme4` syntax [@bates2015]. For example, to include a random intercept for different observers the model to account for observational variability, we would include `(1 | observer)` in `formula`, where `observer` indicates the specific observer for each data point. The names of variables given in the formulas should correspond to those found in `data`, which is a list consisting of the following tags: `y` (count data) and `covs` (covariates). `y` is the vector of count data with length equal to the number of sites in the data set and `covs` is a matrix or data frame with site-specific covariate values.
+
+The `data.HOWA` list is already in the required format for use with the `abund()` function. Here we will model abundance as a function of three "bioclim" bioclimatic variables and the proportion of forest and developed land within 5km of the route starting location. We will also include a few variables that we believe may relate to observational variability (e.g., imperfect detection) in the count data. Including such variables in a GLMM is a common approach for modeling relative abundance, particularly when using BBS data [@link2002hierarchical]. Here we include linear and quadratic effects of the day of year, a linear effect of time of day, and a random effect of observer, all of which we think may influence relative abundance. We standardize all continuous covariates by using the `scale()` function in our model specification (note that standardizing continuous covariates is highly recommended as it helps aid convergence of the underlying MCMC algorithms):
+
+```{r}
+howa.formula <- ~ scale(bio2) + scale(bio8) + scale(bio18) + scale(forest) + 
+                  scale(devel) + scale(day) + I(scale(day)^2) + scale(tod) + 
+                  (1 | obs)
+```
+
+The `family` argument is used to specify the specific family we will use to model the data. Valid options are `Poisson`, `NB` (negative binomial), and `Gaussian`. Here we are working with count data, and so both the Poisson and negative binomial distributions make sense. We will start working with a Poisson distribution, but later we will compare this to a negative binomial distribution to determine the amount of overdispersion in the data. 
+
+```{r}
+howa.family <- 'Poisson'
+```
+
+Next, we specify the initial values for the MCMC sampler in `inits`. `abund()` (and all other `spAbundance` model fitting functions) will set initial values by default, but here we will do this explicitly, since in more complicated cases setting initial values close to the presumed solutions can be vital for success of an MCMC-based analysis (for instance, this is the case when fitting distance sampling models in `spAbundance`). However, for all models described in this vignette (in particular the non-spatial models), choice of the initial values is largely inconsequential, with the exception being that specifying initial values close to the presumed solutions can decrease the amount of samples you need to run to arrive at convergence of the MCMC chains. Thus, when first running a model in `spAbundance`, we recommend fitting the model using the default initial values that `spAbundance` provides. The initial values that `spAbundance` chooses will be reported to the screen when setting `verbose = TRUE`. After running the model for a reasonable period, if you find the chains are taking a long time to reach convergence, you then may wish to set the initial values to the mean estimates of the parameters from the initial model fit, as this will likely help reduce the amount of time you need to run the model.
+
+The default initial values for regression coefficients (including the intercepts) are random values from a standard normal distribution. When fitting a GLMM with a negative binomial distribution, the initial value for the overdispersion parameter is drawn from the prior distribution. When using a Gaussian distribution, the initial value for the variance parameter is a random value between 0.5 and 10. Initial values are specified in a list with the following tags: `beta` (intercept and regression coefficients), `kappa` (negative binomial overdispersion parameter), `tau.sq` (Gaussian variance parameter). For the regression coefficients `beta`, the initial values are passed either as a vector of length equal to the number of estimated parameters (including an intercept, and in the order specified in the model formula), or as a single value if setting the same initial value for all parameters (including the intercept). Below we take the latter approach. For the negative binomial overdispersion parameter and Gaussian variance parameter, the initial value is simply a single numeric value. For any random effects that are included in the model, we can also specify the initial values for the random effect variances (`sigma.sq.mu`). By default, these will be drawn as random values between 0.5 and 10. Here we specify the initial value for the random effect to 1.
+
+```{r}
+inits <- list(beta = 0, kappa = 1, sigma.sq.mu = 1)
+```
+
+We next specify the priors for the regression coefficients, as well as the negative binomial overdispersion parameter. We assume normal priors for regression coefficients. These priors are specified in a list with tags `beta.normal` (including intercepts). Each list element is then itself a list, with the first element of the list consisting of the hypermeans for each coefficient and the second element of the list consisting of the hypervariances for each coefficient. Alternatively, the hypermeans and hypervariances can be specified as a single value if the same prior is used for all regression coefficients. By default, `spAbundance` will set the hypermeans to 0 and the hypervariances to 100. For the negative binomial overdispersion parameter, we will use a uniform prior. This prior is specified as a tag in the prior list called `kappa.unif`, which should be a vector with two values indicating the lower and upper bound of the uniform distribution. The default prior is to set the lower bound to 0 and the upper bound to 100. Recall that lower values of `kappa` indicate substantial overdispersion and high values of `kappa` indicate minimal overdispersion. If there is little support for overdispersion when fitting a negative binomial model, we will likely see the estimates of `kappa` be close to the upper bound of the uniform prior distribution. For the default prior distribution, if the estimates of `kappa` are very close to 100, this indicates little support for overdispersion in the model, and we can likely switch to using a Poisson distribution (which would also likely be favored by model comparison approaches). For models with random effects, we can also specify the prior for the random effect variance parameter (`sigma.sq.mu`). We assume inverse-Gamma priors for these variance parameters and specify them with the tags `sigma.sq.mu.ig`. These priors are set as a list with two components, where the first element is the shape parameter and the second element is the scale parameter. The shape and scale parameters can be specified as a single value or as vectors with length equal to the number of random effects included in the model. The default prior distribution for random effect variances is 0.1 for both the shape and scale parameters. When fitting GLMMs with a Gaussian distribution, the tag `tau.sq.ig` is used to specify the inverse-Gamma prior for the variance parameter of the Gaussian distribution. The prior is specified as a vector of length two, with the first element being the inverse-Gamma shape parameter and second element being the inverse-Gamma scale parameter. By default, these values are both set to 0.01. Below we use default priors for all parameters, but specify them explicitly for clarity.
+
+```{r}
+priors <- list(beta.normal = list(mean = 0, var = 100),
+               kappa.unif = c(0, 100),
+               sigma.sq.mu.ig = list(0.1, 0.1))
+```
+
+The next four arguments (`tuning`, `n.batch`, `batch.length`, and `accept.rate`) are all related to the specific type of MCMC sampler we use when we fit GLMMs in `spAbundance`. Most parameters in GLMMs are estimated using a Metropolis-Hastings step, which can often be slow and inefficient, leading to slow mixing and convergence of the MCMC chains. To try and mitigate the slow mixing and convergence issues, we update all parameters in GLMMs using an algorithm called an adaptive Metropolis-Hastings algorithm (see @roberts2009examples for more details on this algorithm). In this approach, we break up the total number of MCMC samples into a set of "batches", where each batch has a specific number of MCMC samples. Thus, we must specify the total number of batches (`n.batch`) as well as the number of MCMC samples each batch contains (`batch.length`) when specifying the function arguments. The total number of MCMC samples is `n.batch * batch.length`. Typically, we set `batch.length = 25` and then play around with `n.batch` until convergence of all model parameters is reached. We generally recommend setting `batch.length = 25`, but in certain situations this can be increased to a larger number of samples (e.g., 100), which can result in moderate decreases in run time. Here we set `n.batch = 800` for a total of 20,000 MCMC samples for each MCMC chain we run.
+
+```{r}
+batch.length <- 25
+n.batch <- 800
+# Total number of MCMC samples per chain
+batch.length * n.batch
+```
+
+Importantly, we also need to specify a target acceptance rate and initial tuning parameters for the regression coefficients (and the negative binomial overdispersion parameter and any latent random effects if applicable). These are both features of the adaptive algorithm we use to sample these parameters. In this adaptive Metropolis-Hastings algorithm, we propose new values for the parameters from some proposal distribution, compare them to our previous values, and use a statistical algorithm to determine if we should accept the new proposed value or keep the old one. The `accept.rate` argument specifies the ideal proportion of times we will accept the newly proposed values for these parameters. @roberts2009examples show that if we accept new values around 43% of the time, then this will lead to optimal mixing and convergence of the MCMC chains. Following these recommendations, we should strive for an algorithm that accepts new values about 43% of the time. Thus, we recommend setting `accept.rate = 0.43` unless you have a specific reason not to (this is the default value). The values specified in the `tuning` argument help control the initial values we will propose for the abundance/detection coefficients and the negative binomial overdispersion parameter. These values are supplied as input in the form of a list with tags `beta` and `kappa`. The initial tuning value can be any value greater than 0, but we generally recommend starting the value out around 0.5. These tuning values can also be thought of as tuning "variances", as it is these values that control the variance of the distribution we use to generate newly proposed values for the parameters we are trying to estimate with our MCMC algorithm. In short, the new values that we propose for the parameters `beta`, and `kappa` come from a normal distribution with mean equal to the current value for the given parameter and the variance equal to the tuning parameter. Thus, the smaller this tuning parameter/variance is, the closer our proposed values will be to the current value, and vise versa for large values of the tuning parameter. The "ideal" value of the tuning variance will depend on the data set, the parameter, and how much uncertainty there is in the estimate of the parameter. This initial tuning value that we supply is the first tuning variance that will be used for the given parameter, and our adaptive algorithm will adjust this tuning parameter after each batch to yield acceptance rates of newly proposed values that are close to our target acceptance rate that we specified in the `accept.rate` argument. Information on the acceptance rates for a few of the parameters in your model will be displayed when setting `verbose = TRUE`. After some initial runs of the model, if you notice the final acceptance rate is much larger or smaller than the target acceptance rate (`accept.rate`), you can then change the initial tuning value to get closer to the target rate. While use of this algorithm requires us to specify more arguments than if we didn't "adaptively tune" our proposal variances, this leads to much shorter run times compared to a more simplistic approach where we do not have an "adaptive" sampling approach, and it should thus save us time in the long haul when waiting for these models to run. For our example here, we set the initial tuning values to 0.5 for `beta` and `kappa`. For models with random effects in either the abundance or detection portions of the model, we also need to specify tuning parameters for the latent random effect values (`beta.star`). We similarly set these to 0.5. Note that for Gaussian GLMMs, we use much more efficient algorithms (Gibbs updates). 
+
+```{r}
+tuning <- list(beta = 0.5, kappa = 0.5, beta.star = 0.5)
+# accept.rate = 0.43 by default, so we do not specify it.
+```
+
+We also need to specify the length of burn-in (`n.burn`), the rate at which we want to thin the posterior samples (`n.thin`), and the number of MCMC chains to run (`n.chains`). Note that currently `spAbundance` runs multiple chains sequentially and does not allow chains to be run simultaneously in parallel across multiple threads, which is something we hope to implement in future package development. Instead, we allow for within-chain parallelization using the `n.omp.threads` argument. We can set `n.omp.threads` to a number greater than 1 and smaller than the number of threads on the computer you are using. Generally, setting `n.omp.threads > 1` will not result in decreased run times for non-spatial models in `spAbundance`, but can substantially decrease run time when fitting spatial models [@finley2020spnngp]. Here we set `n.omp.threads = 1`.
+
+For a simple single-species GLMM, we shouldn't need too many samples and will only need a moderate amount of burn-in and thinning. We will run the model using three chains to assess convergence using the Gelman-Rubin diagnostic (Rhat; @brooks1998).
+
+```{r}
+n.burn <- 10000
+n.thin <- 10
+n.chains <- 3
+```
+
+We are now almost set to run the model. The `verbose` argument is a logical value indicating whether or not MCMC sampler progress is reported to the screen. If `verbose = TRUE`, sampler progress is reported to the screen. The argument `n.report` specifies the interval to report the Metropolis-Hastings sampler acceptance rate. Note that `n.report` is specified in terms of batches, not the overall number of samples. Below we set `n.report = 200`, which will result in information on the acceptance rate and tuning parameters every 200th batch (not sample).
+
+We now are set to fit the model.
+
+```{r}
+out <- abund(formula = howa.formula,
+             data = data.HOWA,
+             inits = inits,
+             priors = priors,
+             n.batch = n.batch,
+             batch.length = batch.length,
+             tuning = tuning,
+             n.omp.threads = 1,
+             n.report = 200,
+             family = howa.family,
+             verbose = TRUE,
+             n.burn = n.burn,
+             n.thin = n.thin,
+             n.chains = n.chains)
+```
+
+`abund()` returns a list of class `abund` with a suite of different objects, many of them being `coda::mcmc` objects of posterior samples. The "Preparing to run the model" section will print information on default priors or initial values that are used when they are not specified in the function call. Here we specified everything explicitly so no information was reported.
+
+We next use the `summary()` function on the resulting `abund()` object for a concise, informative summary of the regression parameters and convergence of the MCMC chains.
+
+```{r}
+summary(out)
+```
+
+We see the variable with the largest magnitude effect is time of day with a strong positive effect. Since we believe this variable may relate to the probability of detecting HOWA at a location (or the probability HOWA is singing and thus available for detection), this suggests a larger number of HOWA are counted later in the morning relative to early in the morning. There is also a strong positive relationship with forest cover, suggesting larger HOWA relative abundance in more forested areas.
+
+The model summary also provides information on convergence of the MCMC chains in the form of the Gelman-Rubin diagnostic [@brooks1998] and the effective sample size (ESS) of the posterior samples. Here we find all Rhat values are less than 1.1 and the ESS values are decently large for all parameters. 
+
+We can use the `plot()` function to generate a simple trace plot of the MCMC chains to provide additional confidence in the convergence (or non-convergence) of the model. The plotting functionality for each model type in `spAbundance` takes three arguments: `x` (the resulting object from fitting the model), `param` (the parameter name that you want to display), and `density` (a logical value indicating whether to also generate a density plot in addition to the traceplot). To see the parameter names available to use with `plot()` for a given model type, you can look at the manual page for the function, which for models generated from `plot.abund()` can be accessed with `?plot.abund`.
+
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
+# Regression coefficients
+plot(out, param = 'beta', density = FALSE)
+```
+
+## Posterior predictive checks
+
+The function `ppcAbund()` performs a posterior predictive check on all `spAbundance` model objects as a Goodness-of-Fit (GOF) assessment. The fundamental idea of GoF testing is that a good model should generate data that closely align with the observed data. If there are drastic differences in the true data from the data generated under the model, our model is likely not very useful [@hobbs2015]. For details on posterior predictive checks, please see [this section in the N-mixture model vignette](https://www.jeffdoser.com/files/spabundance-web/articles/nmixturemodels#posterior-predictive-checks). Below we perform a posterior predictive check using a Freeman-Tukey test statistic, and summarize it with a Bayesian p-value.  
+
+
+```{r}
+ppc.out <- ppcAbund(out, fit.stat = 'freeman-tukey', group = 0)
+summary(ppc.out)
+```
+
+Here our Bayesian p-value is very close to 0, indicating that the current model does not adequately represent the variability in the observed data. We can further look at a plot of the fitted values versus the true to get a better sense of how our model performed.
+
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
+# Extract fitted values
+y.rep.samples <- fitted(out)
+# Get means of fitted values
+y.rep.means <- apply(y.rep.samples, 2, mean)
+# Simple plot of True vs. fitted values
+plot(data.HOWA$y, y.rep.means, pch = 19, xlab = 'True', ylab = 'Fitted')
+abline(0, 1)
+```
+
+Looking at this plot, we see our model actually does a decent job of identifying locations with high relative abundance, but there are a few sites with low observed relative abundance for which the model seems to be overestimating abundance (i.e., values points the left of 5 on the x-axis in the above plot). This is likely what is causing the low Bayesian p-value.  
+
+## Model selection using WAIC
+
+The function `waicAbund()` calculates the Widely Applicable Information Criterion as a model selection crtieria. This can be used to compare a series of candidate models and select the best-performing model for final analysis. See [this section in the N-mixture model vignette](https://www.jeffdoser.com/files/spabundance-web/articles/nmixturemodels#model-selection-using-waic) for additional details on how we calculate WAIC in `spAbundance`. 
+
+We first fit a second model that uses a negative binomial distribution for abundance, and then compare the two models using WAIC. 
+
+```{r}
+out.nb <- abund(formula = howa.formula,
+                data = data.HOWA,
+                inits = inits,
+                priors = priors,
+                n.batch = n.batch,
+                batch.length = batch.length,
+                tuning = tuning,
+                n.omp.threads = 1,
+                n.report = 200,
+                family = 'NB',
+                verbose = FALSE,
+                n.burn = n.burn,
+                n.thin = n.thin,
+                n.chains = n.chains)
+# Poisson model
+waicAbund(out)
+# NB model
+waicAbund(out.nb)
+```
+
+Here we see the WAIC values are essentially identical, and so we select the simpler model (the Poisson model) as the prefered model. 
+
+## Prediction
+
+All model objects from a call to `spAbundance` model-fitting functions can be used with `predict()` to generate a series of posterior predictive samples at new locations, given the values of all covariates used in the model fitting process. Here we will predict relative abundance of HOWA across the state of Pennsylvania at a 12km resolution. The prediction data are stored in the `bbsPredData` object, which is available in `spAbundance`. 
+
+```{r}
+data(bbsPredData)
+str(bbsPredData)
+```
+
+The prediction data consist of `r nrow(bbsPredData)` 12km cells in which we will predict HOWA relative abundance. The data frame consists of the spatial coordinates for each cell and the bioclimatic and landcover covariates we used to fit the model. We will set the values of the covariates related to observational variability to their mean value to generate our relative abundance estimates, and also will set the random observer effect to 0 at each prediction location. 
+
+Given that we standardized the covariate values when we fit the model, we need to standardize the covariate values for prediction using the exact same values of the mean and standard deviation of the covariate values used to fit the data. 
+
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
+# Center and scale covariates by values used to fit model
+bio2.pred <- (bbsPredData$bio2 - mean(data.HOWA$covs$bio2)) / 
+              sd(data.HOWA$covs$bio2)
+bio8.pred <- (bbsPredData$bio8 - mean(data.HOWA$covs$bio8)) / 
+              sd(data.HOWA$covs$bio8)
+bio18.pred <- (bbsPredData$bio18 - mean(data.HOWA$covs$bio18)) / 
+               sd(data.HOWA$covs$bio18)
+forest.pred <- (bbsPredData$forest - mean(data.HOWA$covs$forest)) / 
+                sd(data.HOWA$covs$forest)
+devel.pred <- (bbsPredData$devel - mean(data.HOWA$covs$devel)) / 
+               sd(data.HOWA$covs$devel)
+day.pred <- 0
+tod.pred <- 0
+```
+
+For `abund()`, the `predict()` function takes four arguments:
+
+1. `object`: the `abund` fitted model object.
+2. `X.0`: a matrix or data frame consisting of the design matrix for the prediction locations (which must include an intercept if our model contained one).
+3. `ignore.RE`: a logical value indicating whether or not to remove random effects from the predicted values (this is equivalent to setting the random effect value to 0 at each location). By default, this is set to `FALSE`, and so prediction will include the random effects (if any are specified).
+
+Below we form the design matrix and predict relative abundance across the grid.
+
+```{r}
+X.0 <- cbind(1, bio2.pred, bio8.pred, bio18.pred, forest.pred, 
+	     devel.pred, day.pred, day.pred^2, tod.pred)
+colnames(X.0) <- c('(Intercept)', 'scale(bio2)', 'scale(bio8)', 'scale(bio18)', 
+                   'scale(forest)', 'scale(devel)', 'scale(day)', 
+                   'I(scale(day)^2)', 'scale(tod)')
+out.pred <- predict(out, X.0, ignore.RE = TRUE)
+str(out.pred)
+```
+
+The resulting object consists of posterior predictive samples for the expected relative abundances (`mu.0.samples`) and relative abundance values (`y.0.samples`). The beauty of the Bayesian paradigm, and the MCMC computing machinery, is that these predictions all have fully propagated uncertainty. Below, we produce a map of HOWA relative abundance across the state, as well as a map of the uncertainty, where here we represent uncertainty with the width of the 95% credible interval. We will also plot the coordinates of the actual data locations to show where the data we used to fit the model relate to the overall predictions across the state.
+
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in', message = FALSE, warning = FALSE}
+mu.0.quants <- apply(out.pred$mu.0.samples, 2, quantile, c(0.025, 0.5, 0.975))
+plot.df <- data.frame(Easting = bbsPredData$x,
+                      Northing = bbsPredData$y,
+                      mu.0.med = mu.0.quants[2, ],
+                      mu.0.ci.width = mu.0.quants[3, ] - mu.0.quants[1, ])
+# proj4string for the coordinate reference system
+my.crs <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
+coords.stars <- st_as_stars(plot.df, crs = my.crs)
+coords.sf <- st_as_sf(as.data.frame(data.HOWA$coords), coords = c('X', 'Y'), 
+                      crs = my.crs)
+# Plot of median estimate
+ggplot() +
+  geom_stars(data = coords.stars, aes(x = Easting, y = Northing, fill = mu.0.med)) +
+  geom_sf(data = coords.sf, col = 'grey') +
+  scale_fill_viridis_c(na.value = NA) +
+  theme_bw(base_size = 12) +
+  labs(fill = '', x = 'Longitude', y = 'Latitude', 
+       title = 'Hooded Warbler Relative Abundance')
+# Plot of 95% CI width
+ggplot() +
+  geom_stars(data = coords.stars, aes(x = Easting, y = Northing, fill = mu.0.ci.width)) +
+  geom_sf(data = coords.sf, col = 'grey') +
+  scale_fill_viridis_c(na.value = NA) +
+  theme_bw(base_size = 12) +
+  labs(fill = '', x = 'Longitude', y = 'Latitude', 
+       title = 'Hooded Warbler Relative Abundance')
+```
+
+# Univariate spatial GLMMs
+
+## Basic model description
+
+When working across large spatial domains, accounting for residual spatial autocorrelation in species distributions can often improve predictive performance of a model, leading to more accurate predictions of species abundance patterns [@guelat2018]. We here extend the previous GLMM to incorporate a spatial random effect that accounts for unexplained spatial variation in species abundance across a region of interest [@diggle1998model]. Let $\bm{s}_j$ denote the geographical coordinates of site $j$ for $j = 1, \dots, J$. In all spatially-explicit models, we include $\bm{s}_j$ directly in the notation of spatially-indexed variables to indicate the model is spatially-explicit. More specifically, the expected abundance at site $j$ with coordinates $\bm{s}_j$, $\mu(\bm{s}_j)$, now takes the form
+
+\begin{equation}
+\text{log}(\mu(\bm{s}_j)) = \bm{x}(\bm{s}_j)^{\top}\bm{\beta} + \text{w}(\bm{s}_j),
+\end{equation}
+
+where $\text{w}(\bm{s}_j)$ is a spatial random effect modeled with a Nearest Neighbor Gaussian Process (NNGP; @datta2016hierarchical). More specifically, we have
+
+\begin{equation}
+\textbf{w}(\bm{s}) \sim N(\bm{0}, \bm{\tilde{\Sigma}}(\bm{s}, \bm{s}', \bm{\theta})),
+\end{equation}
+
+where $\bm{\tilde{\Sigma}}(\bm{s}, \bm{s}', \bm{\theta})$ is the NNGP-derived spatial covariance matrix that originates from the full $J \times J$ covariance matrix $\bm{\Sigma}(\bm{s}, \bm{s}', \bm{\theta})$ that is a function of the distances between any pair of site coordinates $\bm{s}$ and $\bm{s}'$ and a set of parameters $(\bm{\theta})$ that govern the spatial process. The vector $\bm{\theta}$ is equal to $\bm{\theta} = \{\sigma^2, \phi, \nu\}$, where $\sigma^2$ is a spatial variance parameter, $\phi$ is a spatial decay parameter, and $\nu$ is a spatial smoothness parameter. $\nu$ is only specified when using a Matern correlation function. The detection portion of the N-mixture model remains unchanged from the non-spatial N-mixture model. The NNGP is a computationally efficient alternative to working with a full Gaussian process model, which is notoriously slow for even moderately large data sets. See @datta2016hierarchical and @finley2019efficient for complete statistical details on the NNGP.
+
+## Fitting univariate spatial GLMMs with `spAbund()`
+
+We will fit the same univariate GLMM that we fit previously using `abund()`, but we will now make the model spatially-explicit by incorporating a spatial process with `spAbund()`, which has the following arguments:
+
+```{r, eval = FALSE}
+spAbund(formula, data, inits, priors, tuning,
+        cov.model = 'exponential', NNGP = TRUE, 
+        n.neighbors = 15, search.type = 'cb',
+        n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
+        n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+        n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
+        n.chains = 1, ...)
+```
+
+The arguments to `spAbund()` are very similar to those we saw with `abund()`, with a few additional components. The `formula` and `data` arguments are the same as before, with random slopes and intercepts allowed in both the abundance and detection models. Notice the `coords` matrix in the `data.HOWA` list of data. We did not use this for `abund()`, but specifying the spatial coordinates in `data` is necessary for all spatially explicit models in `spAbundance`.
+
+```{r}
+howa.formula <- ~ scale(bio2) + scale(bio8) + scale(bio18) + scale(forest) +
+                  scale(devel) + scale(day) + I(scale(day)^2) + scale(tod) +
+                  (1 | obs)
+str(data.HOWA) # coords is required for spAbund()
+```
+
+The initial values (`inits`) are again specified in a list. Valid tags for initial values now additionally include the parameters associated with the spatial random effects. These include: `sigma.sq` (spatial variance parameter), `phi` (spatial decay parameter), `w` (the latent spatial random effects at each site), and `nu` (spatial smoothness parameter), where the latter is only specified if adopting a Matern covariance function (i.e., `cov.model = 'matern'`). `spAbundance` supports four spatial covariance models (`exponential`, `spherical`, `gaussian`, and `matern`), which are specified in the `cov.model` argument. Throughout this vignette, we will use an exponential covariance model, which we often use as our default covariance model when fitting spatially-explicit models and is commonly used throughout ecology. To determine which covariance function to use, we can fit models with the different covariance functions and compare them using WAIC to select the best performing function. We will note that the Matern covariance function has the additional spatial smoothness parameter $\nu$ and thus can often be more flexible than the other functions. However, because we need to estimate an additional parameter, this also tends to require more data (i.e., a larger number of sites) than the other covariance functions, and so we encourage use of the three simpler functions if your data set is sparse. We note that model estimates are generally fairly robust to the different covariance functions, although certain functions may provide substantially better estimates depending on the specific form of the underlying spatial autocorrelation in the data. 
+
+The default initial values for `phi`, and `nu` are set to random values from the prior distribution, while the default initial value for `sigma.sq` is set to a random value between 0.05 and 3. In all spatially-explicit models described in this vignette, the spatial decay parameter `phi` is often the most sensitive to initial values. In general, the spatial decay parameter will often have poor mixing and take longer to converge than the rest of the parameters in the model, so specifying an initial value that is reasonably close to the resulting value can really help decrease run times for complicated models. As an initial value for the spatial decay parameter `phi`, we compute the mean distance between points in our coordinates matrix and then set it equal to 3 divided by this mean distance. When using an exponential covariance function, $\frac{3}{\phi}$ is the effective range, or the distance at which the residual spatial correlation between two sites drops to 0.05 [@banerjee2003]. Thus our initial guess for this effective range is the average distance between sites across the simulated region. As with all other parameters, we generally recommend using the default initial values for an initial model run, and if the model is taking a very long time to converge you can rerun the model with initial values based on the posterior means of estimated parameters from the initial model fit. For the spatial variance parameter `sigma.sq`, we set the initial value to 1. This corresponds to a moderate amount of spatial variance. Further, we set the initial values of the latent spatial random effects at each site to 0. The initial values for these random effects has an extremely small influence on the model results, so we generally recommend setting their initial values to 0 as we have done here (this is also the default). However, if you are running your model for a very long time and are seeing very slow convergence of the MCMC chains, setting the initial values of the spatial random effects to the mean estimates from a previous run of the model could help reach convergence faster.
+
+```{r}
+# Pair-wise distances between all sites
+dist.mat <- dist(data.HOWA$coords)
+# Exponential covariance model
+cov.model <- 'exponential'
+# Specify list of inits
+inits <- list(beta = 0, kappa = 0.5, sigma.sq.mu = 0.5, sigma.sq = 1,
+              phi = 3 / mean(dist.mat),
+              w = rep(0, length(data.HOWA$y)))
+```
+
+The parameter `NNGP` is a logical value that specifies whether we want to use an NNGP to fit the model. Currently, only `NNGP = TRUE` is supported, but we may eventually add functionality to fit full Gaussian Process models. The arguments `n.neighbors` and `search.type` specify the number of neighbors used in the NNGP and the nearest neighbor search algorithm, respectively, to use for the NNGP model. Generally, the default values of these arguments will be adequate. @datta2016hierarchical showed that setting `n.neighbors = 15` is usually sufficient, although for certain data sets a good approximation can be achieved with as few as five neighbors, which could substantially decrease run time for the model. We generally recommend leaving `search.type = "cb"`, as this results in a fast code book nearest neighbor search algorithm. However, details on when you may want to change this are described in @finley2020spnngp. We will run an NNGP model using the default value for `search.type` and setting `n.neighbors = 15` (both the defaults).
+
+```{r}
+NNGP <- TRUE
+n.neighbors <- 15
+search.type <- 'cb'
+```
+
+Priors are again specified in a list in the argument `priors`. We follow standard recommendations for prior distributions from the spatial statistics literature [@banerjee2003]. We assume an inverse gamma prior for the spatial variance parameter `sigma.sq` (the tag of which is `sigma.sq.ig`), and uniform priors for the spatial decay parameter `phi` and smoothness parameter `nu` (if using the Matern correlation function), with the associated tags `phi.unif` and `nu.unif`. The hyperparameters of the inverse Gamma are passed as a vector of length two, with the first and second elements corresponding to the shape and scale, respectively. The lower and upper bounds of the uniform distribution are passed as a two-element vector for the uniform priors. We also allow users to restrict the spatial variance further by specifying a uniform prior (with the tag `sigma.sq.unif`), which can potentially be useful to place a more informative prior on the spatial parameters. Generally, we use an inverse-Gamma prior.
+
+Note that the priors for the spatial parameters in a spatially-explicit model must be at least weakly informative for the model to converge [@banerjee2003]. For the inverse-Gamma prior on the spatial variance, we typically set the shape parameter to 2 and the scale parameter equal to our best guess of the spatial variance. The default prior hyperparameter values for the spatial variance $\sigma^2$ are a shape parameter of 2 and a scale parameter of 1. This weakly informative prior suggests a prior mean of 1 for the spatial variance, which is a moderately small amount of spatial variation. Here we will use this default prior. For the spatial decay parameter, our default approach is to set the lower and upper bounds of the uniform prior based on the minimum and maximum distances between sites in the data. More specifically, by default we set the lower bound to `3 / max` and the upper bound to `3 / min`, where `min` and `max` are the minimum and maximum distances between sites in the data set, respectively. This equates to a vague prior that states the spatial autocorrelation in the data could only exist between sites that are very close together, or could span across the entire observed study area. If additional information is known on the extent of the spatial autocorrelation in the data, you may place more restrictive bounds on the uniform prior, which would reduce the amount of time needed for adequate mixing and convergence of the MCMC chains. Here we use this default approach, but will explicitly set the values for transparency.
+
+```{r}
+min.dist <- min(dist.mat)
+max.dist <- max(dist.mat)
+priors <- list(beta.normal = list(mean = 0, var = 100),
+               kappa.unif = c(0, 100),
+               sigma.sq.mu.ig = list(0.1, 0.1),
+               sigma.sq.ig = c(2, 1),
+               phi.unif = c(3 / max.dist, 3 / min.dist))
+```
+
+We again split our MCMC algorithm up into a set of batches and use an adaptive sampler to adaptively tune the variances that we propose new values from. We specify the initial tuning values again in the `tuning` argument, and now need to add `phi` and `w` to the parameters that must be tuned. Note that we do not need to add `sigma.sq`, as this parameter can be sampled with a more efficient approach (i.e., it's full conditional distribution is available in closed form).
+
+```{r}
+tuning <- list(beta = 0.5, kappa = 0.5, beta.star = 0.5, w = 0.5, phi = 0.5)
+```
+
+The argument `n.omp.threads` specifies the number of threads to use for within-chain parallelization, while `verbose` specifies whether or not to print the progress of the sampler. As before, the argument `n.report` specifies the interval to report the Metropolis-Hastings sampler acceptance rate. Below we set `n.report = 200`, which will result in information on the acceptance rate and tuning parameters every 200th batch.
+
+```{r}
+verbose <- TRUE
+batch.length <- 25
+n.batch <- 800
+# Total number of MCMC samples per chain
+batch.length * n.batch
+n.report <- 200
+n.omp.threads <- 1
+```
+
+We will use the same amount of burn-in and thinning as we did with the non-spatial model, and we'll also first fit a model with a Poisson distribution. We next fit the model and summarize the results using the `summary()` function.
+
+```{r}
+n.burn <- 10000
+n.thin <- 10
+n.chains <- 3
+out.sp <- spAbund(formula = howa.formula,
+                  data = data.HOWA,
+                  inits = inits,
+                  priors = priors,
+                  n.batch = n.batch,
+                  batch.length = batch.length,
+                  tuning = tuning,
+                  cov.model = cov.model,
+                  NNGP = NNGP,
+                  n.neighbors = n.neighbors,
+                  search.type = search.type,
+                  n.omp.threads = n.omp.threads,
+                  n.report = n.report,
+                  family = 'Poisson',
+                  verbose = TRUE,
+                  n.burn = n.burn,
+                  n.thin = n.thin,
+                  n.chains = n.chains)
+summary(out.sp)
+```
+
+## Posterior predictive checks
+
+Posterior predictive checks proceed exactly before using the `ppcAbund()` function.
+
+```{r}
+ppc.out.sp <- ppcAbund(out.sp, fit.stat = 'freeman-tukey', group = 0)
+summary(ppc.out.sp)
+```
+
+Here we see a striking contrast to the Bayesian p-value from the non-spatial GLMM, which was essentially 0. Here, our estimate is close to 0.5, indicating our model is adequately representing the variability in the data with the addition of the spatial random effect. 
+
+# Model selection using WAIC
+
+We next compare the non-spatial Poisson GLMM to the spatial Poisson GLM. 
+
+```{r}
+# Non-spatial Poisson GLMM
+waicAbund(out)
+# Spatial Poisson GLMM
+waicAbund(out.sp)
+```
+
+We see a substantial decrease in WAIC in the spatial model compared to the non-spatial model. 
+
+## Prediction
+
+We can similarly predict across a region of interest using the `predict()` function as we saw with the non-spatial GLMM. Here we again generate predictions across Pennsylvania. The primary arguments for prediction here are identical to those we saw for the non-spatial model, with the addition of the `coords` argument to specify the spatial coordinates of the prediction locations. These are necessary to generate the predictions of the spatial random effects. We use the same design matrix that we previously formed for the non-spatial predictions (`X.0`), which contains the covariate values standardized by the values used when we fit the model. There are also arguments for parallelization (`n.omp.threads`), reporting sampler progress (`verbose` and `n.report`), and predicting without the spatial random effects (`include.sp`). We generally only recommend setting `include.sp = FALSE` when generating predictions for a marginal probability plot (see the [N-mixture model vignette](https://www.jeffdoser.com/files/spabundance-web/articles/nmixturemodels) for an example of this).
+
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in', message = FALSE, warning = FALSE}
+coords.0 <- as.matrix(bbsPredData[, c('x', 'y')])
+out.sp.pred <- predict(out.sp, X.0, coords.0, ignore.RE = TRUE, verbose = TRUE)
+mu.0.quants <- apply(out.sp.pred$mu.0.samples, 2, quantile, c(0.025, 0.5, 0.975))
+plot.df <- data.frame(Easting = bbsPredData$x,
+                      Northing = bbsPredData$y,
+                      mu.0.med = mu.0.quants[2, ],
+                      mu.0.ci.width = mu.0.quants[3, ] - mu.0.quants[1, ])
+# proj4string for the coordinate reference system
+my.crs <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
+coords.stars <- st_as_stars(plot.df, crs = my.crs)
+coords.sf <- st_as_sf(as.data.frame(data.HOWA$coords), coords = c('X', 'Y'), 
+                      crs = my.crs)
+# Plot of median estimate
+ggplot() +
+  geom_stars(data = coords.stars, aes(x = Easting, y = Northing, fill = mu.0.med)) +
+  geom_sf(data = coords.sf, col = 'grey') +
+  scale_fill_viridis_c(na.value = NA) +
+  theme_bw(base_size = 12) +
+  labs(fill = '', x = 'Longitude', y = 'Latitude', 
+       title = 'Hooded Warbler Relative Abundance')
+# Plot of 95% CI width
+ggplot() +
+  geom_stars(data = coords.stars, aes(x = Easting, y = Northing, fill = mu.0.ci.width)) +
+  geom_sf(data = coords.sf, col = 'grey') +
+  scale_fill_viridis_c(na.value = NA) +
+  theme_bw(base_size = 12) +
+  labs(fill = '', x = 'Longitude', y = 'Latitude', 
+       title = 'Hooded Warbler Relative Abundance')
+```
+
+Note in our spatially-explicit predictions, there is extremely large uncertainy in certain parts of the study region. This is not too surprising given the fairly small number of spatial locations we used to fit the model. 
+
+
+# Multivariate GLMMs
+
+## Basic model description
+
+Now consider the case where count data, $y_{i, j}$, are collected for multiple species $i = 1, \dots, I$ (or some other set of multiple variables) at each survey location $j$. We model $y_{i, j}$ analogous to the univariate GLMM, with expected abundance now varying by species and site according to
+
+\begin{equation}\label{mu-Abund}
+     \text{log}(\mu_{i, j}) = \bm{x}_j^\top\bm{\beta}_i,
+\end{equation}
+
+where $\bm{\beta}_i$ are the species-specific effects of covariates $\bm{x}_j$ (including an intercept) . When $y_{i, j}$ is modeled using a negative binomial distribution, we estimate a separate dispersion parameter $\kappa_i$ for each species. We model $\bm{\beta}_i$ as random effects arising from a common, community-level normal distribution, which often leads to increased precision of species-specific effects compared to single-species models. For example, the species-specific intercept $\beta0_i$ is modeled according to
+
+\begin{equation}\label{betaComm}
+     \beta0_i \sim \text{Normal}(\mu_{\beta0}, \tau^2_{\beta0}),
+\end{equation}
+
+where $\mu_{\beta0}$ is the community-level abundance intercept, and $\tau^2_{\beta0}$ is the variance of the intercept across all $I$ species. 
+
+We assign normal priors to the community-level ($\bm{\mu}_{\beta}$) mean parameters and inverse-Gamma priors to the community-level variance parameters ($\bm{\tau^2}_{\beta}$).
+
+## Fitting multivariate GLMMs with `msAbund()`
+
+`spAbundance` uses nearly identical syntax for fitting multivariate GLMMs as it does for univariate models and provides the same functionality for posterior predictive checks, model assessment and selection using WAIC, and prediction. The `msAbund()` function fits the multivariate abundance models. `msAbund()` has the following syntax
+
+```{r, eval = FALSE}
+msAbund(formula, data, inits, priors, tuning, 
+        n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
+        n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+        n.burn = round(.10 * n.batch * batch.length), n.thin = 1, n.chains = 1,
+        ...)
+```
+
+Notice these are the exact same arguments we saw with `abund()`. We will again use data from the North American Breeding Bird Survey in Pennsylvania, USA, but now we will use data from all six species. Recall this is stored in the `bbsData` object.
+
+```{r}
+# Remind ourselves of the structure of bbsData
+str(bbsData)
+```
+
+We will model relative abundance for all species using the same variables as we saw previously. For multi-species models, the multi-species detection-nondetection data `y` is now a matrix with dimensions corresponding to species, and sites. 
+
+```{r}
+ms.formula <- ~ scale(bio2) + scale(bio8) + scale(bio18) + scale(forest) + 
+                scale(devel) + scale(day) + I(scale(day)^2) + scale(tod) + 
+                (1 | obs)
+```
+
+Next we specify the initial values in `inits`. For multivariate GLMMs, we supply initial values for community-level and species-level parameters. In `msAbund()`, we will supply initial values for the following parameters: `beta.comm` (community-level coefficients), `beta` (species-level coefficients), `tau.sq.beta` (community-level variance parameters), `kappa` (species-level negative binomial overdispersion parameters), and `sigma.sq.mu` (random effect variances). These are all specified in a single list. Initial values for community-level parameters (including the random effect variances) are either vectors of length corresponding to the number of community-level parameters in the model (including the intercepts) or a single value if all parameters are assigned the same initial values. Initial values for species level parameters are either matrices with the number of rows indicating the number of species, and each column corresponding to a different regression parameter, or a single value if the same initial value is used for all species and parameters. 
+
+```{r}
+# Number of species
+n.sp <- dim(bbsData$y)[1]
+ms.inits <- list(beta.comm = 0, beta = 0, tau.sq.beta = 1, kappa = 1, 
+                 sigma.sq.mu = 0.5)
+```
+
+In multivariate models, we specify priors on the community-level coefficients (or hyperparameters) rather than the species-level effects, with the exception that we still assign uniform priors for the negative binomial overdispersion parameter.  For nonspatial models, these priors are specified with the following tags: `beta.comm.normal` (normal prior on the community-level mean effects), `tau.sq.beta.ig` (inverse-Gamma prior on the community-level variance parameters), `sigma.sq.mu.ig` (inverse-Gamma prior on the random effect variances), `kappa.unif` (uniform prior on the species-specific overdispersion parameters). For all parameters except the species-specific overdispersion parameters, each tag consists of a list with elements corresponding to the mean and variance for normal priors and scale and shape for inverse-Gamma priors. Values can be specified individually for each parameter or as a single value if the same prior is assigned to all parameters of a given type. For the species-specific overdispersion parameters, the prior is specified as a list with two elements representing the lower and upper bound of the uniform distribution, where each of the elements can be a single value if the same prior is used for all species, or a vector of values for each species if specifying a different prior for each species.
+
+By default, we set the prior hyperparameter values for the community-level means to a mean of 0 and a variance of 100. Below we specify these priors explicitly. For the community-level variance parameters, by default we set the scale and shape parameters to 0.1 following the recommendations of [@lunn2013bugs], which results in a weakly informative prior on the community-level variances. This may lead to shrinkage of the community-level variance towards zero under certain circumstances so that all species will have fairly similar values for the species-specific covariate effect [@gelman2006prior], although we have found multi-species models to be relatively robust to this prior specification. For the negative binomial overdispersion parameters, we by default use a lower bound of 0 and upper bound of 100 for the uniform priors for each species, as we did in the single-species (univariate) models. Below we explicitly set these default prior values for our example.
+
+```{r}
+ms.priors <- list(beta.comm.normal = list(mean = 0, var = 100),
+                  tau.sq.beta.ig = list(a = 0.1, b = 0.1),
+                  sigma.sq.mu.ig = list(a = 0.1, b = 0.1),
+                  kappa.unif = list(a = 0, b = 100))
+```
+
+All that's now left to do is specify the number of threads to use (`n.omp.threads`), the number of MCMC samples (which we do by specifying the number of batches `n.batch` and batch length `batch.length`), the initial tuning variances (`tuning`), the amount of samples to discard as burn-in (`n.burn`), the thinning rate (`n.thin`), and arguments to control the display of sampler progress (`verbose`, `n.report`). Note for the tuning variances, we do not need to specify initial tuning values for any of the community-level parameters, as those parameters can be sampled with an efficient Gibbs update. We will also run the model with a Poisson distribution for abundance, which later we will shortly compare to a negative binomial.
+
+```{r}
+# Specify initial tuning values
+ms.tuning <- list(beta = 0.3, beta.star = 0.5, kappa = 0.5)
+# Approx. run time:  1.5 min
+out.ms <- msAbund(formula = ms.formula,
+                  data = bbsData,
+                  inits = ms.inits,
+                  n.batch = 800,
+                  tuning = ms.tuning,
+                  batch.length = 25,
+                  family = 'Poisson',
+                  priors = ms.priors,
+                  n.omp.threads = 1,
+                  verbose = TRUE,
+                  n.report = 200,
+                  n.burn = 10000,
+                  n.thin = 10,
+                  n.chains = 3)
+```
+
+We can display a nice summary of these results using the `summary()` function as before. For multivariate objects, when using summary we need to specify the level of parameters we want to summarize. We do this using the argument `level`, which takes values `community`, `species`, or `both` to print results for community-level parameters, species-level parameters, or all parameters. By default, `level` is set to `both` to display both species and community-level parameters.
+
+```{r}
+summary(out.ms)
+# Or more explicitly
+# summary(out.ms, level = 'both')
+```
+
+We see adequate convergence of most parameters, although we may run the model a bit longer to ensure convergence of the community-level variance paramters. Looking at the community-level values, we see a very strong effect of forest cover on average across the community. This is not too surprising given that we are working with six warbler species that breed in forest habitat.
+
+## Posterior predictive checks
+
+We can use the `ppcAbund()` function to again perform posterior predictive checks, and then subsequently summarize the check with a Bayesian p-value using the `summary()` function.
+
+```{r}
+ppc.ms.out <- ppcAbund(out.ms, fit.stat = 'freeman-tukey', group = 0)
+summary(ppc.ms.out)
+```
+
+## Model selection using WAIC
+
+Model selection (sometimes also called model comparison) proceeds exactly as before using WAIC. We compare our previous model to the same model, but now use a negative binomial distribution. Note that for multivariate models the logical argument `by.sp` allows us to calculate WAIC individually for each species if set to `TRUE`.
+
+```{r}
+# Approx. run time:  1.5 min
+out.ms.nb <- msAbund(formula = ms.formula,
+                     data = bbsData,
+                     inits = ms.inits,
+                     n.batch = 800,
+                     tuning = ms.tuning,
+                     batch.length = 25,
+                     family = 'NB',
+                     priors = ms.priors,
+                     n.omp.threads = 1,
+                     verbose = FALSE,
+                     n.burn = 10000,
+                     n.thin = 10,
+                     n.chains = 3)
+# Overall WAIC for Poisson model
+waicAbund(out.ms)
+# Overall WAIC for NB model
+waicAbund(out.ms.nb)
+# WAIC by species for Poisson model
+waicAbund(out.ms, by.sp = TRUE)
+# WAIC by species for NB model
+waicAbund(out.ms.nb, by.sp = TRUE)
+```
+
+We see the overall WAIC is best for the Poisson model compared to the NB model. 
+
+## Prediction
+
+Prediction proceeds exactly as we have seen previously with the univariate GLMM. We will use the Poisson model to predict relative abundance across Pennsylvania for each species. 
+
+```{r}
+out.ms.pred <- predict(out.ms, X.0, ignore.RE = TRUE)
+# Look at the resulting object
+str(out.ms.pred)
+```
+
+Notice we now have estimates of relative abundance across the state for each species, which we can use to generate a map of relative abundance for each species. Alternatively, we can generate a map of total relative abundance across all species as a simple measure of "how many birds" we could expect to observe at any given location.
+
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in', message = FALSE, warning = FALSE}
+mu.sum.samples <- apply(out.ms.pred$mu.0.samples, c(1, 3), sum)
+# Average total abundance at each site
+mu.sum.means <- apply(mu.sum.samples, 2, mean)
+plot.df <- data.frame(Easting = bbsPredData$x,
+                      Northing = bbsPredData$y,
+                      mu.sum.means = mu.sum.means)
+coords.stars <- st_as_stars(plot.df, crs = my.crs)
+# Plot of total relative abundance
+ggplot() +
+  geom_stars(data = coords.stars, aes(x = Easting, y = Northing, fill = mu.sum.means)) +
+  geom_sf(data = coords.sf, col = 'grey') +
+  scale_fill_viridis_c(na.value = NA) +
+  theme_bw(base_size = 12) +
+  labs(fill = '', x = 'Longitude', y = 'Latitude', 
+       title = 'Relative abundance of six warbler species')
+```
+
+If you're familiar with Pennsylvania geography, this map makes a fair amount of sense as total relative abundance of the six species is highest in the North-Central portion of the state (which is heavily forestedand more variable in elevation) and is lowest in the Southeastern portion of the state (which is heavily developed).
+
+# Latent factor multivariate GLMMs 
+
+## Basic model description
+
+The latent factor multivariate GLMM is identical to the previously described multivariate GLMM except we include an additional component in the model to accommodate residual correlations between species. This type of model is often referred to as an abundance-based joint species distribution model (JSDM) in the statistical ecology literature [@warton2015so]. The previously described multivariate GLMM can be viewed as a simplified version of the latent factor multivariate GLMM, where we assume there are no residual correlations between species. In fact, the previously described multivariate GLMM could also more simply be described as a simple GLMM with a bunch of random intercepts and slopes across the different species in the data set. In the statistical literature, the latent factor multivariate GLMM now explicitly accounts for correlations between responses, and thus may formally be considered a "joint" model.
+
+The model is identical to the previously described multivariate GLMM, with the only addition being a species-specific random effect at each site added to the equation for relative abundance. More specifically, we model species-specific relative abundance as
+
+\begin{equation}
+\text{log}(\mu_{i, j}) = \bm{x}_j^\top\bm{\beta}_i + \text{w}^\ast_{i, j}.
+\end{equation}
+
+The species-specific random effect $\text{w}^\ast_{i, j}$ is used to account for residual correlations between species by assuming that correlation amongst the species can be explained by species-specific effects of a set of $q$ latent variables. More specifically, we use a factor modeling approach [@lopes2004bayesian] to account for species residual correlations in a computationally efficient manner [@hui2015model]. This approach is ideal for large groups of species, where estimating a full $I \times I$ covariance matrix would be computationally intractable (and/or require massive amounts of data). Specifically, we decompose $\text{w}^\ast_{i, j}$ into a linear combination of $q$ latent variables (i.e., factors) and their associated species-specific coefficients (i.e., factor loadings) according to
+
+\begin{equation}\label{factorModel}
+	\text{w}^\ast_{i, j} = \bm{\lambda}_i^\top\text{w}_j,
+\end{equation}
+
+where $\bm{\lambda}_i^\top$ is the $i$\text{th} row of factor loadings from an $I \times q$ loadings matrix $\bm{\Lambda}$, and $\text{w}_j$ is a $q \times 1$ vector of independent latent factors at site $j$. By settng $q << N$, we achieve dimension reduction to efficiently model communities with a large number of species [@lopes2004bayesian; @hui2015model]. The approach accounts for residual species correlations via their species-specific responses to the $q$ factors. We model each latent factor as a standard normal random variable. To ensure identifiability of the latent factors from the latent factor loadings, we fix the upper triangle of the factor loadings matrix to 0 and the diagonal elements to 1. We assign standard normal priors to the lower triangular elements of the factor loadings matrix. All other priors are identical to the multivariate GLMM previously discussed.
+
+The constraints on the factor loadings matrix ensure identifiability of the factor loadings from the latent factors, but this also results in important practical considerations when fitting these models (e.g., ordering of the species, initial values). [This vignette](https://www.jeffdoser.com/files/spoccupancy-web/articles/modelconsiderations) on the `spOccupancy` website discusses these (and other) considerations. All the advice applied to factor models fit with detection-nondetection data in `spOccupancy` also apply to factor models fit in `spAbundance`.
+
+## Fitting latent factor multivariate GLMMs with `lfMsAbund()`
+
+The function `lfMsAbund()` fits latent factor multi-species GLMMs in `spAbundance`. The arguments are identical to those in `msAbund()` with one additional argument that specifies the number of factors we wish to use in the model (`n.factors`):
+
+```{r, eval = FALSE}
+lfMsAbund(formula, data, inits, priors, tuning, n.factors,
+          n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
+          n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+          n.burn = round(.10 * n.batch * batch.length), n.thin = 1, n.chains = 1,
+          ...)
+```
+
+For guidance on choosing the number of latent factors, see [this vignette](https://www.jeffdoser.com/files/spoccupancy-web/articles/modelconsiderations) on the `spOccupancy` website. Here we will fit a model with 3 latent factors.
+
+```{r}
+n.factors <- 3
+```
+
+There are only a few slight differences in how we go about fitting a multivariate GLMM with latent factors compared to one without latent factors. The `data` format as well as `formula` remain the same as before.
+
+```{r}
+ms.formula <- ~ scale(bio2) + scale(bio8) + scale(bio18) + scale(forest) +
+                scale(devel) + scale(day) + I(scale(day)^2) + scale(tod) +
+                (1 | obs)
+```
+
+Initial values are specified as with `msAbund()`, with the exception that we can now specify initial values for the latent factor loadings matrix `lambda` and the latent factors `w`. Initial values for the species-specific factor loadings (`lambda`) are specified as a numeric matrix with $I$ rows and $q$ columns, where $I$ is the number of species and $q$ is the number of latent factors used in the model. The diagonal elements of the matrix must be 1, and values in the upper triangle must be set to 0 to ensure identifiability of the latent factors. Note that the default initial values for the lower triangle of the factor loadings matrix is 0. We can also specify the initial values for the latent factors. Below we set these to 0 (which is the default).
+
+```{r}
+# Number of species
+n.sp <- dim(bbsData$y)[1]
+# Initiate all lambda initial values to 0.
+lambda.inits <- matrix(0, n.sp, n.factors)
+# Set diagonal elements to 1
+diag(lambda.inits) <- 1
+# Set lower triangular elements to random values from a standard normal distribution
+lambda.inits[lower.tri(lambda.inits)] <- rnorm(sum(lower.tri(lambda.inits)))
+# Check it out.
+lambda.inits
+w.inits <- matrix(0, n.factors, ncol(bbsData$y))
+ms.inits <- list(beta.comm = 0, beta = 0, tau.sq.beta = 1, 
+                 lambda = lambda.inits, kappa = 1, w = w.inits,
+                 sigma.sq.mu = 0.5)
+```
+
+Priors are specified exactly the same as we saw with `msAbund()`. We do not need to explicitly specify the prior for the factor loadings, as we require the prior for the lower-triangular values to be Normal(0, 1).
+
+```{r}
+ms.priors <- list(beta.comm.normal = list(mean = 0, var = 2.72),
+                  tau.sq.beta.ig = list(a = 0.1, b = 0.1),
+                  sigma.sq.mu.ig = list(a = 0.1, b = 0.1),
+                  kappa.unif = list(a = 0, b = 100))
+```
+
+We finish up by specifying the tuning values, where now we specify the initial tuning variance for the factor loadings `lambda` as well as the latent factors `w`. We then run the model for 20,000 iterations with a burn-in of 10,000 samples and a thinning rate of 10, for each of 3 chains, yielding a total of 3000 posterior samples. We will fit the model with a Poisson distribution for abundance.
+
+```{r}
+# Specify initial tuning values
+ms.tuning <- list(beta = 0.3, beta.star = 0.5, kappa = 0.5, w = 0.5, lambda = 0.5)
+# Approx. run time: ~2.6 min
+out.lf.ms <- lfMsAbund(formula = ms.formula,
+                       data = bbsData,
+                       inits = ms.inits,
+                       n.batch = 800,
+                       n.factors = n.factors,
+                       tuning = ms.tuning,
+                       batch.length = 25,
+                       family = 'Poisson',
+                       priors = ms.priors,
+                       n.omp.threads = 1,
+                       verbose = TRUE,
+                       n.report = 200,
+                       n.burn = 10000,
+                       n.thin = 10,
+                       n.chains = 3)
+summary(out.lf.ms)
+```
+
+We see adequate convergence of most model parameters shown in the summary output. Note that the factor loadings themselves are not shown in the `summary()` output, but are available in the `lambda.samples` portion of the model list object.
+
+```{r}
+# Rhats for lambda (the factor loadings)
+out.lf.ms$rhat$lambda.lower.tri
+# ESS for lambda
+out.lf.ms$ESS$lambda
+# Posterior quantiles for the latent factor loadings
+summary(out.lf.ms$lambda.samples)$quantiles
+```
+
+Notice the Rhat values are only reported for the elements of the factor loadings matrix that are estimated and not fixed at any specific value, while the ESS values are reported for all elements of the factor loadings matrix, and take value 0 for those parameters that are fixed for identifiability purposes. We can inspect the latent factor loadings as well as the latent factors (stored in `out.lf.ms$w.samples`) to provide information on any groupings that arise from the species in the modeled community. See @hui2015model for a discussion on using factor models as a model-based ordination technique.
+
+## Posterior predictive checks
+
+We again use the `ppcAbund()` function perform a posterior predictive check of our model
+
+```{r}
+ppc.out.lf.ms <- ppcAbund(out.lf.ms, fit.stat = 'freeman-tukey', group = 0)
+# Summarize with a Bayesian p-value
+summary(ppc.out.lf.ms)
+```
+
+## Model selection using WAIC
+
+We can use `waicAbund()` to calculate the WAIC for comparison to other models. Below, we compare the multivariate GLMM to the latent factor multivariate GLMM.
+
+```{r}
+# With latent factors
+waicAbund(out.lf.ms, by.sp = TRUE)
+# Without latent factors
+waicAbund(out.ms, by.sp = TRUE)
+```
+
+We see substantial improvements in WAIC for the multivariate GLMM that does account for correlations between species (using the factor modeling approach) relative to one that ignores the correlations.
+
+## Prediction
+
+Prediction proceeds exactly as before with the multivariate GLMM 
+
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in', message = FALSE, warning = FALSE}
+out.ms.pred <- predict(out.lf.ms, X.0, coords.0, ignore.RE = TRUE)
+# Look at the resulting object
+str(out.ms.pred)
+mu.sum.samples <- apply(out.ms.pred$mu.0.samples, c(1, 3), sum)
+# Average total abundance at each site
+mu.sum.means <- apply(mu.sum.samples, 2, mean)
+plot.df <- data.frame(Easting = bbsPredData$x,
+                      Northing = bbsPredData$y,
+                      mu.sum.means = mu.sum.means)
+coords.stars <- st_as_stars(plot.df, crs = my.crs)
+# Plot of total relative abundance
+ggplot() +
+  geom_stars(data = coords.stars, aes(x = Easting, y = Northing, fill = mu.sum.means)) +
+  geom_sf(data = coords.sf, col = 'grey') +
+  scale_fill_viridis_c(na.value = NA) +
+  theme_bw(base_size = 12) +
+  labs(fill = '', x = 'Longitude', y = 'Latitude', 
+       title = 'Relative abundance of six warbler species')
+```
+
+# Spatial factor multivariate GLMMs
+
+## Basic model description
+
+Our final, and most complex, GLMM that we fit in `spAbundance` is a multivariate spatially-explicit GLMM. This model is nearly identical to the latent factor multivariate GLMM, except we give a spatial structure to the latent factors instead of assuming they are independent from each other. By modeling the latent factors with a spatial structure, we will often see such a model have improved predictive performance relative to a latent factor multivariate GLMM [@doser2023joint]. This model again is an abundance-based JSDM, but now it simultaneously accounts for residual correlations between species and spatial autocorrelation. The model we present below is a direct extension of the Gaussian spatial factor NNGP model of @taylor2019spatial, where we now allow for the response to be Poisson or negative binomial (in addition to Gaussian).
+
+The model is identical to the previously described latent factor multivariate GLMM with the exception that the latent factors are assumed to have a spatial structure to them. More specifically, our model for species-specific relative abundance is again
+
+\begin{equation}
+\text{log}(\mu_{i}(\bm{s}_j)) = \bm{x}(\bm{s}_j)^\top\bm{\beta}_i + \text{w}^\ast_{i}(\bm{s}_j).
+\end{equation}
+
+Note again that for spatial models we use the notation $\bm{s}_j$ to make it clear that the model is spatially-explicit and relies upon the coordinates ($\bm{s}_j$) at each site $j$ to estimate this spatial pattern. As with the latent factor model, we decompose $\text{w}^\ast_i(\bm{s}_j)$ into a linear combination of $q$ latent variables (i.e., factors) and their associated species-specific coefficients (i.e., factor loadings) according to
+
+\begin{equation}
+	\text{w}^\ast_{i}(\bm{s}_j) = \bm{\lambda}_i^\top\textbf{w}(\bm{s}_j).
+\end{equation}
+
+Now, instead of modeling $\textbf{w}(\bm{s}_j)$ as independent normal latent variables, we assume $\textbf{w}(\bm{s}_j)$ arise from spatial processes, allowing us to account for residual correlation in species-specific abundance. More specifically, each spatial factor $\textbf{w}_r$ for each $r = 1, \dots, q$ is modeled using a Nearest Neighbor Gaussian Process [@datta2016hierarchical], i.e.,
+
+\begin{equation}
+    \textbf{w}_r \sim \text{Normal}(\bm{0}, \tilde{\bm{C}}_r(\bm{\theta}_r)),
+\end{equation}
+
+where $\tilde{\bm{C}}_r(\bm{\theta}_r)$ is the NNGP-derived correlation matrix for the $r^{\text{th}}$ spatial factor. Note that the spatial variance parameter for each spatial factor is assumed to be 1 for identifiability purposes. The vector $\bm{\theta}_r$ consists of parameters governing the spatial process for each spatial factor according to some spatial correlation function, as we saw with the single-species GLMM. Thus, for the exponential, spherical, and Gaussian correlation functions, $\bm{\theta}_r$ includes a spatial decay parameter $\phi_r$, while the Matern correlation function includes an additional spatial smoothness parameter, $\nu_r$.
+
+We assume the same priors and identifiability constraints as the latent factor GLMM. We assign a uniform prior for the spatial decay parameter, $\phi_r$, and the spatial smoothness parameters, $\nu_r$, if using a Matern correlation function.
+
+Notice that this spatial factor modeling approach is the only approach we implement in `spAbundance` for modeling multi-species datasets while accounting for spatial autocorrelation. While we could envision fitting a separate spatial random effect for each species in our multi-species data set (as we implemented in `spOccupancy` in the `spMsPGOcc` function), we prefer (and recommend) using the spatial factor modeling approach as (1) it is far more computationally efficient than fitting a separate spatial effect for each species; (2) it explicitly acknowledges dependence between species; (3) estimating a separate spatial effect for each species would be very difficult to do with multiple rare species in the data set; and (4) even if the species are independent (i.e., there are no residual correlations), the spatial factor modeling approach provides extremely similarly to a model with a separate spatial process for each species [@doser2023joint], while still being substantially faster.
+
+## Fitting spatial factor multivariate GLMMs with `sfMsAbund()`
+
+The function `sfMsAbund()` fits spatial factor multivariate GLMMs in `spAbundance`. The arguments are very similar to `lfMsAbund()` and `spAbund()`.
+
+```{r, eval = FALSE}
+sfMsAbund(formula, data, inits, priors,  
+          tuning, cov.model = 'exponential', NNGP = TRUE, 
+          n.neighbors = 15, search.type = 'cb', n.factors,
+          n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
+          n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+          n.burn = round(.10 * n.batch * batch.length), n.thin = 1, n.chains = 1,
+          ...)
+```
+
+We will again fit the model with three spatial factors, and will use the same covariates/random effects on abundance and detection as we have done throughout the vignette
+
+```{r}
+n.factors <- 3
+ms.formula <- ~ scale(bio2) + scale(bio8) + scale(bio18) + scale(forest) +
+                scale(devel) + scale(day) + I(scale(day)^2) + scale(tod) +
+                (1 | obs)
+```
+
+Initial values are identical to what we saw with `lfMsAbund()`, but we will also specify the initial values for the spatial decay parameters for each spatial factor (we use an exponential correlation model so we do not need to specify any initial values for the `nu`, the spatial smoothness parameter used when `cov.model = 'matern'`.
+
+```{r}
+# Number of species
+n.sp <- dim(bbsData$y)[1]
+# Initiate all lambda initial values to 0.
+lambda.inits <- matrix(0, n.sp, n.factors)
+# Set diagonal elements to 1
+diag(lambda.inits) <- 1
+# Set lower triangular elements to random values from a standard normal distribution
+lambda.inits[lower.tri(lambda.inits)] <- rnorm(sum(lower.tri(lambda.inits)))
+# Check it out.
+lambda.inits
+w.inits <- matrix(0, n.factors, ncol(bbsData$y))
+# Pair-wise distances between all sites
+dist.mat <- dist(dataNMixSim$coords)
+# Exponential covariance model
+cov.model <- 'exponential'
+ms.inits <- list(beta.comm = 0, beta = 0, tau.sq.beta = 1,
+                 lambda = lambda.inits, kappa = 1, phi = 3 / mean(dist.mat),
+                 w = w.inits, sigma.sq.mu = 0.5)
+```
+
+Priors are the same as with the latent factor multivariate GLMM, where we also add in our default prior for the spatial decay parameters, which allows the effective spatial range of each spatial factor to range from the maximum intersite distance to the minimum intersite distance. Notice the prior for `phi` is now specified as a list as opposed to an atomic vector as we did for the single-species case. If desired, the list format allows you to easily specify a different prior for each of the spatial factors. See `?sfMsAbund` for more details.
+
+```{r}
+max.dist <- max(dist.mat)
+min.dist <- min(dist.mat)
+ms.priors <- list(beta.comm.normal = list(mean = 0, var = 2.72),
+                  tau.sq.beta.ig = list(a = 0.1, b = 0.1),
+                  sigma.sq.mu.ig = list(a = 0.1, b = 0.1),
+                  kappa.unif = list(a = 0, b = 100),
+                  phi.unif = list(3 / max.dist, 3 / min.dist))
+```
+
+We lastly specify the tuning values and run the model for 20,000 iterations with a burn-in of 10,000 samples and a thinning rate of 10, for each of 3 chains, yielding a total of 3000 posterior samples. As before, we will use a Poisson distribution and 15 nearest neighbors.
+
+
+```{r}
+# Specify initial tuning values
+ms.tuning <- list(beta = 0.3, beta.star = 0.5, kappa = 0.5,
+                  w = 0.5, lambda = 0.5, phi = 0.5)
+# Approx. run time: ~10 min
+out.sf.ms <- sfMsAbund(formula = ms.formula,
+                      data = bbsData,
+                      inits = ms.inits,
+                      n.batch = 800,
+                      n.factors = n.factors,
+                      family = 'Poisson',
+                      tuning = ms.tuning,
+                      batch.length = 25,
+                      priors = ms.priors,
+                      n.neighbors = 15,
+                      n.omp.threads = 1,
+                      verbose = TRUE,
+                      n.report = 200,
+                      n.burn = 10000,
+                      n.thin = 10,
+                      n.chains = 3)
+```
+
+```{r}
+summary(out.sf.ms)
+```
+
+## Posterior predictive checks
+
+As before, we can use the `ppcAbund()` function to perform a posterior predictive check of our model
+
+```{r}
+ppc.out.sf.ms <- ppcAbund(out.sf.ms, fit.stat = 'freeman-tukey', group = 0)
+# Summarize with a Bayesian p-value
+summary(ppc.out.sf.ms)
+```
+
+## Model selection using WAIC
+
+We use `waicAbund()` to calculate the WAIC for all species in the data set, and compare the WAIC to that obtained using the non-spatial latent factor GLMM.
+
+```{r}
+# Non-spatial latent factor model
+waicAbund(out.lf.ms, by.sp = FALSE)
+# Spatial factor model
+waicAbund(out.sf.ms, by.sp = FALSE)
+```
+
+## Prediction
+
+Prediction proceeds exactly as we have seen with all previous models.
+
+```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in', message = FALSE, warning = FALSE}
+out.ms.pred <- predict(out.sf.ms, X.0, coords.0, ignore.RE = TRUE,
+                       n.report = 100, verbose = TRUE)
+# Look at the resulting object
+str(out.ms.pred)
+mu.sum.samples <- apply(out.ms.pred$mu.0.samples, c(1, 3), sum)
+# Average total abundance at each site
+mu.sum.means <- apply(mu.sum.samples, 2, mean)
+plot.df <- data.frame(Easting = bbsPredData$x,
+                      Northing = bbsPredData$y,
+                      mu.sum.means = mu.sum.means)
+coords.stars <- st_as_stars(plot.df, crs = my.crs)
+# Plot of total relative abundance
+ggplot() +
+  geom_stars(data = coords.stars, aes(x = Easting, y = Northing, fill = mu.sum.means)) +
+  geom_sf(data = coords.sf, col = 'grey') +
+  scale_fill_viridis_c(na.value = NA) +
+  theme_bw(base_size = 12) +
+  labs(fill = '', x = 'Longitude', y = 'Latitude', 
+       title = 'Relative abundance of six warbler species')
+```
+
+# References {-}
+

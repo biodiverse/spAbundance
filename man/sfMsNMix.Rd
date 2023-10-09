@@ -1,6 +1,6 @@
 \name{sfMsNMix}
 \alias{sfMsNMix}
-\title{Function for Fitting Spatial Factor Multi-Species N-mixture Models}
+\title{Function for Fitting Spatial Factor Multi-species N-mixture Models}
 
 \description{
 Function for fitting spatial multi-species N-mixture models with species correlations (i.e., an abundance-based spatially-explicit joint species distribution model with imperfect detection). We use Nearest Neighbor Gaussian Processes and a spatial factor modeling approach to achieve dimension reducition. 
@@ -8,11 +8,11 @@ Function for fitting spatial multi-species N-mixture models with species correla
 
 \usage{
 sfMsNMix(abund.formula, det.formula, data, inits, priors,  
-       tuning, cov.model = 'exponential', NNGP = TRUE, n.neighbors = 15, 
-       search.type = 'cb', n.factors, n.batch, batch.length, accept.rate = 0.43, 
-       family = 'Poisson', n.omp.threads = 1, verbose = TRUE, n.report = 100, 
-       n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
-       n.chains = 1, ...)
+         tuning, cov.model = 'exponential', NNGP = TRUE, n.neighbors = 15, 
+         search.type = 'cb', n.factors, n.batch, batch.length, accept.rate = 0.43, 
+         family = 'Poisson', n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+         n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
+         n.chains = 1, ...)
 }
 
 \arguments{
@@ -28,7 +28,7 @@ sfMsNMix(abund.formula, det.formula, data, inits, priors,
   and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
 \item{data}{a list containing data necessary for model fitting.
-  Valid tags are \code{y}, \code{abund.covs}, \code{det.covs}, and \code{coords}. \code{y}
+  Valid tags are \code{y}, \code{abund.covs}, \code{det.covs}, \code{coords}, and \code{offset}. \code{y}
   is a three-dimensional array of observed count data with first dimension equal to the number 
   of species, second dimension equal to the number of sites, and third 
   dimension equal to the maximum number of replicates at a given site. 
@@ -43,7 +43,9 @@ sfMsNMix(abund.formula, det.formula, data, inits, priors,
   to the maximum number of replicates at a given site. \code{coords} is a matrix
   or data frame with two columns that contain the spatial coordinates of each 
   site. Note that \code{spAbundance} assumes coordinates are specified 
-  in a projected coordinate system.}
+  in a projected coordinate system. \code{offset}
+  is an offset to use in the abundance model (e.g., an area offset). This can be either a single
+  value or a vector with an offset for each site (e.g., if survey area differed in size).}
 
 \item{inits}{a list with each tag corresponding to a parameter name.
   Valid tags are \code{alpha.comm}, \code{beta.comm}, \code{beta}, 
@@ -114,7 +116,7 @@ sfMsNMix(abund.formula, det.formula, data, inits, priors,
     \code{"exponential"}, \code{"matern"}, \code{"spherical"}, and
     \code{"gaussian"}.}
 
-\item{tuning}{a list with each tag corresponding to a parameter name, whose
+\item{tuning}{a list with each tag corresponding to a parameter name, 
   whose value defines the initial variance of the adaptive sampler. 
   Valid tags are \code{beta}, \code{alpha}, \code{beta.star} (the abundance 
   random effect values), \code{alpha.star} (the detection random effect values), 
@@ -124,7 +126,7 @@ sfMsNMix(abund.formula, det.formula, data, inits, priors,
 
 \item{NNGP}{if \code{TRUE}, model is fit with an NNGP.  See Datta et al. (2016) and 
   Finley et al. (2019) for more information. Currently only NNGP is supported,
-  functionality for a Gaussian Process be addded in future package development.}
+  functionality for a Gaussian Process may be added in future package development.}
 
 \item{n.neighbors}{number of neighbors used in the NNGP. Only used if 
 \code{NNGP = TRUE}. Datta et al. (2016) showed that 15 neighbors is usually 
@@ -325,7 +327,7 @@ n.factors <- 3
 phi <- runif(n.factors, 3 / 1, 3 / .2)
 
 dat <- simMsNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta, alpha = alpha,
-	         mu.RE = mu.RE, p.RE = p.RE, family = 'Poisson', 
+                 mu.RE = mu.RE, p.RE = p.RE, family = 'Poisson', 
                  factor.model = TRUE, n.factors = n.factors, sp = TRUE, phi = phi,
                  cov.model = 'exponential')
 
@@ -340,22 +342,22 @@ coords <- dat$coords
 abund.covs <- X
 colnames(abund.covs) <- c('int', 'abund.cov.1')
 det.covs <- list(det.cov.1 = as.data.frame(X.p[, , 2]),
-		 det.cov.2 = as.data.frame(X.p[, , 3]))
+                 det.cov.2 = as.data.frame(X.p[, , 3]))
 data.list <- list(y = y,
-		  abund.covs = abund.covs,
-		  det.covs = det.covs, 
+                  abund.covs = abund.covs,
+                  det.covs = det.covs, 
                   coords = coords)
 prior.list <- list(beta.comm.normal = list(mean = rep(0, p.abund), 
-					   var = rep(100, p.abund)),
-		   alpha.comm.normal = list(mean = rep(0, p.det),
-			               var = rep(2.72, p.det)),
+                                           var = rep(100, p.abund)),
+                   alpha.comm.normal = list(mean = rep(0, p.det),
+                                            var = rep(2.72, p.det)),
                    tau.sq.beta.ig = list(a = 0.1, b = 0.1),
                    tau.sq.alpha.ig = list(a = 0.1, b = 0.1), 
                    phi.unif = list(a = 3 / 1, 3 / .1))
 inits.list <- list(beta.comm = 0, alpha.comm = 0,
-		   beta = 0, alpha = 0,
-		   tau.sq.beta = 0.5, tau.sq.alpha = 0.5,
-		   N = apply(y, c(1, 2), max, na.rm = TRUE))
+                   beta = 0, alpha = 0,
+                   tau.sq.beta = 0.5, tau.sq.alpha = 0.5,
+                   N = apply(y, c(1, 2), max, na.rm = TRUE))
 tuning.list <- list(beta = 0.5, alpha = 0.5, lambda = 0.5, w = 0.5, 
                     phi = 1)
 
@@ -366,22 +368,22 @@ n.thin <- 1
 n.chains <- 1
 
 out <- sfMsNMix(abund.formula = ~ abund.cov.1,
-	      det.formula = ~ det.cov.1 + det.cov.2,
-	      data = data.list,
-	      n.batch = n.batch,
-	      inits = inits.list,
-	      priors = prior.list,
-	      tuning = tuning.list,
-	      batch.length = batch.length,
-	      n.omp.threads = 1,
-	      n.factors = n.factors,
-	      cov.model = 'exponential', 
-	      n.neighbors = 5,
-	      verbose = TRUE,
-	      n.report = 1,
-	      n.burn = n.burn,
-	      n.thin = n.thin,
-	      n.chains = n.chains)
+                det.formula = ~ det.cov.1 + det.cov.2,
+                data = data.list,
+                n.batch = n.batch,
+                inits = inits.list,
+                priors = prior.list,
+                tuning = tuning.list,
+                batch.length = batch.length,
+                n.omp.threads = 1,
+                n.factors = n.factors,
+                cov.model = 'exponential', 
+                n.neighbors = 5,
+                verbose = TRUE,
+                n.report = 1,
+                n.burn = n.burn,
+                n.thin = n.thin,
+                n.chains = n.chains)
 
 summary(out, level = 'community')
 }

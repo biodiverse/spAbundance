@@ -1,5 +1,7 @@
-simNMix <- function(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(), p.RE = list(), 
-		    sp = FALSE, cov.model, sigma.sq, phi, nu, family = 'Poisson', ...) {
+simNMix <- function(J.x, J.y, n.rep, n.rep.max, beta, alpha, 
+		    kappa, mu.RE = list(), p.RE = list(), 
+		    offset = 1, sp = FALSE, cov.model, sigma.sq, 
+		    phi, nu, family = 'Poisson', ...) {
 
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -17,6 +19,9 @@ simNMix <- function(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(), p.RE = 
   }
   if (length(n.rep) != J) {
     stop(paste("error: n.rep must be a vector of length ", J, sep = ''))
+  }
+  if (missing(n.rep.max)) {
+    n.rep.max <- max(n.rep)
   }
   # beta ------------------------------
   if (missing(beta)) {
@@ -121,12 +126,17 @@ simNMix <- function(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(), p.RE = 
 
   # Form detection covariate (if any) -------------------------------------
   n.alpha <- length(alpha)
-  X.p <- array(NA, dim = c(J, max(n.rep), n.alpha))
+  X.p <- array(NA, dim = c(J, n.rep.max, n.alpha))
   X.p[, , 1] <- 1
+  # Get index of surveyed replicates for each site. 
+  rep.indx <- list()
+  for (j in 1:J) {
+    rep.indx[[j]] <- sample(1:n.rep.max, n.rep[j], replace = FALSE)
+  }
   if (n.alpha > 1) {
     for (i in 2:n.alpha) {
       for (j in 1:J) {
-        X.p[j, 1:n.rep[j], i] <- rnorm(n.rep[j])
+        X.p[j, rep.indx[[j]], i] <- rnorm(n.rep[j])
       } # j
     } # i
   }
@@ -200,16 +210,16 @@ simNMix <- function(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(), p.RE = 
     alpha.star.indx <- rep(1:p.det.re, n.det.re.long)
     alpha.star <- rep(0, n.det.re)
     X.p.random <- X.p[, , unlist(p.RE$alpha.indx), drop = FALSE]
-    X.p.re <- array(NA, dim = c(J, max(n.rep), length(p.RE$levels)))
+    X.p.re <- array(NA, dim = c(J, n.rep.max, length(p.RE$levels)))
     for (i in 1:length(p.RE$levels)) {
-      X.p.re[, , i] <- matrix(sample(1:p.RE$levels[i], J * max(n.rep), replace = TRUE), 
-		              J, max(n.rep))	      
+      X.p.re[, , i] <- matrix(sample(1:p.RE$levels[i], J * n.rep.max, replace = TRUE), 
+		              J, n.rep.max)	      
     }
     for (i in 1:p.det.re) {
       alpha.star[which(alpha.star.indx == i)] <- rnorm(n.det.re.long[i], 0, sqrt(sigma.sq.p[i]))
     }
     for (j in 1:J) {
-      X.p.re[j, -(1:n.rep[j]), ] <- NA
+      X.p.re[j, -rep.indx[[j]], ] <- NA
     }
     indx.mat <- X.p.re[, , p.re.col.indx, drop = FALSE]
     if (length(p.RE$levels) > 1) {
@@ -222,9 +232,9 @@ simNMix <- function(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(), p.RE = 
         indx.mat[, , j] <- indx.mat[, , j] + max(indx.mat[, , j - 1], na.rm = TRUE) 
       }
     }
-    alpha.star.sites <- matrix(NA, J, max(n.rep))
+    alpha.star.sites <- matrix(NA, J, n.rep.max)
     for (j in 1:J) {
-      for (k in 1:n.rep[j]) {
+      for (k in rep.indx[[j]]) {
         alpha.star.sites[j, k] <- alpha.star[indx.mat[j, k, ]] %*% X.p.random[j, k, ]
       }
     }
@@ -249,7 +259,7 @@ simNMix <- function(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(), p.RE = 
       }
     }
     # Get mean and overdispersion parameter 
-    N <- rnbinom(J, size = kappa, mu = mu)
+    N <- rnbinom(J, size = kappa, mu = mu * offset)
   } else if (family == 'Poisson') {
     if (sp) {
       if (length(mu.RE) > 0) {
@@ -264,20 +274,20 @@ simNMix <- function(J.x, J.y, n.rep, beta, alpha, kappa, mu.RE = list(), p.RE = 
         mu <- exp(X %*% as.matrix(beta))
       }
     }
-    N <- rpois(J, lambda = mu)
+    N <- rpois(J, lambda = mu * offset)
   }
 
   # Data Formation --------------------------------------------------------
-  p <- matrix(NA, nrow = J, ncol = max(n.rep))
-  y <- matrix(NA, nrow = J, ncol = max(n.rep))
+  p <- matrix(NA, nrow = J, ncol = n.rep.max)
+  y <- matrix(NA, nrow = J, ncol = n.rep.max)
   for (j in 1:J) {
     if (length(p.RE) > 0) {
-      p[j, 1:n.rep[j]] <- logit.inv(X.p[j, 1:n.rep[j], ] %*% as.matrix(alpha) + 
-				    alpha.star.sites[j, 1:n.rep[j]])
+      p[j, rep.indx[[j]]] <- logit.inv(X.p[j, rep.indx[[j]], ] %*% as.matrix(alpha) + 
+				    alpha.star.sites[j, rep.indx[[j]]])
     } else {
-      p[j, 1:n.rep[j]] <- logit.inv(X.p[j, 1:n.rep[j], ] %*% as.matrix(alpha))
+      p[j, rep.indx[[j]]] <- logit.inv(X.p[j, rep.indx[[j]], ] %*% as.matrix(alpha))
     }
-    y[j, 1:n.rep[j]] <- rbinom(n.rep[j], N[j], p[j, 1:n.rep[j]])
+    y[j, rep.indx[[j]]] <- rbinom(n.rep[j], N[j], p[j, rep.indx[[j]]])
   } # j
 
 

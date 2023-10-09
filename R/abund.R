@@ -54,6 +54,28 @@ abund <- function(formula, data, inits, priors, tuning,
     }
     y <- as.matrix(data$y) 
     y.mat <- y
+    # Offset
+    if ('offset' %in% names(data)) {
+      offset <- data$offset
+      if (length(offset) == 1) {
+        offset <- matrix(offset, nrow(y), ncol(y)) 
+      } else if (length(dim(offset)) == 1) { # Value for each site
+        if (length(offset) != nrow(y)) {
+          stop(paste0("offset must be a single value, vector of length ", nrow(y), " or a matrix with ", 
+                     nrow(y), " rows and ", ncol(y), " columns."))	
+        }
+        offset <- matrix(offset, nrow(y), ncol(y))
+      } else if (length(dim(offset)) == 2) { # Value for each site/obs
+        if (nrow(offset) != nrow(y) | ncol(offset) != ncol(y)) {
+          stop(paste0("offset must be a single value, vector of length ", nrow(y), " or a matrix with ", 
+                      nrow(y), " rows and ", ncol(y), " columns."))	
+
+        }
+      }
+    } else {
+      offset <- matrix(1, nrow(y), ncol(y))
+    }
+    offset.mat <- offset
     if (!'covs' %in% names(data)) {
       if (formula == ~ 1) {
         if (verbose) {
@@ -171,7 +193,7 @@ abund <- function(formula, data, inits, priors, tuning,
     # Number of replicates at each site
     n.rep <- apply(y, 1, function(a) sum(!is.na(a)))
     # Max number of repeat visits
-    K.max <- max(n.rep)
+    K.max <- ncol(y)
     # Because I like K better than n.rep
     K <- n.rep
 
@@ -181,6 +203,7 @@ abund <- function(formula, data, inits, priors, tuning,
     # Subtract 1 for indices in C
     site.indx <- site.indx - 1
     y <- c(y)
+    offset <- c(offset)
     names.long <- which(!is.na(y))
     # Remove missing observations when the covariate data are available but
     # there are missing abundance data. 
@@ -193,7 +216,8 @@ abund <- function(formula, data, inits, priors, tuning,
     if (nrow(X.random) == length(y) & p.abund.re > 0) {
       X.random <- X.random[!is.na(y), , drop = FALSE]
     }
-    y <- y[!is.na(y)]
+    y <- y[!is.na(y.mat)]
+    offset <- offset[!is.na(y.mat)]
     # Number of data points for the y vector
     n.obs <- nrow(X)
 
@@ -461,6 +485,7 @@ abund <- function(formula, data, inits, priors, tuning,
     # Set storage for all variables ---------------------------------------
     storage.mode(y) <- "double"
     storage.mode(X) <- "double"
+    storage.mode(offset) <- "double"
     consts <- c(J, n.obs, p.abund, p.abund.re, n.abund.re)
     storage.mode(consts) <- "integer"
     storage.mode(beta.inits) <- "double"
@@ -523,7 +548,7 @@ abund <- function(formula, data, inits, priors, tuning,
         		           sigma.sq.mu.a, sigma.sq.mu.b,  
         		           tuning.c, n.batch, batch.length, accept.rate, 
         		           n.omp.threads, verbose, n.report, samples.info, chain.info, 
-                             family.c)
+                             family.c, offset)
       chain.info[1] <- chain.info[1] + 1
     } # i   
     # Calculate R-Hat ---------------
@@ -612,6 +637,7 @@ abund <- function(formula, data, inits, priors, tuning,
     dimnames(out$X)[[3]] <- x.names
     dimnames(out$X.re)[[3]] <- colnames(X.re)
     out$y <- y.mat
+    out$offset <- offset.mat
     out$n.samples <- n.samples
     out$call <- cl
     out$n.post <- n.post.samples

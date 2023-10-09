@@ -54,11 +54,12 @@ msAbund <- function(formula, data, inits, priors, tuning,
     if (!(length(dim(data$y)) %in% c(2, 3))) {
       stop("error: count data y must be a two or three-dimensional array with dimensions corresponding to species, sites, and replicates.")
     }
+    sp.names <- attr(data$y, 'dimnames')[[1]]
     if (length(dim(data$y)) == 2) {
       data$y <- array(data$y, dim = c(nrow(data$y), ncol(data$y), 1))
+      dimnames(data$y)[[1]] <- sp.names
     }
     y <- data$y
-    sp.names <- attr(y, 'dimnames')[[1]]
     if (!'covs' %in% names(data)) {
       if (formula == ~ 1) {
         if (verbose) {
@@ -87,6 +88,28 @@ msAbund <- function(formula, data, inits, priors, tuning,
     }
     # For later
     y.mat <- y
+    # Offset
+    if ('offset' %in% names(data)) {
+      offset <- data$offset
+      if (length(offset) == 1) {
+        offset <- matrix(offset, ncol(y), dim(y)[3]) 
+      } else if (length(dim(offset)) == 1) { # Value for each site
+        if (length(offset) != ncol(y)) {
+          stop(paste0("offset must be a single value, vector of length ", ncol(y), " or a matrix with ", 
+                     ncol(y), " rows and ", dim(y)[3], " columns."))	
+        }
+        offset <- matrix(offset, ncol(y), dim(y)[3])
+      } else if (length(dim(offset)) == 2) { # Value for each site/obs
+        if (nrow(offset) != ncol(y) | ncol(offset) != dim(y)[3]) {
+          stop(paste0("offset must be a single value, vector of length ", ncol(y), " or a matrix with ", 
+                      ncol(y), " rows and ", dim(y)[3], " columns."))	
+
+        }
+      }
+    } else {
+      offset <- matrix(1, ncol(y), dim(y)[3])
+    }
+    offset.mat <- offset
 
     # First subset covariates to only use those that are included in the analysis. 
     # Get occurrence covariates in proper format
@@ -194,6 +217,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
     site.indx <- site.indx - 1
     # y is stored in the following order: species, site, visit
     y <- c(y)
+    offset <- c(offset)
     # Assumes the missing data are constant across species, which seems likely, 
     # but may eventually need some updating. 
     names.long <- which(!is.na(c(y.mat[1, , ])))
@@ -208,6 +232,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
       X.random <- X.random[!is.na(c(y.mat[1, , ])), , drop = FALSE]
     }
     y <- y[!is.na(y)]
+    offset <- offset[!is.na(c(y.mat[1, , ]))]
     # Number of pseudoreplicates
     n.obs <- nrow(X)
 
@@ -371,10 +396,10 @@ msAbund <- function(formula, data, inits, priors, tuning,
         }
       } else {
         if (verbose) {
-        message("No prior specified for kappa.unif.\nSetting uniform bounds of 0 and 10.\n")
+        message("No prior specified for kappa.unif.\nSetting uniform bounds of 0 and 100.\n")
         }
         kappa.a <- rep(0, n.sp)
-        kappa.b <- rep(10, n.sp)
+        kappa.b <- rep(100, n.sp)
       }
     } else {
       kappa.a <- rep(0, n.sp)
@@ -580,6 +605,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
     # Set storage for all variables ---------------------------------------
     storage.mode(y) <- "double"
     storage.mode(X) <- "double"
+    storage.mode(offset) <- 'double'
     consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re)
     storage.mode(consts) <- "integer"
     storage.mode(beta.inits) <- "double"
@@ -651,7 +677,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
           		    kappa.b, tau.sq.beta.a, tau.sq.beta.b,  
         		    sigma.sq.mu.a, sigma.sq.mu.b,
       	                    tuning.c, n.batch, batch.length, accept.rate, n.omp.threads, 
-      	                    verbose, n.report, samples.info, chain.info, family.c)
+      	                    verbose, n.report, samples.info, chain.info, family.c, offset)
       chain.info[1] <- chain.info[1] + 1
     }
     # Calculate R-Hat ---------------
@@ -702,7 +728,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
     colnames(out$beta.samples) <- coef.names
     if (family == 'NB') {
       out$kappa.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$kappa.samples))))
-      colnames(out$kappa.samples) <- paste('kappa', 1:n.sp, sep = '') 
+      colnames(out$kappa.samples) <- paste('kappa', sp.names, sep = '-') 
     }
     y.non.miss.indx <- which(!is.na(y.mat), arr.ind = TRUE)
     out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
@@ -766,6 +792,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
     dimnames(out$X)[[3]] <- x.names
     dimnames(out$X.re)[[3]] <- colnames(X.re)
     out$y <- y.mat
+    out$offset <- offset.mat
     out$call <- cl
     out$n.samples <- n.samples
     out$x.names <- x.names

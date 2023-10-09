@@ -21,7 +21,7 @@ abund(formula, data, inits, priors, tuning,
   and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
 \item{data}{a list containing data necessary for model fitting.
-  Valid tags are \code{y} and \code{covs}. \code{y}
+  Valid tags are \code{y}, \code{covs}, and \code{offset}. \code{y}
   is a vector, matrix, or data frame of the observed count values. If a vector, 
   the values represent the observed counts at each site. If multiple replicate
   observations are obtained at the sites (e.g., sub-samples, repeated sampling over
@@ -36,7 +36,9 @@ abund(formula, data, inits, priors, tuning,
   are specified as a matrix or data frame with the number of rows equal to \eqn{J}{J}
   and number of columns equal to the maximum number of replicate observations at a 
   given site. For zero-inflated Gaussian models, the tag \code{z} is used to specify the 
-  binary component of the zero-inflated model and should have the same length as \code{y}.} 
+  binary component of the zero-inflated model and should have the same length as \code{y}. 
+  \code{offset} is an offset to use in the abundance model (e.g., an area offset). 
+  This can be either a single value, a vector with an offset for each site (e.g., if survey area differed in size), or a six x replicate matrix if more than one counts are available at a given site.} 
 
 \item{inits}{a list with each tag corresponding to a parameter name.
   Valid tags are \code{beta}, \code{kappa}, \code{sigma.sq.mu}, and \code{tau.sq}. 

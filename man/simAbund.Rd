@@ -7,8 +7,8 @@
 }
 
 \usage{
-simAbund(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(), 
-       sp = FALSE, svc.cols = 1, cov.model, sigma.sq, phi, nu, 
+simAbund(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = list(), 
+       offset = 1, sp = FALSE, svc.cols = 1, cov.model, sigma.sq, phi, nu, 
        family = 'Poisson', z, x.positive = FALSE, ...)
 }
 
@@ -19,6 +19,8 @@ simAbund(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
 
 \item{n.rep}{a numeric vector of length \eqn{J = J.x \times J.y}{J = J.x x J.y} indicating the number of replicate surveys at each of the \eqn{J}{J} sites.}
 
+\item{n.rep.max}{a single numeric value indicating the maximum number of replicate surveys. This is an optional argument, with its default value set to \code{max(n.rep)}. This can be used to generate data sets with different types of missingness (e.g., simulate data across 20 days (replicate surveys) but sites are only sampled a maximum of ten times each).}
+
 \item{beta}{a numeric vector containing the intercept and regression coefficient parameters for the abundance model.}
 
 \item{kappa}{a single numeric value containing the dispersion parameter for the abundance portion of the model. Only relevant when \code{family = 'NB'}.}
@@ -28,6 +30,8 @@ simAbund(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
 \item{mu.RE}{a list used to specify the non-spatial random intercepts included in the model. The list must have two tags: \code{levels} and \code{sigma.sq.mu}. \code{levels} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the number of levels there are in each intercept. \code{sigma.sq.mu} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the variances for each random effect. A third optional tage is \code{beta.indx}, which is a numeric vector with length equal to the number of distinct random intercepts. The values in \code{beta.indx} denote the intercept/covariate for which you wish to simulate a random intercept/slope. Numeric values correspond to the intercept/covaraite in \code{beta}. If \code{mu.RE} is not specified, no random effects are included in the abundance portion of the model.}
 
 \item{sp}{a logical value indicating whether to simulate a spatially-explicit model with a Gaussian process. By default set to \code{FALSE}.}
+
+\item{offset}{either a single numeric value, a vector of length \code{J}, or a site by replicate matrix that contains the offset for each data point in the data set.}
 
 \item{svc.cols}{a vector indicating the variables whose effects will be
   estimated as spatially-varying coefficients. \code{svc.cols} is an

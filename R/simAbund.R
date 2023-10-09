@@ -1,5 +1,5 @@
-simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),  
-		     sp = FALSE, svc.cols = 1, cov.model, sigma.sq, phi, 
+simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = list(),  
+		     offset = 1, sp = FALSE, svc.cols = 1, cov.model, sigma.sq, phi, 
 		     nu, family = 'Poisson', z, x.positive = FALSE, ...) {
 
   # Check for unused arguments ------------------------------------------
@@ -24,6 +24,9 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
   if (length(n.rep) != J) {
     stop(paste("error: n.rep must be a vector of length ", J, sep = ''))
   }
+  if (missing(n.rep.max)) {
+    n.rep.max <- max(n.rep)
+  }
   # beta ------------------------------
   if (missing(beta)) {
     stop("error: beta must be specified.")
@@ -33,7 +36,7 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
     stop("error: family must be one of: NB (negative binomial), Poisson, 'Gaussian', or 'zi-Gaussian'")
   }
   if (family %in% c('Gaussian', 'zi-Gaussian')) {
-    if (max(n.rep) != 1) {
+    if (n.rep.max != 1) {
       stop("n.rep must be one for all sites for Gaussian or zi-Gaussian models")
     }
   }
@@ -115,7 +118,6 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
       stop('for a zero-inflated Gaussian model, you must supply the z values (binary 0s or 1s)')
     }
   }
-
   # Subroutines -----------------------------------------------------------
   # MVN
   rmvn <- function(n, mu=0, V = matrix(1)) {
@@ -130,16 +132,21 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
 
   # Form abundance covariates (if any) ------------------------------------
   n.beta <- length(beta)
-  X <- array(NA, dim = c(J, max(n.rep), n.beta))
+  X <- array(NA, dim = c(J, n.rep.max, n.beta))
+  # Get index of surveyed replicates for each site. 
+  rep.indx <- list()
+  for (j in 1:J) {
+    rep.indx[[j]] <- sample(1:n.rep.max, n.rep[j], replace = FALSE)
+  }
   X[, , 1] <- 1
   if (n.beta > 1) {
     for (i in 2:n.beta) {
       for (j in 1:J) {
         if (x.positive) {
-          X[j, 1:n.rep[j], i] <- runif(n.rep[j], 0, 5)
+          X[j, rep.indx[[j]], i] <- runif(n.rep[j], 0, 5)
            
 	} else {
-          X[j, 1:n.rep[j], i] <- rnorm(n.rep[j])
+          X[j, rep.indx[[j]], i] <- rnorm(n.rep[j])
 	}
       } 
     } # i
@@ -185,10 +192,10 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
     beta.star <- rep(0, n.nmix.re)
     X.random <- X[, , unlist(mu.RE$beta.indx), drop = FALSE]
     n.random <- dim(X.random)[3]
-    X.re <- array(NA, dim = c(J, max(n.rep), length(unique(re.col.indx))))
+    X.re <- array(NA, dim = c(J, n.rep.max, length(unique(re.col.indx))))
     for (i in 1:length(unique(re.col.indx))) {
       for (j in 1:J) {
-        X.re[j, 1:n.rep[j], i] <- sample(1:mu.RE$levels[i], n.rep[j], replace = TRUE)  
+        X.re[j, rep.indx[[j]], i] <- sample(1:mu.RE$levels[i], n.rep[j], replace = TRUE)  
       }
     }
     indx.mat <- X.re[, , re.col.indx, drop = FALSE]
@@ -201,9 +208,9 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
         indx.mat[, , j] <- indx.mat[, , j] + max(indx.mat[, , j - 1], na.rm = TRUE)
       }
     }
-    beta.star.sites <- matrix(NA, J, max(n.rep))
+    beta.star.sites <- matrix(NA, J, n.rep.max)
     for (j in 1:J) {
-      for (k in 1:n.rep[j]) {  
+      for (k in rep.indx[[j]]) {  
         beta.star.sites[j, k] <- beta.star[indx.mat[j, k, ]] %*% as.matrix(X.random[j, k, ])
       } # k
     } # j
@@ -213,10 +220,27 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
   }
 
   # Data formation --------------------------------------------------------
-  mu <- matrix(NA, J, max(n.rep))
-  y <- matrix(NA, J, max(n.rep))
+  mu <- matrix(NA, J, n.rep.max)
+  y <- matrix(NA, J, n.rep.max)
+  # Offset ----------------------------
+  # Single value
+  if (length(offset) == 1) {
+    offset <- matrix(offset, J, n.rep.max) 
+  } else if (length(dim(offset)) == 1) { # Value for each site
+    if (length(offset) != J) {
+      stop(paste0("offset must be a single value, vector of length ", J, " or a matrix with ", 
+	         J, " rows and ", n.rep.max, " columns."))	
+    }
+    offset <- matrix(offset, J, n.rep.max)
+  } else if (length(dim(offset)) == 2) { # Value for each site/obs
+    if (nrow(offset) != J | ncol(offset) != n.rep.max) {
+      stop(paste0("offset must be a single value, vector of length ", J, " or a matrix with ", 
+                  J, " rows and ", n.rep.max, " columns."))	
+
+    }
+  }
   for (j in 1:J) {
-    for (k in 1:n.rep[j]) {
+    for (k in rep.indx[[j]]) {
       if (sp) {
         if (length(mu.RE) > 0) {
           mu[j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
@@ -238,17 +262,17 @@ simAbund <- function(J.x, J.y, n.rep, beta, kappa, tau.sq, mu.RE = list(),
         mu[j, k] <- exp(mu[j, k])
       }
       if (family == 'NB') {
-        y[j, k] <- rnbinom(1, size = kappa, mu = mu[j, k])
+        y[j, k] <- rnbinom(1, size = kappa, mu = mu[j, k] * offset[j, k])
       }
       if (family == 'Poisson') {
-        y[j, k] <- rpois(1, lambda = mu[j, k])
+        y[j, k] <- rpois(1, lambda = mu[j, k] * offset[j, k])
       }
       if (family == 'Gaussian') {
-        y[j, k] <- rnorm(1, mu[j, k], sqrt(tau.sq))
+        y[j, k] <- rnorm(1, mu[j, k] * offset[j, k], sqrt(tau.sq))
       }
       if (family == 'zi-Gaussian') {
         mu[j, k] <- mu[j, k] * z[j]
-        y[j, k] <- rnorm(1, mu[j, k], ifelse(z[j] == 1, sqrt(tau.sq), 0))
+        y[j, k] <- rnorm(1, mu[j, k] * offset[j, k], ifelse(z[j] == 1, sqrt(tau.sq), 0))
       }
     } # k
   } # j

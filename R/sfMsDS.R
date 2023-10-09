@@ -1458,7 +1458,7 @@ sfMsDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     colnames(out$theta.samples) <- theta.names
     if (family == 'NB') {
       out$kappa.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$kappa.samples))))
-      colnames(out$kappa.samples) <- paste('kappa', 1:n.sp, sep = '') 
+      colnames(out$kappa.samples) <- paste('kappa', sp.names, sep = '-') 
     }
     out$w.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$w.samples, 
       								dim = c(q, J, n.post.samples))))
