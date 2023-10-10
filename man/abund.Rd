@@ -7,7 +7,7 @@ abund(formula, data, inits, priors, tuning,
      n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
      n.omp.threads = 1, verbose = TRUE,
      n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
-     n.chains = 1, ...)
+     n.chains = 1, save.fitted = TRUE, ...)
 }
 
 \description{
@@ -118,6 +118,15 @@ abund(formula, data, inits, priors, tuning,
   value is set to 1.}
 
 \item{n.chains}{the number of chains to run in sequence.}
+
+\item{save.fitted}{logical value indicating whether or not fitted values and likelihood values
+  should be saved in the resulting model object. If \code{save.fitted = FALSE}, the components
+  \code{y.rep.samples}, \code{mu.samples}, and \code{like.samples} will not be included
+  in the model object, and subsequent functions for calculating WAIC, fitted values, and
+  posterior predictive checks will not work, although they all can be calculated manually if
+  desired. Setting \code{save.fitted = FALSE} can be useful when working with very large 
+  data sets to minimize the amount of RAM needed when fitting and storing the model object in 
+  memory.}
 
 \item{...}{currently no additional arguments}
 }

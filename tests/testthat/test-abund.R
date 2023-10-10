@@ -537,8 +537,8 @@ y <- dat$y
 X <- dat$X
 coords <- dat$coords
 
-covs <- list(cov.1 = X[, 1, 2],
-	     cov.2 = X[, 1, 3])
+covs <- list(cov.1 = apply(X[, , 2], 1, mean, na.rm = TRUE),
+	     cov.2 = apply(X[, , 3], 1, mean, na.rm = TRUE))
 data.list <- list(y = y, covs = covs)
 
 # Priors

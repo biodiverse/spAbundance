@@ -50,6 +50,7 @@ extern "C" {
     int pAbund = INTEGER(consts_r)[2];
     int pAbundRE = INTEGER(consts_r)[3];
     int nAbundRE = INTEGER(consts_r)[4];
+    int saveFitted = INTEGER(consts_r)[5];
     int ppAbund = pAbund * pAbund; 
     double *muBeta = (double *) R_alloc(pAbund, sizeof(double));   
     F77_NAME(dcopy)(&pAbund, REAL(muBeta_r), &inc, muBeta, &inc);
@@ -148,11 +149,16 @@ extern "C" {
     PROTECT(betaSamples_r = allocMatrix(REALSXP, pAbund, nPost)); nProtect++;
     zeros(REAL(betaSamples_r), pAbund * nPost);
     SEXP yRepSamples_r; 
-    PROTECT(yRepSamples_r = allocMatrix(REALSXP, nObs, nPost)); nProtect++; 
-    zeros(REAL(yRepSamples_r), nObs * nPost);
     SEXP muSamples_r; 
-    PROTECT(muSamples_r = allocMatrix(REALSXP, nObs, nPost)); nProtect++; 
-    zeros(REAL(muSamples_r), nObs * nPost);
+    SEXP likeSamples_r;
+    if (saveFitted == 1) {
+      PROTECT(yRepSamples_r = allocMatrix(REALSXP, nObs, nPost)); nProtect++; 
+      zeros(REAL(yRepSamples_r), nObs * nPost);
+      PROTECT(muSamples_r = allocMatrix(REALSXP, nObs, nPost)); nProtect++; 
+      zeros(REAL(muSamples_r), nObs * nPost);
+      PROTECT(likeSamples_r = allocMatrix(REALSXP, nObs, nPost)); nProtect++;
+      zeros(REAL(likeSamples_r), nObs * nPost);
+    }
     SEXP kappaSamples_r;
     if (family == 1) {
       PROTECT(kappaSamples_r = allocMatrix(REALSXP, inc, nPost)); nProtect++;
@@ -167,10 +173,6 @@ extern "C" {
       PROTECT(betaStarSamples_r = allocMatrix(REALSXP, nAbundRE, nPost)); nProtect++;
       zeros(REAL(betaStarSamples_r), nAbundRE * nPost);
     }
-    // Likelihood samples for WAIC. 
-    SEXP likeSamples_r;
-    PROTECT(likeSamples_r = allocMatrix(REALSXP, nObs, nPost)); nProtect++;
-    zeros(REAL(likeSamples_r), nObs * nPost);
     
     /********************************************************************
       Some constants and temporary variables to be used later
@@ -370,18 +372,20 @@ extern "C" {
         /********************************************************************
          *Get fitted values
          *******************************************************************/
-        for (j = 0; j < nObs; j++) {
-          // Only calculate if Poisson since it's already calculated in kappa update
-	  if (family == 0) {
-            mu[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, beta, &inc) + 
-                        betaStarSites[j]);
-            yRep[j] = rpois(mu[j] * offset[j]);
-            like[j] = dpois(y[j], mu[j] * offset[j], 0);
-	  } else {
-            yRep[j] = rnbinom_mu(kappa, mu[j] * offset[j]);
-            like[j] = dnbinom_mu(y[j], kappa, mu[j] * offset[j], 0);
-	  }
-        }
+	if (saveFitted == 1) {
+          for (j = 0; j < nObs; j++) {
+            // Only calculate if Poisson since it's already calculated in kappa update
+	    if (family == 0) {
+              mu[j] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, beta, &inc) + 
+                          betaStarSites[j]);
+              yRep[j] = rpois(mu[j] * offset[j]);
+              like[j] = dpois(y[j], mu[j] * offset[j], 0);
+	    } else {
+              yRep[j] = rnbinom_mu(kappa, mu[j] * offset[j]);
+              like[j] = dnbinom_mu(y[j], kappa, mu[j] * offset[j], 0);
+	    }
+          }
+	}
 
         /********************************************************************
          *Save samples
@@ -390,8 +394,12 @@ extern "C" {
           thinIndx++; 
           if (thinIndx == nThin) {
             F77_NAME(dcopy)(&pAbund, beta, &inc, &REAL(betaSamples_r)[sPost*pAbund], &inc);
-            F77_NAME(dcopy)(&nObs, mu, &inc, &REAL(muSamples_r)[sPost*nObs], &inc); 
-            F77_NAME(dcopy)(&nObs, yRep, &inc, &REAL(yRepSamples_r)[sPost*nObs], &inc); 
+	    if (saveFitted == 1) {
+              F77_NAME(dcopy)(&nObs, yRep, &inc, &REAL(yRepSamples_r)[sPost*nObs], &inc); 
+              F77_NAME(dcopy)(&nObs, mu, &inc, &REAL(muSamples_r)[sPost*nObs], &inc); 
+              F77_NAME(dcopy)(&nObs, like, &inc, 
+          		      &REAL(likeSamples_r)[sPost*nObs], &inc);
+	    }
 	    if (family == 1) {
 	      REAL(kappaSamples_r)[sPost] = kappa;
 	    }
@@ -401,8 +409,6 @@ extern "C" {
               F77_NAME(dcopy)(&nAbundRE, betaStar, &inc, 
           		    &REAL(betaStarSamples_r)[sPost*nAbundRE], &inc);
             }
-            F77_NAME(dcopy)(&nObs, like, &inc, 
-          		  &REAL(likeSamples_r)[sPost*nObs], &inc);
             sPost++; 
             thinIndx = 0; 
           }
@@ -465,9 +471,11 @@ extern "C" {
 
     // Setting the components of the output list.
     SET_VECTOR_ELT(result_r, 0, betaSamples_r);
-    SET_VECTOR_ELT(result_r, 1, yRepSamples_r); 
-    SET_VECTOR_ELT(result_r, 2, muSamples_r);
-    SET_VECTOR_ELT(result_r, 3, likeSamples_r);
+    if (saveFitted == 1) {
+      SET_VECTOR_ELT(result_r, 1, yRepSamples_r); 
+      SET_VECTOR_ELT(result_r, 2, muSamples_r);
+      SET_VECTOR_ELT(result_r, 3, likeSamples_r);
+    }
     if (pAbundRE > 0) {
       SET_VECTOR_ELT(result_r, 4, sigmaSqMuSamples_r);
       SET_VECTOR_ELT(result_r, 5, betaStarSamples_r);
@@ -482,9 +490,11 @@ extern "C" {
     }
 
     SET_VECTOR_ELT(resultName_r, 0, mkChar("beta.samples")); 
-    SET_VECTOR_ELT(resultName_r, 1, mkChar("y.rep.samples")); 
-    SET_VECTOR_ELT(resultName_r, 2, mkChar("mu.samples"));
-    SET_VECTOR_ELT(resultName_r, 3, mkChar("like.samples"));
+    if (saveFitted == 1) {
+      SET_VECTOR_ELT(resultName_r, 1, mkChar("y.rep.samples")); 
+      SET_VECTOR_ELT(resultName_r, 2, mkChar("mu.samples"));
+      SET_VECTOR_ELT(resultName_r, 3, mkChar("like.samples"));
+    }
     if (pAbundRE > 0) {
       SET_VECTOR_ELT(resultName_r, 4, mkChar("sigma.sq.mu.samples")); 
       SET_VECTOR_ELT(resultName_r, 5, mkChar("beta.star.samples")); 

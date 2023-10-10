@@ -4,7 +4,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
 		    n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
 		    n.omp.threads = 1, verbose = TRUE,
 		    n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
-		    n.chains = 1, ...){
+		    n.chains = 1, save.fitted = TRUE, ...){
 
   ptm <- proc.time()
 
@@ -200,6 +200,11 @@ spAbund <- function(formula, data, inits, priors, tuning,
     # Remove missing values in covariates prior to sending to parseFormula
     if (length(unique(unlist(covs.missing))) > 0) {
       data$covs <- data$covs[-c(unique(unlist(covs.missing))), , drop = FALSE]
+    }
+
+    # Check save.fitted ---------------------------------------------------
+    if (!(save.fitted %in% c(TRUE, FALSE))) {
+      stop("save.fitted must be either TRUE or FALSE")
     }
     
     # Formula -------------------------------------------------------------
@@ -761,7 +766,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
       storage.mode(y) <- "double"
       storage.mode(X) <- "double"
       storage.mode(offset) <- "double"
-      consts <- c(J, n.obs, p.abund, p.abund.re, n.abund.re)
+      consts <- c(J, n.obs, p.abund, p.abund.re, n.abund.re, save.fitted)
       storage.mode(consts) <- "integer"
       storage.mode(coords) <- "double"
       storage.mode(K) <- "double"
@@ -904,27 +909,29 @@ spAbund <- function(formula, data, inits, priors, tuning,
         colnames(out$theta.samples) <- c('sigma.sq', 'phi', 'nu')
       }
       y.non.miss.indx <- which(!is.na(y.mat), arr.ind = TRUE)
-      out$y.rep.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.samples))))
-      tmp <- array(NA, dim = c(n.post.samples * n.chains, J, ncol(y.mat)))
-      for (j in 1:n.obs) {
-        curr.indx <- y.non.miss.indx[j, ]
-        tmp[, curr.indx[1], curr.indx[2]] <- out$y.rep.samples[, j]
+      if (save.fitted) {
+        out$y.rep.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.samples))))
+        tmp <- array(NA, dim = c(n.post.samples * n.chains, J, ncol(y.mat)))
+        for (j in 1:n.obs) {
+          curr.indx <- y.non.miss.indx[j, ]
+          tmp[, curr.indx[1], curr.indx[2]] <- out$y.rep.samples[, j]
+        }
+        out$y.rep.samples <- tmp[, order(ord), , drop = FALSE]
+        out$mu.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$mu.samples))))
+        tmp <- array(NA, dim = c(n.post.samples * n.chains, J, ncol(y.mat)))
+        for (j in 1:n.obs) {
+          curr.indx <- y.non.miss.indx[j, ]
+          tmp[, curr.indx[1], curr.indx[2]] <- out$mu.samples[, j]
+        }
+        out$mu.samples <- tmp[, order(ord), , drop = FALSE]
+        out$like.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$like.samples))))
+        tmp <- array(NA, dim = c(n.post.samples * n.chains, J, ncol(y.mat)))
+        for (j in 1:n.obs) {
+          curr.indx <- y.non.miss.indx[j, ]
+          tmp[, curr.indx[1], curr.indx[2]] <- out$like.samples[, j]
+        }
+        out$like.samples <- tmp[, order(ord), , drop = FALSE]
       }
-      out$y.rep.samples <- tmp[, order(ord), , drop = FALSE]
-      out$mu.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$mu.samples))))
-      tmp <- array(NA, dim = c(n.post.samples * n.chains, J, ncol(y.mat)))
-      for (j in 1:n.obs) {
-        curr.indx <- y.non.miss.indx[j, ]
-        tmp[, curr.indx[1], curr.indx[2]] <- out$mu.samples[, j]
-      }
-      out$mu.samples <- tmp[, order(ord), , drop = FALSE]
-      out$like.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$like.samples))))
-      tmp <- array(NA, dim = c(n.post.samples * n.chains, J, ncol(y.mat)))
-      for (j in 1:n.obs) {
-        curr.indx <- y.non.miss.indx[j, ]
-        tmp[, curr.indx[1], curr.indx[2]] <- out$like.samples[, j]
-      }
-      out$like.samples <- tmp[, order(ord), , drop = FALSE]
       out$w.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$w.samples))))
       out$w.samples <- mcmc(out$w.samples[, order(ord), drop = FALSE])
       if (p.abund.re > 0) {

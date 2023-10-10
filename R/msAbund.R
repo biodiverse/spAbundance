@@ -2,7 +2,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
 		    n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
 		    n.omp.threads = 1, verbose = TRUE, n.report = 100, 
 		    n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
-		    n.chains = 1, ...){
+		    n.chains = 1, save.fitted = TRUE, ...){
 
   ptm <- proc.time()
 
@@ -171,6 +171,11 @@ msAbund <- function(formula, data, inits, priors, tuning,
     # works when random slopes are provided.
     tmp <- apply(data$covs, 1, function (a) sum(is.na(a)))
     data$covs <- as.data.frame(data$covs[tmp == 0, , drop = FALSE])
+
+    # Check save.fitted ---------------------------------------------------
+    if (!(save.fitted %in% c(TRUE, FALSE))) {
+      stop("save.fitted must be either TRUE or FALSE")
+    }
 
     # Formula -------------------------------------------------------------
     # Abundance -------------------------
@@ -606,7 +611,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
     storage.mode(y) <- "double"
     storage.mode(X) <- "double"
     storage.mode(offset) <- 'double'
-    consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re)
+    consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re, save.fitted)
     storage.mode(consts) <- "integer"
     storage.mode(beta.inits) <- "double"
     storage.mode(kappa.inits) <- "double"
@@ -731,30 +736,32 @@ msAbund <- function(formula, data, inits, priors, tuning,
       colnames(out$kappa.samples) <- paste('kappa', sp.names, sep = '-') 
     }
     y.non.miss.indx <- which(!is.na(y.mat), arr.ind = TRUE)
-    out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
-      								dim = c(n.sp * n.obs, n.post.samples))))
-    tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
-    for (j in 1:(n.obs * n.sp)) {
-      curr.indx <- y.non.miss.indx[j, ]
-      tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$y.rep.samples[j, ]
+    if (save.fitted) {
+      out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
+        								dim = c(n.sp * n.obs, n.post.samples))))
+      tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
+      for (j in 1:(n.obs * n.sp)) {
+        curr.indx <- y.non.miss.indx[j, ]
+        tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$y.rep.samples[j, ]
+      }
+      out$y.rep.samples <- tmp
+      out$mu.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$mu.samples, 
+        								dim = c(n.sp * n.obs, n.post.samples))))
+      tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
+      for (j in 1:(n.obs * n.sp)) {
+        curr.indx <- y.non.miss.indx[j, ]
+        tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$mu.samples[j, ]
+      }
+      out$mu.samples <- tmp
+      out$like.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$like.samples, 
+        								dim = c(n.sp * n.obs, n.post.samples))))
+      tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
+      for (j in 1:(n.obs * n.sp)) {
+        curr.indx <- y.non.miss.indx[j, ]
+        tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$like.samples[j, ]
+      }
+      out$like.samples <- tmp
     }
-    out$y.rep.samples <- tmp
-    out$mu.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$mu.samples, 
-      								dim = c(n.sp * n.obs, n.post.samples))))
-    tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
-    for (j in 1:(n.obs * n.sp)) {
-      curr.indx <- y.non.miss.indx[j, ]
-      tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$mu.samples[j, ]
-    }
-    out$mu.samples <- tmp
-    out$like.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$like.samples, 
-      								dim = c(n.sp * n.obs, n.post.samples))))
-    tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
-    for (j in 1:(n.obs * n.sp)) {
-      curr.indx <- y.non.miss.indx[j, ]
-      tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$like.samples[j, ]
-    }
-    out$like.samples <- tmp
     if (p.abund.re > 0) {
       out$sigma.sq.mu.samples <- mcmc(
         do.call(rbind, lapply(out.tmp, function(a) t(a$sigma.sq.mu.samples))))

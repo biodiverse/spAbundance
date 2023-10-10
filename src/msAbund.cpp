@@ -56,6 +56,7 @@ extern "C" {
     int pAbund = INTEGER(consts_r)[3];
     int pAbundRE = INTEGER(consts_r)[4];
     int nAbundRE = INTEGER(consts_r)[5];
+    int saveFitted = INTEGER(consts_r)[6];
     int ppAbund = pAbund * pAbund; 
     double *muBetaComm = REAL(muBetaComm_r); 
     double *SigmaBetaCommInv = (double *) R_alloc(ppAbund, sizeof(double));   
@@ -181,9 +182,16 @@ extern "C" {
     SEXP betaSamples_r;
     PROTECT(betaSamples_r = allocMatrix(REALSXP, pAbundnSp, nPost)); nProtect++;
     SEXP yRepSamples_r; 
-    PROTECT(yRepSamples_r = allocMatrix(REALSXP, nObsnSp, nPost)); nProtect++; 
     SEXP muSamples_r; 
-    PROTECT(muSamples_r = allocMatrix(REALSXP, nObsnSp, nPost)); nProtect++; 
+    SEXP likeSamples_r;
+    if (saveFitted == 1) {
+      PROTECT(yRepSamples_r = allocMatrix(REALSXP, nObsnSp, nPost)); nProtect++; 
+      zeros(REAL(yRepSamples_r), nObsnSp * nPost);
+      PROTECT(muSamples_r = allocMatrix(REALSXP, nObsnSp, nPost)); nProtect++; 
+      zeros(REAL(muSamples_r), nObsnSp * nPost);
+      PROTECT(likeSamples_r = allocMatrix(REALSXP, nObsnSp, nPost)); nProtect++;
+      zeros(REAL(likeSamples_r), nObsnSp * nPost);
+    }
     // Abundance random effects
     SEXP sigmaSqMuSamples_r; 
     SEXP betaStarSamples_r; 
@@ -197,8 +205,6 @@ extern "C" {
       PROTECT(kappaSamples_r = allocMatrix(REALSXP, nSp, nPost)); nProtect++;
     }
     // Likelihood samples for WAIC. 
-    SEXP likeSamples_r;
-    PROTECT(likeSamples_r = allocMatrix(REALSXP, nObsnSp, nPost)); nProtect++;
     
     /**********************************************************************
      * Additional Sampler Prep
@@ -476,18 +482,20 @@ extern "C" {
           /********************************************************************
            *Get fitted values
            *******************************************************************/
-          for (j = 0; j < nObs; j++) {
-            // Only calculate mu if Poisson since it's already calculated in kappa update
-	    if (family == 0) {
-              mu[j * nSp + i] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, &beta[i], &nSp) + 
-                                    betaStarSites[i * nObs + j]);
-              yRep[j * nSp + i] = rpois(mu[j * nSp + i] * offset[j]);
-              like[j * nSp + i] = dpois(y[j * nSp + i], mu[j * nSp + i] * offset[j], 0);
-	    } else {
-              yRep[j * nSp + i] = rnbinom_mu(kappa[i], mu[j * nSp + i] * offset[j]);
-              like[j * nSp + i] = dnbinom_mu(y[j * nSp + i], kappa[i], mu[j * nSp + i] * offset[j], 0);
-	    }
-          }
+	  if (saveFitted == 1) {
+            for (j = 0; j < nObs; j++) {
+              // Only calculate mu if Poisson since it's already calculated in kappa update
+	      if (family == 0) {
+                mu[j * nSp + i] = exp(F77_NAME(ddot)(&pAbund, &X[j], &nObs, &beta[i], &nSp) + 
+                                      betaStarSites[i * nObs + j]);
+                yRep[j * nSp + i] = rpois(mu[j * nSp + i] * offset[j]);
+                like[j * nSp + i] = dpois(y[j * nSp + i], mu[j * nSp + i] * offset[j], 0);
+	      } else {
+                yRep[j * nSp + i] = rnbinom_mu(kappa[i], mu[j * nSp + i] * offset[j]);
+                like[j * nSp + i] = dnbinom_mu(y[j * nSp + i], kappa[i], mu[j * nSp + i] * offset[j], 0);
+	      }
+            }
+	  }
 	} // i (species)
 
         /********************************************************************
@@ -502,9 +510,11 @@ extern "C" {
 	    if (family == 1) {
               F77_NAME(dcopy)(&nSp, kappa, &inc, &REAL(kappaSamples_r)[sPost*nSp], &inc); 
 	    }
-            F77_NAME(dcopy)(&nObsnSp, yRep, &inc, &REAL(yRepSamples_r)[sPost*nObsnSp], &inc); 
-            F77_NAME(dcopy)(&nObsnSp, mu, &inc, &REAL(muSamples_r)[sPost*nObsnSp], &inc); 
-            F77_NAME(dcopy)(&nObsnSp, like, &inc, &REAL(likeSamples_r)[sPost*nObsnSp], &inc); 
+	    if (saveFitted == 1) {
+              F77_NAME(dcopy)(&nObsnSp, yRep, &inc, &REAL(yRepSamples_r)[sPost*nObsnSp], &inc); 
+              F77_NAME(dcopy)(&nObsnSp, mu, &inc, &REAL(muSamples_r)[sPost*nObsnSp], &inc); 
+              F77_NAME(dcopy)(&nObsnSp, like, &inc, &REAL(likeSamples_r)[sPost*nObsnSp], &inc); 
+	    }
             if (pAbundRE > 0) {
               F77_NAME(dcopy)(&pAbundRE, sigmaSqMu, &inc, &REAL(sigmaSqMuSamples_r)[sPost*pAbundRE], &inc);
               F77_NAME(dcopy)(&nAbundREnSp, betaStar, &inc, &REAL(betaStarSamples_r)[sPost*nAbundREnSp], &inc);
@@ -573,11 +583,13 @@ extern "C" {
     SET_VECTOR_ELT(result_r, 0, betaCommSamples_r);
     SET_VECTOR_ELT(result_r, 1, tauSqBetaSamples_r);
     SET_VECTOR_ELT(result_r, 2, betaSamples_r);
-    SET_VECTOR_ELT(result_r, 3, yRepSamples_r);
-    SET_VECTOR_ELT(result_r, 4, muSamples_r);
+    if (saveFitted == 1) {
+      SET_VECTOR_ELT(result_r, 3, yRepSamples_r);
+      SET_VECTOR_ELT(result_r, 4, muSamples_r);
+      SET_VECTOR_ELT(result_r, 7, likeSamples_r); 
+    }
     SET_VECTOR_ELT(result_r, 5, tuningSamples_r); 
     SET_VECTOR_ELT(result_r, 6, acceptSamples_r); 
-    SET_VECTOR_ELT(result_r, 7, likeSamples_r); 
     if (pAbundRE > 0) {
       SET_VECTOR_ELT(result_r, 8, sigmaSqMuSamples_r);
       SET_VECTOR_ELT(result_r, 9, betaStarSamples_r);
@@ -594,11 +606,13 @@ extern "C" {
     SET_VECTOR_ELT(resultName_r, 0, mkChar("beta.comm.samples")); 
     SET_VECTOR_ELT(resultName_r, 1, mkChar("tau.sq.beta.samples")); 
     SET_VECTOR_ELT(resultName_r, 2, mkChar("beta.samples")); 
-    SET_VECTOR_ELT(resultName_r, 3, mkChar("y.rep.samples")); 
-    SET_VECTOR_ELT(resultName_r, 4, mkChar("mu.samples")); 
+    if (saveFitted == 1) {
+      SET_VECTOR_ELT(resultName_r, 3, mkChar("y.rep.samples")); 
+      SET_VECTOR_ELT(resultName_r, 4, mkChar("mu.samples")); 
+      SET_VECTOR_ELT(resultName_r, 7, mkChar("like.samples")); 
+    }
     SET_VECTOR_ELT(resultName_r, 5, mkChar("tune")); 
     SET_VECTOR_ELT(resultName_r, 6, mkChar("accept")); 
-    SET_VECTOR_ELT(resultName_r, 7, mkChar("like.samples")); 
     if (pAbundRE > 0) {
       SET_VECTOR_ELT(resultName_r, 8, mkChar("sigma.sq.mu.samples")); 
       SET_VECTOR_ELT(resultName_r, 9, mkChar("beta.star.samples")); 

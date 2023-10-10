@@ -349,8 +349,13 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
   out$mu.0.samples <- array(tmp, dim = c(n.post, J.0, K.max.0))
   K <- apply(out$mu.0.samples[1, , , drop = FALSE], 2, function(a) sum(!is.na(a)))
   out$y.0.samples <- array(NA, dim(out$mu.0.samples))
+  J <- nrow(object$y)
+  rep.indx <- vector(mode = 'list', length = J)
+  for (j in 1:J) {
+    rep.indx[[j]] <- which(!is.na(object$y[j, ]))
+  }
   for (j in 1:J.0) {
-    for (k in 1:K[j]) {
+    for (k in rep.indx[[j]]) {
       if (object$dist == 'NB') {
         out$y.0.samples[, j, k] <- rnbinom(n.post, kappa.samples, 
 					   mu = out$mu.0.samples[, j, k])
@@ -1074,6 +1079,12 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
   sp.indx <- rep(1:n.sp, p.abund)
   out$mu.0.samples <- array(NA, dim = c(n.post, n.sp, J.0, K.max.0))
   mu.long <- array(NA, dim = c(n.post, n.sp, nrow(X.fix)))
+  J <- ncol(object$y)
+  rep.indx <- vector(mode = 'list', length = J)
+  # Note this assumes the same missingness across species.
+  for (j in 1:J) {
+    rep.indx[[j]] <- which(!is.na(object$y[1, j, ]))
+  }
   for (i in 1:n.sp) {
     if (object$dist %in% c('Poisson', 'NB')) {
       mu.long[, i, ] <- exp(t(X.fix %*% t(beta.samples[, sp.indx == i]) + 
@@ -1090,7 +1101,7 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
   out$y.0.samples <- array(NA, dim(out$mu.0.samples))
   for (i in 1:n.sp) {
     for (j in 1:J.0) {
-      for (k in 1:K[j]) {
+      for (k in rep.indx[[j]]) {
         if (object$dist == 'NB') {
           out$y.0.samples[, i, j, k] <- rnbinom(n.post, kappa.samples[, i], 
           				        mu = out$mu.0.samples[, i, j, k])
@@ -3801,9 +3812,15 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
   }
   K <- apply(out$mu.0.samples[1, 1, , , drop = FALSE], 3, function(a) sum(!is.na(a)))
   out$y.0.samples <- array(NA, dim(out$mu.0.samples))
+  J <- ncol(object$y)
+  rep.indx <- vector(mode = 'list', length = J)
+  # Note this assumes the same missingness across species.
+  for (j in 1:J) {
+    rep.indx[[j]] <- which(!is.na(object$y[1, j, ]))
+  }
   for (i in 1:n.sp) {
     for (j in 1:J.0) {
-      for (k in 1:K[j]) {
+      for (k in rep.indx[[j]]) {
         if (object$dist == 'NB') {
           out$y.0.samples[, i, j, k] <- rnbinom(n.post, kappa.samples[, i], 
           				        mu = out$mu.0.samples[, i, j, k])
