@@ -279,7 +279,7 @@ extern "C" {
     }
     SEXP yRepSamples_r; 
     PROTECT(yRepSamples_r = allocMatrix(INTSXP, nObsFullnSp, nPost)); nProtect++; 
-    zeros(REAL(yRepSamples_r), nObsFullnSp * nPost);
+    zerosInt(INTEGER(yRepSamples_r), nObsFullnSp * nPost);
     SEXP piFullSamples_r; 
     PROTECT(piFullSamples_r = allocMatrix(REALSXP, nObsFullnSp, nPost)); nProtect++; 
     zeros(REAL(piFullSamples_r), nObsFullnSp * nPost);

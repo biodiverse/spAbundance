@@ -4,7 +4,6 @@ parseFormula <-  function(formula, data, intercept=TRUE, justX=FALSE){
     bars <- findbars(formula)
     re.terms <- NULL
     if (!is.null(bars)) {
-      # TODO: make sure this works as desired. 	   
       re.terms <- mkReTrms(bars, data, reorder.terms = FALSE)
     }
 
@@ -38,15 +37,6 @@ parseFormula <-  function(formula, data, intercept=TRUE, justX=FALSE){
     # Get the unique instance of a random factor. 
     unique.indx <- match(unique(tmp), tmp)
     if (ncol(X.re) > 0) {
-      # Support for RE only model
-      # TODO: check to make sure the model works with only 
-      #       random effects. 
-      # if (length(re.terms$Ztlist[[1]]@i) != nrow(X)) {
-      #   X.re <- matrix(NA, length(re.terms$Ztlist[[1]]@i), 
-      #   	       length(re.terms$flist)) 
-      #   X.random <- matrix(NA, length(re.terms$Ztlist[[1]]@i), 
-      #   	       length(re.terms$Ztlist)) 
-      # }
       for (j in 1:ncol(X.re)) {
         curr.indx <- unique.indx[j]
 	tmp <- as.numeric(re.terms$flist[[re.col.indx[curr.indx]]])
@@ -56,7 +46,6 @@ parseFormula <-  function(formula, data, intercept=TRUE, justX=FALSE){
       colnames(X.re) <- names(re.terms$flist)
       X.re <- X.re[, re.col.indx, drop = FALSE]
       for (j in 1:length(re.terms$Ztlist)) {
-        # TODO: will need to make sure this is correct. 
         tmp <- re.terms$Ztlist[[j]]@x[re.terms$Ztlist[[j]]@p]
         X.random[, j] <- tmp[!miss.indx] 
       }

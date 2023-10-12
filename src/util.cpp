@@ -21,6 +21,11 @@
       a[i] = 0.0;
   }
 
+  void zerosInt(int *a, int n){
+    for(int i = 0; i < n; i++)
+      a[i] = 0;
+  }
+
   void ones(double *a, int n){
     for(int i = 0; i < n; i++)
       a[i] = 1.0;

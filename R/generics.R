@@ -349,29 +349,26 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
   out$mu.0.samples <- array(tmp, dim = c(n.post, J.0, K.max.0))
   K <- apply(out$mu.0.samples[1, , , drop = FALSE], 2, function(a) sum(!is.na(a)))
   out$y.0.samples <- array(NA, dim(out$mu.0.samples))
-  # TODO: not right. 
   J <- nrow(object$y)
-  rep.indx <- vector(mode = 'list', length = J)
-  for (j in 1:J) {
-    rep.indx[[j]] <- which(!is.na(object$y[j, ]))
-  }
   for (j in 1:J.0) {
-    for (k in rep.indx[[j]]) {
-      if (object$dist == 'NB') {
-        out$y.0.samples[, j, k] <- rnbinom(n.post, kappa.samples, 
-					   mu = out$mu.0.samples[, j, k])
-      } else if (object$dist == 'Poisson') {
-        out$y.0.samples[, j, k] <- rpois(n.post, out$mu.0.samples[, j, k])
-      } else if (object$dist == 'Gaussian') {
-        out$y.0.samples[, j, k] <- rnorm(n.post, out$mu.0.samples[, j, k], 
-	                                 sqrt(tau.sq.samples))
-      } else if (object$dist == 'zi-Gaussian') {
-        out$y.0.samples[, j, k] <- ifelse(z.0.samples[, j] == 1, 
-					  rnorm(n.post, out$mu.0.samples[, j, k], 
-						sqrt(tau.sq.samples)), 
-					  rnorm(n.post, 0, sqrt(0.0001)))
-        out$mu.0.samples[, j, k] <- ifelse(z.0.samples[, j] == 1, 
-					   out$mu.0.samples[, j, k], 0)
+    for (k in 1:K.max.0) {
+      if (sum(is.na(out$mu.0.samples[, j, k])) == 0) {
+        if (object$dist == 'NB') {
+          out$y.0.samples[, j, k] <- rnbinom(n.post, kappa.samples, 
+          				   mu = out$mu.0.samples[, j, k])
+        } else if (object$dist == 'Poisson') {
+          out$y.0.samples[, j, k] <- rpois(n.post, out$mu.0.samples[, j, k])
+        } else if (object$dist == 'Gaussian') {
+          out$y.0.samples[, j, k] <- rnorm(n.post, out$mu.0.samples[, j, k], 
+                                           sqrt(tau.sq.samples))
+        } else if (object$dist == 'zi-Gaussian') {
+          out$y.0.samples[, j, k] <- ifelse(z.0.samples[, j] == 1, 
+          				  rnorm(n.post, out$mu.0.samples[, j, k], 
+          					sqrt(tau.sq.samples)), 
+          				  rnorm(n.post, 0, sqrt(0.0001)))
+          out$mu.0.samples[, j, k] <- ifelse(z.0.samples[, j] == 1, 
+          				   out$mu.0.samples[, j, k], 0)
+        }
       }
     }
   }
@@ -3832,7 +3829,6 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
     K <- apply(out$mu.0.samples[1, 1, , , drop = FALSE], 3, function(a) sum(!is.na(a)))
     out$y.0.samples <- array(NA, dim(out$mu.0.samples))
     J <- ncol(object$y)
-    rep.indx <- vector(mode = 'list', length = J)
     for (i in 1:n.sp) {
       for (j in 1:J.0) {
         for (k in 1:K.max.0) {

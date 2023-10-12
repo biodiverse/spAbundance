@@ -3,6 +3,8 @@
 
   void zeros(double *a, int n);
 
+  void zerosInt(int *a, int n);
+
   void ones(double *a, int n); 
   
   void mvrnorm(double *des, double *mu, double *cholCov, int dim);

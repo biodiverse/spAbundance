@@ -134,6 +134,14 @@ lfMsDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     stop("n.factors must be specified for a latent factor N-mixture model")
   }
 
+  if (!(family) %in% c('Poisson', 'NB')) {
+    stop("family must be either 'Poisson' or 'NB'")
+  }
+
+  if (family == 'NB' & verbose) {
+    message('**NOTE**: latent factor negative binomial models can be difficult to\nestimate as they contain two forms of overdispersion. If experiencing\nvery poor mixing/convergence of MCMC chains (particularly kappa),\nconsider using a latent factor Poisson model or more informative\npriors on kappa.\n') 
+  }
+
   data$covs <- as.data.frame(data$covs)
 
   # Check whether random effects are sent in as numeric, and

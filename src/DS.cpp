@@ -222,7 +222,7 @@ extern "C" {
     int nObsFull = KFull * J;
     SEXP yRepSamples_r; 
     PROTECT(yRepSamples_r = allocMatrix(INTSXP, nObsFull, nPost)); nProtect++; 
-    zeros(REAL(yRepSamples_r), nObsFull * nPost);
+    zerosInt(INTEGER(yRepSamples_r), nObsFull * nPost);
     SEXP piFullSamples_r; 
     PROTECT(piFullSamples_r = allocMatrix(REALSXP, nObsFull, nPost)); nProtect++; 
     zeros(REAL(piFullSamples_r), nObsFull * nPost);

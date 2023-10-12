@@ -528,15 +528,15 @@ Now consider the case where count data, $y_{i, j}$, are collected for multiple s
      \text{log}(\mu_{i, j}) = \bm{x}_j^\top\bm{\beta}_i,
 \end{equation}
 
-where $\bm{\beta}_i$ are the species-specific effects of covariates $\bm{x}_j$ (including an intercept) . When $y_{i, j}$ is modeled using a negative binomial distribution, we estimate a separate dispersion parameter $\kappa_i$ for each species. We model $\bm{\beta}_i$ as random effects arising from a common, community-level normal distribution, which often leads to increased precision of species-specific effects compared to single-species models. For example, the species-specific intercept $\beta0_i$ is modeled according to
+where $\bm{\beta}_i$ are the species-specific effects of covariates $\bm{x}_j$ (including an intercept) . When $y_{i, j}$ is modeled using a negative binomial distribution, we estimate a separate dispersion parameter $\kappa_i$ for each species. We model $\bm{\beta}_i$ as random effects arising from a common, community-level normal distribution, which often leads to increased precision of species-specific effects compared to single-species models. For example, the species-specific intercept $\beta_{0, i}$ is modeled according to
 
 \begin{equation}\label{betaComm}
-     \beta0_i \sim \text{Normal}(\mu_{\beta0}, \tau^2_{\beta0}),
+     \beta_{0, i} \sim \text{Normal}(\mu_{\beta_0}, \tau^2_{\beta_0}),
 \end{equation}
 
-where $\mu_{\beta0}$ is the community-level abundance intercept, and $\tau^2_{\beta0}$ is the variance of the intercept across all $I$ species. 
+where $\mu_{\beta_0}$ is the community-level abundance intercept, and $\tau^2_{\beta_0}$ is the variance of the intercept across all $I$ species. 
 
-We assign normal priors to the community-level ($\bm{\mu}_{\beta}$) mean parameters and inverse-Gamma priors to the community-level variance parameters ($\bm{\tau^2}_{\beta}$).
+We assign normal priors to the community-level ($\bm{\mu}_{\beta}$) mean parameters and inverse-Gamma priors to the community-level variance parameters ($\bm{\tau^2}_{\beta}$). We assign independent uniform priors to the species specific dispersion parameters $\kappa_i$ when using a negative binomial distribution. When fitting a Gaussian GLMM (a linear mixed model or LMM), we assign independent inverse-Gamma priors to the species-specific residual variance parameters $\tau^2_i$. 
 
 ## Fitting multivariate GLMMs with `msAbund()`
 

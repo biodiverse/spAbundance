@@ -202,7 +202,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       }
     }
     # Misalignment between y and det.covs
-    y.missing <- which(is.na(data$y))
+    y.missing <- which(is.na(y))
     det.covs.missing <- lapply(data$det.covs, function(a) which(is.na(a)))
     for (i in 1:length(det.covs.missing)) {
       tmp.indx <- !(y.missing %in% det.covs.missing[[i]])

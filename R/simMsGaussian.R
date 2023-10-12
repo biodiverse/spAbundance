@@ -95,8 +95,6 @@ simMsGaussian <- function(J.x, J.y, N, beta, mu.RE = list(),
       n.factors <- rep(n.factors, length(svc.cols))
     }
     q.p.svc <- sum(n.factors)
-    # TODO: will eventually want to allow sigma.sq to be specified for some
-    #       of the ws. 
     if (sp) {
       if (!missing(sigma.sq)) {
         message("sigma.sq is specified but will be set to 1 for spatial latent factor model")

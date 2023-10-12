@@ -157,10 +157,6 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
   s.x <- seq(0, 1, length.out = J.x)
   s.y <- seq(0, 1, length.out = J.y)
   coords <- as.matrix(expand.grid(s.x, s.y))
-  # TODO: 
-  # Sigma <- mkSpCov(coords, as.matrix(1), as.matrix(0), 3 / 0.8, 'exponential')
-  # # Random spatial process
-  # X[, , 2] <- rmvn(1, rep(5, J), Sigma)
   if (sp) {
     w.mat <- matrix(NA, J, p.svc)
     if (cov.model == 'matern') {
