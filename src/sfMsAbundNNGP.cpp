@@ -108,6 +108,7 @@ extern "C" {
     int nAbundRE = INTEGER(consts_r)[5];
     int q = INTEGER(consts_r)[6]; 
     int indBetas = INTEGER(consts_r)[7];
+    int saveFitted = INTEGER(consts_r)[8];
     int ppAbund = pAbund * pAbund; 
     double *muBetaComm = REAL(muBetaComm_r); 
     double *SigmaBetaCommInv = (double *) R_alloc(ppAbund, sizeof(double));   
@@ -256,35 +257,47 @@ extern "C" {
     // Community level
     SEXP betaCommSamples_r; 
     PROTECT(betaCommSamples_r = allocMatrix(REALSXP, pAbund, nPost)); nProtect++;
+    zeros(REAL(betaCommSamples_r), pAbund * nPost);
     SEXP tauSqBetaSamples_r; 
     PROTECT(tauSqBetaSamples_r = allocMatrix(REALSXP, pAbund, nPost)); nProtect++; 
+    zeros(REAL(tauSqBetaSamples_r), pAbund * nPost);
     // Species level
     SEXP betaSamples_r;
     PROTECT(betaSamples_r = allocMatrix(REALSXP, pAbundnSp, nPost)); nProtect++;
+    zeros(REAL(betaSamples_r), pAbundnSp * nPost);
     SEXP yRepSamples_r; 
-    PROTECT(yRepSamples_r = allocMatrix(REALSXP, nObsnSp, nPost)); nProtect++; 
     SEXP muSamples_r; 
-    PROTECT(muSamples_r = allocMatrix(REALSXP, nObsnSp, nPost)); nProtect++; 
+    SEXP likeSamples_r;
+    if (saveFitted == 1) {
+      PROTECT(yRepSamples_r = allocMatrix(REALSXP, nObsnSp, nPost)); nProtect++; 
+      zeros(REAL(yRepSamples_r), nObsnSp * nPost);
+      PROTECT(muSamples_r = allocMatrix(REALSXP, nObsnSp, nPost)); nProtect++; 
+      zeros(REAL(muSamples_r), nObsnSp * nPost);
+      PROTECT(likeSamples_r = allocMatrix(REALSXP, nObsnSp, nPost)); nProtect++;
+      zeros(REAL(likeSamples_r), nObsnSp * nPost);
+    }
     // Spatial parameters
     SEXP lambdaSamples_r; 
     PROTECT(lambdaSamples_r = allocMatrix(REALSXP, nSpq, nPost)); nProtect++;
+    zeros(REAL(lambdaSamples_r), nSpq * nPost);
     SEXP wSamples_r; 
     PROTECT(wSamples_r = allocMatrix(REALSXP, Jq, nPost)); nProtect++; 
+    zeros(REAL(wSamples_r), Jq * nPost);
     // Abundance random effects
     SEXP sigmaSqMuSamples_r; 
     SEXP betaStarSamples_r; 
     if (pAbundRE > 0) {
       PROTECT(sigmaSqMuSamples_r = allocMatrix(REALSXP, pAbundRE, nPost)); nProtect++;
+      zeros(REAL(sigmaSqMuSamples_r), pAbundRE * nPost);
       PROTECT(betaStarSamples_r = allocMatrix(REALSXP, nAbundREnSp, nPost)); nProtect++;
+      zeros(REAL(betaStarSamples_r), nAbundREnSp * nPost);
     }
     // Overdispersion
     SEXP kappaSamples_r;
     if (family == 1) {
       PROTECT(kappaSamples_r = allocMatrix(REALSXP, nSp, nPost)); nProtect++;
+      zeros(REAL(kappaSamples_r), nSp * nPost);
     }
-    // Likelihood samples for WAIC. 
-    SEXP likeSamples_r;
-    PROTECT(likeSamples_r = allocMatrix(REALSXP, nObsnSp, nPost)); nProtect++;
     
     /**********************************************************************
      * Additional Sampler Prep
@@ -363,6 +376,7 @@ extern "C" {
     } // ll
     SEXP thetaSamples_r; 
     PROTECT(thetaSamples_r = allocMatrix(REALSXP, nThetaqSave, nPost)); nProtect++; 
+    zeros(REAL(thetaSamples_r), nThetaqSave * nPost);
     // Species-level spatial random effects
     double *wStar = (double *) R_alloc(JnSp, sizeof(double)); zeros(wStar, JnSp);
     // Multiply Lambda %*% w[j] to get wStar. 
@@ -451,8 +465,10 @@ extern "C" {
     double *accept = (double *) R_alloc(nAMCMC, sizeof(double)); zeros(accept, nAMCMC); 
     SEXP acceptSamples_r; 
     PROTECT(acceptSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
+    zeros(REAL(acceptSamples_r), nAMCMC * nBatch);
     SEXP tuningSamples_r; 
     PROTECT(tuningSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
+    zeros(REAL(tuningSamples_r), nAMCMC * nBatch);
     // Set the initial candidate values for everything to the inital values. 
     double *betaCand = (double *) R_alloc(pAbund * nSp, sizeof(double)); 
     // beta is sorted by parameter, then species within parameter.
@@ -947,18 +963,20 @@ extern "C" {
           /********************************************************************
            *Get fitted values
            *******************************************************************/
-          for (r = 0; r < nObs; r++) {
-            // Only calculate mu if Poisson since it's already calculated in kappa update
-	    if (family == 0) {
-              mu[r * nSp + i] = exp(F77_NAME(ddot)(&pAbund, &X[r], &nObs, &beta[i], &nSp) + 
-                                    betaStarSites[i * nObs + r] + wStar[siteIndx[r] * nSp + i]);
-              yRep[r * nSp + i] = rpois(mu[r * nSp + i] * offset[r]);
-              like[r * nSp + i] = dpois(y[r * nSp + i], mu[r * nSp + i] * offset[r], 0);
-	    } else {
-              yRep[r * nSp + i] = rnbinom_mu(kappa[i], mu[r * nSp + i] * offset[r]);
-              like[r * nSp + i] = dnbinom_mu(y[r * nSp + i], kappa[i], mu[r * nSp + i] * offset[r], 0);
-	    }
-          }
+	  if (saveFitted == 1) {
+            for (r = 0; r < nObs; r++) {
+              // Only calculate mu if Poisson since it's already calculated in kappa update
+	      if (family == 0) {
+                mu[r * nSp + i] = exp(F77_NAME(ddot)(&pAbund, &X[r], &nObs, &beta[i], &nSp) + 
+                                      betaStarSites[i * nObs + r] + wStar[siteIndx[r] * nSp + i]);
+                yRep[r * nSp + i] = rpois(mu[r * nSp + i] * offset[r]);
+                like[r * nSp + i] = dpois(y[r * nSp + i], mu[r * nSp + i] * offset[r], 0);
+	      } else {
+                yRep[r * nSp + i] = rnbinom_mu(kappa[i], mu[r * nSp + i] * offset[r]);
+                like[r * nSp + i] = dnbinom_mu(y[r * nSp + i], kappa[i], mu[r * nSp + i] * offset[r], 0);
+	      }
+            }
+	  }
 	} // i (species)
 
         /********************************************************************
@@ -973,13 +991,15 @@ extern "C" {
 	    if (family == 1) {
               F77_NAME(dcopy)(&nSp, kappa, &inc, &REAL(kappaSamples_r)[sPost*nSp], &inc); 
 	    }
-            F77_NAME(dcopy)(&nObsnSp, yRep, &inc, &REAL(yRepSamples_r)[sPost*nObsnSp], &inc); 
-            F77_NAME(dcopy)(&nObsnSp, mu, &inc, &REAL(muSamples_r)[sPost*nObsnSp], &inc); 
+	    if (saveFitted == 1) {
+              F77_NAME(dcopy)(&nObsnSp, yRep, &inc, &REAL(yRepSamples_r)[sPost*nObsnSp], &inc); 
+              F77_NAME(dcopy)(&nObsnSp, mu, &inc, &REAL(muSamples_r)[sPost*nObsnSp], &inc); 
+              F77_NAME(dcopy)(&nObsnSp, like, &inc, &REAL(likeSamples_r)[sPost*nObsnSp], &inc); 
+	    }
             F77_NAME(dcopy)(&Jq, w, &inc, &REAL(wSamples_r)[sPost*Jq], &inc); 
             F77_NAME(dcopy)(&nSpq, lambda, &inc, &REAL(lambdaSamples_r)[sPost*nSpq], &inc); 
             F77_NAME(dcopy)(&nThetaqSave, &theta[phiIndx * q], &inc, 
 			    &REAL(thetaSamples_r)[sPost*nThetaqSave], &inc); 
-            F77_NAME(dcopy)(&nObsnSp, like, &inc, &REAL(likeSamples_r)[sPost*nObsnSp], &inc); 
             if (pAbundRE > 0) {
               F77_NAME(dcopy)(&pAbundRE, sigmaSqMu, &inc, &REAL(sigmaSqMuSamples_r)[sPost*pAbundRE], &inc);
               F77_NAME(dcopy)(&nAbundREnSp, betaStar, &inc, &REAL(betaStarSamples_r)[sPost*nAbundREnSp], &inc);
@@ -1054,14 +1074,16 @@ extern "C" {
     SET_VECTOR_ELT(result_r, 0, betaCommSamples_r);
     SET_VECTOR_ELT(result_r, 1, tauSqBetaSamples_r);
     SET_VECTOR_ELT(result_r, 2, betaSamples_r);
-    SET_VECTOR_ELT(result_r, 3, yRepSamples_r);
-    SET_VECTOR_ELT(result_r, 4, muSamples_r);
+    if (saveFitted == 1) {
+      SET_VECTOR_ELT(result_r, 3, yRepSamples_r);
+      SET_VECTOR_ELT(result_r, 4, muSamples_r);
+      SET_VECTOR_ELT(result_r, 10, likeSamples_r); 
+    }
     SET_VECTOR_ELT(result_r, 5, lambdaSamples_r);
     SET_VECTOR_ELT(result_r, 6, wSamples_r); 
     SET_VECTOR_ELT(result_r, 7, thetaSamples_r); 
     SET_VECTOR_ELT(result_r, 8, tuningSamples_r); 
     SET_VECTOR_ELT(result_r, 9, acceptSamples_r); 
-    SET_VECTOR_ELT(result_r, 10, likeSamples_r); 
     if (pAbundRE > 0) {
       SET_VECTOR_ELT(result_r, 11, sigmaSqMuSamples_r);
       SET_VECTOR_ELT(result_r, 12, betaStarSamples_r);
@@ -1078,14 +1100,16 @@ extern "C" {
     SET_VECTOR_ELT(resultName_r, 0, mkChar("beta.comm.samples")); 
     SET_VECTOR_ELT(resultName_r, 1, mkChar("tau.sq.beta.samples")); 
     SET_VECTOR_ELT(resultName_r, 2, mkChar("beta.samples")); 
-    SET_VECTOR_ELT(resultName_r, 3, mkChar("y.rep.samples")); 
-    SET_VECTOR_ELT(resultName_r, 4, mkChar("mu.samples")); 
+    if (saveFitted == 1) {
+      SET_VECTOR_ELT(resultName_r, 3, mkChar("y.rep.samples")); 
+      SET_VECTOR_ELT(resultName_r, 4, mkChar("mu.samples")); 
+      SET_VECTOR_ELT(resultName_r, 10, mkChar("like.samples")); 
+    }
     SET_VECTOR_ELT(resultName_r, 5, mkChar("lambda.samples")); 
     SET_VECTOR_ELT(resultName_r, 6, mkChar("w.samples")); 
     SET_VECTOR_ELT(resultName_r, 7, mkChar("theta.samples")); 
     SET_VECTOR_ELT(resultName_r, 8, mkChar("tune")); 
     SET_VECTOR_ELT(resultName_r, 9, mkChar("accept")); 
-    SET_VECTOR_ELT(resultName_r, 10, mkChar("like.samples")); 
     if (pAbundRE > 0) {
       SET_VECTOR_ELT(resultName_r, 11, mkChar("sigma.sq.mu.samples")); 
       SET_VECTOR_ELT(resultName_r, 12, mkChar("beta.star.samples")); 

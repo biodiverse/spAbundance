@@ -15,7 +15,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
     spAbundGaussian(formula, data, inits, priors, tuning, cov.model, NNGP, 
 		    n.neighbors, search.type, n.batch, batch.length, accept.rate, 
 		    family, n.omp.threads, verbose, n.report, n.burn, n.thin,
-		    n.chains)
+		    n.chains, save.fitted)
   } else {
 
     # Make it look nice
@@ -238,7 +238,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
     # Number of replicates at each site
     n.rep <- apply(y, 1, function(a) sum(!is.na(a)))
     # Max number of repeat visits
-    K.max <- max(n.rep)
+    K.max <- ncol(y)
     # Because I like K better than n.rep
     K <- n.rep
   

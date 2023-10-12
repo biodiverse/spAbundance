@@ -223,8 +223,10 @@ extern "C" {
     kappaCand = kappa;
     SEXP acceptSamples_r; 
     PROTECT(acceptSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
+    zeros(REAL(acceptSamples_r), nAMCMC * nBatch);
     SEXP tuningSamples_r; 
     PROTECT(tuningSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
+    zeros(REAL(tuningSamples_r), nAMCMC * nBatch);
 
     /**********************************************************************
      * Prep for random effects

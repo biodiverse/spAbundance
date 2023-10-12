@@ -50,7 +50,6 @@ extern "C" {
     int J0pTilde = J0 * pTilde; 
     int *sitesLink = INTEGER(sitesLink_r);
     int *sites0Sampled = INTEGER(sites0Sampled_r);
-    int *sites0 = INTEGER(sites0_r);
 
     int *nnIndx0 = INTEGER(nnIndx0_r);        
     double *beta = REAL(betaSamples_r);

@@ -223,38 +223,51 @@ extern "C" {
     // Community level
     SEXP betaCommSamples_r; 
     PROTECT(betaCommSamples_r = allocMatrix(REALSXP, pAbund, nPost)); nProtect++;
+    zeros(REAL(betaCommSamples_r), pAbund * nPost);
     SEXP alphaCommSamples_r;
     PROTECT(alphaCommSamples_r = allocMatrix(REALSXP, pDet, nPost)); nProtect++;
+    zeros(REAL(alphaCommSamples_r), pDet * nPost);
     SEXP tauSqBetaSamples_r; 
     PROTECT(tauSqBetaSamples_r = allocMatrix(REALSXP, pAbund, nPost)); nProtect++; 
+    zeros(REAL(tauSqBetaSamples_r), pAbund * nPost);
     SEXP tauSqAlphaSamples_r; 
     PROTECT(tauSqAlphaSamples_r = allocMatrix(REALSXP, pDet, nPost)); nProtect++; 
+    zeros(REAL(tauSqAlphaSamples_r), pDet * nPost);
     // Species level
     SEXP betaSamples_r;
     PROTECT(betaSamples_r = allocMatrix(REALSXP, pAbundnSp, nPost)); nProtect++;
+    zeros(REAL(betaSamples_r), pAbundnSp * nPost);
     SEXP alphaSamples_r; 
     PROTECT(alphaSamples_r = allocMatrix(REALSXP, pDetnSp, nPost)); nProtect++;
+    zeros(REAL(alphaSamples_r), pDetnSp * nPost);
     SEXP NSamples_r; 
     PROTECT(NSamples_r = allocMatrix(REALSXP, JnSp, nPost)); nProtect++; 
+    zeros(REAL(NSamples_r), JnSp * nPost);
     SEXP muSamples_r; 
     PROTECT(muSamples_r = allocMatrix(REALSXP, JnSp, nPost)); nProtect++; 
+    zeros(REAL(muSamples_r), JnSp * nPost);
     // Detection random effects
     SEXP sigmaSqPSamples_r; 
     SEXP alphaStarSamples_r; 
     if (pDetRE > 0) {
       PROTECT(sigmaSqPSamples_r = allocMatrix(REALSXP, pDetRE, nPost)); nProtect++;
+      zeros(REAL(sigmaSqPSamples_r), pDetRE * nPost);
       PROTECT(alphaStarSamples_r = allocMatrix(REALSXP, nDetREnSp, nPost)); nProtect++;
+      zeros(REAL(alphaStarSamples_r), nDetREnSp * nPost);
     }
     // Abundance random effects
     SEXP sigmaSqMuSamples_r; 
     SEXP betaStarSamples_r; 
     if (pAbundRE > 0) {
       PROTECT(sigmaSqMuSamples_r = allocMatrix(REALSXP, pAbundRE, nPost)); nProtect++;
+      zeros(REAL(sigmaSqMuSamples_r), pAbundRE * nPost);
       PROTECT(betaStarSamples_r = allocMatrix(REALSXP, nAbundREnSp, nPost)); nProtect++;
+      zeros(REAL(betaStarSamples_r), nAbundREnSp * nPost);
     }
     SEXP kappaSamples_r;
     if (family == 1) {
       PROTECT(kappaSamples_r = allocMatrix(REALSXP, nSp, nPost)); nProtect++;
+      zeros(REAL(kappaSamples_r), nSp * nPost);
     }
     // Likelihood samples for WAIC. 
     
@@ -425,8 +438,10 @@ extern "C" {
     }
     SEXP acceptSamples_r; 
     PROTECT(acceptSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
+    zeros(REAL(acceptSamples_r), nAMCMC * nBatch);
     SEXP tuningSamples_r; 
     PROTECT(tuningSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
+    zeros(REAL(tuningSamples_r), nAMCMC * nBatch);
 
     GetRNGstate();
 

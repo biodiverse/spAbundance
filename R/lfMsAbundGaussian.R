@@ -2,7 +2,7 @@ lfMsAbundGaussian <- function(formula, data, inits, priors, tuning, n.factors,
                   n.batch, batch.length, accept.rate = 0.43, family = 'Gaussian',
                   n.omp.threads = 1, verbose = TRUE, n.report = 100, 
                   n.burn = round(.10 * n.batch * batch.length), 
-                  n.thin = 1, n.chains = 1, ...){
+                  n.thin = 1, n.chains = 1, save.fitted = TRUE, ...){
 
   ptm <- proc.time()
 
@@ -122,6 +122,10 @@ lfMsAbundGaussian <- function(formula, data, inits, priors, tuning, n.factors,
         stop(paste("error: random effect variable ", abund.re.names[i], " specified as character. Random effect variables must be specified as numeric.", sep = ''))
       }
     }
+  }
+  # Check save.fitted ---------------------------------------------------
+  if (!(save.fitted %in% c(TRUE, FALSE))) {
+    stop("save.fitted must be either TRUE or FALSE")
   }
 
   # Formula -------------------------------------------------------------
@@ -547,7 +551,7 @@ lfMsAbundGaussian <- function(formula, data, inits, priors, tuning, n.factors,
   storage.mode(y) <- "double"
   storage.mode(X) <- "double"
   storage.mode(z) <- 'double'
-  consts <- c(N, J, p, p.re, n.re, q)
+  consts <- c(N, J, p, p.re, n.re, q, save.fitted)
   storage.mode(consts) <- "integer"
   storage.mode(beta.inits) <- "double"
   storage.mode(beta.comm.inits) <- "double"
@@ -694,15 +698,17 @@ lfMsAbundGaussian <- function(formula, data, inits, priors, tuning, n.factors,
   loadings.names <- paste(rep(sp.names, times = n.factors), rep(1:n.factors, each = N), sep = '-')
   out$lambda.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$lambda.samples))))
   colnames(out$lambda.samples) <- loadings.names
-  out$mu.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$mu.samples, 
-    								dim = c(N, J, n.post.samples))))
-  out$mu.samples <- aperm(out$mu.samples, c(3, 1, 2))
-  out$like.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$like.samples, 
-    								dim = c(N, J, n.post.samples))))
-  out$like.samples <- aperm(out$like.samples, c(3, 1, 2))
-  out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
-    								dim = c(N, J, n.post.samples))))
-  out$y.rep.samples <- aperm(out$y.rep.samples, c(3, 1, 2))
+  if (save.fitted) {
+    out$mu.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$mu.samples, 
+      								dim = c(N, J, n.post.samples))))
+    out$mu.samples <- aperm(out$mu.samples, c(3, 1, 2))
+    out$like.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$like.samples, 
+      								dim = c(N, J, n.post.samples))))
+    out$like.samples <- aperm(out$like.samples, c(3, 1, 2))
+    out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
+      								dim = c(N, J, n.post.samples))))
+    out$y.rep.samples <- aperm(out$y.rep.samples, c(3, 1, 2))
+  }
   out$w.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$w.samples, 
     								dim = c(q, J, n.post.samples))))
   out$w.samples <- aperm(out$w.samples, c(3, 1, 2))

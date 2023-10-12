@@ -124,6 +124,8 @@ lfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
   # Make both covariates a data frame. Unlist is necessary for when factors
   # are supplied. 
   data$det.covs <- data.frame(lapply(data$det.covs, function(a) unlist(c(a))))
+  # Indicator of whether all det.covs are site level or not
+  site.level.ind <- ifelse(nrow(data$det.covs) == ncol(y), TRUE, FALSE) 
   data$abund.covs <- as.data.frame(data$abund.covs)
 
   # Check whether random effects are sent in as numeric, and
@@ -164,22 +166,28 @@ lfMsNMix <- function(abund.formula, det.formula, data, inits, priors,
     stop("error: missing values in abund.covs. Please remove these sites from all objects in data or somehow replace the NA values with non-missing values (e.g., mean imputation).") 
   }
   # det.covs ------------------------
-  for (i in 1:ncol(data$det.covs)) {
-    # Note that this assumes the same detection history for each species.  
-    if (sum(is.na(data$det.covs[, i])) > sum(is.na(y.mat[1, , ]))) {
-      stop("error: some elements in det.covs have missing values where there is an observed data value in y. Please either replace the NA values in det.covs with non-missing values (e.g., mean imputation) or set the corresponding values in y to NA where the covariate is missing.") 
+  if (!site.level.ind) {
+    for (i in 1:ncol(data$det.covs)) {
+      if (sum(is.na(data$det.covs[, i])) > sum(is.na(y.mat[1, , ]))) {
+        stop("error: some elements in det.covs have missing values where there is an observed data value in y. Please either replace the NA values in det.covs with non-missing values (e.g., mean imputation) or set the corresponding values in y to NA where the covariate is missing.") 
+      }
+    }
+    # Misalignment between y and det.covs
+    y.missing <- which(is.na(y[1, , ]))
+    det.covs.missing <- lapply(data$det.covs, function(a) which(is.na(a)))
+    for (i in 1:length(det.covs.missing)) {
+      tmp.indx <- !(y.missing %in% det.covs.missing[[i]])
+      if (sum(tmp.indx) > 0) {
+        if (i == 1 & verbose) {
+          message("There are missing values in data$y with corresponding non-missing values in data$det.covs.\nRemoving these site/replicate combinations for fitting the model.\n")
+        }
+        data$det.covs[y.missing, i] <- NA
+      }
     }
   }
-  # Misalignment between y and det.covs
-  y.missing <- which(is.na(y[1, , ]))
-  det.covs.missing <- lapply(data$det.covs, function(a) which(is.na(a)))
-  for (i in 1:length(det.covs.missing)) {
-    tmp.indx <- !(y.missing %in% det.covs.missing[[i]])
-    if (sum(tmp.indx) > 0) {
-      if (i == 1 & verbose) {
-        message("There are missing values in data$y with corresponding non-missing values in data$det.covs.\nRemoving these site/replicate combinations for fitting the model.")
-      }
-      data$det.covs[y.missing, i] <- NA
+  if (site.level.ind) {
+    if (sum(is.na(data$det.covs)) != 0) {
+      stop("missing values in site-level det.covs. Please remove these sites from all objects in data or somehow replace the NA values with non-missing values (e.g., mean imputation).") 
     }
   }
 

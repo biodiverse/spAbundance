@@ -56,11 +56,11 @@ X.p <- dat$X.p[-pred.indx, , , drop = FALSE]
 coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 # Just to keep WAIC relatively fast
-y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), dat$y)
+y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), y)
 
 abund.covs <- X
 colnames(abund.covs) <- c('int')
-det.covs <- list(int = X.p[, , 1])
+det.covs <- list(int = X.p[, 1, 1])
 data.list <- list(y = y,
 		  abund.covs = abund.covs,
 		  coords = coords,
@@ -91,7 +91,6 @@ n.thin <- 2
 n.chains <- 2
 abund.formula <- ~ 1
 det.formula <- ~ 1
-
 
 out <- sfMsNMix(abund.formula = abund.formula,
 	    det.formula = det.formula,
@@ -321,7 +320,7 @@ X.p <- dat$X.p[-pred.indx, , , drop = FALSE]
 coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 # Just to keep WAIC relatively fast
-y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), dat$y)
+y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), y)
 
 abund.covs <- X
 colnames(abund.covs) <- c('int', 'abund.cov.1')
@@ -549,7 +548,7 @@ X.p <- dat$X.p[-pred.indx, , , drop = FALSE]
 coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 # Just to keep WAIC relatively fast
-y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), dat$y)
+y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), y)
 
 abund.covs <- X
 colnames(abund.covs) <- c('int')
@@ -811,7 +810,7 @@ X.p <- dat$X.p[-pred.indx, , , drop = FALSE]
 coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 # Just to keep WAIC relatively fast
-y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), dat$y)
+y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), y)
 
 abund.covs <- X
 colnames(abund.covs) <- c('int', 'abund.cov.1', 'abund.cov.2')
@@ -1075,7 +1074,7 @@ X.p <- dat$X.p[-pred.indx, , , drop = FALSE]
 coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 # Just to keep WAIC relatively fast
-y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), dat$y)
+y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), y)
 
 abund.covs <- X
 colnames(abund.covs) <- c('int', 'abund.cov.1', 'abund.cov.2')
@@ -1342,7 +1341,7 @@ X.p <- dat$X.p[-pred.indx, , , drop = FALSE]
 coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 # Just to keep WAIC relatively fast
-y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), dat$y)
+y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), y)
 
 abund.covs <- X
 colnames(abund.covs) <- c('int', 'abund.cov.1', 'abund.cov.2')
@@ -1573,7 +1572,7 @@ X.p <- dat$X.p[-pred.indx, , , drop = FALSE]
 coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 # Just to keep WAIC relatively fast
-y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), dat$y)
+y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), y)
 
 abund.covs <- cbind(X, X.re)
 colnames(abund.covs) <- c('int', 'abund.cov.1', 'abund.cov.2', 
@@ -1888,7 +1887,7 @@ X.p.re <- dat$X.p.re[-pred.indx, , , drop = FALSE]
 coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 # Just to keep WAIC relatively fast
-y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), dat$y)
+y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), y)
 
 abund.covs <- cbind(X)
 colnames(abund.covs) <- c('int')
@@ -2207,7 +2206,7 @@ X.p.re <- dat$X.p.re[-pred.indx, , , drop = FALSE]
 coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 # Just to keep WAIC relatively fast
-y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), dat$y)
+y <- ifelse(y > 50, sample(1:50, 100, replace = TRUE), y)
 
 abund.covs <- cbind(X, X.re)
 colnames(abund.covs) <- c('int', 'abund.cov.1', 'abund.cov.2', 'abund.factor.1', 

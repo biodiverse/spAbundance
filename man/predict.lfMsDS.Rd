@@ -8,7 +8,7 @@
 
 \usage{
 \method{predict}{lfMsDS}(object, X.0, coords.0, ignore.RE = FALSE, 
-                         type = 'abundance', ...)
+                         type = 'abundance', include.w = TRUE, ...)
 }
 
 \arguments{
@@ -23,6 +23,8 @@
   \item{ignore.RE}{a logical value indicating whether to include unstructured random effects for prediction. If TRUE, random effects will be ignored and prediction will only use the fixed effects. If FALSE, random effects will be included in the prediction for both observed and unobserved levels of the random effect.}
 
   \item{type}{a quoted keyword indicating what type of prediction to produce. Valid keywords are 'abundance' to predict expected abundance and latent abundance values (this is the default), or 'detection' to predict detection probability given new values of detection covariates.}
+
+    \item{include.w}{a logical value used to indicate whether the latent random effects should be included in the predictions. By default, this is set to \code{TRUE}. If set to \code{FALSE}, predictions are given using the covariates and any unstructured random effects in the model. If \code{FALSE}, the \code{coords.0} argument is not required.}
   
   \item{...}{currently no additional arguments}
 

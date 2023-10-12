@@ -250,39 +250,51 @@ extern "C" {
      * *******************************************************************/
     SEXP betaSamples_r;
     PROTECT(betaSamples_r = allocMatrix(REALSXP, pAbund, nPost)); nProtect++;
+    zeros(REAL(betaSamples_r), pAbund * nPost);
     SEXP alphaSamples_r; 
     PROTECT(alphaSamples_r = allocMatrix(REALSXP, pDet, nPost)); nProtect++;
+    zeros(REAL(alphaSamples_r), pDet * nPost);
     SEXP NSamples_r; 
     PROTECT(NSamples_r = allocMatrix(REALSXP, J, nPost)); nProtect++; 
+    zeros(REAL(NSamples_r), J * nPost);
     SEXP kappaSamples_r;
     if (family == 1) {
       PROTECT(kappaSamples_r = allocMatrix(REALSXP, inc, nPost)); nProtect++;
+      zeros(REAL(kappaSamples_r), nPost);
     }
     SEXP muSamples_r; 
     PROTECT(muSamples_r = allocMatrix(REALSXP, J, nPost)); nProtect++; 
+    zeros(REAL(muSamples_r), J * nPost);
     SEXP wSamples_r; 
     PROTECT(wSamples_r = allocMatrix(REALSXP, J, nPost)); nProtect++; 
+    zeros(REAL(wSamples_r), J * nPost);
     // Detection random effects
     SEXP sigmaSqPSamples_r; 
     SEXP alphaStarSamples_r; 
     if (pDetRE > 0) {
       PROTECT(sigmaSqPSamples_r = allocMatrix(REALSXP, pDetRE, nPost)); nProtect++;
+      zeros(REAL(sigmaSqPSamples_r), pDetRE * nPost);
       PROTECT(alphaStarSamples_r = allocMatrix(REALSXP, nDetRE, nPost)); nProtect++;
+      zeros(REAL(alphaStarSamples_r), nDetRE * nPost);
     }
     // Abundance random effects
     SEXP sigmaSqMuSamples_r; 
     SEXP betaStarSamples_r; 
     if (pAbundRE > 0) {
       PROTECT(sigmaSqMuSamples_r = allocMatrix(REALSXP, pAbundRE, nPost)); nProtect++;
+      zeros(REAL(sigmaSqMuSamples_r), pAbundRE * nPost);
       PROTECT(betaStarSamples_r = allocMatrix(REALSXP, nAbundRE, nPost)); nProtect++;
+      zeros(REAL(betaStarSamples_r), nAbundRE * nPost);
     }
     // Stuff for fitted values
     int KFull = K + 1;
     int nObsFull = KFull * J;
     SEXP yRepSamples_r; 
     PROTECT(yRepSamples_r = allocMatrix(INTSXP, nObsFull, nPost)); nProtect++; 
+    zeros(REAL(yRepSamples_r), nObsFull * nPost);
     SEXP piFullSamples_r; 
     PROTECT(piFullSamples_r = allocMatrix(REALSXP, nObsFull, nPost)); nProtect++; 
+    zeros(REAL(piFullSamples_r), nObsFull * nPost);
     
     /********************************************************************
       Some constants and temporary variables to be used later
@@ -311,6 +323,7 @@ extern "C" {
     double *theta = (double *) R_alloc(nTheta, sizeof(double));
     SEXP thetaSamples_r; 
     PROTECT(thetaSamples_r = allocMatrix(REALSXP, nTheta, nPost)); nProtect++; 
+    zeros(REAL(thetaSamples_r), nTheta * nPost);
     double a, b, e; 
     // Initiate spatial values
     theta[sigmaSqIndx] = REAL(sigmaSqStarting_r)[0]; 
@@ -428,8 +441,10 @@ extern "C" {
     }
     SEXP acceptSamples_r; 
     PROTECT(acceptSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
+    zeros(REAL(acceptSamples_r), nAMCMC * nBatch);
     SEXP tuningSamples_r; 
     PROTECT(tuningSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
+    zeros(REAL(tuningSamples_r), nAMCMC * nBatch);
 
     /**********************************************************************
      * Prep for random effects

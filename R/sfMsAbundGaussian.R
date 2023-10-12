@@ -4,7 +4,7 @@ sfMsAbundGaussian <- function(formula, data, inits, priors,
                   n.batch, batch.length, accept.rate = 0.43, family = 'Gaussian',
                   n.omp.threads = 1, verbose = TRUE, n.report = 100, 
                   n.burn = round(.10 * n.batch * batch.length), 
-                  n.thin = 1, n.chains = 1, ...){
+                  n.thin = 1, n.chains = 1, save.fitted = TRUE, ...){
 
   ptm <- proc.time()
 
@@ -138,6 +138,10 @@ sfMsAbundGaussian <- function(formula, data, inits, priors,
         stop(paste("error: random effect variable ", abund.re.names[i], " specified as character. Random effect variables must be specified as numeric.", sep = ''))
       }
     }
+  }
+  # Check save.fitted ---------------------------------------------------
+  if (!(save.fitted %in% c(TRUE, FALSE))) {
+    stop("save.fitted must be either TRUE or FALSE")
   }
 
   # Formula -------------------------------------------------------------
@@ -762,7 +766,7 @@ sfMsAbundGaussian <- function(formula, data, inits, priors,
     storage.mode(X) <- "double"
     storage.mode(z) <- 'double'
     storage.mode(coords) <- "double"
-    consts <- c(N, J, p, p.re, n.re, q, ind.betas)
+    consts <- c(N, J, p, p.re, n.re, q, ind.betas, save.fitted)
     storage.mode(consts) <- "integer"
     storage.mode(beta.inits) <- "double"
     storage.mode(beta.comm.inits) <- "double"
@@ -952,18 +956,20 @@ sfMsAbundGaussian <- function(formula, data, inits, priors,
       								dim = c(q, J, n.post.samples))))
     out$w.samples <- out$w.samples[, order(ord), , drop = FALSE]
     out$w.samples <- aperm(out$w.samples, c(3, 1, 2))
-    out$mu.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$mu.samples, 
-      								dim = c(N, J, n.post.samples))))
-    out$mu.samples <- out$mu.samples[, order(ord), ]
-    out$mu.samples <- aperm(out$mu.samples, c(3, 1, 2))
-    out$like.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$like.samples, 
-      								dim = c(N, J, n.post.samples))))
-    out$like.samples <- out$like.samples[, order(ord), ]
-    out$like.samples <- aperm(out$like.samples, c(3, 1, 2))
-    out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
-      								dim = c(N, J, n.post.samples))))
-    out$y.rep.samples <- out$y.rep.samples[, order(ord), ]
-    out$y.rep.samples <- aperm(out$y.rep.samples, c(3, 1, 2))
+    if (save.fitted) {
+      out$mu.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$mu.samples, 
+        								dim = c(N, J, n.post.samples))))
+      out$mu.samples <- out$mu.samples[, order(ord), ]
+      out$mu.samples <- aperm(out$mu.samples, c(3, 1, 2))
+      out$like.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$like.samples, 
+        								dim = c(N, J, n.post.samples))))
+      out$like.samples <- out$like.samples[, order(ord), ]
+      out$like.samples <- aperm(out$like.samples, c(3, 1, 2))
+      out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
+        								dim = c(N, J, n.post.samples))))
+      out$y.rep.samples <- out$y.rep.samples[, order(ord), ]
+      out$y.rep.samples <- aperm(out$y.rep.samples, c(3, 1, 2))
+    }
 
     out$X.re <- X.re[order(ord), , drop = FALSE]
     # Calculate effective sample sizes

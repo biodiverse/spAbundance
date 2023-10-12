@@ -176,11 +176,14 @@ extern "C" {
     // Community level
     SEXP betaCommSamples_r; 
     PROTECT(betaCommSamples_r = allocMatrix(REALSXP, pAbund, nPost)); nProtect++;
+    zeros(REAL(betaCommSamples_r), pAbund * nPost);
     SEXP tauSqBetaSamples_r; 
     PROTECT(tauSqBetaSamples_r = allocMatrix(REALSXP, pAbund, nPost)); nProtect++; 
+    zeros(REAL(tauSqBetaSamples_r), pAbund * nPost);
     // Species level
     SEXP betaSamples_r;
     PROTECT(betaSamples_r = allocMatrix(REALSXP, pAbundnSp, nPost)); nProtect++;
+    zeros(REAL(betaSamples_r), pAbundnSp * nPost);
     SEXP yRepSamples_r; 
     SEXP muSamples_r; 
     SEXP likeSamples_r;
@@ -197,14 +200,16 @@ extern "C" {
     SEXP betaStarSamples_r; 
     if (pAbundRE > 0) {
       PROTECT(sigmaSqMuSamples_r = allocMatrix(REALSXP, pAbundRE, nPost)); nProtect++;
+      zeros(REAL(sigmaSqMuSamples_r), pAbundRE * nPost);
       PROTECT(betaStarSamples_r = allocMatrix(REALSXP, nAbundREnSp, nPost)); nProtect++;
+      zeros(REAL(betaStarSamples_r), nAbundREnSp * nPost);
     }
     // Overdispersion
     SEXP kappaSamples_r;
     if (family == 1) {
       PROTECT(kappaSamples_r = allocMatrix(REALSXP, nSp, nPost)); nProtect++;
+      zeros(REAL(kappaSamples_r), nSp * nPost);
     }
-    // Likelihood samples for WAIC. 
     
     /**********************************************************************
      * Additional Sampler Prep
@@ -295,8 +300,10 @@ extern "C" {
     kappaCand = kappa[0];
     SEXP acceptSamples_r; 
     PROTECT(acceptSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
+    zeros(REAL(acceptSamples_r), nAMCMC * nBatch);
     SEXP tuningSamples_r; 
     PROTECT(tuningSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
+    zeros(REAL(tuningSamples_r), nAMCMC * nBatch);
     
     GetRNGstate();
 

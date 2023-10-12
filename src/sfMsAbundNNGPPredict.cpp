@@ -38,10 +38,8 @@ extern "C" {
     int J = INTEGER(J_r)[0];
     int nSp = INTEGER(nSp_r)[0];
     int q = INTEGER(q_r)[0]; 
-    int nObs = INTEGER(nObs_r)[0];
     int pAbund = INTEGER(pAbund_r)[0];
     int pAbundnSp = pAbund * nSp;
-    int JnSp = J * nSp; 
     int Jq = J * q;
     int nSpq = nSp * q;
     int family = INTEGER(family_r)[0];

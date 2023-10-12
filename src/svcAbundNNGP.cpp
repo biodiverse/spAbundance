@@ -226,26 +226,35 @@ extern "C" {
      * *******************************************************************/
     SEXP betaSamples_r;
     PROTECT(betaSamples_r = allocMatrix(REALSXP, p, nPost)); nProtect++;
+    zeros(REAL(betaSamples_r), p * nPost);
     SEXP yRepSamples_r; 
     PROTECT(yRepSamples_r = allocMatrix(REALSXP, J, nPost)); nProtect++; 
+    zeros(REAL(yRepSamples_r), J * nPost);
     SEXP yRepZeroSamples_r;
     PROTECT(yRepZeroSamples_r = allocMatrix(REALSXP, JZero, nPost)); nProtect++; 
+    zeros(REAL(yRepZeroSamples_r), JZero * nPost);
     SEXP wSamples_r; 
     PROTECT(wSamples_r = allocMatrix(REALSXP, JpTilde, nPost)); nProtect++; 
+    zeros(REAL(wSamples_r), JpTilde * nPost);
     SEXP muSamples_r; 
     PROTECT(muSamples_r = allocMatrix(REALSXP, J, nPost)); nProtect++; 
+    zeros(REAL(muSamples_r), J * nPost);
     // Occurrence random effects
     SEXP sigmaSqMuSamples_r; 
     SEXP betaStarSamples_r; 
     if (pRE > 0) {
       PROTECT(sigmaSqMuSamples_r = allocMatrix(REALSXP, pRE, nPost)); nProtect++;
+      zeros(REAL(sigmaSqMuSamples_r), pRE * nPost);
       PROTECT(betaStarSamples_r = allocMatrix(REALSXP, nRE, nPost)); nProtect++;
+      zeros(REAL(betaStarSamples_r), nRE * nPost);
     }
     SEXP tauSqSamples_r;
     PROTECT(tauSqSamples_r = allocMatrix(REALSXP, inc, nPost)); nProtect++;
+    zeros(REAL(tauSqSamples_r), nPost);
     // Likelihood samples for WAIC. 
     SEXP likeSamples_r;
     PROTECT(likeSamples_r = allocMatrix(REALSXP, J, nPost)); nProtect++;
+    zeros(REAL(likeSamples_r), J * nPost);
     
     /**********************************************************************
      * Other initial starting stuff
@@ -322,10 +331,13 @@ extern "C" {
     double phiCand = 0.0, nuCand = 0.0;  
     SEXP acceptSamples_r; 
     PROTECT(acceptSamples_r = allocMatrix(REALSXP, nThetapTilde, nBatch)); nProtect++; 
+    zeros(REAL(acceptSamples_r), nThetapTilde * nBatch);
     SEXP tuningSamples_r; 
     PROTECT(tuningSamples_r = allocMatrix(REALSXP, nThetapTilde, nBatch)); nProtect++; 
+    zeros(REAL(tuningSamples_r), nThetapTilde * nBatch);
     SEXP thetaSamples_r; 
     PROTECT(thetaSamples_r = allocMatrix(REALSXP, nThetapTilde, nPost)); nProtect++; 
+    zeros(REAL(thetaSamples_r), nThetapTilde * nPost);
     double b, e, aij, aa; 
     double *a = (double *) R_alloc(pTilde, sizeof(double));
     double *v = (double *) R_alloc(pTilde, sizeof(double));

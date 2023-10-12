@@ -218,6 +218,7 @@ extern "C" {
      * *******************************************************************/
     SEXP betaSamples_r;
     PROTECT(betaSamples_r = allocMatrix(REALSXP, pAbund, nPost)); nProtect++;
+    zeros(REAL(betaSamples_r), pAbund * nPost);
     SEXP yRepSamples_r; 
     SEXP muSamples_r; 
     SEXP likeSamples_r;
@@ -231,16 +232,20 @@ extern "C" {
     }
     SEXP wSamples_r;
     PROTECT(wSamples_r = allocMatrix(REALSXP, J, nPost)); nProtect++;
+    zeros(REAL(wSamples_r), J * nPost);
     SEXP kappaSamples_r;
     if (family == 1) {
       PROTECT(kappaSamples_r = allocMatrix(REALSXP, inc, nPost)); nProtect++;
+      zeros(REAL(kappaSamples_r), nPost);
     }
     // Abundance random effects
     SEXP sigmaSqMuSamples_r; 
     SEXP betaStarSamples_r; 
     if (pAbundRE > 0) {
       PROTECT(sigmaSqMuSamples_r = allocMatrix(REALSXP, pAbundRE, nPost)); nProtect++;
+      zeros(REAL(sigmaSqMuSamples_r), pAbundRE * nPost);
       PROTECT(betaStarSamples_r = allocMatrix(REALSXP, nAbundRE, nPost)); nProtect++;
+      zeros(REAL(betaStarSamples_r), nAbundRE * nPost);
     }
     
     /********************************************************************
@@ -270,6 +275,7 @@ extern "C" {
     double *theta = (double *) R_alloc(nTheta, sizeof(double));
     SEXP thetaSamples_r; 
     PROTECT(thetaSamples_r = allocMatrix(REALSXP, nTheta, nPost)); nProtect++; 
+    zeros(REAL(thetaSamples_r), nTheta * nPost);
     double a, b, e; 
     // Initiate spatial values
     theta[sigmaSqIndx] = REAL(sigmaSqStarting_r)[0]; 
@@ -358,8 +364,10 @@ extern "C" {
     double *accept = (double *) R_alloc(nAMCMC, sizeof(double)); zeros(accept, nAMCMC); 
     SEXP acceptSamples_r; 
     PROTECT(acceptSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
+    zeros(REAL(acceptSamples_r), nAMCMC * nBatch);
     SEXP tuningSamples_r; 
     PROTECT(tuningSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
+    zeros(REAL(tuningSamples_r), nAMCMC * nBatch);
 
     /**********************************************************************
      * Prep for random effects

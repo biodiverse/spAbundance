@@ -12,7 +12,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
   if (family %in% c('Gaussian', 'zi-Gaussian')) {
     msAbundGaussian(formula, data, inits, priors, tuning, n.batch,
                     batch.length, accept.rate, family, n.omp.threads, 
-                    verbose, n.report, n.burn, n.thin, n.chains)
+                    verbose, n.report, n.burn, n.thin, n.chains, save.fitted)
   } else {
 
     # Functions -----------------------------------------------------------
@@ -122,9 +122,8 @@ msAbund <- function(formula, data, inits, priors, tuning,
     # Ordered by rep, then site within rep
     data$covs <- data.frame(lapply(data$covs, function(a) unlist(c(a))))
     # Check if only site-level covariates are included
-    # TODO: this leads to a problem if factors are supplied
     if (nrow(data$covs) == dim(y)[2] & dim(y)[3] != 1) {
-      data$covs <- as.data.frame(mapply(rep, data$covs, dim(y)[3]))
+      data$covs <- as.data.frame(lapply(data$covs, rep, dim(y)[3]))
     }
 
     # Check whether random effects are sent in as numeric, and
@@ -211,7 +210,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
     # Note this assumes equivalent detection histories for all species. 
     # May want to change this at some point. 
     n.rep <- apply(y.mat[1, , , drop = FALSE], 2, function(a) sum(!is.na(a)))
-    K.max <- max(n.rep)
+    K.max <- dim(y.mat)[3]
     # Because I like K better than n.rep
     K <- n.rep
 

@@ -47,7 +47,6 @@ extern "C" {
     int pTilde = INTEGER(pTilde_r)[0];
     int family = INTEGER(family_r)[0];
     int pN = p * N;
-    int JN = J * N; 
     int Jq = J * q;
     int Nq = N * q;
     int NpTilde = N * pTilde;

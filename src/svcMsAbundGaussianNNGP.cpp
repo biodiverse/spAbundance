@@ -220,7 +220,6 @@ extern "C" {
     int Nq = N * q;
     int Jp = J * p; 
     int JpRE = J * pRE;
-    int JpTilde = J * pTilde;
     int qpTilde = q * pTilde;
     int JqpTilde = J * q * pTilde;
     int JNpTilde = J * N * pTilde;
@@ -293,17 +292,23 @@ extern "C" {
     // Community level
     SEXP betaCommSamples_r; 
     PROTECT(betaCommSamples_r = allocMatrix(REALSXP, p, nPost)); nProtect++;
+    zeros(REAL(betaCommSamples_r), p * nPost);
     SEXP tauSqBetaSamples_r; 
     PROTECT(tauSqBetaSamples_r = allocMatrix(REALSXP, p, nPost)); nProtect++; 
+    zeros(REAL(tauSqBetaSamples_r), p * nPost);
     // Species level
     SEXP betaSamples_r;
     PROTECT(betaSamples_r = allocMatrix(REALSXP, pN, nPost)); nProtect++;
+    zeros(REAL(betaSamples_r), pN * nPost);
     SEXP tauSqSamples_r;
     PROTECT(tauSqSamples_r = allocMatrix(REALSXP, N, nPost)); nProtect++;
+    zeros(REAL(tauSqSamples_r), N * nPost);
     SEXP yRepSamples_r; 
     PROTECT(yRepSamples_r = allocMatrix(REALSXP, JN, nPost)); nProtect++; 
+      zeros(REAL(yRepSamples_r), JN * nPost);
     SEXP muSamples_r; 
     PROTECT(muSamples_r = allocMatrix(REALSXP, JN, nPost)); nProtect++; 
+      zeros(REAL(muSamples_r), JN * nPost);
     // Spatial parameters
     SEXP lambdaSamples_r; 
     PROTECT(lambdaSamples_r = allocMatrix(REALSXP, NqpTilde, nPost)); nProtect++;
@@ -316,11 +321,14 @@ extern "C" {
     SEXP betaStarSamples_r; 
     if (pRE > 0) {
       PROTECT(sigmaSqMuSamples_r = allocMatrix(REALSXP, pRE, nPost)); nProtect++;
+      zeros(REAL(sigmaSqMuSamples_r), pRE * nPost);
       PROTECT(betaStarSamples_r = allocMatrix(REALSXP, nREN, nPost)); nProtect++;
+      zeros(REAL(betaStarSamples_r), nREN * nPost);
     }
     // Likelihood samples for WAIC. 
     SEXP likeSamples_r;
     PROTECT(likeSamples_r = allocMatrix(REALSXP, JN, nPost)); nProtect++;
+    zeros(REAL(likeSamples_r), JN * nPost);
     
     /**********************************************************************
      * Additional Sampler Prep
@@ -463,6 +471,7 @@ extern "C" {
     double *accept2 = (double *) R_alloc(nThetaqpTilde, sizeof(double)); zeros(accept2, nThetaqpTilde);
     SEXP tuningSamples_r; 
     PROTECT(tuningSamples_r = allocMatrix(REALSXP, nThetaqpTilde, nBatch)); nProtect++; 
+    zeros(REAL(tuningSamples_r), nThetaqpTilde * nBatch);
     // For current number of nonzero z values
     double *currJ = (double *) R_alloc(N, sizeof(double)); zeros(currJ, N);
     for (i = 0; i < N; i++) {

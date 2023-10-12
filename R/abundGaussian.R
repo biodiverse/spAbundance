@@ -2,7 +2,7 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
 		     batch.length, accept.rate = 0.43, family = 'Gaussian',
 		     n.omp.threads = 1, verbose = TRUE, n.report = 100, 
 		     n.burn = round(.10 * n.batch * batch.length), 
-		     n.thin = 1, n.chains = 1,  ...){
+		     n.thin = 1, n.chains = 1, save.fitted = TRUE, ...){
 
   ptm <- proc.time()
 
@@ -134,6 +134,11 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
         stop(paste("error: random effect variable ", re.names[i], " specified as character. Random effect variables must be specified as numeric.", sep = ''))
       }
     }
+  }
+
+  # Check save.fitted ---------------------------------------------------
+  if (!(save.fitted %in% c(TRUE, FALSE))) {
+    stop("save.fitted must be either TRUE or FALSE")
   }
 
   # Formula -------------------------------------------------------------
@@ -393,7 +398,7 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   # Set storage for all variables ---------------------------------------
   storage.mode(y) <- "double"
   storage.mode(X) <- "double"
-  consts <- c(J.est, p, p.re, n.re, J.zero)
+  consts <- c(J.est, p, p.re, n.re, J.zero, save.fitted)
   storage.mode(consts) <- "integer"
   storage.mode(beta.inits) <- "double"
   storage.mode(tau.sq.inits) <- "double"
@@ -485,22 +490,24 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   out$tau.sq.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$tau.sq.samples))))
   colnames(out$tau.sq.samples) <- 'tau.sq'
   # Get everything back in the original order
-  if (!two.stage) {
-    out$y.rep.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.samples))))
-    out$like.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$like.samples))))
-  } else {
-    y.rep.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.samples))))
-    y.rep.zero.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.zero.samples))))
-    out$y.rep.samples <- matrix(NA, n.post.samples * n.chains, J.est + J.zero)
-    out$y.rep.samples[, z.indx] <- y.rep.samples
-    out$y.rep.samples[, -z.indx] <- y.rep.zero.samples
-    out$y.rep.samples <- mcmc(out$y.rep.samples)
-    out$like.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$like.samples))))
+  if (save.fitted) {
+    if (!two.stage) {
+      out$y.rep.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.samples))))
+      out$like.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$like.samples))))
+    } else {
+      y.rep.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.samples))))
+      y.rep.zero.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.zero.samples))))
+      out$y.rep.samples <- matrix(NA, n.post.samples * n.chains, J.est + J.zero)
+      out$y.rep.samples[, z.indx] <- y.rep.samples
+      out$y.rep.samples[, -z.indx] <- y.rep.zero.samples
+      out$y.rep.samples <- mcmc(out$y.rep.samples)
+      out$like.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$like.samples))))
+    }
+    out$mu.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$mu.samples))))
+    out$mu.samples <- mcmc(out$mu.samples)
   }
   out$X <- X
   out$X.re <- X.re
-  out$mu.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$mu.samples))))
-  out$mu.samples <- mcmc(out$mu.samples)
   out$y <- y.orig 
   if (p.re > 0) {
     out$sigma.sq.mu.samples <- mcmc(

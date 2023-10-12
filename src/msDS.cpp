@@ -48,7 +48,6 @@ extern "C" {
     const double one = 1.0;
     const double zero = 0.0;
     char const *lower = "L";
-    char const *ntran = "N";
     char const *ytran = "T";
     
     /**********************************************************************
@@ -94,7 +93,6 @@ extern "C" {
     int *nAbundRELong = INTEGER(nAbundRELong_r); 
     int *nDetRELong = INTEGER(nDetRELong_r); 
     int K = INTEGER(K_r)[0]; 
-    int *NLongIndx = INTEGER(NLongIndx_r); 
     int *alphaStarIndx = INTEGER(alphaStarIndx_r); 
     int *alphaLevelIndx = INTEGER(alphaLevelIndx_r);
     int *betaStarIndx = INTEGER(betaStarIndx_r); 
@@ -170,36 +168,26 @@ extern "C" {
     ********************************************************************/
     int pAbundnSp = pAbund * nSp; 
     int pDetnSp = pDet * nSp; 
-    int nObsnSp = nObs * nSp; 
     int nAbundREnSp = nAbundRE * nSp; 
     int nDetREnSp = nDetRE * nSp; 
     int JnSp = J * nSp;
-    int JpAbund = J * pAbund;
     int JpAbundRE = J * pAbundRE;
     int JpDetRE = J * pDetRE;
-    int nObspDet = nObs * pDet;
-    int nObspDetRE = nObs * pDetRE;
     int KFull = K + 1;
     int nObsFull = KFull * J;
     int nObsFullnSp = nObsFull * nSp;
     double tmp_0, tmp_02; 
-    double *tmp_one = (double *) R_alloc(inc, sizeof(double)); 
     double *tmp_ppDet = (double *) R_alloc(ppDet, sizeof(double));
     double *tmp_ppAbund = (double *) R_alloc(ppAbund, sizeof(double)); 
     double *tmp_pDet = (double *) R_alloc(pDet, sizeof(double));
     double *tmp_pAbund = (double *) R_alloc(pAbund, sizeof(double));
     double *tmp_pDet2 = (double *) R_alloc(pDet, sizeof(double));
     double *tmp_pAbund2 = (double *) R_alloc(pAbund, sizeof(double));
-    double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
-    double *tmp_JpAbund = (double *) R_alloc(JpAbund, sizeof(double));
-    double *tmp_nObspDet = (double *) R_alloc(nObspDet, sizeof(double));
     double *tmp_J = (double *) R_alloc(J, sizeof(double));
-    double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
     double *tmp_KFull = (double *) R_alloc(KFull, sizeof(double));
     int *tmp_KFullInt = (int *) R_alloc(KFull, sizeof(int));
    
     // For latent abundance
-    double muNum; 
     double *mu = (double *) R_alloc(JnSp, sizeof(double)); 
     zeros(mu, JnSp); 
 
@@ -243,43 +231,58 @@ extern "C" {
     // Community level
     SEXP betaCommSamples_r; 
     PROTECT(betaCommSamples_r = allocMatrix(REALSXP, pAbund, nPost)); nProtect++;
+    zeros(REAL(betaCommSamples_r), pAbund * nPost);
     SEXP alphaCommSamples_r;
     PROTECT(alphaCommSamples_r = allocMatrix(REALSXP, pDet, nPost)); nProtect++;
+    zeros(REAL(alphaCommSamples_r), pDet * nPost);
     SEXP tauSqBetaSamples_r; 
     PROTECT(tauSqBetaSamples_r = allocMatrix(REALSXP, pAbund, nPost)); nProtect++; 
+    zeros(REAL(tauSqBetaSamples_r), pAbund * nPost);
     SEXP tauSqAlphaSamples_r; 
     PROTECT(tauSqAlphaSamples_r = allocMatrix(REALSXP, pDet, nPost)); nProtect++; 
+    zeros(REAL(tauSqAlphaSamples_r), pDet * nPost);
     // Species level
     SEXP betaSamples_r;
     PROTECT(betaSamples_r = allocMatrix(REALSXP, pAbundnSp, nPost)); nProtect++;
+    zeros(REAL(betaSamples_r), pAbundnSp * nPost);
     SEXP alphaSamples_r; 
     PROTECT(alphaSamples_r = allocMatrix(REALSXP, pDetnSp, nPost)); nProtect++;
+    zeros(REAL(alphaSamples_r), pDetnSp * nPost);
     SEXP NSamples_r; 
     PROTECT(NSamples_r = allocMatrix(REALSXP, JnSp, nPost)); nProtect++; 
+    zeros(REAL(NSamples_r), JnSp * nPost);
     SEXP muSamples_r; 
     PROTECT(muSamples_r = allocMatrix(REALSXP, JnSp, nPost)); nProtect++; 
+    zeros(REAL(muSamples_r), JnSp * nPost);
     // Detection random effects
     SEXP sigmaSqPSamples_r; 
     SEXP alphaStarSamples_r; 
     if (pDetRE > 0) {
       PROTECT(sigmaSqPSamples_r = allocMatrix(REALSXP, pDetRE, nPost)); nProtect++;
+      zeros(REAL(sigmaSqPSamples_r), pDetRE * nPost);
       PROTECT(alphaStarSamples_r = allocMatrix(REALSXP, nDetREnSp, nPost)); nProtect++;
+      zeros(REAL(alphaStarSamples_r), nDetREnSp * nPost);
     }
     // Abundance random effects
     SEXP sigmaSqMuSamples_r; 
     SEXP betaStarSamples_r; 
     if (pAbundRE > 0) {
       PROTECT(sigmaSqMuSamples_r = allocMatrix(REALSXP, pAbundRE, nPost)); nProtect++;
+      zeros(REAL(sigmaSqMuSamples_r), pAbundRE * nPost);
       PROTECT(betaStarSamples_r = allocMatrix(REALSXP, nAbundREnSp, nPost)); nProtect++;
+      zeros(REAL(betaStarSamples_r), nAbundREnSp * nPost);
     }
     SEXP kappaSamples_r;
     if (family == 1) {
       PROTECT(kappaSamples_r = allocMatrix(REALSXP, nSp, nPost)); nProtect++;
+      zeros(REAL(kappaSamples_r), nSp * nPost);
     }
     SEXP yRepSamples_r; 
     PROTECT(yRepSamples_r = allocMatrix(INTSXP, nObsFullnSp, nPost)); nProtect++; 
+    zeros(REAL(yRepSamples_r), nObsFullnSp * nPost);
     SEXP piFullSamples_r; 
     PROTECT(piFullSamples_r = allocMatrix(REALSXP, nObsFullnSp, nPost)); nProtect++; 
+    zeros(REAL(piFullSamples_r), nObsFullnSp * nPost);
 
     /**********************************************************************
      * Additional Sampler Prep
@@ -400,8 +403,10 @@ extern "C" {
     }
     SEXP acceptSamples_r; 
     PROTECT(acceptSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
+    zeros(REAL(acceptSamples_r), nAMCMC * nBatch);
     SEXP tuningSamples_r; 
     PROTECT(tuningSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
+    zeros(REAL(tuningSamples_r), nAMCMC * nBatch);
 
     /**********************************************************************
      * Prep for random effects

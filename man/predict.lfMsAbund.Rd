@@ -7,7 +7,7 @@
 }
 
 \usage{
-\method{predict}{lfMsAbund}(object, X.0, coords.0, ignore.RE = FALSE, z.0.samples, ...)
+\method{predict}{lfMsAbund}(object, X.0, coords.0, ignore.RE = FALSE, z.0.samples, include.w = TRUE, ...)
 }
 
 \arguments{
@@ -23,6 +23,8 @@
   \item{ignore.RE}{logical value that specifies whether or not to remove unstructured random effects from the subsequent predictions. If \code{TRUE}, unstructured random effects will be included. If \code{FALSE}, unstructured random effects will be set to 0 and predictions will only be generated from the fixed effects.}
 
   \item{z.0.samples}{a three-dimensional array with dimensions corresponding to MCMC samples, species, and prediction locations. The array contains the full posterior samples of the predicted binary portion of a Gaussian hurdle model. In the context of abundance models, this typically corresponds to estimates of the presence or absence of each species at the location. When using \code{spOccupancy} to generate the first stage samples of the Gaussian-hurdle model, this is the object contained in the \code{z.0.samples} object of the predition function for the spOccupancy object. Ignored for all model types other than Gaussian-hurdle.}
+
+    \item{include.w}{a logical value used to indicate whether the latent random effects should be included in the predictions. By default, this is set to \code{TRUE}. If set to \code{FALSE}, predictions are given using the covariates and any unstructured random effects in the model. If \code{FALSE}, the \code{coords.0} argument is not required.}
 
   \item{...}{currently no additional arguments}
 }

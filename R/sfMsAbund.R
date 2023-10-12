@@ -4,7 +4,7 @@ sfMsAbund <- function(formula, data, inits, priors,
                       n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
                       n.omp.threads = 1, verbose = TRUE, n.report = 100, 
                       n.burn = round(.10 * n.batch * batch.length), 
-		      n.thin = 1, n.chains = 1, ...){
+		      n.thin = 1, n.chains = 1, save.fitted = TRUE, ...){
 
   ptm <- proc.time()
 
@@ -15,7 +15,7 @@ sfMsAbund <- function(formula, data, inits, priors,
     sfMsAbundGaussian(formula, data, inits, priors, tuning, cov.model, 
 		      NNGP, n.neighbors, search.type, n.factors, n.batch,
 		      batch.length, accept.rate, family, n.omp.threads, 
-		      verbose, n.report, n.burn, n.thin, n.chains)
+		      verbose, n.report, n.burn, n.thin, n.chains, save.fitted)
   } else {
 
 
@@ -212,6 +212,11 @@ sfMsAbund <- function(formula, data, inits, priors,
     # works when random slopes are provided.
     tmp <- apply(data$covs, 1, function (a) sum(is.na(a)))
     data$covs <- as.data.frame(data$covs[tmp == 0, , drop = FALSE])
+
+    # Check save.fitted ---------------------------------------------------
+    if (!(save.fitted %in% c(TRUE, FALSE))) {
+      stop("save.fitted must be either TRUE or FALSE")
+    }
 
     # Formula -------------------------------------------------------------
     # Abundance -----------------------
@@ -921,7 +926,7 @@ sfMsAbund <- function(formula, data, inits, priors,
       storage.mode(X) <- "double"
       storage.mode(coords) <- "double"
       storage.mode(offset) <- 'double'
-      consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re, q, ind.betas)
+      consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re, q, ind.betas, save.fitted)
       storage.mode(consts) <- "integer"
       storage.mode(beta.inits) <- "double"
       storage.mode(kappa.inits) <- "double"
@@ -1099,30 +1104,32 @@ sfMsAbund <- function(formula, data, inits, priors,
       } 
       colnames(out$theta.samples) <- theta.names
       y.non.miss.indx <- which(!is.na(y.mat), arr.ind = TRUE)
-      out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
-        								dim = c(n.sp * n.obs, n.post.samples))))
-      tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
-      for (j in 1:(n.obs * n.sp)) {
-        curr.indx <- y.non.miss.indx[j, ]
-        tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$y.rep.samples[j, ]
+      if (save.fitted) {
+        out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
+          								dim = c(n.sp * n.obs, n.post.samples))))
+        tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
+        for (j in 1:(n.obs * n.sp)) {
+          curr.indx <- y.non.miss.indx[j, ]
+          tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$y.rep.samples[j, ]
+        }
+        out$y.rep.samples <- tmp[, , order(ord), , drop = FALSE]
+        out$mu.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$mu.samples, 
+          								dim = c(n.sp * n.obs, n.post.samples))))
+        tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
+        for (j in 1:(n.obs * n.sp)) {
+          curr.indx <- y.non.miss.indx[j, ]
+          tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$mu.samples[j, ]
+        }
+        out$mu.samples <- tmp[, , order(ord), , drop = FALSE]
+        out$like.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$like.samples, 
+          								dim = c(n.sp * n.obs, n.post.samples))))
+        tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
+        for (j in 1:(n.obs * n.sp)) {
+          curr.indx <- y.non.miss.indx[j, ]
+          tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$like.samples[j, ]
+        }
+        out$like.samples <- tmp[, , order(ord), , drop = FALSE]
       }
-      out$y.rep.samples <- tmp[, , order(ord), , drop = FALSE]
-      out$mu.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$mu.samples, 
-        								dim = c(n.sp * n.obs, n.post.samples))))
-      tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
-      for (j in 1:(n.obs * n.sp)) {
-        curr.indx <- y.non.miss.indx[j, ]
-        tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$mu.samples[j, ]
-      }
-      out$mu.samples <- tmp[, , order(ord), , drop = FALSE]
-      out$like.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$like.samples, 
-        								dim = c(n.sp * n.obs, n.post.samples))))
-      tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
-      for (j in 1:(n.obs * n.sp)) {
-        curr.indx <- y.non.miss.indx[j, ]
-        tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$like.samples[j, ]
-      }
-      out$like.samples <- tmp[, , order(ord), , drop = FALSE]
       out$w.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$w.samples, 
         								dim = c(q, J, n.post.samples))))
       out$w.samples <- out$w.samples[, order(ord), , drop = FALSE]

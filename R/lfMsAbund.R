@@ -3,7 +3,7 @@ lfMsAbund <- function(formula, data, inits, priors,
 		      accept.rate = 0.43, family = 'Poisson',
                       n.omp.threads = 1, verbose = TRUE, n.report = 100, 
                       n.burn = round(.10 * n.batch * batch.length), 
-		      n.thin = 1, n.chains = 1, ...){
+		      n.thin = 1, n.chains = 1, save.fitted = TRUE, ...){
 
   ptm <- proc.time()
 
@@ -13,7 +13,7 @@ lfMsAbund <- function(formula, data, inits, priors,
   if (family %in% c('Gaussian', 'zi-Gaussian')) {
     lfMsAbundGaussian(formula, data, inits, priors, tuning, n.factors, n.batch,
                       batch.length, accept.rate, family, n.omp.threads, 
-                      verbose, n.report, n.burn, n.thin, n.chains)
+                      verbose, n.report, n.burn, n.thin, n.chains, save.fitted)
   } else {
 
     # Functions -----------------------------------------------------------
@@ -139,7 +139,7 @@ lfMsAbund <- function(formula, data, inits, priors,
     data$covs <- data.frame(lapply(data$covs, function(a) unlist(c(a))))
     # Check if only site-level covariates are included
     if (nrow(data$covs) == dim(y)[1]) {
-      data$covs <- as.data.frame(mapply(rep, data$covs, dim(y)[2]))
+      data$covs <- as.data.frame(lapply(data$covs, rep, dim(y)[3]))
     }
 
     # Check whether random effects are sent in as numeric, and
@@ -158,8 +158,6 @@ lfMsAbund <- function(formula, data, inits, priors,
     }
 
     # Checking missing values ---------------------------------------------
-    # TODO: I believe these checks will fail if only site-level covariates on 
-    #       abundance
     # y -------------------------------
     y.na.test <- apply(y.mat, c(1, 2), function(a) sum(!is.na(a)))
     if (sum(y.na.test == 0) > 0) {
@@ -189,6 +187,11 @@ lfMsAbund <- function(formula, data, inits, priors,
     # works when random slopes are provided.
     tmp <- apply(data$covs, 1, function (a) sum(is.na(a)))
     data$covs <- as.data.frame(data$covs[tmp == 0, , drop = FALSE])
+
+    # Check save.fitted ---------------------------------------------------
+    if (!(save.fitted %in% c(TRUE, FALSE))) {
+      stop("save.fitted must be either TRUE or FALSE")
+    }
 
     # Formula -------------------------------------------------------------
     # Abundance -----------------------
@@ -230,7 +233,7 @@ lfMsAbund <- function(formula, data, inits, priors,
     # Note this assumes equivalent detection histories for all species. 
     # May want to change this at some point. 
     n.rep <- apply(y.mat[1, , , drop = FALSE], 2, function(a) sum(!is.na(a)))
-    K.max <- max(n.rep)
+    K.max <- dim(y.mat)[3]
     # Because I like K better than n.rep
     K <- n.rep
 
@@ -706,7 +709,7 @@ lfMsAbund <- function(formula, data, inits, priors,
     storage.mode(X) <- "double"
     storage.mode(coords) <- "double"
     storage.mode(offset) <- 'double'
-    consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re, q)
+    consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re, q, save.fitted)
     storage.mode(consts) <- "integer"
     storage.mode(beta.inits) <- "double"
     storage.mode(kappa.inits) <- "double"
@@ -847,30 +850,32 @@ lfMsAbund <- function(formula, data, inits, priors,
     out$lambda.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$lambda.samples))))
     colnames(out$lambda.samples) <- loadings.names
     y.non.miss.indx <- which(!is.na(y.mat), arr.ind = TRUE)
-    out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
-      								dim = c(n.sp * n.obs, n.post.samples))))
-    tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
-    for (j in 1:(n.obs * n.sp)) {
-      curr.indx <- y.non.miss.indx[j, ]
-      tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$y.rep.samples[j, ]
+    if (save.fitted) {
+      out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
+        								dim = c(n.sp * n.obs, n.post.samples))))
+      tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
+      for (j in 1:(n.obs * n.sp)) {
+        curr.indx <- y.non.miss.indx[j, ]
+        tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$y.rep.samples[j, ]
+      }
+      out$y.rep.samples <- tmp
+      out$mu.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$mu.samples, 
+        								dim = c(n.sp * n.obs, n.post.samples))))
+      tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
+      for (j in 1:(n.obs * n.sp)) {
+        curr.indx <- y.non.miss.indx[j, ]
+        tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$mu.samples[j, ]
+      }
+      out$mu.samples <- tmp
+      out$like.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$like.samples, 
+        								dim = c(n.sp * n.obs, n.post.samples))))
+      tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
+      for (j in 1:(n.obs * n.sp)) {
+        curr.indx <- y.non.miss.indx[j, ]
+        tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$like.samples[j, ]
+      }
+      out$like.samples <- tmp
     }
-    out$y.rep.samples <- tmp
-    out$mu.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$mu.samples, 
-      								dim = c(n.sp * n.obs, n.post.samples))))
-    tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
-    for (j in 1:(n.obs * n.sp)) {
-      curr.indx <- y.non.miss.indx[j, ]
-      tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$mu.samples[j, ]
-    }
-    out$mu.samples <- tmp
-    out$like.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$like.samples, 
-      								dim = c(n.sp * n.obs, n.post.samples))))
-    tmp <- array(NA, dim = c(n.post.samples * n.chains, n.sp, J, K.max))
-    for (j in 1:(n.obs * n.sp)) {
-      curr.indx <- y.non.miss.indx[j, ]
-      tmp[, curr.indx[1], curr.indx[2], curr.indx[3]] <- out$like.samples[j, ]
-    }
-    out$like.samples <- tmp
     out$w.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$w.samples, 
       								dim = c(q, J, n.post.samples))))
     out$w.samples <- aperm(out$w.samples, c(3, 1, 2))

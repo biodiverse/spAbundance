@@ -54,6 +54,7 @@ extern "C" {
     int pRE = INTEGER(consts_r)[2];
     int nRE = INTEGER(consts_r)[3];
     int JZero = INTEGER(consts_r)[4];
+    int saveFitted = INTEGER(consts_r)[5];
     int pp = p * p; 
     int JpRE = J * pRE;
     // Priors
@@ -143,24 +144,34 @@ extern "C" {
      * *******************************************************************/
     SEXP betaSamples_r;
     PROTECT(betaSamples_r = allocMatrix(REALSXP, p, nPost)); nProtect++;
+    zeros(REAL(betaSamples_r), p * nPost);
     SEXP yRepSamples_r; 
-    PROTECT(yRepSamples_r = allocMatrix(REALSXP, J, nPost)); nProtect++; 
     SEXP yRepZeroSamples_r;
-    PROTECT(yRepZeroSamples_r = allocMatrix(REALSXP, JZero, nPost)); nProtect++; 
     SEXP muSamples_r; 
-    PROTECT(muSamples_r = allocMatrix(REALSXP, J, nPost)); nProtect++; 
+    SEXP likeSamples_r;
+    if (saveFitted == 1) {
+      PROTECT(yRepSamples_r = allocMatrix(REALSXP, J, nPost)); nProtect++; 
+      zeros(REAL(yRepSamples_r), J * nPost);
+      PROTECT(yRepZeroSamples_r = allocMatrix(REALSXP, JZero, nPost)); nProtect++; 
+      zeros(REAL(yRepZeroSamples_r), JZero * nPost);
+      PROTECT(muSamples_r = allocMatrix(REALSXP, J, nPost)); nProtect++; 
+      zeros(REAL(muSamples_r), J * nPost);
+      PROTECT(likeSamples_r = allocMatrix(REALSXP, J, nPost)); nProtect++;
+      zeros(REAL(likeSamples_r), J * nPost);
+    }
     // Occurrence random effects
     SEXP sigmaSqMuSamples_r; 
     SEXP betaStarSamples_r; 
     if (pRE > 0) {
       PROTECT(sigmaSqMuSamples_r = allocMatrix(REALSXP, pRE, nPost)); nProtect++;
+      zeros(REAL(sigmaSqMuSamples_r), pRE * nPost);
       PROTECT(betaStarSamples_r = allocMatrix(REALSXP, nRE, nPost)); nProtect++;
+      zeros(REAL(betaStarSamples_r), nRE * nPost);
     }
     SEXP tauSqSamples_r;
     PROTECT(tauSqSamples_r = allocMatrix(REALSXP, inc, nPost)); nProtect++;
+    zeros(REAL(tauSqSamples_r), nPost);
     // Likelihood samples for WAIC. 
-    SEXP likeSamples_r;
-    PROTECT(likeSamples_r = allocMatrix(REALSXP, J, nPost)); nProtect++;
     
     /**********************************************************************
      * Other initial starting stuff
@@ -324,18 +335,21 @@ extern "C" {
         /********************************************************************
          *Get fitted values and likelihood for WAIC
          *******************************************************************/
+	if (saveFitted == 1) {
          for (j = 0; j < J; j++) {
            mu[j] = F77_NAME(ddot)(&p, &X[j], &J, beta, &inc) + betaStarSites[j];
            yRep[j] = rnorm(mu[j], sqrt(tauSq));
            like[j] = dnorm(y[j], mu[j], sqrt(tauSq), 0);
 	 } // j
+	}
         /********************************************************************
          *Get fitted values and likelihood for WAIC for the zero values
          *******************************************************************/
-         for (j = 0; j < JZero; j++) {
-           yRepZero[j] = rnorm(0.0, sqrt(0.0001));
-	 } // j
-
+	if (saveFitted == 1) {
+          for (j = 0; j < JZero; j++) {
+            yRepZero[j] = rnorm(0.0, sqrt(0.0001));
+	  } // j
+        }
         /********************************************************************
          *Save samples
          *******************************************************************/
@@ -343,18 +357,20 @@ extern "C" {
           thinIndx++; 
 	  if (thinIndx == nThin) {
             F77_NAME(dcopy)(&p, beta, &inc, &REAL(betaSamples_r)[sPost*p], &inc);
-            F77_NAME(dcopy)(&J, mu, &inc, &REAL(muSamples_r)[sPost*J], &inc); 
 	    REAL(tauSqSamples_r)[sPost] = tauSq;
-	    F77_NAME(dcopy)(&J, yRep, &inc, &REAL(yRepSamples_r)[sPost*J], &inc); 
-	    F77_NAME(dcopy)(&JZero, yRepZero, &inc, &REAL(yRepZeroSamples_r)[sPost*JZero], &inc); 
+	    if (saveFitted == 1) {
+	      F77_NAME(dcopy)(&J, yRep, &inc, &REAL(yRepSamples_r)[sPost*J], &inc); 
+              F77_NAME(dcopy)(&J, mu, &inc, &REAL(muSamples_r)[sPost*J], &inc); 
+	      F77_NAME(dcopy)(&JZero, yRepZero, &inc, &REAL(yRepZeroSamples_r)[sPost*JZero], &inc); 
+              F77_NAME(dcopy)(&J, like, &inc, 
+        		      &REAL(likeSamples_r)[sPost*J], &inc);
+	    }
             if (pRE > 0) {
               F77_NAME(dcopy)(&pRE, sigmaSqMu, &inc, 
                   	    &REAL(sigmaSqMuSamples_r)[sPost*pRE], &inc);
               F77_NAME(dcopy)(&nRE, betaStar, &inc, 
                   	    &REAL(betaStarSamples_r)[sPost*nRE], &inc);
             }
-            F77_NAME(dcopy)(&J, like, &inc, 
-        		    &REAL(likeSamples_r)[sPost*J], &inc);
 	    sPost++; 
 	    thinIndx = 0; 
 	  }
@@ -399,10 +415,12 @@ extern "C" {
     // Setting the components of the output list.
     SET_VECTOR_ELT(result_r, 0, betaSamples_r);
     SET_VECTOR_ELT(result_r, 1, tauSqSamples_r);
-    SET_VECTOR_ELT(result_r, 2, yRepSamples_r); 
-    SET_VECTOR_ELT(result_r, 3, muSamples_r);
-    SET_VECTOR_ELT(result_r, 4, likeSamples_r); 
-    SET_VECTOR_ELT(result_r, 5, yRepZeroSamples_r); 
+    if (saveFitted == 1) {
+      SET_VECTOR_ELT(result_r, 2, yRepSamples_r); 
+      SET_VECTOR_ELT(result_r, 3, muSamples_r);
+      SET_VECTOR_ELT(result_r, 4, likeSamples_r); 
+      SET_VECTOR_ELT(result_r, 5, yRepZeroSamples_r); 
+    }
     if (pRE > 0) {
       SET_VECTOR_ELT(result_r, 6, sigmaSqMuSamples_r);
       SET_VECTOR_ELT(result_r, 7, betaStarSamples_r);
@@ -411,10 +429,12 @@ extern "C" {
     // mkChar turns a C string into a CHARSXP
     SET_VECTOR_ELT(resultName_r, 0, mkChar("beta.samples")); 
     SET_VECTOR_ELT(resultName_r, 1, mkChar("tau.sq.samples")); 
-    SET_VECTOR_ELT(resultName_r, 2, mkChar("y.rep.samples")); 
-    SET_VECTOR_ELT(resultName_r, 3, mkChar("mu.samples"));
-    SET_VECTOR_ELT(resultName_r, 4, mkChar("like.samples")); 
-    SET_VECTOR_ELT(resultName_r, 5, mkChar("y.rep.zero.samples")); 
+    if (saveFitted == 1) {
+      SET_VECTOR_ELT(resultName_r, 2, mkChar("y.rep.samples")); 
+      SET_VECTOR_ELT(resultName_r, 3, mkChar("mu.samples"));
+      SET_VECTOR_ELT(resultName_r, 4, mkChar("like.samples")); 
+      SET_VECTOR_ELT(resultName_r, 5, mkChar("y.rep.zero.samples")); 
+    }
     if (pRE > 0) {
       SET_VECTOR_ELT(resultName_r, 6, mkChar("sigma.sq.mu.samples")); 
       SET_VECTOR_ELT(resultName_r, 7, mkChar("beta.star.samples")); 
