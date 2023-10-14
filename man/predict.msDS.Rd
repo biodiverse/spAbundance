@@ -7,8 +7,7 @@
 }
 
 \usage{
-\method{predict}{msDS}(object, X.0, ignore.RE = FALSE, type = 'abundance', 
-                         ...)
+\method{predict}{msDS}(object, X.0, ignore.RE = FALSE, type = 'abundance', ...)
 }
 
 \arguments{
@@ -92,7 +91,7 @@ transect <- 'line'
 factor.model <- FALSE
 
 dat <- simMsDS(J.x = J.x, J.y = J.y, n.bins = n.bins, bin.width = bin.width,
-	       n.sp = n.sp, beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
+               n.sp = n.sp, beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
                mu.RE = mu.RE, p.RE = p.RE, sp = sp, cov.model = cov.model,
                sigma.sq = sigma.sq, phi = phi, nu = nu, family = family, 
                offset = offset, transect = transect, factor.model = factor.model)
@@ -113,11 +112,11 @@ dist.breaks <- dat$dist.breaks
 
 covs <- cbind(X, X.p)
 colnames(covs) <- c('int.abund', 'abund.cov.1', 'abund.cov.2', 'abund.cov.3', 
-		    'int.det', 'det.cov.1')
+                    'int.det', 'det.cov.1')
 
 data.list <- list(y = y, 
-		  covs = covs,
- 		  dist.breaks = dist.breaks, 
+                  covs = covs,
+                  dist.breaks = dist.breaks, 
                   offset = offset)
 
 # Priors
@@ -141,23 +140,23 @@ n.thin <- 1
 n.chains <- 1
 
 out <- msDS(abund.formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3,
-	    det.formula = ~ det.cov.1,
-	    data = data.list, 
-	    n.batch = n.batch, 
-	    batch.length = batch.length, 
-	    inits = inits.list, 
-	    family = 'Poisson',
-	    det.func = 'halfnormal', 
-	    transect = transect, 
-	    tuning = tuning,
-	    priors = prior.list, 
-	    accept.rate = 0.43, 
-	    n.omp.threads = 1, 
-	    verbose = TRUE, 
-	    n.report = 10,
-	    n.burn = n.burn,
-	    n.thin = n.thin,
-	    n.chains = n.chains) 
+            det.formula = ~ det.cov.1,
+            data = data.list, 
+            n.batch = n.batch, 
+            batch.length = batch.length, 
+            inits = inits.list, 
+            family = 'Poisson',
+            det.func = 'halfnormal', 
+            transect = transect, 
+            tuning = tuning,
+            priors = prior.list, 
+            accept.rate = 0.43, 
+            n.omp.threads = 1, 
+            verbose = TRUE, 
+            n.report = 10,
+            n.burn = n.burn,
+            n.thin = n.thin,
+            n.chains = n.chains) 
 summary(out, level = 'community')
 
 # Predict at new locations ------------------------------------------------

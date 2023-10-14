@@ -8,8 +8,8 @@
 
 \usage{
 \method{predict}{sfMsDS}(object, X.0, coords.0, n.omp.threads = 1, 
-                         verbose = TRUE, n.report = 100, ignore.RE = FALSE, 
-                         type = 'abundance', include.sp = TRUE, ...)
+        verbose = TRUE, n.report = 100, ignore.RE = FALSE, 
+        type = 'abundance', include.sp = TRUE, ...)
 }
 
 \arguments{
@@ -48,8 +48,7 @@
 }
 
 \author{
-  Jeffrey W. Doser \email{doserjef@msu.edu}, \cr
-  Andrew O. Finley \email{finleya@msu.edu}
+  Jeffrey W. Doser \email{doserjef@msu.edu} \cr
 }
 
 \value{
@@ -117,7 +116,7 @@ phi <- runif(n.factors, 3 / 1, 3 / .2)
 cov.model <- 'exponential'
 
 dat <- simMsDS(J.x = J.x, J.y = J.y, n.bins = n.bins, bin.width = bin.width,
-	       n.sp = n.sp, beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
+               n.sp = n.sp, beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
                mu.RE = mu.RE, p.RE = p.RE, sp = sp, cov.model = cov.model,
                sigma.sq = sigma.sq, phi = phi, nu = nu, family = family, 
                offset = offset, transect = transect, factor.model = factor.model, 
@@ -140,25 +139,24 @@ dist.breaks <- dat$dist.breaks
 
 covs <- cbind(X, X.p)
 colnames(covs) <- c('int.abund', 'abund.cov.1', 'abund.cov.2', 'abund.cov.3', 
-		    'int.det', 'det.cov.1')
+                    'int.det', 'det.cov.1')
 
 data.list <- list(y = y, 
-		  covs = covs,
- 		  dist.breaks = dist.breaks, 
-		  coords = coords,
+                  covs = covs,
+                  dist.breaks = dist.breaks, 
+                  coords = coords,
                   offset = offset)
 
 # Priors
 prior.list <- list(beta.comm.normal = list(mean = 0, var = 10),
-		   alpha.comm.normal = list(mean = 0,
-			               var = 10), 
+                   alpha.comm.normal = list(mean = 0, var = 10), 
                    kappa.unif = list(0, 100), 
-		   phi.unif = list(3 / 1, 3 / .1),
+                   phi.unif = list(3 / 1, 3 / .1),
                    tau.sq.beta.ig = list(a = 0.1, b = 0.1),
                    tau.sq.alpha.ig = list(a = 0.1, b = 0.1)) 
 # Starting values
 inits.list <- list(alpha.comm = 0, beta.comm = 0, beta = 0,
-		   alpha = 0, kappa = 1, phi = 3 / .5)
+                   alpha = 0, kappa = 1, phi = 3 / .5)
 
 tuning <- list(beta = 0.1, alpha = 0.1, beta.star = 0.3, alpha.star = 0.1, 
                kappa = 0.8, lambda = 1, w = 1, phi = 0.8) 
@@ -170,27 +168,27 @@ n.thin <- 1
 n.chains <- 1
 
 out <- sfMsDS(abund.formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3,
-	    det.formula = ~ det.cov.1,
-	    data = data.list, 
-	    n.batch = n.batch, 
-	    batch.length = batch.length, 
-	    inits = inits.list, 
-	    family = 'Poisson',
-	    det.func = 'halfnormal', 
-	    transect = transect, 
-	    tuning = tuning,
-	    cov.model = 'exponential', 
-	    NNGP = TRUE,
-	    n.neighbors = 5,
-	    n.factors = n.factors,
-	    priors = prior.list, 
-	    accept.rate = 0.43, 
-	    n.omp.threads = 1, 
-	    verbose = TRUE, 
-	    n.report = 10,
-	    n.burn = n.burn,
-	    n.thin = n.thin,
-	    n.chains = n.chains) 
+              det.formula = ~ det.cov.1,
+              data = data.list, 
+              n.batch = n.batch, 
+              batch.length = batch.length, 
+              inits = inits.list, 
+              family = 'Poisson',
+              det.func = 'halfnormal', 
+              transect = transect, 
+              tuning = tuning,
+              cov.model = 'exponential', 
+              NNGP = TRUE,
+              n.neighbors = 5,
+              n.factors = n.factors,
+              priors = prior.list, 
+              accept.rate = 0.43, 
+              n.omp.threads = 1, 
+              verbose = TRUE, 
+              n.report = 10,
+              n.burn = n.burn,
+              n.thin = n.thin,
+              n.chains = n.chains) 
 summary(out, level = 'community')
 
 # Predict at new locations ------------------------------------------------

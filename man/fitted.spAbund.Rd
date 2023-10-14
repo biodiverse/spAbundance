@@ -5,7 +5,7 @@
 \title{Extract Model Fitted Values for spAbund Object}
 
 \description{
-  Method for extracting model fitted values from a fitted spatial generalized linear abundance (\code{spAbund}) model. 
+  Method for extracting model fitted values from a fitted spatial GLMM (\code{spAbund}). 
 }
 
 \usage{

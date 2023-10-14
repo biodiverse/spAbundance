@@ -89,7 +89,7 @@ prior.list <- list(beta.normal = list(mean = rep(0, p.abund),
 # Initial values
 inits.list <- list(alpha = rep(0, p.det),
                    beta = rep(0, p.abund),
-		   kappa = 0.5,
+                   kappa = 0.5,
                    N = apply(y, 1, max, na.rm = TRUE))
 
 n.batch <- 10
@@ -99,19 +99,19 @@ n.thin <- 1
 n.chains <- 1
 
 out <- NMix(abund.formula = ~ abund.cov, 
-             det.formula = ~ det.cov,
-             data = data.list, 
-             inits = inits.list,
-	     n.batch = n.batch, 
-	     batch.length = batch.length,
-	     family = 'Poisson',
-             priors = prior.list,
-             n.omp.threads = 1,
-             verbose = TRUE,
-             n.report = 1, 
-             n.burn = n.burn, 
-             n.thin = n.thin, 
-             n.chains = n.chains)
+            det.formula = ~ det.cov,
+            data = data.list, 
+            inits = inits.list,
+            n.batch = n.batch, 
+            batch.length = batch.length,
+            family = 'Poisson',
+            priors = prior.list,
+            n.omp.threads = 1,
+            verbose = TRUE,
+            n.report = 1, 
+            n.burn = n.burn, 
+            n.thin = n.thin, 
+            n.chains = n.chains)
 
 summary(out)
 

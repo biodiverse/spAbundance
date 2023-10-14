@@ -7,7 +7,7 @@
 \title{Methods for lfMsAbund Object}
 
 \description{
-  Methods for extracting information from fitted latent factor multi-species abundance GLMs (\code{lfMsAbund}).
+  Methods for extracting information from fitted latent factor multivariate abundance GLMMs (\code{lfMsAbund}).
 }
 
 \usage{

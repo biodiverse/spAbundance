@@ -3,7 +3,7 @@
 \title{Simulate Single-Species Distance Sampling Data}
 
 \description{
-  The function \code{simDS} simulates single-species distance sampling data for simulation studies, power assessments, or function testing. Data can be optionally simulated with a spatial Gaussian Process in the abundance portion of the model. Non-spatial random effects can also be included in the detection or abundance portions of the distance sampling.
+  The function \code{simDS} simulates single-species distance sampling data for simulation studies, power assessments, or function testing. Data can be optionally simulated with a spatial Gaussian Process in the abundance portion of the model. Non-spatial random effects can also be included in the detection or abundance portions of the distance sampling model.
 }
 
 \usage{
@@ -33,7 +33,7 @@ simDS(J.x, J.y, n.bins, bin.width, beta, alpha, det.func, transect = 'line',
 \item{transect}{the type of transect. Currently supports line transects (\code{'line'}) or
   circular transects (i.e., point counts; \code{'point'}).}
 
-\item{kappa}{a single numeric value containing the dispersion parameter for the abundance portion of the N-mixture model. Only relevant when \code{family = 'NB'}.}
+\item{kappa}{a single numeric value containing the dispersion parameter for the abundance portion of the hierarchical distance sampling model. Only relevant when \code{family = 'NB'}.}
 
 \item{mu.RE}{a list used to specify the non-spatial random intercepts included in the abundance portion of the model. The list must have two tags: \code{levels} and \code{sigma.sq.mu}. \code{levels} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the number of levels there are in each intercept. \code{sigma.sq.mu} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the variances for each random effect. If not specified, no random effects are included in the abundance portion of the model.}
 
@@ -41,7 +41,7 @@ simDS(J.x, J.y, n.bins, bin.width, beta, alpha, det.func, transect = 'line',
 
 \item{offset}{either a single numeric value or a vector of length \code{J} that contains the offset for each location in the data set.}
 
-\item{sp}{a logical value indicating whether to simulate a spatially-explicit N-mixture model with a Gaussian process. By default set to \code{FALSE}.}
+\item{sp}{a logical value indicating whether to simulate a spatially-explicit HDS model with a Gaussian process. By default set to \code{FALSE}.}
 
 \item{cov.model}{a quoted keyword that specifies the covariance function used to model the spatial dependence structure among the latent abundance values.  Supported covariance model key words are: \code{"exponential"}, \code{"matern"}, \code{"spherical"}, and \code{"gaussian"}.}
 
@@ -72,12 +72,12 @@ simDS(J.x, J.y, n.bins, bin.width, beta, alpha, det.func, transect = 'line',
   \item{mu}{a \eqn{J \times 1}{J x 1} matrix of the expected abundance values for each site.}
   \item{N}{a length \eqn{J}{J} vector of the latent abundances at each site.}
   \item{p}{ a length J vector of the detection probabilities at each site.}
-  \item{pi.full}{a \code{J x n.bins + 1} vector of the cell-specific detection probabilities for each site, where the last column indicates the probability of not detecting the individual at that site.}
+  \item{pi.full}{a \code{J x n.bins + 1} vector of the cell-specific detection probabilities for each site, where the last column indicates the probability of not detecting an individual at that site.}
   \item{y}{a \code{J x max(n.bins)} matrix of the raw count data for each site and distance bin.}
   \item{X.p.re}{a numeric matrix containing the levels of any detection random effect included in the model. Only relevant when detection random effects are specified in \code{p.RE}.}
   \item{X.re}{a numeric matrix containing the levels of any abundance random effect included in the model. Only relevant when abundance random effects are specified in \code{mu.RE}.}
   \item{alpha.star}{a numeric vector that contains the simulated detection random effects for each given level of the random effects included in the detection model. Only relevant when detection random effects are included in the model.}
-  \item{beta.star}{a numeric vector that contains the simulated abundance random effects for each given level of the random effects included in the N-mixture model. Only relevant when abundance random effects are included in the model.}
+  \item{beta.star}{a numeric vector that contains the simulated abundance random effects for each given level of the random effects included in the HDS model. Only relevant when abundance random effects are included in the model.}
 }
 
 \examples{
@@ -106,8 +106,8 @@ offset <- 1.8
 transect <- 'point'
 
 dat <- simDS(J.x = J.x, J.y = J.y, n.bins = n.bins, bin.width = bin.width,
-	     beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
-	     mu.RE = mu.RE, p.RE = p.RE, sp = sp,
-	     sigma.sq = sigma.sq, phi = phi, nu = nu, family = family, 
+             beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
+             mu.RE = mu.RE, p.RE = p.RE, sp = sp,
+             sigma.sq = sigma.sq, phi = phi, nu = nu, family = family, 
              offset = offset, transect = transect)
 }

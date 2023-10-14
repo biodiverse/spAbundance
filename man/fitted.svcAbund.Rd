@@ -5,7 +5,7 @@
 \title{Extract Model Fitted Values for svcAbund Object}
 
 \description{
-  Method for extracting model fitted values from a fitted spatially-varying coefficient generalized linear abundance (\code{svcAbund}) model. 
+  Method for extracting model fitted values from a fitted spatially-varying coefficient GLMM (\code{svcAbund}). 
 }
 
 \usage{

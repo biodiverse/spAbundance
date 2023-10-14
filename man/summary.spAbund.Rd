@@ -7,7 +7,7 @@
 \title{Methods for spAbund Object}
 
 \description{
-  Methods for extracting information from fitted spatially-explicit abundance GLMs (\code{spAbund}).
+  Methods for extracting information from fitted univariate spatially-explicit GLMMs (\code{spAbund}).
 }
 
 \usage{

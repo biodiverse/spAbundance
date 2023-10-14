@@ -7,7 +7,7 @@
 \title{Methods for spDS Object}
 
 \description{
-  Methods for extracting information from fitted single-species hierarchiacl distance sampling (\code{spDS}) models.
+  Methods for extracting information from fitted single-species spatial hierarchiacl distance sampling (\code{spDS}) models.
 }
 
 \usage{

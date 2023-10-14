@@ -1,19 +1,19 @@
 \name{spAbund}
 \alias{spAbund}
-\title{Function for Fitting Single-Species Spatial Abundance GLMs}
+\title{Function for Fitting Univariate Spatial Abundance GLMs}
 
 \description{
-  The function \code{spAbund} fits single-species spatial abundance GLMs.  
+  The function \code{spAbund} fits univariate spatial abundance GLMs.  
 }
 
 \usage{
 spAbund(formula, data, inits, priors, tuning,
-       cov.model = 'exponential', NNGP = TRUE, 
-       n.neighbors = 15, search.type = 'cb',
-       n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
-       n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+        cov.model = 'exponential', NNGP = TRUE, 
+        n.neighbors = 15, search.type = 'cb',
+        n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
+        n.omp.threads = 1, verbose = TRUE, n.report = 100, 
         n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
-       n.chains = 1, save.fitted = TRUE, ...)
+        n.chains = 1, save.fitted = TRUE, ...)
 }
 
 \arguments{
@@ -24,15 +24,18 @@ spAbund(formula, data, inits, priors, tuning,
     and slopes are allowed using lme4 syntax (Bates et al. 2015).}
   
   \item{data}{a list containing data necessary for model fitting.
-    Valid tags are \code{y} and \code{covs}. \code{y}
+    Valid tags are \code{y}, \code{covs}, \code{z}, \code{coords}, and \code{offset}. \code{y}
     is a vector, matrix, or data frame of the observed count values. If a vector, 
     the values represent the observed counts at each site. If multiple replicate
     observations are obtained at the sites (e.g., sub-samples, repeated sampling over
     multiple seasons), \code{y} can be specified as a matrix or data frame 
     with first dimension equal to the number of 
     sites (\eqn{J}{J}) and second dimension equal to the maximum number of 
-    replicates at a given site. \code{covs} is a list 
-    containing the variables used in the model. Each list element is a different
+    replicates at a given site. \code{covs} is either a data frame or list 
+    containing the variables used in the model. When only fitting a model with site-level 
+    data, \code{covs} can be specified as a data frame, with each row corresponding to 
+    site and each column corresponding to a variable. When multiple abundance values
+    are available at a site, \code{covs} is specified as a list, where each list element is a different
     covariate, which can be site-level or observation-level. Site-level covariates
     are specified as a vector of length \eqn{J}{J}, while observation-level covariates
     are specified as a matrix or data frame with the number of rows equal to \eqn{J}{J}
@@ -126,13 +129,13 @@ spAbund(formula, data, inits, priors, tuning,
     might produce different, but equally valid, neighbor sets, 
     e.g., if data are on a grid. }
  
-  \item{n.batch}{the number of MCMC batches in each chain to run for the Adaptive MCMC 
+  \item{n.batch}{the number of MCMC batches in each chain to run for the adaptive MCMC 
     sampler. See Roberts and Rosenthal (2009) for details.}
   
-  \item{batch.length}{the length of each MCMC batch in each chain to run for the Adaptive 
+  \item{batch.length}{the length of each MCMC batch in each chain to run for the adaptive 
     MCMC sampler. See Roberts and Rosenthal (2009) for details.}
   
-  \item{accept.rate}{target acceptance rate for Adaptive MCMC. Default is 
+  \item{accept.rate}{target acceptance rate for adaptive MCMC. Default is 
     0.43. See Roberts and Rosenthal (2009) for details.}
 
   \item{family}{the distribution to use for the latent abundance process. Currently 
@@ -270,8 +273,8 @@ sp <- TRUE
 cov.model <- 'exponential'
 family <- 'NB'
 dat <- simAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta, 
-	        kappa = kappa, mu.RE = mu.RE, sp = sp, phi = phi, 
-		sigma.sq = sigma.sq, cov.model = cov.model, family = 'NB')
+                kappa = kappa, mu.RE = mu.RE, sp = sp, phi = phi, 
+                sigma.sq = sigma.sq, cov.model = cov.model, family = 'NB')
 
 y <- dat$y
 X <- dat$X
@@ -279,26 +282,21 @@ X.re <- dat$X.re
 coords <- dat$coords
 
 covs <- list(int = X[, , 1], 
-		   abund.cov.1 = X[, , 2], 
-		   abund.cov.2 = X[, , 3], 
-		   abund.cov.3 = X[, , 4],
-		   abund.factor.1 = X.re[, , 1], 
-		   abund.factor.2 = X.re[, , 2])
+             abund.cov.1 = X[, , 2], 
+             abund.cov.2 = X[, , 3], 
+             abund.cov.3 = X[, , 4],
+             abund.factor.1 = X.re[, , 1], 
+             abund.factor.2 = X.re[, , 2])
 
-data.list <- list(y = y, 
-		  covs = covs, 
-                  coords = coords)
+data.list <- list(y = y, covs = covs, coords = coords)
 
 # Priors
 prior.list <- list(beta.normal = list(mean = 0, var = 100),
-		   phi.unif = c(3 / 1, 3 / .1),
-		   sigma.sq.ig = c(2, 1),
+                   phi.unif = c(3 / 1, 3 / .1),
+                   sigma.sq.ig = c(2, 1),
                    kappa.unif = c(0.001, 10)) 
 # Starting values
-inits.list <- list(beta = beta,
-		   kappa = kappa, 
-                   sigma.sq = sigma.sq,
-                   phi = phi)
+inits.list <- list(beta = beta, kappa = kappa, sigma.sq = sigma.sq, phi = phi)
 
 tuning <- list(phi = 0.3, kappa = 0.05, beta = 0.1, beta.star = 0.1, w = 0.1) 
 n.batch <- 4
@@ -308,23 +306,23 @@ n.thin <- 1
 n.chains <- 1
 
 out <- spAbund(formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3 +
-	                   (1 | abund.factor.1) + (abund.cov.1 | abund.factor.2),
-	       data = data.list, 
-	       n.batch = n.batch, 
-	       batch.length = batch.length, 
-	       inits = inits.list, 
-	       tuning = tuning,
-	       priors = prior.list, 
-	       NNGP = TRUE, 
-	       cov.model = 'exponential',
-	       search.type = 'cb',
-	       n.neighbors = 5,
-	       accept.rate = 0.43, 
-	       n.omp.threads = 1, 
-	       verbose = TRUE, 
-	       n.report = 1,
-	       n.burn = n.burn,
-	       n.thin = n.thin,
-	       n.chains = n.chains) 
+                           (1 | abund.factor.1) + (abund.cov.1 | abund.factor.2),
+               data = data.list, 
+               n.batch = n.batch, 
+               batch.length = batch.length, 
+               inits = inits.list, 
+               tuning = tuning,
+               priors = prior.list, 
+               NNGP = TRUE, 
+               cov.model = 'exponential',
+               search.type = 'cb',
+               n.neighbors = 5,
+               accept.rate = 0.43, 
+               n.omp.threads = 1, 
+               verbose = TRUE, 
+               n.report = 1,
+               n.burn = n.burn,
+               n.thin = n.thin,
+               n.chains = n.chains) 
 summary(out)
 }

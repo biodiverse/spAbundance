@@ -9,7 +9,7 @@
 
 \description{
 A simulated data set of repeated count data for 6 species across 225 sites with a maximum
-of 5 replicate surveys performed at a given site.
+of 3 replicate surveys performed at a given site.
 }
 
 \usage{
@@ -20,19 +20,19 @@ data(dataNMixSim)
   \code{dataNMixSim} is a list with four elements: 
 
    \code{y}: a three-dimensional array of count data with 
-     dimensions of species (6), sites (225) and replicates (5). 
+     dimensions of species (6), sites (225) and replicates (3). 
 
-   \code{abund.covs}: a numeric matrix with 373 rows and two columns consisting
+   \code{abund.covs}: a numeric matrix with 225 rows and two columns consisting
      of a continuous covariate and a categorical variable which may both influence
      abundance of the different species.
 
-   \code{det.covs}: a list of two numeric matrices with 225 rows and 5 columns. 
+   \code{det.covs}: a list of two numeric matrices with 225 rows and 3 columns. 
      Both matrices contain a continuous covariate that may affect detection probability
      of the species
 
    \code{coords}: a numeric matrix with 225 rows and two columns containing the 
-     site coordinates (Easting and Northing). Note the data are generated across 
-     a a unit square (i.e., the x and y coordinates are both between 0 and 1). 
+     site coordinates (X and Y). Note the data are generated across 
+     a unit square (i.e., the x and y coordinates are both between 0 and 1). 
 }
 
 \keyword{datasets}
@@ -62,8 +62,8 @@ data(dataNMixSim)
   # Random effects
   mu.RE <- list()
   mu.RE <- list(levels = c(10),
-  	       sigma.sq.mu = c(0.5),
-                 beta.indx = list(1))
+                sigma.sq.mu = c(0.5),
+                beta.indx = list(1))
   p.RE <- list()
   # Draw species-level effects from community means.
   beta <- matrix(NA, nrow = n.sp, ncol = p.abund)
@@ -83,11 +83,9 @@ data(dataNMixSim)
   family <- 'Poisson'
   
   dat <- simMsNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta, alpha = alpha,
-  	        mu.RE = mu.RE, p.RE = p.RE, sp = sp, kappa = kappa, family = family, 
-                  factor.model = factor.model, phi = phi, 
-                  cov.model = 'exponential', n.factors = n.factors)
-  table(dat$N)
-  apply(dat$N, 1, sum)
+                   mu.RE = mu.RE, p.RE = p.RE, sp = sp, kappa = kappa, family = family, 
+                   factor.model = factor.model, phi = phi, 
+                   cov.model = 'exponential', n.factors = n.factors)
   
   y <- dat$y
   X <- dat$X
@@ -102,10 +100,10 @@ data(dataNMixSim)
   colnames(abund.covs) <- c('int', 'abund.cov.1', 'abund.factor.1')
   abund.covs <- abund.covs[, -1]
   det.covs <- list(det.cov.1 = X.p[, , 2], 
-  		 det.cov.2 = X.p[, , 3]) 
+                   det.cov.2 = X.p[, , 3]) 
   dataNMixSim <- list(y = y, 
-  		    abund.covs = abund.covs, 
-  		    det.covs = det.covs, 
+                      abund.covs = abund.covs, 
+                      det.covs = det.covs, 
                       coords = coords)
 }
 }

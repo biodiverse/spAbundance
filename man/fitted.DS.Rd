@@ -5,7 +5,7 @@
 \title{Extract Model Fitted Values for DS Object}
 
 \description{
-  Method for extracting model fitted values and cell-specific detection probabilities from a distance sampling (\code{DS}) model. 
+  Method for extracting model fitted values and cell-specific detection probabilities from a hierarchical distance sampling (\code{DS}) model. 
 }
 
 \usage{

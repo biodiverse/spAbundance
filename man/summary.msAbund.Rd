@@ -7,7 +7,7 @@
 \title{Methods for msAbund Object}
 
 \description{
-  Methods for extracting information from fitted multi-species abundance GLMs (\code{msAbund}).
+  Methods for extracting information from fitted multivariate abundance GLMMs (\code{msAbund}).
 }
 
 \usage{

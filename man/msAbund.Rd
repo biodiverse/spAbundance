@@ -1,15 +1,15 @@
 \name{msAbund}
 \alias{msAbund}
-\title{Function for Fitting Multi-Species Abundance GLMs}
+\title{Function for Fitting Multivariate Abundance GLMMs}
 
 \description{
-  The function \code{msAbund} fits multi-species abundance GLMs. 
+  The function \code{msAbund} fits multivariate abundance GLMMs. 
 }
 
 \usage{
 msAbund(formula, data, inits, priors, tuning, 
         n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
-	n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+        n.omp.threads = 1, verbose = TRUE, n.report = 100, 
         n.burn = round(.10 * n.batch * batch.length), n.thin = 1, n.chains = 1,
         save.fitted = TRUE, ...)
 }
@@ -22,15 +22,17 @@ msAbund(formula, data, inits, priors, tuning,
   and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
   \item{data}{a list containing data necessary for model fitting.
-    Valid tags are \code{y}, \code{covs}, and \code{offset}. 
+    Valid tags are \code{y}, \code{covs}, \code{z}, and \code{offset}. 
     \code{y} is a two or three-dimensional array of observed count data. The
     first dimension of the array is equal to the 
     number of species and the second dimension is equal to the number of sites. If
     specified as a three-dimensional array, the third dimension corresponds to 
     replicate observations at each site (e.g., sub-samples, repeated sampling 
     over multiple seasons). \code{covs} is a list or data frame
-    containing the variables used in the model. Each list element is a different
-    covariate, which can be site-level or observation-level. Site-level covariates
+    containing the variables used in the model. If a data frame, each row 
+    of \code{covs} is a site and each column is a variable. If a list, 
+    each list element is a different covariate, which 
+    can be site-level or observation-level. Site-level covariates
     are specified as a vector of length \eqn{J}{J}, while observation-level covariates
     are specified as a matrix or data frame with the number of rows equal to \eqn{J}{J}
     and number of columns equal to the maximum number of replicate observations at a 
@@ -89,19 +91,19 @@ msAbund(formula, data, inits, priors, tuning,
   scale parameters, respectively, which are each specified as vectors of length
   equal to the number of species or a single value if priors are the same for all species.}
 
-\item{tuning}{a list with each tag corresponding to a parameter name, whose
+\item{tuning}{a list with each tag corresponding to a parameter name, 
   whose value defines the initial variance of the adaptive sampler.
   Valid tags are \code{beta}, \code{beta.star} (the abundance
   random effect values), and \code{kappa}. See Roberts and Rosenthal (2009) for details. 
   Note that no tuning is necessary for Gaussian or zero-inflated Gaussian models.}
 
-  \item{n.batch}{the number of MCMC batches  in each chain to run for the Adaptive MCMC 
+  \item{n.batch}{the number of MCMC batches  in each chain to run for the adaptive MCMC 
     sampler. See Roberts and Rosenthal (2009) for details.}
   
-  \item{batch.length}{the length of each MCMC batch to run for the Adaptive 
+  \item{batch.length}{the length of each MCMC batch to run for the adaptive 
     MCMC sampler. See Roberts and Rosenthal (2009) for details.}
   
-  \item{accept.rate}{target acceptance rate for Adaptive MCMC. Defaul is 
+  \item{accept.rate}{target acceptance rate for adaptive MCMC. Defaul is 
     0.43. See Roberts and Rosenthal (2009) for details.}
 
   \item{family}{the distribution to use for the latent abundance process. Currently 
@@ -223,7 +225,7 @@ p.abund <- length(beta.mean)
 tau.sq.beta <- c(0.2, 1.2)
 # Random effects (two random intercepts)
 mu.RE <- list(levels = c(10, 15),
-	       sigma.sq.mu = c(0.43, 0.5))
+              sigma.sq.mu = c(0.43, 0.5))
 # Draw species-level effects from community means.
 beta <- matrix(NA, nrow = n.sp, ncol = p.abund)
 for (i in 1:p.abund) {
@@ -233,7 +235,7 @@ sp <- FALSE
 kappa <- runif(n.sp, 0.1, 1)
 
 dat <- simMsAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta,
-	          mu.RE = mu.RE, sp = sp, kappa = kappa, family = 'NB')
+                  mu.RE = mu.RE, sp = sp, kappa = kappa, family = 'NB')
 
 y <- dat$y
 X <- dat$X
@@ -241,18 +243,17 @@ X.re <- dat$X.re
 
 # Package all data into a list
 covs <- list(int = X[, , 1],
-		   abund.cov.1 = X[, , 2],
-		   abund.factor.1 = X.re[, , 1],
-		   abund.factor.2 = X.re[, , 2])
-data.list <- list(y = y,
-		  covs = covs)
+             abund.cov.1 = X[, , 2],
+             abund.factor.1 = X.re[, , 1],
+             abund.factor.2 = X.re[, , 2])
+data.list <- list(y = y, covs = covs)
 prior.list <- list(beta.comm.normal = list(mean = 0, var = 100),
                    kappa.unif = list(a = 0, b = 10),
                    tau.sq.beta.ig = list(a = .1, b = .1))
 inits.list <- list(beta.comm = 0,
-		   beta = 0,
-		   kappa = 0.5,
-		   tau.sq.beta = 1)
+                   beta = 0,
+                   kappa = 0.5,
+                   tau.sq.beta = 1)
 tuning.list <- list(kappa = 0.3, beta = 0.1, beta.star = 0.1)
 
 # Small
@@ -262,18 +263,19 @@ n.burn <- 20
 n.thin <- 1
 n.chains <- 1
 
-out <- msAbund(formula = ~ abund.cov.1 + (1 | abund.factor.1) + (1 | abund.factor.2),
-	         data = data.list,
-	         n.batch = n.batch,
-	         inits = inits.list,
-	         priors = prior.list,
-	         tuning = tuning.list,
-	         batch.length = batch.length,
-	         n.omp.threads = 3,
-	         verbose = TRUE,
-	         n.report = 1,
-	         n.burn = n.burn,
-	         n.thin = n.thin,
-	         n.chains = n.chains)
+out <- msAbund(formula = ~ abund.cov.1 + (1 | abund.factor.1) + 
+                           (1 | abund.factor.2),
+               data = data.list,
+               n.batch = n.batch,
+               inits = inits.list,
+               priors = prior.list,
+               tuning = tuning.list,
+               batch.length = batch.length,
+               n.omp.threads = 3,
+               verbose = TRUE,
+               n.report = 1,
+               n.burn = n.burn,
+               n.thin = n.thin,
+               n.chains = n.chains)
 summary(out)
 }

@@ -4,11 +4,11 @@
 
 \usage{
 DS(abund.formula, det.formula, data, inits, priors, tuning,
-     n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
-     transect = 'line', det.func = 'halfnormal',
-     n.omp.threads = 1, verbose = TRUE,
-     n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
-     n.chains = 1, ...)
+   n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
+   transect = 'line', det.func = 'halfnormal',
+   n.omp.threads = 1, verbose = TRUE,
+   n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
+   n.chains = 1, ...)
 }
 
 \description{
@@ -73,7 +73,7 @@ DS(abund.formula, det.formula, data, inits, priors, tuning,
   Gamma distribution. The hyperparameters of the inverse-Gamma distribution
   are passed as a list of length two with first and second elements corresponding
   to the shape and scale parameters, respectively, which are each specified as
-  vectors of length equal to the number of random intercepts or of length one 
+  vectors of length equal to the number of random intercepts/slopes or of length one 
   if priors are the same for all random effect variances.}
 
 \item{tuning}{a single numeric value representing the initial variance of the
@@ -81,10 +81,10 @@ DS(abund.formula, det.formula, data, inits, priors, tuning,
   random effect values), \code{alpha.star} (the detection random effect values), and 
   \code{kappa}. See Roberts and Rosenthal (2009) for details.}
 
-\item{n.batch}{the number of MCMC batches in each chain to run for the Adaptive MCMC 
+\item{n.batch}{the number of MCMC batches in each chain to run for the adaptive MCMC 
   sampler. See Roberts and Rosenthal (2009) for details.}
 
-\item{batch.length}{the length of each MCMC batch in each chain to run for the Adaptive 
+\item{batch.length}{the number of MCMC samples in each batch in each chain to run for the Adaptive 
   MCMC sampler. See Roberts and Rosenthal (2009) for details.}
 
 \item{accept.rate}{target acceptance rate for Adaptive MCMC. Default is 
@@ -238,7 +238,7 @@ dist.breaks <- dat$dist.breaks
 
 covs <- cbind(X, X.p)
 colnames(covs) <- c('int.abund', 'abund.cov.1', 'abund.cov.2', 'abund.cov.3', 
-		    'int.det', 'det.cov.1')
+                    'int.det', 'det.cov.1')
 
 data.list <- list(y = y, 
                   covs = covs,

@@ -1,19 +1,19 @@
 \name{svcAbund}
 \alias{svcAbund}
-\title{Function for Fitting Single-Species Spatialy-Varying Coefficient GLMs}
+\title{Function for Fitting Univariate Spatialy-Varying Coefficient GLMMs}
 
 \description{
-  The function \code{svcAbund} fits univariate spatially-varying coefficient GLMs.  
+  The function \code{svcAbund} fits univariate spatially-varying coefficient GLMMs.  
 }
 
 \usage{
 svcAbund(formula, data, inits, priors, tuning,
-       svc.cols = 1, cov.model = 'exponential', NNGP = TRUE, 
-       n.neighbors = 15, search.type = 'cb', n.batch,
-       batch.length, accept.rate = 0.43, family = 'Gaussian',
-       n.omp.threads = 1, verbose = TRUE, n.report = 100, 
-        n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
-       n.chains = 1, ...)
+         svc.cols = 1, cov.model = 'exponential', NNGP = TRUE, 
+         n.neighbors = 15, search.type = 'cb', n.batch,
+         batch.length, accept.rate = 0.43, family = 'Gaussian',
+         n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+         n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
+         n.chains = 1, ...)
 }
 
 \arguments{
@@ -31,9 +31,9 @@ svcAbund(formula, data, inits, priors, tuning,
     frame of covariates used in the model, where each column (or list element) represents a 
     different covariate. \code{coords} is a \eqn{J \times 2}{J x 2} matrix of the observation coordinates.
     Note that \code{svcAbundance} assumes coordinates are specified 
-    in a projected coordinate system. \code{z} is used for fitting a two-stage
-    Gaussian hurdle model. It is a vector where each value indicates the binary 
-    component of the hurdle model. In the context of abundance models, this can be 
+    in a projected coordinate system. \code{z} is used for fitting a zero-inflated 
+    Gaussian model. It is a vector where each value indicates the binary 
+    component of the model. In the context of abundance models, this can be 
     thought of as the component of the model that indicates whether the species is 
     present at each location, and then the supplied values in \code{y} are the 
     observed abundance values at those locations where \code{z = 1}.}
@@ -65,11 +65,16 @@ svcAbund(formula, data, inits, priors, tuning,
     inverse-Gamma distribution. The spatial decay \code{phi} and spatial 
     smoothness \code{nu}, parameters are assumed to follow Uniform 
     distributions. The hyperparameters of the inverse-Gamma for \code{sigma.sq} 
-    and \code{tau.sq} are passed as a vector of length two, with the first and second 
+    is passed as a list of length two with the first and second elements corresponding
+    to the shape and scale parameters of the inverse-Gamma distribution either for
+    each spatially-varying coefficient, or a single value if assumign the same values
+    for all spatially-varying coefficients. The hyperparameters of the inverse-Gamma for 
+    \code{tau.sq} is passed as a vector of length two, with the first and second 
     elements corresponding to the \emph{shape} and \emph{scale}, respectively. 
-    The hyperparameters of the Uniform are also passed as a vector of 
+    The hyperparameters of the Uniform are also passed as a list of 
     length two with the first and second elements corresponding to 
-    the lower and upper support, respectively. \code{sigma.sq.mu}
+    the lower and upper support, respectively, for each SVC or a single value
+    if giving the same prior for each SVC. \code{sigma.sq.mu}
     are the random effect variances for any random effects, and are assumed to follow an 
     inverse-Gamma distribution. The hyperparameters of
     the inverse-Gamma distribution are passed as a list of length two with the 
@@ -84,7 +89,7 @@ svcAbund(formula, data, inits, priors, tuning,
     in the model formula (with 1 being the intercept if specified), or it can
     be specified as a character vector with names corresponding to variable
     names in \code{occ.covs} (for the intercept, use '(Intercept)'). \code{svc.cols}
-    default argument of 1 results in a spatial occupancy model analogous to
+    default argument of 1 results in a univariate spatial GLMM analogous to
     \code{spAbund} (assuming an intercept is included in the model).}
 
   \item{cov.model}{a quoted keyword that specifies the covariance
@@ -119,13 +124,13 @@ svcAbund(formula, data, inits, priors, tuning,
     might produce different, but equally valid, neighbor sets, 
     e.g., if data are on a grid. }
  
-  \item{n.batch}{the number of MCMC batches in each chain to run for the Adaptive MCMC 
+  \item{n.batch}{the number of MCMC batches in each chain to run for the adaptive MCMC 
     sampler. See Roberts and Rosenthal (2009) for details.}
   
-  \item{batch.length}{the length of each MCMC batch in each chain to run for the Adaptive 
+  \item{batch.length}{the length of each MCMC batch in each chain to run for the adaptive 
     MCMC sampler. See Roberts and Rosenthal (2009) for details.}
   
-  \item{accept.rate}{target acceptance rate for Adaptive MCMC. Default is 
+  \item{accept.rate}{target acceptance rate for adaptive MCMC. Default is 
     0.43. See Roberts and Rosenthal (2009) for details.}
 
   \item{family}{the distribution to use for abundance. Currently, spatially-varying 
@@ -191,8 +196,7 @@ svcAbund(formula, data, inits, priors, tuning,
     for the abundance regression coefficients.}
 
   \item{tau.sq.samples}{a \code{coda} object of posterior samples
-    for the residual variance parameter. Only included when
-    \code{family = 'Gaussian'} or \code{family = 'zi-Gaussian'}.}
+    for the residual variance parameter.}
 
   \item{y.rep.samples}{a \code{coda} object of posterior samples 
     for the abundance replicate (fitted) values with dimensions 
@@ -205,8 +209,9 @@ svcAbund(formula, data, inits, priors, tuning,
   \item{theta.samples}{a \code{coda} object of posterior samples
     for spatial covariance parameters.}
 
-  \item{w.samples}{a \code{coda} object of posterior samples
-    for latent spatial random effects.}
+  \item{w.samples}{a three-dimensional array of posterior samples
+    for the spatially-varying coefficients with dimensions corresponding
+    to MCMC sample, SVC, and site.}
 
   \item{sigma.sq.mu.samples}{a \code{coda} object of posterior samples
     for variances of random effects included in the model. 
@@ -238,12 +243,12 @@ set.seed(1000)
 J.x <- 10
 J.y <- 10
 J <- J.x * J.y
-# Occurrence --------------------------
+# Abundance ---------------------------
 beta <- c(5, 0.5, -0.2, 0.75)
 p <- length(beta)
 mu.RE <- list()
 mu.RE <- list(levels = c(35, 40),
-	      sigma.sq.mu = c(0.7, 1.5),
+              sigma.sq.mu = c(0.7, 1.5),
               beta.indx = list(1, 1))
 # Spatial parameters ------------------
 sp <- TRUE
@@ -257,9 +262,9 @@ z <- rbinom(J, 1, 0.5)
 
 # Get all the data
 dat <- simAbund(J.x = J.x, J.y = J.y, beta = beta, tau.sq = tau.sq,
-	        mu.RE = mu.RE, sp = sp, svc.cols = svc.cols, family = 'zi-Gaussian',
-	        cov.model = cov.model, sigma.sq = sigma.sq, phi = phi, 
-                z = z)
+                mu.RE = mu.RE, sp = sp, svc.cols = svc.cols, 
+                family = 'zi-Gaussian', cov.model = cov.model, 
+                sigma.sq = sigma.sq, phi = phi, z = z)
 # Get data in format for spAbundance --------------------------------------
 y <- dat$y
 X <- dat$X
@@ -271,19 +276,17 @@ covs <- cbind(X, X.re)
 colnames(covs) <- c('int', 'cov.1', 'cov.2', 'cov.3', 'factor.1', 'factor.2')
 
 # Data list bundle
-data.list <- list(y = y,
-		  covs = covs,
-		  coords = coords, 
-                  z = z)
+data.list <- list(y = y, covs = covs, coords = coords, z = z)
 # Priors
 prior.list <- list(beta.normal = list(mean = 0, var = 1000),
-		   sigma.sq.ig = list(a = 2, b = 1), tau.sq = c(2, 1),
-		   sigma.sq.mu.ig = list(a = 2, b = 1),
+                   sigma.sq.ig = list(a = 2, b = 1), tau.sq = c(2, 1),
+                   sigma.sq.mu.ig = list(a = 2, b = 1),
                    phi.unif = list(a = 3 / 1, b = 3 / 0.1))
 
 # Starting values
 inits.list <- list(beta = 0, alpha = 0,
-		   sigma.sq = 1, phi = 3 / 0.5, tau.sq = 2, sigma.sq.mu = 0.5)
+                   sigma.sq = 1, phi = 3 / 0.5, 
+                   tau.sq = 2, sigma.sq.mu = 0.5)
 # Tuning
 tuning.list <- list(phi = 1)
 
@@ -292,7 +295,8 @@ batch.length <- 25
 n.burn <- 100
 n.thin <- 1
 
-out <- svcAbund(formula = ~ cov.1 + cov.2 + cov.3 + (1 | factor.1) + (1 | factor.2),
+out <- svcAbund(formula = ~ cov.1 + cov.2 + cov.3 + 
+                            (1 | factor.1) + (1 | factor.2),
                 svc.cols = c(1, 2),
                 data = data.list,
                 n.batch = n.batch,
@@ -300,7 +304,7 @@ out <- svcAbund(formula = ~ cov.1 + cov.2 + cov.3 + (1 | factor.1) + (1 | factor
                 inits = inits.list,
                 priors = prior.list,
                 accept.rate = 0.43,
-		family = 'zi-Gaussian',
+                family = 'zi-Gaussian',
                 cov.model = "exponential",
                 tuning = tuning.list,
                 n.omp.threads = 1,

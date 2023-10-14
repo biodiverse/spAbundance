@@ -1,19 +1,19 @@
 \name{svcMsAbund}
 \alias{svcMsAbund}
-\title{Function for Fitting Spatially-Varying Coefficient Multi-Species Abundance GLMs}
+\title{Function for Fitting Spatially-Varying Coefficient Multivariate Abundance GLMMs}
 
 \description{
-  The function \code{svcMsAbund} fits multi-species spatially-varying coefficient GLMs with species correlations (i.e., a spatially-explicit abundace-based joint species distribution model). We use  a spatial factor modeling approach. Currently, models are implemented using a Nearest Neighbor Gaussian Process. Future development may allow for running the models using full Gaussian Processes. 
+  The function \code{svcMsAbund} fits multivariate spatially-varying coefficient GLMs with species correlations (i.e., a spatially-explicit abundace-based joint species distribution model). We use  a spatial factor modeling approach. Models are implemented using a Nearest Neighbor Gaussian Process.  
 }
 
 \usage{
 svcMsAbund(formula, data, inits, priors, tuning,
-         svc.cols = 1, cov.model = 'exponential', NNGP = TRUE, 
-         n.neighbors = 15, search.type = 'cb', n.factors,
-         n.batch, batch.length, accept.rate = 0.43, family = 'Gaussian',
-	 n.omp.threads = 1, verbose = TRUE, n.report = 100, 
-         n.burn = round(.10 * n.batch * batch.length), n.thin = 1, n.chains = 1,
-         ...)
+           svc.cols = 1, cov.model = 'exponential', NNGP = TRUE, 
+           n.neighbors = 15, search.type = 'cb', n.factors,
+           n.batch, batch.length, accept.rate = 0.43, family = 'Gaussian',
+           n.omp.threads = 1, verbose = TRUE, n.report = 100, 
+           n.burn = round(.10 * n.batch * batch.length), n.thin = 1, n.chains = 1,
+           ...)
 }
 
 \arguments{
@@ -24,19 +24,11 @@ svcMsAbund(formula, data, inits, priors, tuning,
   and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
   \item{data}{a list containing data necessary for model fitting.
-    Valid tags are \code{y}, \code{covs}, \code{coords}. 
-    \code{y} is a two or three-dimensional array of observed count data. The
-    first dimension of the array is equal to the 
-    number of species and the second dimension is equal to the number of sites. If
-    specified as a three-dimensional array, the third dimension corresponds to 
-    replicate observations at each site (e.g., sub-samples, repeated sampling 
-    over multiple seasons). \code{covs} is a list 
-    containing the variables used in the model. Each list element is a different
-    covariate, which can be site-level or observation-level. Site-level covariates
-    are specified as a vector of length \eqn{J}{J}, while observation-level covariates
-    are specified as a matrix or data frame with the number of rows equal to \eqn{J}{J}
-    and number of columns equal to the maximum number of replicate observations at a 
-    given site. \code{coords} is a 
+    Valid tags are \code{y}, \code{covs}, \code{coords}, and \code{z}. 
+    \code{y} is a matrix with sites corresponding to species and columns
+    corresponding to sites. \code{covs} is a list, matrix, or data
+    frame of covariates used in the model, where each column (or list element) 
+    represents a different covariate. \code{coords} is a 
     \eqn{J \times 2}{J x 2} matrix of the observation coordinates. Note that 
     \code{spAbundance} assumes coordinates are specified in a projected coordinate system. 
     For zero-inflated Gaussian models, the tag \code{z} is used to specify the 
@@ -44,10 +36,10 @@ svcMsAbund(formula, data, inits, priors, tuning,
 
   \item{inits}{a list with each tag corresponding to a parameter name.
     Valid tags are \code{beta.comm}, \code{beta}, 
-    \code{tau.sq.beta}, \code{sigma.sq.mu}, \code{kappa},
+    \code{tau.sq.beta}, \code{sigma.sq.mu}, 
     \code{phi}, \code{lambda}, \code{nu}, and \code{tau.sq}. \code{nu} is only specified if 
-    \code{cov.model = "matern"}, \code{kappa} is only specified if \code{family = 'NB'}, 
-    \code{tau.sq} is only specified for Gaussian and zero-inflated Gaussian models,
+    \code{cov.model = "matern"}, \code{tau.sq} is only 
+    specified for Gaussian and zero-inflated Gaussian models,
     and \code{sigma.sq.mu} is only specified if random effects are included in \code{formula}. 
     The value portion of each tag is 
     the parameter's initial value. See \code{priors} description for definition
@@ -57,7 +49,7 @@ svcMsAbund(formula, data, inits, priors, tuning,
 
   \item{priors}{a list with each tag corresponding to a parameter name. 
   Valid tags are \code{beta.comm.normal}, \code{tau.sq.beta.ig}, \code{sigma.sq.mu}, 
-  \code{kappa.unif}, \code{phi.unif}, \code{nu.unif}, and \code{tau.sq.ig}. 
+  \code{phi.unif}, \code{nu.unif}, and \code{tau.sq.ig}. 
   Community-level (\code{beta.comm}) regression coefficients are assumed to follow a 
   normal distribution. The hyperparameters of the normal distribution
   are passed as a list of length two with the first and second elements 
@@ -73,16 +65,27 @@ svcMsAbund(formula, data, inits, priors, tuning,
   which are each specified as vectors of length equal to the number of 
   coefficients to be estimated or a single value if priors are the same for all 
   parameters. If not specified, prior shape and scale 
-  parameters are set to 0.1. The spatial factor model fits \code{n.factors} independent
+  parameters are set to 0.1. If desired, the species-specific regression coefficients
+  (\code{beta}) can also be estimated indepdendently by specifying the 
+  tag \code{independent.betas = TRUE}. If specified, this will not estimate species-specific
+  coefficients as random effects from a common-community-level distribution, and rather
+  the values of \code{beta.comm} and \code{tau.sq.beta} will be fixed at the 
+  specified initial values. This is equivalent to specifying a Gaussian, independent
+  prior for each of the species-specific effects. 
+  The spatial factor model fits \code{n.factors} independent
   spatial processes. The spatial decay \code{phi} and smoothness \code{nu} parameters 
-  for each latent factor are assumed to follow Uniform distributions. 
+  for each latent factor and spatially-varying coefficient 
+  are assumed to follow Uniform distributions. 
   The hyperparameters of the Uniform are passed as a list with two elements, 
-  with both elements being vectors of length \code{n.factors} corresponding to the lower and 
+  with both elements being vectors of length equal to the number of spatial factors
+  times the number of spatially-varying coefficients corresponding to the lower and 
   upper support, respectively, or as a single value if the same value is assigned
-  for all factors. The priors for the factor loadings matrix \code{lambda} are fixed
+  for all factors and spatially-varying coefficients. 
+  The priors for the factor loadings matrix \code{lambda} are fixed
   following the standard spatial factor model to ensure parameter 
   identifiability (Christensen and Amemlya 2002). The
-  upper triangular elements of the \code{n.sp x n.factors} matrix are fixed at 0 and the 
+  upper triangular elements of the \code{n.sp x n.factors} matrix 
+  for each spatially-varying coefficient are fixed at 0 and the 
   diagonal elements are fixed at 1. The lower triangular elements are assigned a 
   standard normal prior (i.e., mean 0 and variance 1).
   \code{sigma.sq.mu} are the random 
@@ -91,13 +94,7 @@ svcMsAbund(formula, data, inits, priors, tuning,
   are passed as a list of length two with first and second elements corresponding
   to the shape and scale parameters, respectively, which are each specified as
   vectors of length equal to the number of random intercepts or of length one 
-  if priors are the same for all random effect variances. \code{kappa} is the 
-  negative binomial dispersion parameter for each species and is assumed to 
-  follow a uniform distribution. The hyperparameters of the uniform distribution
-  are passed as a list of length two with first and second elements corresponding to the
-  lower and upper bounds of the uniform distribution, respectively, which are each 
-  specified as vectors of length equal to the number of species or of length one
-  if priors are the same for all species-specific dispersion parameters. \code{tau.sq} is the 
+  if priors are the same for all random effect variances. \code{tau.sq} is the 
   species-specific residual variance for Gaussian (or zero-inflated Gaussian) models, and it is assigned 
   an inverse-Gamma prior. The hyperparameters of the inverse-Gamma are passed as a list 
   of length two, with the first and second element corresponding to the shape and 
@@ -105,10 +102,8 @@ svcMsAbund(formula, data, inits, priors, tuning,
   equal to the number of species or a single value if priors are the same for all species.}
 
 \item{tuning}{a single numeric value representing the initial variance of the
-  adaptive sampler for \code{beta}, \code{alpha}, \code{beta.star} (the abundance 
-  random effect values), \code{kappa}, \code{phi}, \code{lambda}. 
-  See Roberts and Rosenthal (2009) for details. Note that only \code{phi} and \code{nu}
-  are tuned for Gaussian or zero-inflated Gaussian models.}
+  adaptive sampler for \code{phi} and \code{nu}. 
+  See Roberts and Rosenthal (2009) for details.}
 
 \item{svc.cols}{a vector indicating the variables whose effects will be 
   estimated as spatially-varying coefficients. \code{svc.cols} can be an 
@@ -149,24 +144,26 @@ svcMsAbund(formula, data, inits, priors, tuning,
     might produce different, but equally valid, neighbor sets, 
     e.g., if data are on a grid. }
 
-  \item{n.factors}{the number of factors to use in the spatial factor model approach. 
+  \item{n.factors}{the number of factors to use in the spatial factor
+    model approach for each spatially-varying coefficient. 
     Typically, the number of factors is set to be small (e.g., 4-5) relative to the 
     total number of species in the community, which will lead to substantial 
     decreases in computation time. However, the value can be anywhere 
     between 1 and the number of species in the modeled community.}
 
-  \item{n.batch}{the number of MCMC batches  in each chain to run for the Adaptive MCMC 
+  \item{n.batch}{the number of MCMC batches  in each chain to run for the adaptive MCMC 
     sampler. See Roberts and Rosenthal (2009) for details.}
   
-  \item{batch.length}{the length of each MCMC batch to run for the Adaptive 
+  \item{batch.length}{the length of each MCMC batch to run for the adaptive 
     MCMC sampler. See Roberts and Rosenthal (2009) for details.}
   
-  \item{accept.rate}{target acceptance rate for Adaptive MCMC. Defaul is 
+  \item{accept.rate}{target acceptance rate for adaptive MCMC. Default is 
     0.43. See Roberts and Rosenthal (2009) for details.}
 
-  \item{family}{the distribution to use for the abundance. Currently 
-    supports \code{'NB'} (negative binomial) and \code{'Poisson'}.}
-  
+  \item{family}{the distribution to use for abundance. Currently, spatially-varying 
+  coefficient models are available for \code{family = 'Gaussian'} and 
+  \code{family = 'zi-Gaussian'}.}
+
   \item{n.omp.threads}{a positive integer indicating
    the number of threads to use for SMP parallel processing. The package must
    be compiled for OpenMP support. For most Intel-based machines, we
@@ -235,19 +232,15 @@ svcMsAbund(formula, data, inits, priors, tuning,
   \item{beta.samples}{a \code{coda} object of posterior samples
     for the species level abundance regression coefficients.}
 
-  \item{kappa.samples}{a \code{coda} object of posterior samples
-    for the species level abundance dispersion parameters. Only included
-    when \code{family = 'NB'}.}
-
   \item{tau.sq.samples}{a \code{coda} object of posterior samples
-    for the Gaussian residual variance parameter. Only included when
-    \code{family = 'Gaussian'} or \code{family = 'zi-Gaussian'}.}
+    for the Gaussian residual variance parameter.}
 
   \item{theta.samples}{a \code{coda} object of posterior samples
     for the spatial correlation parameters.}
 
   \item{lambda.samples}{a \code{coda} object of posterior samples
-    for the latent spatial factor loadings.}
+    for the latent spatial factor loadings for each spatially-varying
+    coefficient.}
 
   \item{y.rep.samples}{a three or four-dimensional array of posterior samples for
     the fitted (replicate) values for each species with dimensions corresponding
@@ -257,8 +250,10 @@ svcMsAbund(formula, data, inits, priors, tuning,
     the expected abundance values for each species with dimensions
     corresponding to MCMC samples, species, site, and replicate.}
 
-  \item{w.samples}{a three-dimensional array of posterior samples for 
-    the latent spatial random effects for each latent factor.}
+  \item{w.samples}{a four-dimensional array of posterior samples for 
+    the latent spatial random effects for each spatial factor within each 
+    spatially-varying coefficient. Dimensions correspond to MCMC sample, 
+    factor, site, and spatially-varying coefficient.}
 
   \item{sigma.sq.mu.samples}{a \code{coda} object of posterior samples
     for variances of random effects included in the abundance portion
@@ -285,81 +280,81 @@ svcMsAbund(formula, data, inits, priors, tuning,
 }
 
 \examples{
-set.seed(408)
-J.x <- 8
-J.y <- 8
+set.seed(332)
+J.x <- 10
+J.y <- 10
 J <- J.x * J.y
-n.rep <- sample(3, size = J, replace = TRUE)
+n.rep <- rep(1, J)
 n.sp <- 6
 # Community-level covariate effects
-beta.mean <- c(-2, 0.5)
+beta.mean <- c(0, 0.25, 0.6)
 p.abund <- length(beta.mean)
-tau.sq.beta <- c(0.2, 1.2)
-# Random effects (two random intercepts)
-mu.RE <- list(levels = c(10, 15),
-	       sigma.sq.mu = c(0.43, 0.5))
+tau.sq.beta <- c(0.2, 1.2, 0.4)
+# Random effects
+mu.RE <- list()
 # Draw species-level effects from community means.
 beta <- matrix(NA, nrow = n.sp, ncol = p.abund)
 for (i in 1:p.abund) {
   beta[, i] <- rnorm(n.sp, beta.mean[i], sqrt(tau.sq.beta[i]))
 }
-sp <- TRUE
+sp <- TRUE 
+svc.cols <- c(1, 2)
 n.factors <- 2
+q.p.svc <- length(svc.cols) * n.factors
 factor.model <- TRUE
-phi <- runif(n.factors, 3/1, 3 / .1)
-kappa <- runif(n.sp, 0.1, 1)
+phi <- runif(q.p.svc, 3/1, 3 / .4)
+tau.sq <- runif(n.sp, 0.1, 5)
+cov.model <- 'exponential'
+family <- 'Gaussian'
 
-dat <- simMsAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta,
-	          mu.RE = mu.RE, sp = sp, kappa = kappa, family = 'NB',
-                  factor.model = factor.model, phi = phi,
-                  cov.model = 'exponential', n.factors = n.factors)
+dat <- simMsAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta, 
+                  mu.RE = mu.RE, sp = sp, tau.sq = tau.sq, family = family, 
+                  factor.model = factor.model, phi = phi, 
+                  cov.model = cov.model, n.factors = n.factors, 
+                  svc.cols = svc.cols)
 
 y <- dat$y
 X <- dat$X
-X.re <- dat$X.re
 coords <- dat$coords
 
-# Package all data into a list
-covs <- list(int = X[, , 1],
-		   abund.cov.1 = X[, , 2],
-		   abund.factor.1 = X.re[, , 1],
-		   abund.factor.2 = X.re[, , 2])
-data.list <- list(y = y,
-		  covs = covs,
-                  coords = coords)
+covs <- data.frame(abund.cov.1 = X[, 2],
+                   abund.cov.2 = X[, 3])
+data.list <- list(y = y, covs = covs, coords = coords)
 prior.list <- list(beta.comm.normal = list(mean = 0, var = 100),
-                   kappa.unif = list(a = 0, b = 10),
-		   phi.unif = list(a = 3 / 1, b = 3 / .1),
-                   tau.sq.beta.ig = list(a = .1, b = .1))
-inits.list <- list(beta.comm = 0,
-		   beta = 0,
-		   kappa = 0.5,
-		   tau.sq.beta = 1,
-		   phi = 3 / 0.5)
+                   tau.sq.ig = list(a = 2, b = 2), 
+		   phi.unif = list(a = 3 / 1, b = 3 / .1), 
+                   tau.sq.beta.ig = list(a = .1, b = .1)) 
+inits.list <- list(beta.comm = 0, 
+                   beta = 0, 
+                   tau.sq = 1,
+                   tau.sq.beta = 1,
+                   phi = 3 / 0.5)
+tuning.list <- list(phi = 0.5)
 
-# Small
-n.batch <- 2
+n.batch <- 5
 batch.length <- 25
-n.burn <- 20
+n.burn <- 0
 n.thin <- 1
 n.chains <- 1
 
-out <- sfMsAbund(formula = ~ abund.cov.1 + (1 | abund.factor.1) + (1 | abund.factor.2),
-	         data = data.list,
-	         n.batch = n.batch,
-	         inits = inits.list,
-	         priors = prior.list,
-		 NNGP = TRUE,
-		 cov.model = 'exponential',
-		 n.neighbors = 5,
-		 n.factors = n.factors,
-	         batch.length = batch.length,
-	         n.omp.threads = 3,
-	         verbose = TRUE,
-	         n.report = 1,
-	         n.burn = n.burn,
-	         n.thin = n.thin,
-	         n.chains = n.chains)
+out <- svcMsAbund(formula = ~ abund.cov.1 + abund.cov.2,
+                  data = data.list, 
+                  n.batch = n.batch, 
+                  inits = inits.list, 
+                  priors = prior.list, 
+                  tuning = tuning.list,
+                  NNGP = TRUE, 
+                  svc.cols = c(1, 2),
+                  family = 'Gaussian',
+                  cov.model = 'exponential', 
+                  n.neighbors = 5, 
+                  n.factors = n.factors, 
+                  batch.length = batch.length, 
+                  n.omp.threads = 1,
+                  verbose = TRUE, 
+                  n.report = 20, 
+                  n.burn = n.burn, 
+                  n.thin = n.thin, 
+                  n.chains = n.chains)
 summary(out)
-
 }

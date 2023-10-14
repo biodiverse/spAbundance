@@ -8,8 +8,8 @@
 
 \usage{
 \method{predict}{svcAbund}(object, X.0, coords.0, n.omp.threads = 1, 
-                         verbose = TRUE, n.report = 100, ignore.RE = FALSE, 
-                         z.0.samples, ...)
+        verbose = TRUE, n.report = 100, ignore.RE = FALSE, 
+        z.0.samples, ...)
 }
 
 \arguments{
@@ -35,7 +35,7 @@
 
   \item{ignore.RE}{logical value that specifies whether or not to remove unstructured random effects from the subsequent predictions. If \code{TRUE}, random effects will be included. If \code{FALSE}, random effects will be set to 0 and predictions will only be generated from the fixed effects.}
 
-  \item{z.0.samples}{a matrix with rows corresponding to MCMC samples and columns corresponding to prediction locations containing the full posterior samples of the predicted binary portion of a Gaussian hurdle model. In the context of abundance models, this typically corresponds to estimates of the presence or absence of the species at the location. When using \code{spOccupancy} to generate the first stage samples of the zero-inflated Gaussian model, this is the object contained in the \code{z.0.samples} object of the predition function for th spOccupancy object. Ignored for all model types other than zero-inflated Gaussian.}
+  \item{z.0.samples}{a matrix with rows corresponding to MCMC samples and columns corresponding to prediction locations containing the full posterior samples of the predicted binary portion of a zero-inflated Gaussian model. In the context of abundance models, this typically corresponds to estimates of the presence or absence of the species at the location. When using \code{spOccupancy} to generate the first stage samples of the zero-inflated Gaussian model, this is the object contained in the \code{z.0.samples} object of the predition function for th spOccupancy object. Ignored for all model types other than zero-inflated Gaussian.}
 
   \item{...}{currently no additional arguments}
 }
@@ -59,7 +59,7 @@
     abundance values.}
 
   \item{w.0.samples}{a three-dimensional array of posterior predictive samples
-    for the spatial random effects, with dimensions corresponding to MCMC iteration, 
+    for the spatially-varying coefficients, with dimensions corresponding to MCMC iteration, 
     coefficient, and site.}
 
   The return object will include additional objects used for standard 
@@ -87,8 +87,8 @@ tau.sq <- 2
 
 # Get all the data
 dat <- simAbund(J.x = J.x, J.y = J.y, beta = beta, tau.sq = tau.sq,
-	        mu.RE = mu.RE, sp = sp, svc.cols = svc.cols, family = 'Gaussian',
-	        cov.model = cov.model, sigma.sq = sigma.sq, phi = phi)
+                mu.RE = mu.RE, sp = sp, svc.cols = svc.cols, family = 'Gaussian',
+                cov.model = cov.model, sigma.sq = sigma.sq, phi = phi)
 
 # Prep the data for spAbundance -------------------------------------------
 y <- dat$y
@@ -109,18 +109,16 @@ covs <- cbind(X)
 colnames(covs) <- c('int', 'cov.1', 'cov.2', 'cov.3')
 
 # Data list bundle
-data.list <- list(y = y,
-		  covs = covs,
-		  coords = coords)
+data.list <- list(y = y, covs = covs, coords = coords)
 # Priors
 prior.list <- list(beta.normal = list(mean = 0, var = 1000),
-		   sigma.sq.ig = list(a = 2, b = 1), tau.sq = c(2, 1),
-		   sigma.sq.mu.ig = list(a = 2, b = 1),
+                   sigma.sq.ig = list(a = 2, b = 1), tau.sq = c(2, 1),
+                   sigma.sq.mu.ig = list(a = 2, b = 1),
                    phi.unif = list(a = 3 / 1, b = 3 / 0.1))
 
 # Starting values
 inits.list <- list(beta = 0, alpha = 0,
-		   sigma.sq = 1, phi = phi, tau.sq = 2, sigma.sq.mu = 0.5)
+                   sigma.sq = 1, phi = phi, tau.sq = 2, sigma.sq.mu = 0.5)
 # Tuning
 tuning.list <- list(phi = 1)
 
@@ -138,7 +136,7 @@ out <- svcAbund(formula = ~ cov.1 + cov.2 + cov.3,
                 inits = inits.list,
                 priors = prior.list,
                 accept.rate = 0.43,
-		family = 'Gaussian',
+                family = 'Gaussian',
                 cov.model = "exponential",
                 tuning = tuning.list,
                 n.omp.threads = 1,

@@ -1,6 +1,6 @@
 \name{predict.sfMsAbund}
 \alias{predict.sfMsAbund}
-\title{Function for prediction at new locations for spatial factor multi-species abundance GLMs}
+\title{Function for prediction at new locations for spatial factor multivariate GLMMs}
 
 \description{
   The function \code{predict} collects posterior predictive samples for a set of new locations given an object of class `sfMsAbund`.  
@@ -8,8 +8,8 @@
 
 \usage{
 \method{predict}{sfMsAbund}(object, X.0, coords.0, n.omp.threads = 1, 
-                            verbose = TRUE, n.report = 100, ignore.RE = FALSE, 
-			    z.0.samples, include.sp = TRUE, ...)
+        verbose = TRUE, n.report = 100, ignore.RE = FALSE, 
+        z.0.samples, include.sp = TRUE, ...)
 }
 
 \arguments{
@@ -65,7 +65,7 @@
     and replicate. These will be in the same units as \code{mu.0.samples}.}
 
   \item{w.0.samples}{a three-dimensional array of posterior predictive samples for the
-    latent factors.}
+    latent factors. Array dimensions correspond to MCMC sample, latent factor, and site.}
 
   The return object will include additional objects used for standard 
   extractor functions. 
@@ -96,7 +96,7 @@ cov.model <- 'spherical'
 phi <- runif(n.factors, 3 / 1, 3 / .1)
 
 dat <- simMsAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta,
-	          mu.RE = mu.RE, sp = sp, kappa = kappa, family = 'NB', 
+                  mu.RE = mu.RE, sp = sp, kappa = kappa, family = 'NB', 
                   factor.model = factor.model, n.factors = n.factors, 
                   phi = phi, cov.model = cov.model)
 
@@ -113,20 +113,17 @@ X.0 <- dat$X[pred.indx, , , drop = FALSE]
 coords.0 <- dat$coords[pred.indx, ]
 
 # Package all data into a list
-covs <- list(int = X[, , 1],
-		   abund.cov.1 = X[, , 2])
-data.list <- list(y = y,
-		  covs = covs, 
-                  coords = coords)
+covs <- list(int = X[, , 1], abund.cov.1 = X[, , 2])
+data.list <- list(y = y, covs = covs, coords = coords)
 prior.list <- list(beta.comm.normal = list(mean = 0, var = 100),
                    kappa.unif = list(a = 0, b = 10),
-		   phi.unif = list(a = 3 / 1, b = 3 / .1),
+                   phi.unif = list(a = 3 / 1, b = 3 / .1),
                    tau.sq.beta.ig = list(a = .1, b = .1))
 inits.list <- list(beta.comm = 0,
-		   beta = 0,
-		   kappa = 0.5,
-		   phi = 3 / .5,
-		   tau.sq.beta = 1)
+                   beta = 0,
+                   kappa = 0.5,
+                   phi = 3 / .5,
+                   tau.sq.beta = 1)
 tuning.list <- list(kappa = 0.3, beta = 0.1, lambda = 0.5, w = 0.5, 
                     phi = 1)
 
@@ -138,20 +135,20 @@ n.thin <- 1
 n.chains <- 1
 
 out <- sfMsAbund(formula = ~ abund.cov.1,
-	         data = data.list,
-	         n.batch = n.batch,
-	         inits = inits.list,
-	         priors = prior.list,
-	         tuning = tuning.list,
-	         batch.length = batch.length,
-	         n.omp.threads = 1,
-		 n.factors = 1,
-	         verbose = TRUE,
-		 n.neighbors = 5, 
-	         n.report = 1,
-	         n.burn = n.burn,
-	         n.thin = n.thin,
-	         n.chains = n.chains)
+                 data = data.list,
+                 n.batch = n.batch,
+                 inits = inits.list,
+                 priors = prior.list,
+                 tuning = tuning.list,
+                 batch.length = batch.length,
+                 n.omp.threads = 1,
+                 n.factors = 1,
+                 verbose = TRUE,
+                 n.neighbors = 5, 
+                 n.report = 1,
+                 n.burn = n.burn,
+                 n.thin = n.thin,
+                 n.chains = n.chains)
 
 # Predict at new locations
 out.pred <- predict(out, X.0, coords.0)

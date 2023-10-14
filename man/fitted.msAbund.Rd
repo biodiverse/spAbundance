@@ -5,7 +5,7 @@
 \title{Extract Model Fitted Values for msAbund Object}
 
 \description{
-  Method for extracting model fitted values from a fitted multi-species abundance GLM (\code{msAbund}). 
+  Method for extracting model fitted values from a fitted multivariate GLMM (\code{msAbund}). 
 }
 
 \usage{

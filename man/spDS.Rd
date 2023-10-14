@@ -34,7 +34,7 @@ spDS(abund.formula, det.formula, data, inits, priors, tuning,
   with first dimension equal to the number of 
   sites (\eqn{J}{J}) and second dimension equal to the number of 
   distance bins. \code{covs} is a matrix or data frame
-  containing the variables used in the the abundance and/or the detection
+  containing the variables used in the abundance and/or the detection
   portion of the model, with
   \eqn{J}{J} rows for each column (variable). \code{dist.breaks} is a vector of 
   distances that denote the breakpoints of the distance bands. \code{dist.breaks} should
@@ -87,7 +87,7 @@ spDS(abund.formula, det.formula, data, inits, priors, tuning,
   Gamma distribution. The hyperparameters of the inverse-Gamma distribution
   are passed as a list of length two with first and second elements corresponding
   to the shape and scale parameters, respectively, which are each specified as
-  vectors of length equal to the number of random intercepts or of length one 
+  vectors of length equal to the number of random intercepts/slopes or of length one 
   if priors are the same for all random effect variances.}
 
   \item{cov.model}{a quoted keyword that specifies the covariance
@@ -302,12 +302,12 @@ coords <- dat$coords
 
 covs <- cbind(X, X.p)
 colnames(covs) <- c('int.abund', 'abund.cov.1', 'abund.cov.2', 'abund.cov.3', 
-		    'int.det', 'det.cov.1')
+                    'int.det', 'det.cov.1')
 
 data.list <- list(y = y, 
                   covs = covs,
                   dist.breaks = dist.breaks, 
-		  coords = coords,
+                  coords = coords,
                   offset = offset)
 
 # Priors
@@ -336,8 +336,8 @@ out <- spDS(abund.formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3,
             family = 'NB',
             det.func = 'halfnormal', 
             transect = 'point', 
-	    cov.model = 'exponential', 
-	    NNGP = TRUE,
+            cov.model = 'exponential', 
+            NNGP = TRUE,
 	    n.neighbors = 5,
             tuning = tuning,
             priors = prior.list, 

@@ -8,9 +8,9 @@
 
 \usage{
 \method{predict}{sfMsNMix}(object, X.0, coords.0, n.omp.threads = 1, 
-                           verbose = TRUE, n.report = 100, 
-                           ignore.RE = FALSE, type = 'abundance', 
-			   include.sp = TRUE, ...)
+        verbose = TRUE, n.report = 100, 
+        ignore.RE = FALSE, type = 'abundance', 
+        include.sp = TRUE, ...)
 }
 
 \arguments{
@@ -105,8 +105,8 @@ n.factors <- 3
 phi <- runif(n.factors, 3 / 1, 3 / .1)
 
 dat <- simMsNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, 
-		 beta = beta, alpha = alpha, sp = TRUE, 
-		 family = 'Poisson', factor.model = TRUE, 
+                 beta = beta, alpha = alpha, sp = TRUE, 
+                 family = 'Poisson', factor.model = TRUE, 
                  n.factors = n.factors, phi = phi, cov.model = 'exponential')
 # Split into fitting and prediction data set
 pred.indx <- sample(1:J, round(J * .25), replace = FALSE)
@@ -129,7 +129,7 @@ det.covs <- list(det.cov.1 = X.p[, , 2],
 data.list <- list(y = y, 
                   abund.covs = abund.covs,
                   det.covs = det.covs, 
-		  coords = coords)
+                  coords = coords)
 
 # Initial values
 prior.list <- list(beta.comm.normal = list(mean = 0, var = 2.72), 
@@ -142,7 +142,7 @@ inits.list <- list(alpha.comm = 0,
                    beta.comm = 0, 
                    beta = 0, 
                    alpha = 0,
-		   phi = 3 / .5,
+                   phi = 3 / .5,
                    tau.sq.beta = 1, 
                    tau.sq.alpha = 1, 
                    N = apply(y, c(1, 2), max, na.rm = TRUE))
@@ -153,21 +153,21 @@ batch.length <- 25
 accept.rate <- 0.43
 
 out <- sfMsNMix(abund.formula = ~ abund.cov, 
-               det.formula = ~ det.cov.1 + det.cov.2, 
-               data = data.list, 
-               inits = inits.list, 
-	       family = 'Poisson', 
-	       n.factors = n.factors,
-	       n.batch = n.batch,
-	       batch.length = batch.length, 
-	       accept.rate = 0.43,
-	       cov.model = 'exponential', 
-	       n.neighbors = 5,
-	       tuning = tuning,
-               priors = prior.list, 
-               n.omp.threads = 1, 
-               verbose = TRUE, 
-               n.report = 1)
+                det.formula = ~ det.cov.1 + det.cov.2, 
+                data = data.list, 
+                inits = inits.list, 
+                family = 'Poisson', 
+                n.factors = n.factors,
+                n.batch = n.batch,
+                batch.length = batch.length, 
+                accept.rate = 0.43,
+                cov.model = 'exponential', 
+                n.neighbors = 5,
+                tuning = tuning,
+                priors = prior.list, 
+                n.omp.threads = 1, 
+                verbose = TRUE, 
+                n.report = 1)
 
 summary(out, level = 'community')
 

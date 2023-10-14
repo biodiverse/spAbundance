@@ -15,11 +15,12 @@ the number of all bird species observed during a six minute, unlimited radius po
 during the breeding season. Distance of each individual bird to the observer was 
 recorded using a laser rangefinder. For modeling, we binned the distance measurements into 
 4 distance bins, and only used observations within 250m. The 16 species included in the data set are as follows: 
-(1) BACS (Baird's Sparrow); (2) CARW (Carolina Wren); (3) COGD (Common Ground-Dove); 
-(4) COYE (Common Yellowthroat); (5) EABL (Eastern Bluebird); (6) EAME (Eastern Meadowlark);
-(7) EATO (Eastern Towhee); (8) GCFL (Great-crested Flycatcher); (9) MODO (Mourning Dove);
-(10) NOCA (Northern Cardinal); (11) NOMO (Northern Mockingbird); 
-(12) RBWO (Red-bellied Woodpecker); (13) WEVI (White-eyed Vireo).
+(1) EATO (Eastern Towhee); (2) EAME (Eastern Meadowlark); (3) AMCR (American Crow);
+(4) BACS (Bachman's Sparrow); (5) CARW (Carolina Wren); (6) COGD (Common Ground Dove); 
+(7) CONI (Common Nighthawk); (8) COYE (Common Yellowthroat); (9) EABL (Eastern Bluebird);
+(10) GCFL (Great-crested Flycatcher); (11) MODO (Mourning Dover); (12) NOCA (Northern Cardinal);
+(13) NOMO (Northern Mockingbird); (14) RBWO (Red-bellied Woodpecker); (15) RHWO (Red-headed Woodpecker); 
+(16) WEVI (White-eyed Vireo).
 }
 
 \usage{
@@ -41,7 +42,7 @@ data(neonDWP)
   \code{neonDWP} is a list with five elements: 
 
    \code{y}: a three-dimensional array of distance sampling data with 
-     dimensions of species (16), sites (90) and distance bin (5). 
+     dimensions of species (16), sites (90) and distance bin (4). 
 
    \code{covs}: a data frame with 90 rows and four columns consisting of 
      covariates for use in modeling abundance and/or detection.
@@ -49,7 +50,7 @@ data(neonDWP)
    \code{dist.breaks}: a vector of five values indicating the break points 
      of the four distance bands in the data.
 
-   \code{offset}: an offset used to scale the 125m radius point count surveys 
+   \code{offset}: an offset used to scale the 250m radius point count surveys 
      to ha, such that resulting estimates will be the number of individuals 
      per ha.
 

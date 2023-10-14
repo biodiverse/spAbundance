@@ -8,8 +8,8 @@
 
 \usage{
 simNMix(J.x, J.y, n.rep, n.rep.max, beta, alpha, kappa, mu.RE = list(), 
-       p.RE = list(), offset = 1, sp = FALSE, cov.model, sigma.sq, phi, nu, 
-       family = 'Poisson', ...)
+        p.RE = list(), offset = 1, sp = FALSE, cov.model, sigma.sq, phi, nu, 
+        family = 'Poisson', ...)
 }
 
 \arguments{
@@ -50,7 +50,7 @@ simNMix(J.x, J.y, n.rep, n.rep.max, beta, alpha, kappa, mu.RE = list(),
 }
 
 \author{
-  Jeffrey W. Doser \email{doserjef@msu.edu}, \cr
+  Jeffrey W. Doser \email{doserjef@msu.edu} \cr
 }
 
 \value{
@@ -80,12 +80,10 @@ alpha <- c(0.7, 0.4)
 kappa <- 0.5
 phi <- 3 / .6
 sigma.sq <- 2
-mu.RE <- list(levels = 10, 
-               sigma.sq.mu = 1.2)
-p.RE <- list(levels = 15, 
-             sigma.sq.p = 0.8)
+mu.RE <- list(levels = 10, sigma.sq.mu = 1.2)
+p.RE <- list(levels = 15, sigma.sq.p = 0.8)
 dat <- simNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta, alpha = alpha,
-	       kappa = kappa, mu.RE = mu.RE, p.RE = p.RE, sp = TRUE, 
-	       cov.model = 'spherical', sigma.sq = sigma.sq, phi = phi, 
+               kappa = kappa, mu.RE = mu.RE, p.RE = p.RE, sp = TRUE, 
+               cov.model = 'spherical', sigma.sq = sigma.sq, phi = phi, 
                family = 'NB')
 }

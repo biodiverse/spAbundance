@@ -1,6 +1,6 @@
 \name{predict.spAbund}
 \alias{predict.spAbund}
-\title{Function for prediction at new locations for single-species spatial abundance GLMs}
+\title{Function for prediction at new locations for univariate spatial GLMMs}
 
 \description{
   The function \code{predict} collects posterior predictive samples for a set of new locations given an object of class `spAbund`.  
@@ -8,8 +8,8 @@
 
 \usage{
 \method{predict}{spAbund}(object, X.0, coords.0, n.omp.threads = 1, 
-                          verbose = TRUE, n.report = 100, 
-                          ignore.RE = FALSE, z.0.samples, include.sp = TRUE, ...)
+        verbose = TRUE, n.report = 100, 
+        ignore.RE = FALSE, z.0.samples, include.sp = TRUE, ...)
 }
 
 \arguments{
@@ -86,7 +86,7 @@ phi <- 3 / .5
 family <- 'NB'
 cov.model = 'exponential'
 dat <- simAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta, 
-	        kappa = kappa, mu.RE = mu.RE, sp = sp, family = 'NB', 
+                kappa = kappa, mu.RE = mu.RE, sp = sp, family = 'NB', 
                 sigma.sq = sigma.sq, phi = phi, cov.model = cov.model)
 
 # Split into fitting and prediction data set
@@ -100,9 +100,9 @@ coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 
 abund.covs <- list(int = X[, , 1], 
-		   abund.cov.1 = X[, , 2], 
-		   abund.cov.2 = X[, , 3], 
-		   abund.cov.3 = X[, , 4])
+                   abund.cov.1 = X[, , 2], 
+                   abund.cov.2 = X[, , 3], 
+                   abund.cov.3 = X[, , 4])
 
 data.list <- list(y = y, covs = abund.covs, coords = coords)
 
@@ -110,8 +110,7 @@ data.list <- list(y = y, covs = abund.covs, coords = coords)
 prior.list <- list(beta.normal = list(mean = 0, var = 100),
                    kappa.unif = c(0.001, 10)) 
 # Starting values
-inits.list <- list(beta = 0,
-		   kappa = kappa)
+inits.list <- list(beta = 0, kappa = kappa)
 
 n.batch <- 5
 batch.length <- 25
@@ -120,20 +119,20 @@ n.thin <- 1
 n.chains <- 1
 
 out <- spAbund(formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3,
-	     data = data.list, 
-	     n.batch = n.batch, 
-	     batch.length = batch.length, 
-	     inits = inits.list, 
-	     priors = prior.list, 
-	     accept.rate = 0.43, 
-	     n.neighbors = 5,
-	     cov.model = cov.model,
-	     n.omp.threads = 1, 
-	     verbose = TRUE, 
-	     n.report = 1,
-	     n.burn = n.burn,
-	     n.thin = n.thin,
-	     n.chains = n.chains) 
+               data = data.list, 
+               n.batch = n.batch, 
+               batch.length = batch.length, 
+               inits = inits.list, 
+               priors = prior.list, 
+               accept.rate = 0.43, 
+               n.neighbors = 5,
+               cov.model = cov.model,
+               n.omp.threads = 1, 
+               verbose = TRUE, 
+               n.report = 1,
+               n.burn = n.burn,
+               n.thin = n.thin,
+               n.chains = n.chains) 
 
 # Predict at new locations ------------------------------------------------
 colnames(X.0) <- c('intercept', 'abund.cov', 'abund.cov.2', 'abund.cov.3')

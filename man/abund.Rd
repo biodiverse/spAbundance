@@ -1,17 +1,17 @@
 \name{abund}
 \alias{abund}
-\title{Function for Fitting Single-Species Abundance GLMs}
+\title{Function for Fitting Univariate Abundance GLMMs}
 
 \usage{
 abund(formula, data, inits, priors, tuning,
-     n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
-     n.omp.threads = 1, verbose = TRUE,
-     n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
-     n.chains = 1, save.fitted = TRUE, ...)
+      n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
+      n.omp.threads = 1, verbose = TRUE,
+      n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
+      n.chains = 1, save.fitted = TRUE, ...)
 }
 
 \description{
-  Function for fitting single-species abundance generalized linear models 
+  Function for fitting univariate abundance generalized linear (mixed) models 
 }
 
 \arguments{
@@ -21,7 +21,7 @@ abund(formula, data, inits, priors, tuning,
   and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
 \item{data}{a list containing data necessary for model fitting.
-  Valid tags are \code{y}, \code{covs}, and \code{offset}. \code{y}
+  Valid tags are \code{y}, \code{covs}, \code{z}, and \code{offset}. \code{y}
   is a vector, matrix, or data frame of the observed count values. If a vector, 
   the values represent the observed counts at each site. If multiple replicate
   observations are obtained at the sites (e.g., sub-samples, repeated sampling over
@@ -38,7 +38,7 @@ abund(formula, data, inits, priors, tuning,
   given site. For zero-inflated Gaussian models, the tag \code{z} is used to specify the 
   binary component of the zero-inflated model and should have the same length as \code{y}. 
   \code{offset} is an offset to use in the abundance model (e.g., an area offset). 
-  This can be either a single value, a vector with an offset for each site (e.g., if survey area differed in size), or a six x replicate matrix if more than one counts are available at a given site.} 
+  This can be either a single value, a vector with an offset for each site (e.g., if survey area differed in size), or a site x replicate matrix if more than one count is available at a given site.} 
 
 \item{inits}{a list with each tag corresponding to a parameter name.
   Valid tags are \code{beta}, \code{kappa}, \code{sigma.sq.mu}, and \code{tau.sq}. 
@@ -71,20 +71,20 @@ abund(formula, data, inits, priors, tuning,
   Gamma distribution. The hyperparameters of the inverse-Gamma distribution
   are passed as a list of length two with first and second elements corresponding
   to the shape and scale parameters, respectively, which are each specified as
-  vectors of length equal to the number of random intercepts or of length one 
+  vectors of length equal to the number of random effects or of length one 
   if priors are the same for all random effect variances. \code{tau.sq} is the 
   residual variance for Gaussian (or zero-inflated Gaussian) models, and it is assigned 
   an inverse-Gamma prior. The hyperparameters of the inverse-Gamma are passed as a vector
   of length two, with the first and second element corresponding to the shape and 
   scale parameters, respectively.}
 
-\item{tuning}{a list with each tag corresponding to a parameter name, whose
+\item{tuning}{a list with each tag corresponding to a parameter name, 
   whose value defines the initial variance of the adaptive sampler.
   Valid tags are \code{beta}, \code{beta.star} (the abundance
   random effect values), and \code{kappa}. See Roberts and Rosenthal (2009) for details.
   Note that no tuning is necessary for Gaussian or zero-inflated Gaussian models.}
 
-\item{n.batch}{the number of MCMC batches in each chain to run for the Adaptive MCMC 
+\item{n.batch}{the number of MCMC batches in each chain to run for the adaptive MCMC 
   sampler. See Roberts and Rosenthal (2009) for details.}
 
 \item{batch.length}{the length of each MCMC batch in each chain to run for the Adaptive 
@@ -204,27 +204,25 @@ kappa <- 0.5
 sp <- FALSE 
 family <- 'NB'
 dat <- simAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta, 
-	        kappa = kappa, mu.RE = mu.RE, sp = sp, family = 'NB')
+                kappa = kappa, mu.RE = mu.RE, sp = sp, family = 'NB')
 
 y <- dat$y
 X <- dat$X
 X.re <- dat$X.re
 
 covs <- list(int = X[, , 1], 
-		   abund.cov.1 = X[, , 2], 
-		   abund.cov.2 = X[, , 3], 
-		   abund.cov.3 = X[, , 4],
-		   abund.factor.1 = X.re[, , 1])
+             abund.cov.1 = X[, , 2], 
+             abund.cov.2 = X[, , 3], 
+             abund.cov.3 = X[, , 4],
+             abund.factor.1 = X.re[, , 1])
 
-data.list <- list(y = y, 
-		  covs = covs)
+data.list <- list(y = y, covs = covs)
 
 # Priors
 prior.list <- list(beta.normal = list(mean = 0, var = 100),
                    kappa.unif = c(0.001, 10)) 
 # Starting values
-inits.list <- list(beta = 0,
-		   kappa = kappa)
+inits.list <- list(beta = 0, kappa = kappa)
 
 tuning <- list(kappa = 0.2, beta = 0.1, beta.star = 0.2)
 n.batch <- 5
@@ -233,19 +231,20 @@ n.burn <- 0
 n.thin <- 1
 n.chains <- 1
 
-out <- abund(formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3 + (1 | abund.factor.1),
-	     data = data.list, 
-	     n.batch = n.batch, 
-	     batch.length = batch.length, 
-	     inits = inits.list, 
-	     tuning = tuning,
-	     priors = prior.list, 
-	     accept.rate = 0.43, 
-	     n.omp.threads = 1, 
-	     verbose = TRUE, 
-	     n.report = 1,
-	     n.burn = n.burn,
-	     n.thin = n.thin,
-	     n.chains = n.chains) 
+out <- abund(formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3 + 
+                         (1 | abund.factor.1),
+                         data = data.list, 
+                         n.batch = n.batch, 
+                         batch.length = batch.length, 
+                         inits = inits.list, 
+                         tuning = tuning,
+                         priors = prior.list, 
+                         accept.rate = 0.43, 
+                         n.omp.threads = 1, 
+                         verbose = TRUE, 
+                         n.report = 1,
+                         n.burn = n.burn,
+                         n.thin = n.thin,
+                         n.chains = n.chains) 
 summary(out)
 }

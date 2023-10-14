@@ -8,7 +8,7 @@
 
 \usage{
 simMsDS(J.x, J.y, n.bins, bin.width, n.sp, beta, alpha, 
-	det.func, transect = 'line', kappa, mu.RE = list(), 
+        det.func, transect = 'line', kappa, mu.RE = list(), 
         p.RE = list(), offset = 1, sp = FALSE, cov.model, 
         sigma.sq, phi, nu, family = 'Poisson',
         factor.model = FALSE, n.factors, ...)
@@ -26,9 +26,9 @@ simMsDS(J.x, J.y, n.bins, bin.width, n.sp, beta, alpha,
 
 \item{n.sp}{a single numeric value indicating the number of species to simulate count data.}
 
-\item{beta}{a numeric matrix with \code{n.sp} rows containing the intercept and regression coefficient parameters for the abundance portion of the multi-species N-mixture model. Each row corresponds to the regression coefficients for a given species.} 
+\item{beta}{a numeric matrix with \code{n.sp} rows containing the intercept and regression coefficient parameters for the abundance portion of the multi-species hierarchical distance sampling (HDS) model. Each row corresponds to the regression coefficients for a given species.} 
 
-\item{alpha}{a numeric matrix with \code{n.sp} rows containing the intercept and regression coefficient parameters for the detection portion of the multi-species N-mixture model. Each row corresponds to the regression coefficients for a given species.}
+\item{alpha}{a numeric matrix with \code{n.sp} rows containing the intercept and regression coefficient parameters for the detection portion of the multi-species HDS model. Each row corresponds to the regression coefficients for a given species.}
 
 \item{det.func}{the detection model used to describe how detection probability varies
   with distance. In other software, this is often referred to as the key function. Currently
@@ -38,7 +38,7 @@ simMsDS(J.x, J.y, n.bins, bin.width, n.sp, beta, alpha,
 \item{transect}{the type of transect. Currently supports line transects (\code{'line'}) or
   circular transects (i.e., point counts; \code{'point'}).}
 
-\item{kappa}{a numeric vector of length \code{n.sp} containing the dispersion parameter for the abundance portion of the N-mixture model for each species. Only relevant when \code{family = 'NB'}.}
+\item{kappa}{a numeric vector of length \code{n.sp} containing the dispersion parameter for the abundance portion of the HDS model for each species. Only relevant when \code{family = 'NB'}.}
 
 \item{mu.RE}{a list used to specify the non-spatial random effects included in the abundance portion of the model. The list must have two tags: \code{levels} and \code{sigma.sq.mu}. \code{levels} is a vector of length equal to the number of distinct random effects to include in the model and contains the number of levels there are in each effect. \code{sigma.sq.mu} is a vector of length equal to the number of distinct random effects to include in the model and contains the variances for each random effect. If not specified, no random effects are included in the abundance portion of the model. An optional third tag, \code{beta.indx}, is a list that contains integers denoting the corresponding value of \code{beta} that each random effect corresponds to. This allows specification of random intercepts as well as slopes. By default, all effects are assumed to be random intercepts.}
 
@@ -67,7 +67,7 @@ simMsDS(J.x, J.y, n.bins, bin.width, n.sp, beta, alpha,
 }
 
 \author{
-  Jeffrey W. Doser \email{doserjef@msu.edu}, \cr
+  Jeffrey W. Doser \email{doserjef@msu.edu} \cr
 }
 
 \value{
@@ -126,7 +126,7 @@ transect <- 'line'
 factor.model <- FALSE
 
 dat <- simMsDS(J.x = J.x, J.y = J.y, n.bins = n.bins, bin.width = bin.width,
-	       n.sp = n.sp, beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
+               n.sp = n.sp, beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
                mu.RE = mu.RE, p.RE = p.RE, sp = sp, cov.model = cov.model,
                sigma.sq = sigma.sq, phi = phi, nu = nu, family = family, 
                offset = offset, transect = transect, factor.model = factor.model)

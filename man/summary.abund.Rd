@@ -7,7 +7,7 @@
 \title{Methods for abund Object}
 
 \description{
-  Methods for extracting information from fitted abundance GLMs (\code{abund}).
+  Methods for extracting information from fitted univariate GLMMs (\code{abund}).
 }
 
 \usage{

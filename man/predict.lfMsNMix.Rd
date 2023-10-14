@@ -8,7 +8,7 @@
 
 \usage{
 \method{predict}{lfMsNMix}(object, X.0, coords.0, ignore.RE = FALSE, 
-                           type = 'abundance', include.w = TRUE, ...)
+        type = 'abundance', include.w = TRUE, ...)
 }
 
 \arguments{
@@ -85,8 +85,8 @@ family <- 'Poisson'
 n.factors <- 3
 
 dat <- simMsNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta, alpha = alpha,
-                sp = FALSE, family = 'Poisson', factor.model = TRUE, 
-                n.factors = n.factors)
+                 sp = FALSE, family = 'Poisson', factor.model = TRUE, 
+                 n.factors = n.factors)
 # Split into fitting and prediction data set
 pred.indx <- sample(1:J, round(J * .25), replace = FALSE)
 y <- dat$y[, -pred.indx, ]
@@ -108,7 +108,7 @@ det.covs <- list(det.cov.1 = X.p[, , 2],
 data.list <- list(y = y, 
                   abund.covs = abund.covs,
                   det.covs = det.covs, 
-		  coords = coords)
+                  coords = coords)
 
 # Occupancy initial values
 prior.list <- list(beta.comm.normal = list(mean = 0, var = 2.72), 
@@ -130,19 +130,19 @@ batch.length <- 25
 accept.rate <- 0.43
 
 out <- lfMsNMix(abund.formula = ~ abund.cov, 
-               det.formula = ~ det.cov.1 + det.cov.2, 
-               data = data.list, 
-               inits = inits.list, 
-	       family = 'Poisson', 
-	       n.factors = n.factors,
-	       n.batch = n.batch,
-	       batch.length = batch.length, 
-	       accept.rate = 0.43,
-	       tuning = tuning,
-               priors = prior.list, 
-               n.omp.threads = 1, 
-               verbose = TRUE, 
-               n.report = 1)
+                det.formula = ~ det.cov.1 + det.cov.2, 
+                data = data.list, 
+                inits = inits.list, 
+                family = 'Poisson', 
+                n.factors = n.factors,
+                n.batch = n.batch,
+                batch.length = batch.length, 
+                accept.rate = 0.43,
+                tuning = tuning,
+                priors = prior.list, 
+                n.omp.threads = 1, 
+                verbose = TRUE, 
+                n.report = 1)
 
 summary(out, level = 'community')
 

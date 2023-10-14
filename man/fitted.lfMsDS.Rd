@@ -5,7 +5,7 @@
 \title{Extract Model Fitted Values for lfMsDS Object}
 
 \description{
-  Method for extracting model fitted values and cell-specific detection probabilities from a latent factor multi-species distance sampling (\code{lfMsDS}) model. 
+  Method for extracting model fitted values and cell-specific detection probabilities from a latent factor multi-species hierarchical distance sampling (\code{lfMsDS}) model. 
 }
 
 \usage{

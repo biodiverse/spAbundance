@@ -8,8 +8,8 @@
 
 \usage{
 \method{predict}{spDS}(object, X.0, coords.0, n.omp.threads = 1, 
-                       verbose = TRUE, n.report = 100, ignore.RE = FALSE, 
-                       type = 'abundance', include.sp = TRUE, ...)
+        verbose = TRUE, n.report = 100, ignore.RE = FALSE, 
+        type = 'abundance', include.sp = TRUE, ...)
 }
 
 \arguments{
@@ -121,12 +121,12 @@ coords.0 <- dat$coords[pred.indx, ]
 
 covs <- cbind(X, X.p)
 colnames(covs) <- c('int.abund', 'abund.cov.1', 'abund.cov.2', 'abund.cov.3', 
-		    'int.det', 'det.cov.1')
+                    'int.det', 'det.cov.1')
 
 data.list <- list(y = y, 
                   covs = covs,
                   dist.breaks = dist.breaks, 
-		  coords = coords,
+                  coords = coords,
                   offset = offset)
 
 # Priors
@@ -155,9 +155,9 @@ out <- spDS(abund.formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3,
             family = 'NB',
             det.func = 'halfnormal', 
             transect = 'point', 
-	    cov.model = 'exponential', 
-	    NNGP = TRUE,
-	    n.neighbors = 5,
+            cov.model = 'exponential', 
+            NNGP = TRUE,
+            n.neighbors = 5,
             tuning = tuning,
             priors = prior.list, 
             accept.rate = 0.43, 

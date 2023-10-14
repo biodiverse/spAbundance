@@ -1,9 +1,9 @@
 \name{simMsAbund}
 \alias{simMsAbund}
-\title{Simulate Multi-Species Count Data without Imperfect Detection}
+\title{Simulate Multivariate Data for Testing GLMMs} 
 
 \description{
-  The function \code{simMsAbund} simulates multi-species count data without imperfect detection for simulation studies, power assessments, or function testing. Data can be optionally simulated with a spatial Gaussian Process in the model, as well as an option to allow for species correlations using a factor modeling approach. Non-spatial random intercepts can also be included in the abundance portions of the model.
+  The function \code{simMsAbund} simulates multivariate data without imperfect detection for simulation studies, power assessments, or function testing related to GLMMs. Data can be optionally simulated with a spatial Gaussian Process in the model, as well as an option to allow for species correlations using a factor modeling approach. Non-spatial random effects can also be included in the abundance portions of the model.
 }
 
 \usage{
@@ -29,7 +29,7 @@ simMsAbund(J.x, J.y, n.rep, n.rep.max, n.sp, beta, kappa, tau.sq, mu.RE = list()
 
 \item{kappa}{a numeric vector of length \code{n.sp} containing the dispersion parameter for the model for each species. Only relevant when \code{family = 'NB'}.}
 
-\item{tau.sq}{a numeric vector of length \code{n.sp} containing the residual variance parameters for the model for each species. Only relevant for Gaussian or Gaussian-hurdle models.}
+\item{tau.sq}{a numeric vector of length \code{n.sp} containing the residual variance parameters for the model for each species. Only relevant for Gaussian or zero-inflated Gaussian models.}
 
 \item{mu.RE}{a list used to specify the non-spatial random intercepts included in the model. The list must have two tags: \code{levels} and \code{sigma.sq.mu}. \code{levels} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the number of levels there are in each intercept. \code{sigma.sq.mu} is a vector of length equal to the number of distinct random intercepts to include in the model and contains the variances for each random effect. If not specified, no random effects are included in the model.}
 
@@ -57,14 +57,13 @@ simMsAbund(J.x, J.y, n.rep, n.rep.max, n.sp, beta, kappa, tau.sq, mu.RE = list()
 \item{family}{the distribution to use for the latent abundance process. Currently
   supports \code{'NB'} (negative binomial) and \code{'Poisson'}.}
 
-\item{z}{a matrix with \code{n.sp} rows and \code{J} columns containing the binary presence/absence portion of a Gaussian-hurdle model for each species. Only relevant when \code{family = 'Gaussian-hurdle'}.}
+\item{z}{a matrix with \code{n.sp} rows and \code{J} columns containing the binary presence/absence portion of a zero-inflated Gaussian model for each species. Only relevant when \code{family = 'zi-Gaussian'}.}
 
 \item{...}{currently no additional arguments}
 }
 
 \author{
-  Jeffrey W. Doser \email{doserjef@msu.edu}, \cr
-  Andrew O. Finley \email{finleya@msu.edu}
+  Jeffrey W. Doser \email{doserjef@msu.edu} \cr
 }
 
 \value{
@@ -72,7 +71,7 @@ simMsAbund(J.x, J.y, n.rep, n.rep.max, n.sp, beta, kappa, tau.sq, mu.RE = list()
 
   \item{X}{a three-dimensional numeric design array of covariates with dimensions corresponding to sites, replicates, and number of covariates (including an intercept) for the model.}
   \item{coords}{a \eqn{J \times 2}{J x 2} numeric matrix of coordinates of each site. Required for spatial models.}
-  \item{w}{a \eqn{N \times J}{N x J} matrix of the spatial random effects for each species. Only used to simulate data when \code{sp = TRUE}. If \code{factor.model = TRUE}, the first dimension is \code{n.factors}.}
+  \item{w}{a list of \eqn{N \times J}{N x J} matrices of the spatially-varying coefficients for each species. Each element of the list corresponds to a different spatially-varying coefficient. Only used to simulate data when \code{sp = TRUE}. If \code{factor.model = TRUE}, the first dimension of each matrix is \code{n.factors}.}
   \item{mu}{a \code{n.sp x J} matrix of the mean abundances for each species at each site.}
   \item{y}{a \code{n.sp x J x max(n.rep)} array of the raw count data for each species at each site and replicate combination. Sites with fewer than \code{max(n.rep)} replicates will contain \code{NA} values.}
   \item{X.re}{a numeric matrix containing the levels of any abundance random effect included in the model. Only relevant when abundance random effects are specified in \code{mu.RE}.}
@@ -92,7 +91,7 @@ p.abund <- length(beta.mean)
 tau.sq.beta <- c(0.2, 1.2)
 # Random effects (two random intercepts)
 mu.RE <- list(levels = c(10, 15),
-	       sigma.sq.mu = c(0.43, 0.5))
+              sigma.sq.mu = c(0.43, 0.5))
 # Draw species-level effects from community means.
 beta <- matrix(NA, nrow = n.sp, ncol = p.abund)
 for (i in 1:p.abund) {
@@ -105,7 +104,7 @@ phi <- runif(n.factors, 3/1, 3 / .1)
 kappa <- runif(n.sp, 0.1, 1)
 
 dat <- simMsAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta,
-	          mu.RE = mu.RE, sp = sp, kappa = kappa, family = 'NB',
+                  mu.RE = mu.RE, sp = sp, kappa = kappa, family = 'NB',
                   factor.model = factor.model, phi = phi,
                   cov.model = 'spherical', n.factors = n.factors)
 }

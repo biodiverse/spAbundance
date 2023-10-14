@@ -1,9 +1,9 @@
 \name{lfMsAbund}
 \alias{lfMsAbund}
-\title{Function for Fitting Latent Factor Multi-Species Abundance GLMs}
+\title{Function for Fitting Latent Factor Multivariate Abundance GLMMs}
 
 \description{
-  Function for fitting multi-species generalized linear (mixed) models with species
+  Function for fitting multivariate generalized linear (mixed) models with species
   correlations (i.e., an abundance-based joint species distribution model). We 
   use a factor modeling approach for dimension reduction.
 }
@@ -24,14 +24,16 @@ lfMsAbund(formula, data, inits, priors, tuning, n.factors,
   and slopes are allowed using lme4 syntax (Bates et al. 2015).}
 
   \item{data}{a list containing data necessary for model fitting.
-    Valid tags are \code{y}, \code{covs}, \code{coords}, and \code{offset}. 
+    Valid tags are \code{y}, \code{covs}, \code{coords}, \code{z}, and \code{offset}. 
     \code{y} is a two or three-dimensional array of observed count data. The
     first dimension of the array is equal to the 
     number of species and the second dimension is equal to the number of sites. If
     specified as a three-dimensional array, the third dimension corresponds to 
     replicate observations at each site (e.g., sub-samples, repeated sampling 
     over multiple seasons). \code{covs} is a list or data frame 
-    containing the variables used in the model. Each list element is a different
+    containing the variables used in the model. If a data frame, each row 
+    of \code{covs} is a site and each column is a variable. 
+    If specified as a list, each list element is a different
     covariate, which can be site-level or observation-level. Site-level covariates
     are specified as a vector of length \eqn{J}{J}, while observation-level covariates
     are specified as a matrix or data frame with the number of rows equal to \eqn{J}{J}
@@ -39,8 +41,8 @@ lfMsAbund(formula, data, inits, priors, tuning, n.factors,
     given site. \code{coords} is a matrix or data frame with two 
     columns that contain the spatial coordinates of each 
     site. Note that \code{spAbundance} assumes coordinates are specified 
-    in a projected coordinate system. For Gaussian hurdle models, the tag \code{z} is used to specify the 
-    binary component of the hurdle model and should have the same dimensions as \code{y}. \code{offset} 
+    in a projected coordinate system. For zi-Gaussian models, the tag \code{z} is used to specify the 
+    binary component of the zi-Gaussian model and should have the same dimensions as \code{y}. \code{offset} 
     is an offset to use in the abundance model (e.g., an area offset). 
     This can be either a single value, a vector with an offset for each site (e.g., if survey 
     area differed in size), or a site x replicate matrix if more than one count is available 
@@ -50,7 +52,7 @@ lfMsAbund(formula, data, inits, priors, tuning, n.factors,
     Valid tags are \code{beta.comm}, \code{beta}, 
     \code{tau.sq.beta}, \code{sigma.sq.mu}, \code{kappa}, \code{lambda}, \code{w}, \code{tau.sq}. 
     \code{kappa} is only specified if \code{family = 'NB'}, \code{tau.sq}
-    is only speified for Gaussian and Gaussian-hurdle models,
+    is only specified for Gaussian and zi-Gaussian models,
     and \code{sigma.sq.mu} is only specified if random effects are included in \code{formula}. 
     The value portion of each tag is 
     the parameter's initial value. See \code{priors} description for definition
@@ -89,7 +91,7 @@ lfMsAbund(formula, data, inits, priors, tuning, n.factors,
   lower and upper bounds of the uniform distribution, respectively, which are each 
   specified as vectors of length equal to the number of species or of length one
   if priors are the same for all species-specific dispersion parameters. \code{tau.sq} is the 
-  species-specific residual variance for Gaussian (or Gaussian hurdle) models, and it is assigned 
+  species-specific residual variance for Gaussian (or zi-Gaussian) models, and it is assigned 
   an inverse-Gamma prior. The hyperparameters of the inverse-Gamma are passed as a list 
   of length two, with the first and second element corresponding to the shape and 
   scale parameters, respectively, which are each specified as vectors of length
@@ -100,7 +102,7 @@ lfMsAbund(formula, data, inits, priors, tuning, n.factors,
   Valid tags are \code{beta}, \code{beta.star} (the abundance
   random effect values), \code{kappa}, \code{lambda} (the latent factor loadings), 
   and \code{w} (the latent factors). See Roberts and Rosenthal (2009) for details. 
-  Note that no tuning is necessary for Gaussian or Gaussian hurdle models.}
+  Note that no tuning is necessary for Gaussian or zi-Gaussian models.}
 
 \item{n.factors}{the number of factors to use in the latent factor model approach.
     Typically, the number of factors is set to be small (e.g., 4-5) relative to the
@@ -108,18 +110,18 @@ lfMsAbund(formula, data, inits, priors, tuning, n.factors,
     decreases in computation time. However, the value can be anywhere
     between 1 and N (the number of species in the community).}
 
-  \item{n.batch}{the number of MCMC batches  in each chain to run for the Adaptive MCMC 
+  \item{n.batch}{the number of MCMC batches  in each chain to run for the adaptive MCMC 
     sampler. See Roberts and Rosenthal (2009) for details.}
   
-  \item{batch.length}{the length of each MCMC batch to run for the Adaptive 
+  \item{batch.length}{the length of each MCMC batch to run for the adaptive 
     MCMC sampler. See Roberts and Rosenthal (2009) for details.}
   
-  \item{accept.rate}{target acceptance rate for Adaptive MCMC. Defaul is 
+  \item{accept.rate}{target acceptance rate for adaptive MCMC. Defaul is 
     0.43. See Roberts and Rosenthal (2009) for details.}
 
   \item{family}{the distribution to use for the latent abundance process. Currently 
     supports \code{'NB'} (negative binomial), \code{'Poisson'}, \code{'Gaussian'}, 
-    and \code{'Gaussian-hurdle'}.} 
+    and \code{'zi-Gaussian'}.} 
   
   \item{n.omp.threads}{a positive integer indicating
    the number of threads to use for SMP parallel processing. The package must
@@ -189,13 +191,14 @@ lfMsAbund(formula, data, inits, priors, tuning, n.factors,
 
   \item{tau.sq.samples}{a \code{coda} object of posterior samples
     for the Gaussian residual variance parameter. Only included when
-    \code{family = 'Gaussian'} or \code{family = 'Gaussian-hurdle'}.}
+    \code{family = 'Gaussian'} or \code{family = 'zi-Gaussian'}.}
 
   \item{lambda.samples}{a \code{coda} object of posterior samples
     for the latent factor loadings.}
 
   \item{w.samples}{a three-dimensional array of posterior samples for 
-    the latent effects for each latent factor.}
+    the latent effects for each latent factor. Array dimensions correspond
+    to MCMC sample, latent factor, then site.}
 
   \item{y.rep.samples}{a three or four-dimensional array of posterior samples for
     the fitted (replicate) values for each species with dimensions corresponding
@@ -242,7 +245,7 @@ p.abund <- length(beta.mean)
 tau.sq.beta <- c(0.2, 1.2)
 # Random effects (two random intercepts)
 mu.RE <- list(levels = c(10, 15),
-	       sigma.sq.mu = c(0.43, 0.5))
+              sigma.sq.mu = c(0.43, 0.5))
 # Draw species-level effects from community means.
 beta <- matrix(NA, nrow = n.sp, ncol = p.abund)
 for (i in 1:p.abund) {
@@ -253,8 +256,9 @@ kappa <- runif(n.sp, 0.1, 1)
 factor.model <- TRUE
 n.factors <- 3
 
-dat <- simMsAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta,
-	          mu.RE = mu.RE, sp = sp, kappa = kappa, family = 'NB')
+dat <- simMsAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, 
+                  n.sp = n.sp, beta = beta, mu.RE = mu.RE, 
+                  sp = sp, kappa = kappa, family = 'NB')
 
 y <- dat$y
 X <- dat$X
@@ -263,19 +267,15 @@ coords <- dat$coords
 
 # Package all data into a list
 covs <- list(int = X[, , 1],
-		   abund.cov.1 = X[, , 2],
-		   abund.factor.1 = X.re[, , 1],
-		   abund.factor.2 = X.re[, , 2])
-data.list <- list(y = y,
-		  covs = covs, 
-                  coords = coords)
+             abund.cov.1 = X[, , 2],
+             abund.factor.1 = X.re[, , 1],
+             abund.factor.2 = X.re[, , 2])
+data.list <- list(y = y, covs = covs, coords = coords)
 prior.list <- list(beta.comm.normal = list(mean = 0, var = 100),
                    kappa.unif = list(a = 0, b = 10),
                    tau.sq.beta.ig = list(a = .1, b = .1))
-inits.list <- list(beta.comm = 0,
-		   beta = 0,
-		   kappa = 0.5,
-		   tau.sq.beta = 1)
+inits.list <- list(beta.comm = 0, beta = 0, kappa = 0.5,
+                   tau.sq.beta = 1)
 tuning.list <- list(kappa = 0.3, beta = 0.1, beta.star = 0.1, 
                     lambda = 0.5, w = 0.5)
 
@@ -286,19 +286,20 @@ n.burn <- 20
 n.thin <- 1
 n.chains <- 1
 
-out <- lfMsAbund(formula = ~ abund.cov.1 + (1 | abund.factor.1) + (1 | abund.factor.2),
-	         data = data.list,
-	         n.batch = n.batch,
-	         inits = inits.list,
-	         priors = prior.list,
-	         tuning = tuning.list,
-	         batch.length = batch.length,
-		 n.factors = n.factors,
-	         n.omp.threads = 3,
-	         verbose = TRUE,
-	         n.report = 1,
-	         n.burn = n.burn,
-	         n.thin = n.thin,
-	         n.chains = n.chains)
+out <- lfMsAbund(formula = ~ abund.cov.1 + (1 | abund.factor.1) + 
+                             (1 | abund.factor.2),
+                 data = data.list,
+                 n.batch = n.batch,
+                 inits = inits.list,
+                 priors = prior.list,
+                 tuning = tuning.list,
+                 batch.length = batch.length,
+                 n.factors = n.factors,
+                 n.omp.threads = 3,
+                 verbose = TRUE,
+                 n.report = 1,
+                 n.burn = n.burn,
+                 n.thin = n.thin,
+                 n.chains = n.chains)
 summary(out)
 }

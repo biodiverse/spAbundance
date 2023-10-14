@@ -5,7 +5,7 @@
 \title{Extract Model Fitted Values for spDS Object}
 
 \description{
-  Method for extracting model fitted values and cell-specific detection probabilities from a spatial distance sampling (\code{spDS}) model. 
+  Method for extracting model fitted values and cell-specific detection probabilities from a spatial hierarchical distance sampling (\code{spDS}) model. 
 }
 
 \usage{

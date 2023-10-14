@@ -40,7 +40,7 @@ data(hbefCount2015)
    \code{y}: a three-dimensional array of count data with 
      dimensions of species (12), sites (373) and replicates (3). 
 
-   \code{abund.covs}: a numeric matrix with 373 rows and one column consisting of the 
+   \code{abund.covs}: a data frame with 373 rows and one column consisting of the 
      elevation at each site.
 
    \code{det.covs}: a list of two numeric matrices with 373 rows and 3 columns. 

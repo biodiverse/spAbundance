@@ -5,7 +5,7 @@
 \title{Extract Model Fitted Values for lfMsAbund Object}
 
 \description{
-  Method for extracting model fitted values from a fitted latent factor multi-species abundance GLM (\code{lfMsAbund}). 
+  Method for extracting model fitted values from a fitted latent factor multivariate GLMM (\code{lfMsAbund}). 
 }
 
 \usage{

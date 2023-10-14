@@ -34,10 +34,10 @@ lfMsDS(abund.formula, det.formula, data, inits, priors,
   of species, second dimension equal to the number of sites, and third 
   dimension equal to the maximum number of replicates at a given site. 
   \code{covs} is a matrix or data frame containing the variables 
-  used in the the abundance and/or the detection portion of the model, with
+  used in the abundance and/or the detection portion of the model, with
   \eqn{J}{J} rows for each column (variable). \code{dist.breaks} is a vector of 
   distances that denote the breakpoints of the distance bands. \code{dist.breaks} should
-  have length equal to the number of columns in \code{y} plus one. \code{offset} is an 
+  have length equal to the third dimension of \code{y} plus one. \code{offset} is an 
   offset that can be used to scale estimates from abundance per transect to density per 
   some desired unit of measure. This can be either a single value or a vector with an offset
   value for each site (e.g., if transects differ in length). \code{coords} is a matrix
@@ -93,7 +93,7 @@ lfMsDS(abund.formula, det.formula, data, inits, priors,
   if priors are the same for all species-specific dispersion parameters.}
 
 \item{tuning}{a list with each tag corresponding to a parameter name, whose
-  whose value defines the initial variance of the adaptive sampler. 
+  value defines the initial variance of the adaptive sampler. 
   Valid tags are \code{beta}, \code{alpha}, \code{lambda} (the latent factor loadings), 
   \code{w} (the latent factors), \code{beta.star} (the abundance 
   random effect values), \code{alpha.star} (the detection random effect values), and 
@@ -204,12 +204,13 @@ lfMsDS(abund.formula, det.formula, data, inits, priors,
   \item{N.samples}{a three-dimensional array of posterior samples for
     the latent abundance values for each species. Note that these values
     always represent transect-level abundance, even when an offset is 
-    supplied.}
+    supplied. Array dimensions correspond to MCMC sample, species, and site.}
 
   \item{mu.samples}{a three-dimensional array of posterior samples for
     the latent expected abundance values for each species. When an offset
     is supplied in the \code{data} object, these correspond to expected
-    abundance per unit area (i.e., density).}
+    abundance per unit area (i.e., density). Array dimensions correspond to 
+    MCMC sample, species, and site.}
 
   \item{sigma.sq.mu.samples}{a \code{coda} object of posterior samples
     for variances of random effects included in the abundance portion
@@ -288,7 +289,7 @@ factor.model <- TRUE
 n.factors <- 3
 
 dat <- simMsDS(J.x = J.x, J.y = J.y, n.bins = n.bins, bin.width = bin.width,
-	       n.sp = n.sp, beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
+               n.sp = n.sp, beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
                mu.RE = mu.RE, p.RE = p.RE, sp = sp, cov.model = cov.model,
                sigma.sq = sigma.sq, phi = phi, nu = nu, family = family, 
                offset = offset, transect = transect, factor.model = factor.model, 
@@ -302,24 +303,23 @@ dist.breaks <- dat$dist.breaks
 
 covs <- cbind(X, X.p)
 colnames(covs) <- c('int.abund', 'abund.cov.1', 'abund.cov.2', 'abund.cov.3', 
-		    'int.det', 'det.cov.1')
+                    'int.det', 'det.cov.1')
 
 data.list <- list(y = y, 
-		  covs = covs,
- 		  dist.breaks = dist.breaks, 
-		  coords = coords,
+                  covs = covs,
+                  dist.breaks = dist.breaks, 
+                  coords = coords,
                   offset = offset)
 
 # Priors
 prior.list <- list(beta.comm.normal = list(mean = 0, var = 10),
-		   alpha.comm.normal = list(mean = 0,
-			               var = 10), 
+                   alpha.comm.normal = list(mean = 0, var = 10), 
                    kappa.unif = list(0, 100), 
                    tau.sq.beta.ig = list(a = 0.1, b = 0.1),
                    tau.sq.alpha.ig = list(a = 0.1, b = 0.1)) 
 # Starting values
 inits.list <- list(alpha.comm = 0, beta.comm = 0, beta = 0,
-		   alpha = 0, kappa = 1)
+                   alpha = 0, kappa = 1)
 
 tuning <- list(beta = 0.1, alpha = 0.1, beta.star = 0.3, alpha.star = 0.1, 
                kappa = 0.8, lambda = 1, w = 1) 
@@ -331,23 +331,23 @@ n.thin <- 1
 n.chains <- 1
 
 out <- lfMsDS(abund.formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3,
-	    det.formula = ~ det.cov.1,
-	    data = data.list, 
-	    n.batch = n.batch, 
-	    batch.length = batch.length, 
-	    inits = inits.list, 
-	    family = 'Poisson',
-	    det.func = 'halfnormal', 
-	    transect = transect, 
-	    tuning = tuning,
-	    n.factors = n.factors,
-	    priors = prior.list, 
-	    accept.rate = 0.43, 
-	    n.omp.threads = 1, 
-	    verbose = TRUE, 
-	    n.report = 10,
-	    n.burn = n.burn,
-	    n.thin = n.thin,
-	    n.chains = n.chains) 
+	      det.formula = ~ det.cov.1,
+	      data = data.list, 
+	      n.batch = n.batch, 
+	      batch.length = batch.length, 
+	      inits = inits.list, 
+	      family = 'Poisson',
+	      det.func = 'halfnormal', 
+	      transect = transect, 
+	      tuning = tuning,
+	      n.factors = n.factors,
+	      priors = prior.list, 
+	      accept.rate = 0.43, 
+	      n.omp.threads = 1, 
+	      verbose = TRUE, 
+	      n.report = 10,
+	      n.burn = n.burn,
+	      n.thin = n.thin,
+	      n.chains = n.chains) 
 summary(out, level = 'community')
 }

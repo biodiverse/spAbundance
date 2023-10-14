@@ -1,15 +1,15 @@
 \name{simAbund}
 \alias{simAbund}
-\title{Simulate Single-Species Count Data without Imperfect Detection}
+\title{Simulate Univariate Data for Testing GLMMs}
 
 \description{
-  The function \code{simAbund} simulates single-species count data without imperfect detection for simulation studies, power assessments, or function testing. Data can be optionally simulated with a spatial Gaussian Process in the model. Non-spatial random intercepts can also be included in the model.
+  The function \code{simAbund} simulates univariate data without imperfect detection for simulation studies, power assessments, or function testing related to GLMMs. Data can be optionally simulated with a spatial Gaussian Process in the model. Non-spatial random effects can also be included in the model.
 }
 
 \usage{
 simAbund(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = list(), 
-       offset = 1, sp = FALSE, svc.cols = 1, cov.model, sigma.sq, phi, nu, 
-       family = 'Poisson', z, x.positive = FALSE, ...)
+         offset = 1, sp = FALSE, svc.cols = 1, cov.model, sigma.sq, phi, nu, 
+         family = 'Poisson', z, x.positive = FALSE, ...)
 }
 
 \arguments{
@@ -58,8 +58,7 @@ simAbund(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = list(),
 }
 
 \author{
-  Jeffrey W. Doser \email{doserjef@msu.edu}, \cr
-  Andrew O. Finley \email{finleya@msu.edu}
+  Jeffrey W. Doser \email{doserjef@msu.edu} \cr
 }
 
 \value{
@@ -67,7 +66,7 @@ simAbund(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = list(),
 
   \item{X}{a three-dimensional numeric design array of covariates with dimensions corresponding to sites, replicates, and number of covariates (including an intercept) for the model.}
   \item{coords}{a \eqn{J \times 2}{J x 2} numeric matrix of coordinates of each site. Required for spatial models.}
-  \item{w}{a \eqn{J \times 1}{J x 1} matrix of the spatial random effects. Only used to simulate data when \code{sp = TRUE}.}
+  \item{w}{a matrix of the spatial random effects. Only used to simulate data when \code{sp = TRUE}. If simulating data with spatially-varying coefficients, the number of columns equals the number of spatially-varying coefficients and each row corresponds to a site.}
   \item{mu}{a \code{J x max(n.rep)} matrix of the expected abundance values for each site and replicate survey.}
   \item{y}{a \code{J x max(n.rep)} matrix of the raw count data for each site and replicate combination.}
   \item{X.re}{a numeric three-dimensional array containing the levels of any abundance random effect included in the model. Only relevant when abundance random effects are specified in \code{mu.RE}.}
@@ -82,11 +81,10 @@ J <- J.x * J.y
 n.rep <- sample(3, J, replace = TRUE)
 beta <- c(0, -1.5, 0.3, -0.8)
 p.abund <- length(beta)
-mu.RE <- list(levels = c(30),
-	       sigma.sq.mu = c(1.3))
+mu.RE <- list(levels = c(30), sigma.sq.mu = c(1.3))
 kappa <- 0.5
 sp <- FALSE 
 family <- 'NB'
 dat <- simAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta, 
-	        kappa = kappa, mu.RE = mu.RE, sp = sp, family = 'NB')
+                kappa = kappa, mu.RE = mu.RE, sp = sp, family = 'NB')
 }

@@ -7,7 +7,7 @@
 \title{Methods for sfMsAbund Object}
 
 \description{
-  Methods for extracting information from fitted spatial factor multi-species abundance GLMs (\code{sfMsAbund}).
+  Methods for extracting information from fitted spatial factor multivariate abundance GLMMs (\code{sfMsAbund}).
 }
 
 \usage{

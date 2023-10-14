@@ -8,7 +8,7 @@
 
 \usage{
 \method{predict}{lfMsDS}(object, X.0, coords.0, ignore.RE = FALSE, 
-                         type = 'abundance', include.w = TRUE, ...)
+        type = 'abundance', include.w = TRUE, ...)
 }
 
 \arguments{
@@ -98,7 +98,7 @@ factor.model <- TRUE
 n.factors <- 3
 
 dat <- simMsDS(J.x = J.x, J.y = J.y, n.bins = n.bins, bin.width = bin.width,
-	       n.sp = n.sp, beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
+               n.sp = n.sp, beta = beta, alpha = alpha, det.func = det.func, kappa = kappa, 
                mu.RE = mu.RE, p.RE = p.RE, sp = sp, cov.model = cov.model,
                sigma.sq = sigma.sq, phi = phi, nu = nu, family = family, 
                offset = offset, transect = transect, factor.model = factor.model, 
@@ -120,24 +120,24 @@ dist.breaks <- dat$dist.breaks
 
 covs <- cbind(X, X.p)
 colnames(covs) <- c('int.abund', 'abund.cov.1', 'abund.cov.2', 'abund.cov.3', 
-		    'int.det', 'det.cov.1')
+                    'int.det', 'det.cov.1')
 
 data.list <- list(y = y, 
-		  covs = covs,
- 		  dist.breaks = dist.breaks, 
-		  coords = coords,
+                  covs = covs,
+                  dist.breaks = dist.breaks, 
+                  coords = coords,
                   offset = offset)
 
 # Priors
 prior.list <- list(beta.comm.normal = list(mean = 0, var = 10),
-		   alpha.comm.normal = list(mean = 0,
-			               var = 10), 
+                   alpha.comm.normal = list(mean = 0,
+                                            var = 10), 
                    kappa.unif = list(0, 100), 
                    tau.sq.beta.ig = list(a = 0.1, b = 0.1),
                    tau.sq.alpha.ig = list(a = 0.1, b = 0.1)) 
 # Starting values
 inits.list <- list(alpha.comm = 0, beta.comm = 0, beta = 0,
-		   alpha = 0, kappa = 1)
+                   alpha = 0, kappa = 1)
 
 tuning <- list(beta = 0.1, alpha = 0.1, beta.star = 0.3, alpha.star = 0.1, 
                kappa = 0.8, lambda = 1, w = 1) 
@@ -149,24 +149,24 @@ n.thin <- 1
 n.chains <- 1
 
 out <- lfMsDS(abund.formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3,
-	    det.formula = ~ det.cov.1,
-	    data = data.list, 
-	    n.batch = n.batch, 
-	    batch.length = batch.length, 
-	    inits = inits.list, 
-	    family = 'Poisson',
-	    det.func = 'halfnormal', 
-	    transect = transect, 
-	    tuning = tuning,
-	    n.factors = n.factors,
-	    priors = prior.list, 
-	    accept.rate = 0.43, 
-	    n.omp.threads = 1, 
-	    verbose = TRUE, 
-	    n.report = 10,
-	    n.burn = n.burn,
-	    n.thin = n.thin,
-	    n.chains = n.chains) 
+              det.formula = ~ det.cov.1,
+              data = data.list, 
+              n.batch = n.batch, 
+              batch.length = batch.length, 
+              inits = inits.list, 
+              family = 'Poisson',
+              det.func = 'halfnormal', 
+              transect = transect, 
+              tuning = tuning,
+              n.factors = n.factors,
+              priors = prior.list, 
+              accept.rate = 0.43, 
+              n.omp.threads = 1, 
+              verbose = TRUE, 
+              n.report = 10,
+              n.burn = n.burn,
+              n.thin = n.thin,
+              n.chains = n.chains) 
 summary(out, level = 'community')
 
 # Predict at new locations ------------------------------------------------

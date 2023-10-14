@@ -1,6 +1,6 @@
 \name{predict.abund}
 \alias{predict.abund}
-\title{Function for prediction at new locations for single-species abundance GLMs}
+\title{Function for prediction at new locations for univariate GLMMs}
 
 \description{
   The function \code{predict} collects posterior predictive samples for a set of new locations given an object of class `abund`.  
@@ -37,7 +37,7 @@
   \item{mu.0.samples}{a three-dimensional object of posterior predictive samples for the
     expected abundance values with dimensions corresponding to posterior predictive
     sample, site, and replicate. When there is no replication, this will be a two-dimensional
-    matrix. Note if an offset was used when fitting the model with \code{abund}, thes abundance
+    matrix. Note if an offset was used when fitting the model with \code{abund}, the abundance
     values are reported per unit of the offset.}
 
   \item{y.0.samples}{a three-dimensional object of posterior predictive samples for the
@@ -62,7 +62,7 @@ kappa <- 0.5
 sp <- FALSE 
 family <- 'NB'
 dat <- simAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta, 
-	        kappa = kappa, mu.RE = mu.RE, sp = sp, family = 'NB')
+                kappa = kappa, mu.RE = mu.RE, sp = sp, family = 'NB')
 
 # Split into fitting and prediction data set
 pred.indx <- sample(1:J, round(J * .25), replace = FALSE)
@@ -75,9 +75,9 @@ coords <- as.matrix(dat$coords[-pred.indx, ])
 coords.0 <- as.matrix(dat$coords[pred.indx, ])
 
 abund.covs <- list(int = X[, , 1], 
-		   abund.cov.1 = X[, , 2], 
-		   abund.cov.2 = X[, , 3], 
-		   abund.cov.3 = X[, , 4])
+                   abund.cov.1 = X[, , 2], 
+                   abund.cov.2 = X[, , 3], 
+                   abund.cov.3 = X[, , 4])
 
 data.list <- list(y = y, covs = abund.covs)
 
@@ -85,8 +85,7 @@ data.list <- list(y = y, covs = abund.covs)
 prior.list <- list(beta.normal = list(mean = 0, var = 100),
                    kappa.unif = c(0.001, 10)) 
 # Starting values
-inits.list <- list(beta = 0,
-		   kappa = kappa)
+inits.list <- list(beta = 0, kappa = kappa)
 
 n.batch <- 5
 batch.length <- 25
@@ -95,18 +94,18 @@ n.thin <- 1
 n.chains <- 1
 
 out <- abund(formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3,
-	     data = data.list, 
-	     n.batch = n.batch, 
-	     batch.length = batch.length, 
-	     inits = inits.list, 
-	     priors = prior.list, 
-	     accept.rate = 0.43, 
-	     n.omp.threads = 1, 
-	     verbose = TRUE, 
-	     n.report = 1,
-	     n.burn = n.burn,
-	     n.thin = n.thin,
-	     n.chains = n.chains) 
+             data = data.list, 
+             n.batch = n.batch, 
+             batch.length = batch.length, 
+             inits = inits.list, 
+             priors = prior.list, 
+             accept.rate = 0.43, 
+             n.omp.threads = 1, 
+             verbose = TRUE, 
+             n.report = 1,
+             n.burn = n.burn,
+             n.thin = n.thin,
+             n.chains = n.chains) 
 
 # Predict at new locations ------------------------------------------------
 colnames(X.0) <- c('intercept', 'abund.cov', 'abund.cov.2', 'abund.cov.3')

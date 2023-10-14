@@ -27,7 +27,7 @@ abundance data for the posterior predictive check. Value
 1 will group values by row (site), and value 2 will group values by 
 column (replicate).} 
 
-\item{type}{a character string indicating whether fitted values should be generated conditional on the estimated latent abundance values (\code{type = 'conditional'}) estimated during the model or based on the marginal expected abundance values (\code{type = 'marginal'}).}
+\item{type}{a character string indicating whether fitted values should be generated conditional on the estimated latent abundance values (\code{type = 'conditional'}) estimated during the model or based on the marginal expected abundance values (\code{type = 'marginal'}). This is only relevant for N-mixture models.}
 
 \item{...}{currently no additional arguments}
 }
@@ -107,7 +107,7 @@ sp <- FALSE
 cov.model <- 'exponential'
 dist <- 'NB'
 dat <- simNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta, alpha = alpha,
-	       kappa = kappa, mu.RE = mu.RE, p.RE = p.RE, sp = sp, 
+               kappa = kappa, mu.RE = mu.RE, p.RE = p.RE, sp = sp, 
                phi = phi, sigma.sq = sigma.sq, cov.model = cov.model, 
                family = 'NB')
 
@@ -118,24 +118,20 @@ X.p <- dat$X.p
 abund.covs <- X
 colnames(abund.covs) <- c('int', 'abund.cov.1')
 
-det.covs <- list(det.cov.1 = X.p[, , 2], 
-		 det.cov.2 = X.p[, , 3])
+det.covs <- list(det.cov.1 = X.p[, , 2], det.cov.2 = X.p[, , 3])
 
-data.list <- list(y = y, 
-		  abund.covs = abund.covs,
-		  det.covs = det.covs)
+data.list <- list(y = y, abund.covs = abund.covs,
+                  det.covs = det.covs)
 
 # Priors
 prior.list <- list(beta.normal = list(mean = rep(0, p.abund), 
-				      var = rep(100, p.abund)),
-		   alpha.normal = list(mean = rep(0, p.det),
-			               var = rep(2.72, p.det)), 
+                                      var = rep(100, p.abund)),
+                   alpha.normal = list(mean = rep(0, p.det),
+                                       var = rep(2.72, p.det)), 
                    kappa.unif = c(0, 10)) 
 # Starting values
-inits.list <- list(alpha = 0,
-		   beta = 0,
-		   kappa = kappa, 
-		   N = apply(y, 1, max, na.rm = TRUE))
+inits.list <- list(alpha = 0, beta = 0, kappa = kappa, 
+                   N = apply(y, 1, max, na.rm = TRUE))
 
 
 tuning <- 0.5
@@ -146,19 +142,19 @@ n.thin <- 1
 n.chains <- 1
 
 out <- NMix(abund.formula = ~ abund.cov.1,
-	    det.formula = ~ det.cov.1 + det.cov.2, 
-	    data = data.list, 
-	    n.batch = n.batch, 
-	    batch.length = batch.length, 
-	    inits = inits.list, 
-	    priors = prior.list, 
-	    accept.rate = 0.43, 
-	    n.omp.threads = 1, 
-	    verbose = TRUE, 
-	    n.report = 1,
-	    n.burn = n.burn,
-	    n.thin = n.thin,
-	    n.chains = n.chains) 
+            det.formula = ~ det.cov.1 + det.cov.2, 
+            data = data.list, 
+            n.batch = n.batch, 
+            batch.length = batch.length, 
+            inits = inits.list, 
+            priors = prior.list, 
+            accept.rate = 0.43, 
+            n.omp.threads = 1, 
+            verbose = TRUE, 
+            n.report = 1,
+            n.burn = n.burn,
+            n.thin = n.thin,
+            n.chains = n.chains) 
 
 # Posterior predictive check
 ppc.out <- ppcAbund(out, fit.stat = 'chi-squared', group = 0)

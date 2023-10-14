@@ -5,7 +5,7 @@
 \title{Extract Model Fitted Values for abund Object}
 
 \description{
-  Method for extracting model fitted values from a fitted generalized linear abundance (\code{abund}) model. 
+  Method for extracting model fitted values from a fitted GLMM (\code{abund}). 
 }
 
 \usage{

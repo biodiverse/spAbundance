@@ -7,8 +7,7 @@
 }
 
 \usage{
-\method{predict}{msNMix}(object, X.0, ignore.RE = FALSE, type = 'abundance', 
-                         ...)
+\method{predict}{msNMix}(object, X.0, ignore.RE = FALSE, type = 'abundance', ...)
 }
 
 \arguments{
@@ -80,7 +79,7 @@ for (i in 1:p.det) {
 family <- 'Poisson'
 
 dat <- simMsNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta, alpha = alpha,
-                sp = FALSE, family = 'Poisson')
+                 sp = FALSE, family = 'Poisson')
 # Split into fitting and prediction data set
 pred.indx <- sample(1:J, round(J * .25), replace = FALSE)
 y <- dat$y[, -pred.indx, ]
@@ -120,18 +119,18 @@ batch.length <- 25
 accept.rate <- 0.43
 
 out <- msNMix(abund.formula = ~ abund.cov, 
-               det.formula = ~ det.cov.1 + det.cov.2, 
-               data = data.list, 
-               inits = inits.list, 
-	       family = 'Poisson', 
-	       n.batch = n.batch,
-	       batch.length = batch.length, 
-	       accept.rate = 0.43,
-	       tuning = tuning,
-               priors = prior.list, 
-               n.omp.threads = 1, 
-               verbose = TRUE, 
-               n.report = 1)
+              det.formula = ~ det.cov.1 + det.cov.2, 
+              data = data.list, 
+              inits = inits.list, 
+              family = 'Poisson', 
+              n.batch = n.batch,
+              batch.length = batch.length, 
+              accept.rate = 0.43,
+              tuning = tuning,
+              priors = prior.list, 
+              n.omp.threads = 1, 
+              verbose = TRUE, 
+              n.report = 1)
 
 summary(out, level = 'community')
 

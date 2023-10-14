@@ -7,7 +7,7 @@
 \title{Methods for svcAbund Object}
 
 \description{
-  Methods for extracting information from fitted spatially-varying coefficient abundance GLMs (\code{svcAbund}).
+  Methods for extracting information from fitted univariate spatially-varying coefficient GLMMs (\code{svcAbund}).
 }
 
 \usage{

@@ -18,7 +18,7 @@ waicAbund(object, N.max, by.species = FALSE, ...)
   \code{msDS}, \code{lfMsDS}, \code{sfMsDS}.}
 
   \item{N.max}{values indicating the upper limit on the latent abundance 
-  values when calculating WAIC for N-mixture models or distance sampling models. 
+  values when calculating WAIC for N-mixture models or hierarchical distance sampling models. 
   For single-species models, this can be a single value or a vector of 
   different values for each site. For multi-species models, this can be a 
   single value, a vector of values for each species, or a species by site matrix
@@ -36,11 +36,11 @@ waicAbund(object, N.max, by.species = FALSE, ...)
 }
 
 \note{
-  When fitting Gaussian-hurdle models, the WAIC is only calculated for the 
-  values that are past the hurdle. If fitting a first stage model with 
+  When fitting zero-inflated Gaussian models, the WAIC is only calculated for the 
+  non-zero values. If fitting a first stage model with 
   \code{spOccupancy} to the binary portion of the 
-  hurdle model, you can use the \code{spOccupancy::waicOcc} function to 
-  calculate WAIC for the binary portion of the hurdle model. 
+  zero-inflated model, you can use the \code{spOccupancy::waicOcc} function to 
+  calculate WAIC for the binary component. 
 }
 
 \references{
@@ -83,33 +83,30 @@ J <- J.x * J.y
 n.rep <- sample(3, J, replace = TRUE)
 beta <- c(0, -1.5, 0.3, -0.8)
 p.abund <- length(beta)
-mu.RE <- list(levels = c(30),
-	       sigma.sq.mu = c(1.3))
+mu.RE <- list(levels = c(30), sigma.sq.mu = c(1.3))
 kappa <- 0.5
 sp <- FALSE 
 family <- 'NB'
 dat <- simAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta, 
-	        kappa = kappa, mu.RE = mu.RE, sp = sp, family = 'NB')
+                kappa = kappa, mu.RE = mu.RE, sp = sp, family = 'NB')
 
 y <- dat$y
 X <- dat$X
 X.re <- dat$X.re
 
 abund.covs <- list(int = X[, , 1], 
-		   abund.cov.1 = X[, , 2], 
-		   abund.cov.2 = X[, , 3], 
-		   abund.cov.3 = X[, , 4],
-		   abund.factor.1 = X.re[, , 1])
+                   abund.cov.1 = X[, , 2], 
+                   abund.cov.2 = X[, , 3], 
+                   abund.cov.3 = X[, , 4],
+                   abund.factor.1 = X.re[, , 1])
 
-data.list <- list(y = y, 
-		  covs = abund.covs)
+data.list <- list(y = y, covs = abund.covs)
 
 # Priors
 prior.list <- list(beta.normal = list(mean = 0, var = 100),
                    kappa.unif = c(0.001, 10)) 
 # Starting values
-inits.list <- list(beta = 0,
-		   kappa = kappa)
+inits.list <- list(beta = 0, kappa = kappa)
 
 n.batch <- 5
 batch.length <- 25
@@ -117,19 +114,20 @@ n.burn <- 0
 n.thin <- 1
 n.chains <- 1
 
-out <- abund(formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3 + (1 | abund.factor.1),
-	     data = data.list, 
-	     n.batch = n.batch, 
-	     batch.length = batch.length, 
-	     inits = inits.list, 
-	     priors = prior.list, 
-	     accept.rate = 0.43, 
-	     n.omp.threads = 1, 
-	     verbose = TRUE, 
-	     n.report = 1,
-	     n.burn = n.burn,
-	     n.thin = n.thin,
-	     n.chains = n.chains) 
+out <- abund(formula = ~ abund.cov.1 + abund.cov.2 + abund.cov.3 + 
+                         (1 | abund.factor.1),
+             data = data.list, 
+             n.batch = n.batch, 
+             batch.length = batch.length, 
+             inits = inits.list, 
+             priors = prior.list, 
+             accept.rate = 0.43, 
+             n.omp.threads = 1, 
+             verbose = TRUE, 
+             n.report = 1,
+             n.burn = n.burn,
+             n.thin = n.thin,
+             n.chains = n.chains) 
 
 # Calculate WAIC
 waicAbund(out)

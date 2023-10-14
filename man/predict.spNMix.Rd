@@ -8,8 +8,8 @@
 
 \usage{
 \method{predict}{spNMix}(object, X.0, coords.0, n.omp.threads = 1, 
-                         verbose = TRUE, n.report = 100, ignore.RE = FALSE, 
-                         type = 'abundance', include.sp = TRUE, ...)
+        verbose = TRUE, n.report = 100, ignore.RE = FALSE, 
+        type = 'abundance', include.sp = TRUE, ...)
 }
 
 \arguments{
@@ -92,7 +92,7 @@ kappa <- 0.5
 sp <- TRUE
 cov.model <- 'exponential'
 dat <- simNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta, alpha = alpha,
-	       kappa = kappa, mu.RE = mu.RE, p.RE = p.RE, sp = sp,
+               kappa = kappa, mu.RE = mu.RE, p.RE = p.RE, sp = sp,
                phi = phi, sigma.sq = sigma.sq, cov.model = cov.model,
                family = 'NB')
 
@@ -113,27 +113,26 @@ w.0 <- dat$w[pred.indx]
 abund.covs <- X
 colnames(abund.covs) <- c('int', 'abund.cov.1')
 
-det.covs <- list(det.cov.1 = X.p[, , 2],
-		 det.cov.2 = X.p[, , 3])
+det.covs <- list(det.cov.1 = X.p[, , 2], det.cov.2 = X.p[, , 3])
 
 data.list <- list(y = y,
-		  abund.covs = abund.covs,
-		  det.covs = det.covs,
+                  abund.covs = abund.covs,
+                  det.covs = det.covs,
                   coords = coords)
 
 # Priors
 prior.list <- list(beta.normal = list(mean = rep(0, p.abund),
-				      var = rep(100, p.abund)),
-		   alpha.normal = list(mean = rep(0, p.det),
-			               var = rep(2.72, p.det)),
+                                      var = rep(100, p.abund)),
+                   alpha.normal = list(mean = rep(0, p.det),
+                                       var = rep(2.72, p.det)),
                    kappa.unif = c(0, 10))
 # Starting values
 inits.list <- list(alpha = alpha,
-		   beta = beta,
-		   kappa = kappa,
-		   phi = 3 / 0.5,
-		   sigma.sq = 1,
-		   N = apply(y, 1, max, na.rm = TRUE))
+                   beta = beta,
+                   kappa = kappa,
+                   phi = 3 / 0.5,
+                   sigma.sq = 1,
+                   N = apply(y, 1, max, na.rm = TRUE))
 # Tuning values
 tuning.list <- list(phi = 0.5, kappa = 0.5, beta = 0.1, alpha = 0.1, w = 0.1)
 
@@ -145,22 +144,22 @@ n.thin <- 1
 n.chains <- 1
 
 out <- spNMix(abund.formula = ~ abund.cov.1,
-	      det.formula = ~ det.cov.1 + det.cov.2,
-	      data = data.list,
-	      n.batch = n.batch,
-	      batch.length = batch.length,
-	      inits = inits.list,
-	      priors = prior.list,
-	      NNGP = TRUE,
-	      cov.model = 'spherical',
-	      n.neighbors = 10,
-	      accept.rate = 0.43,
-	      n.omp.threads = 1,
-	      verbose = TRUE,
-	      n.report = 1,
-	      n.burn = n.burn,
-	      n.thin = n.thin,
-	      n.chains = n.chains)
+              det.formula = ~ det.cov.1 + det.cov.2,
+              data = data.list,
+              n.batch = n.batch,
+              batch.length = batch.length,
+              inits = inits.list,
+              priors = prior.list,
+              NNGP = TRUE,
+              cov.model = 'spherical',
+              n.neighbors = 10,
+              accept.rate = 0.43,
+              n.omp.threads = 1,
+              verbose = TRUE,
+              n.report = 1,
+              n.burn = n.burn,
+              n.thin = n.thin,
+              n.chains = n.chains)
 summary(out)
 
 # Predict at new locations ------------------------------------------------

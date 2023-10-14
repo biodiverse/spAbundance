@@ -94,8 +94,8 @@ alpha.mean <- c(0.5, 0.2)
 tau.sq.alpha <- c(0.2, 0.3)
 p.det <- length(alpha.mean)
 mu.RE <- list(levels = c(10, 12), 
-               sigma.sq.mu = c(1.5, 0.3), 
-               beta.indx = list(1, 2))
+              sigma.sq.mu = c(1.5, 0.3), 
+              beta.indx = list(1, 2))
 p.RE <- list(levels = c(15, 10), 
              sigma.sq.p = c(0.8, 0.5), 
              alpha.indx = list(1, 2))

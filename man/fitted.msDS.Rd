@@ -5,7 +5,7 @@
 \title{Extract Model Fitted Values for msDS Object}
 
 \description{
-  Method for extracting model fitted values and cell-specific detection probabilities from a multi-species distance sampling (\code{msDS}) model. 
+  Method for extracting model fitted values and cell-specific detection probabilities from a multi-species hierarchical distance sampling (\code{msDS}) model. 
 }
 
 \usage{

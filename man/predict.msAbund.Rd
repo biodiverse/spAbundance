@@ -1,6 +1,6 @@
 \name{predict.msAbund}
 \alias{predict.msAbund}
-\title{Function for prediction at new locations for multi-species abundance GLMs}
+\title{Function for prediction at new locations for multivariate GLMMs}
 
 \description{
   The function \code{predict} collects posterior predictive samples for a set of new locations given an object of class `msAbund`.  
@@ -18,7 +18,7 @@
 
   \item{ignore.RE}{logical value that specifies whether or not to remove unstructured random effects from the subsequent predictions. If \code{TRUE}, unstructured random effects will be included. If \code{FALSE}, unstructured random effects will be set to 0 and predictions will only be generated from the fixed effects.}
 
-  \item{z.0.samples}{a three-dimensional array with dimensions corresponding to MCMC samples, species, and prediction locations. The array contains the full posterior samples of the predicted binary portion of a Gaussian hurdle model. In the context of abundance models, this typically corresponds to estimates of the presence or absence of each species at the location. When using \code{spOccupancy} to generate the first stage samples of the Gaussian-hurdle model, this is the object contained in the \code{z.0.samples} object of the predition function for the spOccupancy object. Ignored for all model types other than Gaussian-hurdle.}
+  \item{z.0.samples}{a three-dimensional array with dimensions corresponding to MCMC samples, species, and prediction locations. The array contains the full posterior samples of the predicted binary portion of a Gaussian zero-inflated model. In the context of abundance models, this typically corresponds to estimates of the presence or absence of each species at the location. When using \code{spOccupancy} to generate the first stage samples of the zi-Gaussian model, this is the object contained in the \code{z.0.samples} object of the predition function for the spOccupancy object. Ignored for all model types other than zi-Gaussian.}
 
   \item{...}{currently no additional arguments}
 }
@@ -68,7 +68,7 @@ sp <- FALSE
 kappa <- runif(n.sp, 0.1, 1)
 
 dat <- simMsAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta,
-	          mu.RE = mu.RE, sp = sp, kappa = kappa, family = 'NB')
+                  mu.RE = mu.RE, sp = sp, kappa = kappa, family = 'NB')
 
 # Split into fitting and prediction data set
 pred.indx <- sample(1:J, round(J * .25), replace = FALSE)
@@ -80,17 +80,15 @@ y.0 <- dat$y[, pred.indx, , drop = FALSE]
 X.0 <- dat$X[pred.indx, , , drop = FALSE]
 
 # Package all data into a list
-covs <- list(int = X[, , 1],
-		   abund.cov.1 = X[, , 2])
-data.list <- list(y = y,
-		  covs = covs)
+covs <- list(int = X[, , 1], abund.cov.1 = X[, , 2])
+data.list <- list(y = y, covs = covs)
 prior.list <- list(beta.comm.normal = list(mean = 0, var = 100),
                    kappa.unif = list(a = 0, b = 10),
                    tau.sq.beta.ig = list(a = .1, b = .1))
 inits.list <- list(beta.comm = 0,
-		   beta = 0,
-		   kappa = 0.5,
-		   tau.sq.beta = 1)
+                   beta = 0,
+                   kappa = 0.5,
+                   tau.sq.beta = 1)
 tuning.list <- list(kappa = 0.3, beta = 0.1)
 
 # Small
@@ -101,18 +99,18 @@ n.thin <- 1
 n.chains <- 1
 
 out <- msAbund(formula = ~ abund.cov.1,
-	         data = data.list,
-	         n.batch = n.batch,
-	         inits = inits.list,
-	         priors = prior.list,
-	         tuning = tuning.list,
-	         batch.length = batch.length,
-	         n.omp.threads = 1,
-	         verbose = TRUE,
-	         n.report = 1,
-	         n.burn = n.burn,
-	         n.thin = n.thin,
-	         n.chains = n.chains)
+               data = data.list,
+               n.batch = n.batch,
+               inits = inits.list,
+               priors = prior.list,
+               tuning = tuning.list,
+               batch.length = batch.length,
+               n.omp.threads = 1,
+               verbose = TRUE,
+               n.report = 1,
+               n.burn = n.burn,
+               n.thin = n.thin,
+               n.chains = n.chains)
 
 # Predict at new locations
 out.pred <- predict(out, X.0)
