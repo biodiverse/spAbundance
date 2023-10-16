@@ -219,7 +219,7 @@ simMsDS <- function(J.x, J.y, n.bins, bin.width, n.sp, beta, alpha,
   coords <- as.matrix(expand.grid(s.x, s.y))
   w.star <- matrix(0, nrow = n.sp, ncol = J)
   if (factor.model) {
-    lambda <- matrix(rnorm(n.sp * n.factors, 0, 1), n.sp, n.factors) 
+    lambda <- matrix(rnorm(n.sp * n.factors, 0, 0.5), n.sp, n.factors) 
     # Set diagonals to 1
     diag(lambda) <- 1
     # Set upper tri to 0

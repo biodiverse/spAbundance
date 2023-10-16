@@ -43,7 +43,7 @@ library(spAbundance)
 library(coda)
 library(stars)
 library(ggplot2)
-set.seed(111)
+set.seed(500)
 ```
 
 ## Example data set: Simulated multi-species count data
@@ -55,7 +55,7 @@ data(dataNMixSim) # Load the data set.
 str(dataNMixSim) # Get an overview of what's in the data.
 ```
 
-The object `dataNMixSim` is a list comprised of the count data (`y`), covariates on the abundance portion of the model (`abund.covs`), covariates on the detection portion of the model (`det.covs`), and the spatial coordinates of each site (`coords`) for use in spatial N-mixture models and in plotting. This list is in the exact format required for input to N-mixture models in `spAbundance`. `dataNMixSim` contains data on 6 species in the three-dimensional array `y`, where the dimensions of `y` correspond to species (6), sites (225), and maximum number replicates at any given site (3). For single-species N-mixture models in Section 2 and 3, we will only use data on one species, so we next subset the `dataNmixSim` list to only include data from the first species in a new object `data.one.sp`. 
+The object `dataNMixSim` is a list comprised of the count data (`y`), covariates on the abundance portion of the model (`abund.covs`), covariates on the detection portion of the model (`det.covs`), and the spatial coordinates of each site (`coords`) for use in spatial N-mixture models and in plotting. This list is in the exact format required for input to N-mixture models in `spAbundance`. `dataNMixSim` contains data on 6 species in the three-dimensional array `y`, where the dimensions of `y` correspond to species (6), sites (225), and maximum number of replicates at any given site (3). For single-species N-mixture models in Section 2 and 3, we will only use data on one species, so we next subset the `dataNmixSim` list to only include data from the first species in a new object `data.one.sp`. 
 
 ```{r}
 data.one.sp <- dataNMixSim
@@ -81,10 +81,10 @@ Let $N_j$ denote the true abundance of a species of interest at site $j = 1, \do
 where $\mu_j$ is the average abundance at site $j$ and $\kappa$ is a positive dispersion parameter. Smaller values of $\kappa$ indicate overdispersion in the latent abundance values, while higher values indicate minimal overdispersion in abundance relative to a Poisson distribution. Note that as $\kappa \rightarrow \infty$, a NB model "reverts" back to the simpler Poisson model. We model $\mu_j$ using a log link function following
 
 \begin{equation}\label{muAbund}
-  \text{log}(\mu_j) = \textbf{x}_j^\top\bm{\beta},
+  \text{log}(\mu_j) = \bm{x}_j^\top\bm{\beta},
 \end{equation}
 
-where $\bm{\beta}$ is a vector of regression coefficients for a set of covariates $\textbf{x}_j$ (including an intercept). Note that while not shown, unstructured random intercepts and slopes can be included in the equation for expected abundance. This may for instance be required for accommodating some sorts of "blocks", such as when sites are nested in a number of different regions.
+where $\bm{\beta}$ is a vector of regression coefficients for a set of covariates $\bm{x}_j$ (including an intercept). Note that while not shown, unstructured random intercepts and slopes can be included in the equation for expected abundance. This may for instance be required for accommodating some sorts of "blocks", such as when sites are nested in a number of different regions.
 
 Following the standard N-mixture model of @royle2004n, we suppose observers count the number of individuals of the species of interest at each site $j$ over a set of multiple surveys $k = 1, \dots, K_j$, denoted as $y_{j, k}$. Note the number of surveys $K_j$ can vary by site (which is the case with our example simulated data set), but at least some sites must be surveyed more than once to ensure identifiability without making restrictive parameteric assumptions [@knape2015estimates; @stoudt2023]. We model $y_{j, k}$ conditional on the true abundance of the species at site $j$, $N_j$, following
 
@@ -95,12 +95,12 @@ Following the standard N-mixture model of @royle2004n, we suppose observers coun
 where $p_{j, k}$ is the probability of detecting an individual given it is present at the site. We model $p_{j, k}$ using a logit link function in which we can allow detection probability to vary over space and/or surveys. More specifically, we have
 
 \begin{equation} \label{p-NMix}
-     \text{logit}(p_{j, k}) = \textbf{v}_{j, k}^\top\bm{\alpha},
+     \text{logit}(p_{j, k}) = \bm{v}_{j, k}^\top\bm{\alpha},
 \end{equation}
 
-where $\bm{\alpha}$ is a vector of the effects of a set of covariates $\textbf{v}_{j, k}$ (including an intercept). As for the model for abundance, spatially unstructured random effects can be specified for the intercepts or the slopes, e.g., for observer identity in a citizen science probject.
+where $\bm{\alpha}$ is a vector of the effects of a set of covariates $\bm{v}_{j, k}$ (including an intercept). As for the model for abundance, spatially unstructured random effects can be specified for the intercepts or the slopes, e.g., for observer identity in a citizen science probject.
 
-To complete the Bayesian specification of the model, we assign vague normal priors for the abundance ($\bm{\beta}$) and detection ($\bm{\alpha}$) regression coefficients. 
+To complete the Bayesian specification of the model, we assign vague normal priors for the abundance ($\bm{\beta}$) and detection ($\bm{\alpha}$) regression coefficients. When fitting a model with a negative binomial distribution for abundance, we specify a uiform prior for the dispersion parameter $\kappa$.
 
 ## Fitting single-species N-mixture models with `NMix()`
 
@@ -122,7 +122,7 @@ The first two arguments, `abund.formula` and `det.formula`, use standard R model
 head(data.one.sp$y, 10)
 ```
 
-Sites 4, 6, 7, and 8 have an `NA` in the third column, indicating they were only sampled on the first two occasions. Site 10 has an `NA` value in both columns two and three, which tells us that site was only sampled on the first visit. This same approach can be used for any observation-level covariates included in the detection portion of the model (i.e., simply place an NA for any covariate during site/visits when the survey was not performed). Note that the missing values between the detection-nondetection data `y` and the detection covariates `det.covs` will have to align, and if they don't `spAbundance` will return an error. Further, `spAbundance` does not allow missing values in any site-level covariates, and so if there are ny missing values in site-level covariates you must decide the best approach to handle this (e.g., impute missing values with the mean, remove sites with any missing site-level covariates).
+Sites 1, 3, and 6 have two `NA` values and thus were only sampled once. Sites 2, 4, 7, 8, 9, and 10 have one NA value and were sampled twice, while site 5 was sampled on all three occasions. Such imbalanced data sets are very common in practice. This same approach can be used for any observation-level covariates included in the detection portion of the model (i.e., simply place an NA for any covariate during site/visits when the survey was not performed). Note that the missing values between the detection-nondetection data `y` and the detection covariates `det.covs` will have to align, and if they don't `spAbundance` will return an error. Further, `spAbundance` does not allow missing values in any site-level covariates, and so if there are any missing values in site-level covariates you must decide the best approach to handle this (e.g., impute missing values with the mean, remove sites with any missing site-level covariates).
 
 The `data.one.sp` list is already in the required format for use with the `NMix()` function. Here we will model abundance as a function of a continuous covariate `abund.cov.1` as well as a categorical variable `abund.factor.1`, which we will treat as a random effect. We can imagine this categorical variable corresponding to a management unit, aspect of the experimental design, or some other grouping variable that we want to account for in our model. We model detection probability as a function of two continuous variables that vary across sites and replicates. We standardize all continuous covariates by using the `scale()` function in our model specification (note that standardizing continuous covariates is highly recommended as it helps aid convergence of the underlying MCMC algorithms):
 
@@ -167,11 +167,11 @@ priors <- list(alpha.normal = list(mean = 0, var = 2.72),
                sigma.sq.mu.ig = list(0.1, 0.1))
 ```
 
-The next four arguments (`tuning`, `n.batch`, `batch.length`, and `accept.rate`) are all related to the specific type of MCMC sampler we use when we fit N-mixture models in `spAbundance`. The parameters in N-mixture models are all estimated using a Metropolis-Hastings step, which can often be slow and inefficient, leading to slow mixing and convergence of the MCMC chains. To try and mitigate the slow mixing and convergence issues, we update all parameters in N-mixture models using an algorithm called an adaptive Metropolis-Hastings algorithm (see @roberts2009examples for more details on this algorithm). In this approach, we break up the total number of MCMC samples into a set of "batches", where each batch has a specific number of MCMC samples. Thus, we must specify the total number of batches (`n.batch`) as well as the number of MCMC samples each batch contains (`batch.length`) when specifying the function arguments. The total number of MCMC samples is `n.batch * batch.length`. Typically, we set `batch.length = 25` and then play around with `n.batch` until convergence of all model parameters is reached. We generally recommend setting `batch.length = 25`, but in certain situations this can be increased to a larger number of samples (e.g., 100), which can result in moderate decreases in run time. Here we set `n.batch = 800` for a total of 20,000 MCMC samples for each MCMC chain we run.
+The next four arguments (`tuning`, `n.batch`, `batch.length`, and `accept.rate`) are all related to the specific type of MCMC sampler we use when we fit N-mixture models in `spAbundance`. The parameters in N-mixture models are all estimated using a Metropolis-Hastings step, which can often be slow and inefficient, leading to slow mixing and convergence of the MCMC chains. To try and mitigate the slow mixing and convergence issues, we update all parameters in N-mixture models using an algorithm called an adaptive Metropolis-Hastings algorithm (see @roberts2009examples for more details on this algorithm). In this approach, we break up the total number of MCMC samples into a set of "batches", where each batch has a specific number of MCMC samples. Thus, we must specify the total number of batches (`n.batch`) as well as the number of MCMC samples each batch contains (`batch.length`) when specifying the function arguments. The total number of MCMC samples is `n.batch * batch.length`. Typically, we set `batch.length = 25` and then play around with `n.batch` until convergence of all model parameters is reached. We generally recommend setting `batch.length = 25`, but in certain situations this can be increased to a larger number of samples (e.g., 100), which can result in moderate decreases in run time. Here we set `n.batch = 1600` for a total of 40,000 MCMC samples for each MCMC chain we run.
 
 ```{r}
 batch.length <- 25
-n.batch <- 800
+n.batch <- 1600
 # Total number of MCMC samples per chain
 batch.length * n.batch
 ```
@@ -185,15 +185,15 @@ tuning <- list(beta = 0.5, alpha = 0.5, kappa = 0.5, beta.star = 0.5)
 
 We also need to specify the length of burn-in (`n.burn`), the rate at which we want to thin the posterior samples (`n.thin`), and the number of MCMC chains to run (`n.chains`). Note that currently `spAbundance` runs multiple chains sequentially and does not allow chains to be run simultaneously in parallel across multiple threads, which is something we hope to implement in future package development. Instead, we allow for within-chain parallelization using the `n.omp.threads` argument. We can set `n.omp.threads` to a number greater than 1 and smaller than the number of threads on the computer you are using. Generally, setting `n.omp.threads > 1` will not result in decreased run times for non-spatial models in `spAbundance`, but can substantially decrease run time when fitting spatial models [@finley2020spnngp]. Here we set `n.omp.threads = 1`.
 
-For a simple single-species N-mixture model, we shouldn't need too many samples and will only need a moderate amount of burn-in and thinning. We will run the model using three chains to assess convergence using the Gelman-Rubin diagnostic (Rhat; @brooks1998).
+We will run the model using three chains to assess convergence using the Gelman-Rubin diagnostic (Rhat; @brooks1998).
 
 ```{r}
-n.burn <- 10000
-n.thin <- 10
+n.burn <- 20000
+n.thin <- 20
 n.chains <- 3
 ```
 
-We are now almost set to run the model. The `family` argument is used to indicate whether we want to model abundance with a Poisson distribution (`Poisson`) or a negative binomial distribution (`NB`). Here we will start with a Poisson distribution (the default), which we will compare to a model with a negative binomial distribution later. The `verbose` argument is a logical value indicating whether or not MCMC sampler progress is reported to the screen. If `verbose = TRUE`, sampler progress is reported to the screen. The argument `n.report` specifies the interval to report the Metropolis-Hastings sampler acceptance rate. Note that `n.report` is specified in terms of batches, not the overall number of samples. Below we set `n.report = 200`, which will result in information on the acceptance rate and tuning parameters every 200th batch (not sample).
+We are now almost set to run the model. The `family` argument is used to indicate whether we want to model abundance with a Poisson distribution (`Poisson`) or a negative binomial distribution (`NB`). Here we will start with a Poisson distribution (the default), which we will compare to a model with a negative binomial distribution later. The `verbose` argument is a logical value indicating whether or not MCMC sampler progress is reported to the screen. If `verbose = TRUE`, sampler progress is reported to the screen. The argument `n.report` specifies the interval to report the Metropolis-Hastings sampler acceptance rate. Note that `n.report` is specified in terms of batches, not the overall number of samples. Below we set `n.report = 400`, which will result in information on the acceptance rate and tuning parameters every 400th batch (not sample).
 
 We now are set to fit the model.
 
@@ -207,7 +207,7 @@ out <- NMix(abund.formula = abund.formula,
             batch.length = batch.length, 
             tuning = tuning, 
             n.omp.threads = 1,
-            n.report = 200,
+            n.report = 400,
             family = 'Poisson',
             verbose = TRUE,
             n.burn = n.burn,
@@ -223,14 +223,14 @@ We next use the `summary()` function on the resulting `NMix()` object for a conc
 summary(out)
 ```
 
-Notice that the abundance coefficients are printed on the log scale and the detection coefficients are on the logit scale. We see that our species is quite rare, with an average expected abundance of approximately 0.37 (`exp(-1)`). There is a slight positive effect of the covariate effect, but its 95% credible interval clearly overlaps 0. The random effect variance mean is approximately 0.69, indicating this is a potentially important source of variability in abundance for the species. Note that we can also change the quantiles that are returned in the summary output if we desire to see additional quantiles. This is controlled with the `quantiles` argument.
+Notice that the abundance coefficients are printed on the log scale and the detection coefficients are on the logit scale. We see that our species is quite rare, with an average expected abundance of approximately `r round(exp(mean(out$beta.samples[, 1])), 2)`,  exp(`r round(mean(out$beta.samples[, 1]), 2)`). We also see a moderate, positive effect of the covariate, although the 95% credible interval overlaps 0. The random effect variance mean is approximately `r round(mean(out$sigma.sq.mu.samples), 2)`, indicating this is a potentially important source of variability in abundance for the species. Note that we can also change the quantiles that are returned in the summary output if we desire to see additional quantiles. This is controlled with the `quantiles` argument.
 
 ```{r}
 # Return a 50% CI and the median instead of the 95% CI
 summary(out, quantiles = c(0.25, 0.5, 0.75))
 ```
 
-The model summary also provides information on convergence of the MCMC chains in the form of the Gelman-Rubin diagnostic [@brooks1998] and the effective sample size (ESS) of the posterior samples. Here we find all Rhat values are less than 1.1 and the ESS values are substantially large for all parameters. The ESS values are adequately high for all model parameters, indicating adequate mixing of the MCMC chains.
+The model summary also provides information on convergence of the MCMC chains in the form of the Gelman-Rubin diagnostic [@brooks1998] and the effective sample size (ESS) of the posterior samples. Here we find all Rhat values are less than 1.1. The ESS values are adequately high for all model parameters, indicating adequate mixing of the MCMC chains.
 
 We can use the `plot()` function to generate a simple trace plot of the MCMC chains to provide additional confidence in the convergence (or non-convergence) of the model. The plotting functionality for each model type in `spAbundance` takes three arguments: `x` (the resulting object from fitting the model), `param` (the parameter name that you want to display), and `density` (a logical value indicating whether to also generate a density plot in addition to the traceplot). To see the parameter names available to use with `plot()` for a given model type, you can look at the manual page for the function, which for models generated from `NMix()` can be accessed with `?plot.NMix`. 
 
@@ -253,7 +253,7 @@ The function `ppcAbund()` performs a posterior predictive check on all `spAbunda
 3. Compute a fit statistic on both the actual data and also on the model-generated 'replicate data'.
 4. Compare the fit statistics for the true data and replicate data. If they are widely different, this suggests a lack of fit of the model to the actual data set at hand.
 
-To perform a posterior predictive check, we send the resulting `NMix` model object as input to the `ppcAbund()` function, along with a fit statistic (`fit.stat`) and a numeric value indicating how to group, or bin, the data (`group`). Currently supported fit statistics include the Freeman-Tukey statistic and the Chi-Squared statistic (`freeman-tukey` or `chi-squared`, respectively, @kery2015applied). Currently, `ppcAbund()` allows the user to group the data by row (site; `group = 1`), column (replicate; `group = 2`), or not at all (`group = 0`). `ppcAbund()` will then return a set of posterior samples for the fit statistic (or discrepancy measure) using the actual data (`fit.y`) and model generated replicate data set (`fit.y.rep`), summed across all data points in the chosen manner. We generally recommend performing a posterior predictive check using all forms of grouping, as they may reveal (or fail to reveal) different inadequacies of the model for the specific data set at hand [@kery2015applied]. Throughout this vignette, we will display different types of poseterior predictive checks using different combinations of the fit statistic and grouping approach.
+To perform a posterior predictive check, we send the resulting `NMix` model object as input to the `ppcAbund()` function, along with a fit statistic (`fit.stat`) and a numeric value indicating how to group, or bin, the data (`group`). Currently supported fit statistics include the Freeman-Tukey statistic and the Chi-Squared statistic (`freeman-tukey` or `chi-squared`, respectively, @kery2015applied). Currently, `ppcAbund()` allows the user to group the data by row (site; `group = 1`), column (replicate; `group = 2`), or not at all (`group = 0`). `ppcAbund()` will then return a set of posterior samples for the fit statistic (or discrepancy measure) using the actual data (`fit.y`) and model generated replicate data set (`fit.y.rep`), summed across all data points in the chosen manner. For example, when setting `group = 1`, `spAbundance` will first sum all of the count values at a given site across all replicates at that site, then calculate the fit statistic using the site-level sums. When setting `group = 0`, `spAbundance` calculates the fit statistic directly on the count value associated with each site and replicate. We generally recommend performing a posterior predictive check using multiple forms of grouping, as they may reveal (or fail to reveal) different inadequacies of the model for the specific data set at hand [@kery2015applied]. Throughout this vignette, we will display different types of poseterior predictive checks using different combinations of the fit statistic and grouping approach.
 
 The resulting values from a call to `ppcAbund()` can be used with the `summary()` function to generate a Bayesian p-value, which is the probability, under the fitted model, to obtain a value of the fit statistic that is more extreme (i.e., larger) than the one observed, i.e., for the actual data. Bayesian p-values are sensitive to individual values, so we may also want to explore the discrepancy measures for each (potentially "grouped") data point. `ppcAbund()` returns a matrix of posterior quantiles for the fit statistic for both the observed (`fit.y.group.quants`) and model generated, replicate data (`fit.y.rep.group.quants`) for each "grouped" data point.
 
@@ -264,7 +264,7 @@ ppc.out <- ppcAbund(out, fit.stat = 'freeman-tukey', group = 1)
 summary(ppc.out)
 ```
 
-The Bayesian p-value here is very close to 0, indicating inadequate model fit. In particular, a value close to 0 indicates there is more variability in the observed data points than the replicate data points generated by our model. This could be a result of (1) missing sources of variability in true abundance; (2) missing sources of variability in detection probability; or (3) missing sources of variability in both abundance and detection. We will see later in the vignette that our low Bayesian p-value in this case is a result of additional spatial variability in abundance. See the [introductory `spOccupancy` vignette](https://www.jeffdoser.com/files/spoccupancy-web/) for ways to further explore resulting objects from posterior predictive checks.
+The Bayesian p-value here is close to 0, indicating inadequate model fit. In particular, a value close to 0 indicates there is more variability in the observed data points than the replicate data points generated by our model. This could be a result of (1) missing sources of variability in true abundance; (2) missing sources of variability in detection probability; or (3) missing sources of variability in both abundance and detection. We will see later in the vignette that our low Bayesian p-value in this case is a result of additional spatial variability in abundance. See the [introductory `spOccupancy` vignette](https://www.jeffdoser.com/files/spoccupancy-web/) for ways to further explore resulting objects from posterior predictive checks.
 
 ### A brief note on generation of fitted values for posterior predictive checks
 
@@ -280,14 +280,14 @@ Instead, we can imagine calculating fitted values in a slightly different way th
 
 \begin{equation}
 \begin{split}
-  \hat{N}_{j, k} &\sim \text{Poisson}(\mu_j), \\
+  \hat{N}_{j} &\sim \text{Poisson}(\mu_j), \\
   \hat{y}_{j, k} &\sim \text{Binomial}(\hat{N}_j, p_{j, k}).
 \end{split}
 \end{equation}
 
 Note that the Poisson distribution would be replaced with a negative binomial distribution if that is used to fit the model. By calculating fitted values in this manner, the $\hat{N}_j$ values are no longer required to be at least as large as the maximum number of individuals ever observed at a site. 
 
-We performed a *very* small simulation study to assess the ability of the two approaches to detect unmodeled spatial heterogeneity in abundance. Very briefly, we simulated 20 data sets where count data were generated at 225 sites with a maximum of three replicate survey at any given site. We simulated abundance as a function of two covariates and additional residual spatial autocorrelation. We then fit an N-mixture model to each of the data sets using `NMix()` in which we did not account for the residual spatial autocorrelation. Finally, we performed a posterior predictive check and calculated a Bayesian p-value using both the marginal and conditional approach. For the posterior predictive check, we used the Freeman-Tukey statistic and grouped the data by site. Ideally, the Bayesian p-values should be less than 0.1 and indicate to us that there is additional variation in the data that we are not accounting for. The full script used to generate the data is available for download [here](https://www.jeffdoser.com/files/misc/nmix-sim/main.R). We load the conditional and marginal Bayesian p-values from the simulation study below and look at their values. 
+We performed a *very* small simulation study to assess the ability of the two approaches to detect unmodeled spatial heterogeneity in abundance. Very briefly, we simulated 20 data sets where count data were generated at 225 sites with a maximum of three replicate surveys at any given site. We simulated abundance as a function of two covariates and additional residual spatial autocorrelation. We then fit an N-mixture model to each of the data sets using `NMix()` in which we did not account for the residual spatial autocorrelation. Finally, we performed a posterior predictive check and calculated a Bayesian p-value using both the marginal and conditional approach. For the posterior predictive check, we used the Freeman-Tukey statistic and grouped the data by site. Ideally, the Bayesian p-values should be less than 0.1 and indicate to us that there is additional variation in the data that we are not accounting for. The full script used to generate the data is available for download [here](https://www.jeffdoser.com/files/misc/nmix-sim/main.R). We load the conditional and marginal Bayesian p-values from the simulation study below and look at their values. 
 
 ```{r}
 # Load the results from online
@@ -302,10 +302,9 @@ sum(conditional.bps > 0.1 & conditional.bps < 0.9)
 sum(marginal.bps > 0.1 & marginal.bps < 0.9)
 ```
 
-Here we see the marginal approach fails to reject the model (using cutoff values of 0.1 and 0.9) `r sum(marginal.bps > 0.1 & marginal.bps < 0.9)` times out of `r length(marginal.bps)`, while the conditional approach fails to reject the model `r sum(conditional.bps > 0.1 & conditional.bps < 0.9)` times out of `r length(marginal.bps)`, suggesting that in this very small and simplified simulation study the marginal approach is better at detecting unmodeled spatial heterogeneity relative to the conditional approach. 
+Here we see very similar results between the marginal and conditional Bayesian p-values, as we find support for inadequate model fit in 19 out the 20 simulations for both approaches. Because we simulated the data with additional spatial variation in abundance that we are not accounting for, our two approaches are both correctly identifying inadequate performance of the non-spatial N-mixture model. 
 
-This concept of what we called "marginal" and "conditional" fitted values is not new to the statistical ecology literature. In particular, @conn2018guide discuss this concept (and many more aspects of Goodness-of-Fit checking in hierarchical Bayesian models), and give a nice visual summary of this idea in their Figure 4 in the context of hierarchical spatial models. We believe additional exploration of posterior predictive tests and other associated Goodness-of-Fit tests in hierarchical models like N-mixture models, hierarchical distance sampling models, and occupancy models is an important avenue of future research. Here we provide options to perform posterior predictive checks using both types (with the default being marginal), and encourage users to explore multiple forms of performing posterior predictive checks to increase one's comfort that the fitted model is an adequate representation of the data-generating process. Our very small and simple simulation study provided us with a little intuition on the performance of the two approaches in detecting unmodeled spatial heterogeneity. In particular, we found that the marginal approach had a higher ability to detect unmodeled spatial heterogeneity in abundance relative to the the conditional approach, although a much more in-depth simulation study is needed to assign any large amount of weight to this finding. This discussion applies to all N-mixture models discussed in this vignette.
-
+This concept of what we called "marginal" and "conditional" fitted values is not new to the statistical ecology literature. In particular, @conn2018guide discuss this concept (and many more aspects of Goodness-of-Fit checking in hierarchical Bayesian models), and give a nice visual summary of this idea in their Figure 4 in the context of hierarchical spatial models. @marshall2003approximate discuss a similar concept in the context of disease mapping, in which they refer to what we call a "marginal" approach as a "mixed" posterior predictive check and advocate for its use. We believe additional exploration of posterior predictive checks and other associated Goodness-of-Fit tests in hierarchical models like N-mixture models, hierarchical distance sampling models, and occupancy models is an important avenue of future research. Here we provide options to perform posterior predictive checks using both types (with the default being marginal), and encourage users to explore multiple forms of performing posterior predictive checks to increase one's comfort that the fitted model is an adequate representation of the data-generating process. Our very small and simple simulation study showed similar performance of the two approaches, but additional, more in-depth simulation studies are needed to better assess their performance. @marshall2003approximate found the "marginal" approach to outperform the more traditional "conditional" approach in the context of a spatial regression model. Determining if this finding is similar for N-mixture, hierarchical distance sampling, and occupancy-type models is an important area of future work. This discussion applies to all N-mixture models discussed in this vignette.
 
 ## Model selection using WAIC
 
@@ -319,7 +318,7 @@ $$
 \text{WAIC} = -2 \times (\text{elppd} - \text{pD}),
 $$
 
-where elppd is the expected log point-wise predictive density and pD is the effective number of parameters. We calculate elppd by calculating the likelihood for each posterior sample, taking the mean of these likelihood values, taking the log of the mean of the likelihood values, and summing these values across all sites. We calculate the effective number of parameters by calculating the variance of the log likelihood for each site taken over all posterior samples, and then summing these values across all sites. See Appendix S1 from @broms2016model for more details.
+where elppd is the expected log point-wise predictive density and pD is the effective number of parameters. We calculate elppd by calculating the likelihood for each posterior sample, taking the mean of these likelihood values, taking the log of the mean of the likelihood values, and summing these values across all sites. We calculate the effective number of parameters by calculating the variance of the log likelihood for each site taken over all posterior samples, and then summing these values across all sites. 
 
 We calculate the WAIC using `waicAbund()` for our model below (as always, note some slight differences with your solutions due to Monte Carlo error).
 
@@ -327,12 +326,12 @@ We calculate the WAIC using `waicAbund()` for our model below (as always, note s
 waicAbund(out)
 ```
 
-Note the somewhat cryptic message that is displayed to the screen when you run the previous line. When calculating WAIC for N-mixture models (and [hierarchical distance sampling models](https://www.jeffdoser.com/files/spabundance-web/articles/distancesampling), we need to integrate out the latent abundance values, which requires setting an upper bound to the potential value of the latent abundance values $N_j$ at each spatial location. By default, `waicAbund()` will set that upper bound to the largest abundance value at each site plus 10 (as indicated by the message). This upper bound can be controlled further with the `N.max` argument in `waicAbund()`. See the help page for `waicAbund` for details. 
+Note the somewhat cryptic message that is displayed to the screen when you run the previous line. When calculating WAIC for N-mixture models (and [hierarchical distance sampling models](https://www.jeffdoser.com/files/spabundance-web/articles/distancesampling)), we need to integrate out the latent abundance values, which requires setting an upper bound to the potential value of the latent abundance values $N_j$ at each spatial location. By default, `waicAbund()` will set that upper bound to the largest abundance value at each site plus 10 (as indicated by the message). This upper bound can be controlled further with the `N.max` argument in `waicAbund()`. See the help page for `waicAbund` for details. 
 
 Now let's do a bit of model comparison. We will fit the same model as before, except now we will use a negative binomial distribution. We fit the model below, setting `verbose = FALSE` to hide the messages printed by the model fitting functions.
 
 ```{r}
-# Approx run time: 30 sec
+# Approx run time: 1 minute
 out.2 <- NMix(abund.formula = ~ abund.cov.1 + (1 | abund.factor.1),
               det.formula = det.formula, data = data.one.sp, 
               inits = inits, priors = priors, n.batch = n.batch, 
@@ -397,7 +396,7 @@ ggplot(mu.plot.dat, aes(x = abund.cov.1, y = mu.med)) +
   labs(x = 'Covariate', y = 'Expected abundance') 
 ```
 
-Here we see a strong positive relationship between the covariate and expected abundance.
+Here we see a positive relationship between expected abundance and the covariate, but there is substantial uncertainty in this relationship.
 
 # Single-species spatial N-mixture models {#spNMix}
 
@@ -406,7 +405,7 @@ Here we see a strong positive relationship between the covariate and expected ab
 When working across large spatial domains, accounting for residual spatial autocorrelation in species distributions can often improve predictive performance of a model, leading to more accurate predictions of species abundance patterns [@guelat2018]. We here extend the basic single-species N-mixture model to incorporate a spatial random effect that accounts for unexplained spatial variation in species abundance across a region of interest. Let $\bm{s}_j$ denote the geographical coordinates of site $j$ for $j = 1, \dots, J$. In all spatially-explicit models, we include $\bm{s}_j$ directly in the notation of spatially-indexed variables to indicate the model is spatially-explicit. More specifically, the expected abundance at site $j$ with coordinates $\bm{s}_j$, $\mu(\bm{s}_j)$, now takes the form
 
 \begin{equation}
-\text{log}(\mu(\bm{s}_j) = \textbf{x}(\bm{s}_j)^{\top}\bm{\beta} + \text{w}(\bm{s}_j),
+\text{log}(\mu(\bm{s}_j) = \bm{x}(\bm{s}_j)^{\top}\bm{\beta} + \text{w}(\bm{s}_j),
 \end{equation}
 
 where $\text{w}(\bm{s}_j)$ is a spatial random effect modeled with a Nearest Neighbor Gaussian Process (NNGP; @datta2016hierarchical). More specifically, we have
@@ -490,24 +489,25 @@ tuning <- list(beta = 0.5, alpha = 0.5, kappa = 0.5, beta.star = 0.5,
                w = 0.5, phi = 0.5)
 ```
 
-The argument `n.omp.threads` specifies the number of threads to use for within-chain parallelization, while `verbose` specifies whether or not to print the progress of the sampler. As before, the argument `n.report` specifies the interval to report the Metropolis-Hastings sampler acceptance rate. Below we set `n.report = 100`, which will result in information on the acceptance rate and tuning parameters every 100th batch.
+The argument `n.omp.threads` specifies the number of threads to use for within-chain parallelization, while `verbose` specifies whether or not to print the progress of the sampler. As before, the argument `n.report` specifies the interval to report the Metropolis-Hastings sampler acceptance rate. Below we set `n.report = 400`, which will result in information on the acceptance rate and tuning parameters every 400th batch.
 
 ```{r}
 verbose <- TRUE
 batch.length <- 25
-n.batch <- 800
+n.batch <- 1600
 # Total number of MCMC samples per chain
 batch.length * n.batch
-n.report <- 100
+n.report <- 400
 n.omp.threads <- 1
 ```
 
 We will use the same amount of burn-in and thinning as we did with the non-spatial model, and we'll also first fit a model with a Poisson distribution for abundance. We next fit the model and summarize the results using the `summary()` function.
 
 ```{r}
-n.burn <- 10000
-n.thin <- 10
+n.burn <- 20000
+n.thin <- 20
 n.chains <- 3
+# Approx run time: 8 min
 out.sp <- spNMix(abund.formula = abund.formula, 
                  det.formula = det.formula, 
                  data = data.one.sp, 
@@ -530,14 +530,14 @@ out.sp <- spNMix(abund.formula = abund.formula,
 summary(out.sp)
 ```
 
-Looking at the model summary we see adequate convergence of all model parameters. The `summary()` output looks the same as what we saw previously, with the additional section titled "Spatial Covariance". There we see the estimate of the spatial variance (`sigma.sq`) and spatial decay (`phi`) parameters. The spatial variance is near 1, which indicates substantial spatial variability in abundance across space. Interpretation of the spatial variance parameter can follow interpretation of variance parameters in "regular" (i.e., unstructured) random effect variances: when the variance is close to 0, that indicates little support for inclusion of the spatial random effect. When the variance is large, it indicates substantial support for the spatial random effect. What indicates "large" vs. "small" isn't necessarily straightforward, but here the estimate is clearly above 1, which is a substantially large variance parameter on the log scale. We can also look at the magnitude of the spatial random effect estimates themselves to give an indication as to how much residual spatial autocorrelation there is in the abundance estimates. The posterior samples for the spatial random effects are stored in the `w.samples` tag of the resulting model fit list. Here we calculate the means of the spatial random effects and plot a histogram of their values.
+Looking at the model summary we see adequate convergence of all model parameters. The `summary()` output looks the same as what we saw previously, with the additional section titled "Spatial Covariance". There we see the estimate of the spatial variance (`sigma.sq`) and spatial decay (`phi`) parameters. Interpretation of the spatial variance parameter can follow interpretation of variance parameters in "regular" (i.e., unstructured) random effect variances: when the variance is close to 0, that indicates little support for inclusion of the spatial random effect. When the variance is large, it indicates substantial support for the spatial random effect. What indicates "large" vs. "small" isn't necessarily straightforward. Here the estimate is about `r round(mean(out.sp$theta.samples[, 1]), 2)`, which is fairly large given that the value is on the log scale. We can also look at the magnitude of the spatial random effect estimates themselves to give an indication as to how much residual spatial autocorrelation there is in the abundance estimates. The posterior samples for the spatial random effects are stored in the `w.samples` tag of the resulting model fit list. Here we calculate the means of the spatial random effects and plot a histogram of their values.
 
 ```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
 w.means <- apply(out.sp$w.samples, 2, mean)
 hist(w.means)
 ```
 
-We see a fair amount of large magnitude random effect values, both above and below zero. If there was limited support for spatial autocorrelation, these values would all be very close to zero. 
+We see a decent amount of large magnitude random effect values, both above and below zero. If there was limited support for spatial autocorrelation, these values would all be very close to zero. 
 
 ## Posterior predictive checks
 
@@ -548,7 +548,7 @@ ppc.out.sp <- ppcAbund(out.sp, fit.stat = 'freeman-tukey', group = 1)
 summary(ppc.out.sp)
 ```
 
-Here we see a striking contrast to the Bayesian p-value from the non-spatial Poisson N-mixture model, which was essentially 0. Here, our estimate is almost exactly 0.5, indicating our model is adequately representing the variability in the data with the addition of the spatial random effect in abundance. If you take a look at the manual page for `dataNMixSim`, you can see how we simulated this data set and why the above result makes sense. 
+Here we see a striking contrast to the Bayesian p-value from the non-spatial Poisson N-mixture model, which was essentially 0. Here, our estimate is very close to 0.5, indicating our model is adequately representing the variability in the data with the addition of the spatial random effect in abundance. If you take a look at the manual page for `dataNMixSim`, you can see how we simulated this data set and why the above result makes sense. 
 
 ## Model selection using WAIC
 
@@ -593,10 +593,10 @@ ggplot(mu.plot.dat, aes(x = abund.cov.1, y = mu.med)) +
 Now consider the case where repeated count data, $y_{i, j, k}$, are collected for multiple species $i = 1, \dots, I$ at each survey location $j$ during survey $k$. We are now interested in estimating the abundance of each species $i$ at each location $j$, denoted as $N_{i, j}$. We model $N_{i, j}$ analogous to the single-species N-mixture model, with expected abundance now varying by species and site according to
 
 \begin{equation}\label{mu-msNMix}
-     \text{log}(\mu_{i, j}) = \textbf{x}_j^\top\bm{\beta}_i,
+     \text{log}(\mu_{i, j}) = \bm{x}_j^\top\bm{\beta}_i,
 \end{equation}
 
-where $\bm{\beta}_i$ are the species-specific effects of covariates $\textbf{x}_j$ (including an intercept) . When $N_i(\bm{s}_j)$ is modeled using a negative binomial distribution, we estimate a separate dispersion parameter $\kappa_i$ for each species. We model $\bm{\beta}_i$ as random effects arising from a common, community-level normal distribution, which leads to increased precision of species-specific effects compared to single-species models [@yamaura2012biodiversity]. For example, the species-specific abundance intercept $\beta0_i$ is modeled according to
+where $\bm{\beta}_i$ are the species-specific effects of covariates $\bm{x}_j$ (including an intercept) . When $N_i(\bm{s}_j)$ is modeled using a negative binomial distribution, we estimate a separate dispersion parameter $\kappa_i$ for each species. We model $\bm{\beta}_i$ as random effects arising from a common, community-level normal distribution, which leads to increased precision of species-specific effects compared to single-species models [@yamaura2012biodiversity]. For example, the species-specific abundance intercept $\beta0_i$ is modeled according to
 
 \begin{equation}\label{betaComm}
      \beta0_i \sim \text{Normal}(\mu_{\beta0}, \tau^2_{\beta0}),
@@ -604,7 +604,7 @@ where $\bm{\beta}_i$ are the species-specific effects of covariates $\textbf{x}_
 
 where $\mu_{\beta0}$ is the community-level abundance intercept, and $\tau^2_{\beta0}$ is the variance of the intercept across all $I$ species. The observation portion of the multi-species N-mixture model is identical to the single-species model, with all parameters indexed by species, and the species-specific coefficients $\bm{\alpha}_i$ are modeled hierarchically, analogous to the species-specific abundance coefficients just described.
 
-We assign normal priors to the community-level abundance ($\bm{\mu}_{\beta}$) and detection ($\bm{\mu}_{\alpha}$) mean parameters and inverse-Gamma priors to the community-level variance parameters ($\bm{\tau^2}_{\beta}$ and $\bm{\tau^2}_{\alpha}$). 
+We assign normal priors to the community-level abundance ($\bm{\mu}_{\beta}$) and detection ($\bm{\mu}_{\alpha}$) mean parameters and inverse-Gamma priors to the community-level variance parameters ($\bm{\tau^2}_{\beta}$ and $\bm{\tau^2}_{\alpha}$). We give independent uniform priors to each of the species-specific negative binomial dispersion parameters $\kappa_i$.
 
 ## Fitting multi-species N-mixture models with `msNMix()`
 
@@ -666,20 +666,20 @@ All that's now left to do is specify the number of threads to use (`n.omp.thread
 ```{r}
 # Specify initial tuning values
 ms.tuning <- list(beta = 0.3, alpha = 0.3, beta.star = 0.5, kappa = 0.5)
-# Approx. run time:  2.5 min
+# Approx. run time:  6.5 min
 out.ms <- msNMix(abund.formula = abund.ms.formula,
                  det.formula = det.ms.formula,
                  data = dataNMixSim,
                  inits = ms.inits,
-                 n.batch = 800,
+                 n.batch = 1600,
                  tuning = ms.tuning,
                  batch.length = 25,
                  priors = ms.priors,
                  n.omp.threads = 1,
                  verbose = TRUE,
-                 n.report = 200,
-                 n.burn = 10000,
-                 n.thin = 10,
+                 n.report = 400,
+                 n.burn = 20000,
+                 n.thin = 20,
                  n.chains = 3)
 ```
 
@@ -691,7 +691,7 @@ summary(out.ms)
 # summary(out.ms, level = 'both')
 ```
 
-We see adequate convergence and mixing of all model parameters, with ESS values fairly large and Rhat values less (or very close to) 1.1. Looking at the community-level variance parameters, we can see there is fairly minimal variation among average abundance of each species (i.e., the intercept), with larger variable in the effect of the covariate on abundance, which is further seen by looking at the species-specific effects of the covariate, which range from highly positive to highly negative.
+We see adequate convergence and mixing of all model parameters, with ESS values fairly large and Rhat values less than 1.1. Looking at the community-level variance parameters, we can see there is variation in average abundance of each species (i.e., the intercept) as well as the covariate effect. Looking at the species-specific covariate effects, we can see the effects range from highly positive to highly negative.
 
 ## Posterior predictive checks
 
@@ -702,7 +702,7 @@ ppc.ms.out <- ppcAbund(out.ms, fit.stat = 'chi-squared', group = 2)
 summary(ppc.ms.out)
 ```
 
-Here we see mixed results of the posterior predictive check, with the first and fourth species having a fairly small Bayesian p-value, suggesting the model does not fit very well for those species, which as with the single-species case, is likely related to additional spatial variation in abundance that we are not accounting for. 
+Here we see mixed results of the posterior predictive check, with the third species having a very small Bayesian p-value, suggesting the model does not fit very well for that species, which as with the single-species case, is likely related to additional spatial variation in abundance that we are not accounting for. 
 
 ## Model selection using WAIC
 
@@ -718,21 +718,20 @@ waicAbund(out)
 Here we see nearly identical WAIC values for species 1 across a single-species model vs. a multi-species model. Next, we fit a multi-species negative binomial N-mixture model for comparison with the Poisson multi-species model
 
 ```{r}
-# Approx. run time:  2.7 min
+# Approx. run time:  6.5 min
 out.ms.nb <- msNMix(abund.formula = abund.ms.formula,
                     det.formula = det.ms.formula,
                     data = dataNMixSim,
                     inits = ms.inits,
-                    n.batch = 800,
+                    n.batch = 1600,
                     tuning = ms.tuning,
                     batch.length = 25,
                     priors = ms.priors,
                     n.omp.threads = 1,
-                    verbose = TRUE,
+                    verbose = FALSE,
                     family = 'NB',
-                    n.report = 200,
-                    n.burn = 10000,
-                    n.thin = 10,
+                    n.burn = 20000,
+                    n.thin = 20,
                     n.chains = 3)
 # Negative binomial
 waicAbund(out.ms.nb, by.sp = TRUE)
@@ -740,7 +739,7 @@ waicAbund(out.ms.nb, by.sp = TRUE)
 waicAbund(out.ms, by.sp = TRUE)
 ```
 
-Here we see the negative binomial model provides pretty substantial improvements for the first two species in the data set, while the last four species all have WAIC values that are very similar across the two models. 
+Here we see the negative binomial model provides substantial improvements for most species in the data set. 
 
 ## Prediction
 
@@ -767,7 +766,7 @@ ggplot(mu.0.plot.df, aes(x = abund.cov.1, y = mu.med)) +
   geom_ribbon(aes(ymin = mu.low, ymax = mu.high), fill = 'grey70') +
   geom_line() +
   theme_bw() +
-  facet_wrap(vars(sp)) +
+  facet_wrap(vars(sp), scales = 'free_y') +
   labs(x = 'Covariate', y = 'Expected abundance') 
 ```
 
@@ -780,7 +779,7 @@ The latent factor multi-species N-mixture model is identical to the previously d
 The model is identical to the previously described multi-species N-mixture model, with the only addition being a species-specific random effect at each site added to the equation for expected abundance. More specifically, we model species-specific abundance as 
 
 \begin{equation}
-\text{log}(\mu_{i, j}) = \textbf{x}_j^\top\bm{\beta}_i + \text{w}^\ast_{i, j}.
+\text{log}(\mu_{i, j}) = \bm{x}_j^\top\bm{\beta}_i + \text{w}^\ast_{i, j}.
 \end{equation}
 
 The species-specific random effect $\text{w}^\ast_{i, j}$ is used to account for residual correlations between species by assuming that correlation amongst the species can be explained by species-specific effects of a set of $q$ latent variables. More specifically, we use a factor modeling approach [@lopes2004bayesian] to account for species residual correlations in a computationally efficient manner [@tobler2019joint]. This approach is ideal for large groups of species, where estimating a full $I \times I$ covariance matrix as done in @mimnagh2022bayesian would be computationally intractable (and/or require massive amounts of data). Specifically, we decompose $\text{w}^\ast_{i, j}$ into a linear combination of $q$ latent variables (i.e., factors) and their associated species-specific coefficients (i.e., factor loadings) according to 
@@ -857,31 +856,31 @@ ms.priors <- list(beta.comm.normal = list(mean = 0, var = 2.72),
                   kappa.unif = list(a = 0, b = 100))
 ```
 
-We finish up by specifying the tuning values, where now we specify the initial tuning variance for the factor loadings `lambda` as well as the latent factors `w`. We then run the model for 20,000 iterations with a burn-in of 10,000 samples and a thinning rate of 10, for each of 3 chains, yielding a total of 3000 posterior samples. We will fit the model with a Poisson distribution for abundance.
+We finish up by specifying the tuning values, where now we specify the initial tuning variance for the factor loadings `lambda` as well as the latent factors `w`. We then run the model for 40,000 iterations with a burn-in of 20,000 samples and a thinning rate of 20, for each of 3 chains, yielding a total of 3000 posterior samples. We will fit the model with a Poisson distribution for abundance.
 
 ```{r}
 # Specify initial tuning values
 ms.tuning <- list(beta = 0.3, alpha = 0.3, beta.star = 0.5, kappa = 0.5, w = 0.5, lambda = 0.5)
-# Approx. run time: ~4.3 min
+# Approx. run time: ~11 min
 out.lf.ms <- lfMsNMix(abund.formula = abund.ms.formula,
                       det.formula = det.ms.formula,
                       data = dataNMixSim,
                       inits = ms.inits,
-                      n.batch = 800,
+                      n.batch = 1600,
                       n.factors = n.factors,
                       tuning = ms.tuning,
                       batch.length = 25,
                       priors = ms.priors,
                       n.omp.threads = 1,
                       verbose = TRUE,
-                      n.report = 200,
-                      n.burn = 10000,
-                      n.thin = 10,
+                      n.report = 400,
+                      n.burn = 20000,
+                      n.thin = 20,
                       n.chains = 3)
 summary(out.lf.ms)
 ```
 
-We see adequate convergence of all model parameters shown in the summary output. Note that the factor loadings themselves are not shown in the `summary()` output, but are available in the `lambda.samples` portion of the model list object.
+Note that the factor loadings themselves are not shown in the `summary()` output, but are available in the `lambda.samples` portion of the model list object.
 
 ```{r}
 # Rhats for lambda (the factor loadings)
@@ -892,7 +891,7 @@ out.lf.ms$ESS$lambda
 summary(out.lf.ms$lambda.samples)$quantiles
 ```
 
-Notice the Rhat values are only reported for the elements of the factor loadings matrix that are estimated and not fixed at any specific value, while the ESS values are reported for all elements of the factor loadings matrix, and take value 0 for those parameters that are fixed for identifiability purposes. We can inspect the latent factor loadings as well as the latent factors (stored in `out.lf.ms$w.samples`) to provide information on any groupings that arise from the species in the modeled community. See Appendix S1 in @doser2023joint for a discussion on using factor models as a model-based ordination technique. 
+Notice the Rhat values are only reported for the elements of the factor loadings matrix that are estimated and not fixed at any specific value, while the ESS values are reported for all elements of the factor loadings matrix, and take value 0 for those parameters that are fixed for identifiability purposes. We see fairly small ESS values and some Rhat values above 1.1, so we would run this model for longer in a complete analysis. We can inspect the latent factor loadings as well as the latent factors (stored in `out.lf.ms$w.samples`) to provide information on any groupings that arise from the species in the modeled community. See Appendix S1 in @doser2023joint for a discussion on using factor models as a model-based ordination technique. 
 
 ## Posterior predictive checks
 
@@ -917,10 +916,10 @@ waicAbund(out.ms, by.sp = TRUE)
 
 ## Prediction
 
-Prediction proceeds exactly as before with the multi-species N-mixture model, so we can simply copy the code from above and re-run it with our latent factor model. 
+Prediction proceeds exactly as before with the multi-species N-mixture model, so we can simply copy the code from above and re-run it with our latent factor model. The only difference is that we also specify the `include.w = FALSE` argument, which allows us to visualize the expected abundance relationships without the site-level random effects, analogous to the `include.sp` argument that we saw tih the single-species spatial model.
 
 ```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
-out.pred <- predict(out.lf.ms, X.0, ignore.RE = TRUE)
+out.pred <- predict(out.lf.ms, X.0, ignore.RE = TRUE, include.w = FALSE)
 # Look at the resulting object
 str(out.pred)
 mu.0.quants <- apply(out.pred$mu.0.samples, c(2, 3), quantile,
@@ -935,7 +934,7 @@ ggplot(mu.0.plot.df, aes(x = abund.cov.1, y = mu.med)) +
   geom_ribbon(aes(ymin = mu.low, ymax = mu.high), fill = 'grey70') +
   geom_line() +
   theme_bw() +
-  facet_wrap(vars(sp)) +
+  facet_wrap(vars(sp), scales = 'free_y') +
   labs(x = 'Covariate', y = 'Expected abundance')
 ```
 
@@ -948,7 +947,7 @@ Our final, and most complex, N-mixture model that we fit in `spAbundance` is a m
 The model is identical to the previously described latent factor multi-species N-mixture model with the exception that the latent factors are assumed to have a spatial structure to them. More specifically, our model for species-specific abundance is again
 
 \begin{equation}
-\text{log}(\mu_{i}(\bm{s}_j)) = \textbf{x}(\bm{s}_j)^\top\bm{\beta}_i + \text{w}^\ast_{i}(\bm{s}_j).
+\text{log}(\mu_{i}(\bm{s}_j)) = \bm{x}(\bm{s}_j)^\top\bm{\beta}_i + \text{w}^\ast_{i}(\bm{s}_j).
 \end{equation}
 
 Note again that for spatial models we use the notation $\bm{s}_j$ to make it clear that the model is spatially-explicit and relies upon the coordinates ($\bm{s}_j$) at each site $j$ to estimate this spatial pattern. As with the latent factor model, we decompose $\text{w}^\ast_i(\bm{s}_j)$ into a linear combination of $q$ latent variables (i.e., factors) and their associated species-specific coefficients (i.e., factor loadings) according to
@@ -1038,19 +1037,19 @@ ms.priors <- list(beta.comm.normal = list(mean = 0, var = 2.72),
                   phi.unif = list(3 / max.dist, 3 / min.dist))
 ```
 
-We lastly specify the tuning values and run the model for 20,000 iterations with a burn-in of 10,000 samples and a thinning rate of 10, for each of 3 chains, yielding a total of 3000 posterior samples. As before, we will use a Poisson distribution and 15 nearest neighbors.
+We lastly specify the tuning values and run the model for 40,000 iterations with a burn-in of 20,000 samples and a thinning rate of 20, for each of 3 chains, yielding a total of 3000 posterior samples. As before, we will use a Poisson distribution and 15 nearest neighbors.
 
 
 ```{r}
 # Specify initial tuning values
 ms.tuning <- list(beta = 0.3, alpha = 0.3, beta.star = 0.5, kappa = 0.5, 
                   w = 0.5, lambda = 0.5, phi = 0.5)
-# Approx. run time: ~10 min
+# Approx. run time: ~30 min
 out.sf.ms <- sfMsNMix(abund.formula = abund.ms.formula,
                       det.formula = det.ms.formula,
                       data = dataNMixSim,
                       inits = ms.inits,
-                      n.batch = 800,
+                      n.batch = 1600,
                       n.factors = n.factors,
                       tuning = ms.tuning,
                       batch.length = 25,
@@ -1058,9 +1057,9 @@ out.sf.ms <- sfMsNMix(abund.formula = abund.ms.formula,
                       n.neighbors = 15,
                       n.omp.threads = 1,
                       verbose = TRUE,
-                      n.report = 200,
-                      n.burn = 10000,
-                      n.thin = 10,
+                      n.report = 400,
+                      n.burn = 20000,
+                      n.thin = 20,
                       n.chains = 3)
 ```
 
@@ -1111,7 +1110,7 @@ ggplot(mu.0.plot.df, aes(x = abund.cov.1, y = mu.med)) +
   geom_ribbon(aes(ymin = mu.low, ymax = mu.high), fill = 'grey70') +
   geom_line() +
   theme_bw() +
-  facet_wrap(vars(sp)) +
+  facet_wrap(vars(sp), scales = 'free_y') +
   labs(x = 'Covariate', y = 'Expected abundance')
 ```
 

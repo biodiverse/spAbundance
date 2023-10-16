@@ -49,7 +49,7 @@ set.seed(123)
 
 ## Example data set: Birds in the southeastern US
 
-As an example data set throughout this vignette, we will use distance sampling data from the National Ecological Observatory Network (NEON). Here we use data on 16 bird species collected in 2018 in the Disney Wildnerss Preserve in Florida, USA. Briefly, data were collected at 90 sites where observers recorded the number of all bird species observed during a six-minute, unlimited radius point count survey once during the breeding season. Distance of each individual bird to the observer was recorded using a laser rangefinder. For modeling, we binned the distance measurements into 4 intervals (0-25, 25-50, 50-100, 100-250), removing all observations >250m away. We removed all species with less than 10 observations, leaving us with 16 species observed across the 90 sites. More on the study location can be found [on the NEON website](https://www.neonscience.org/field-sites/dsny). The data are provided as part of the `spAbundance` package and are loaded with `data(neonDWP)`. See the manual page using `help(neonDWP)` for more information on the species included in the data. 
+As an example data set throughout this vignette, we will use distance sampling data from the National Ecological Observatory Network (NEON). Here we use data on 16 bird species collected in 2018 in the Disney Wilderness Preserve in Florida, USA. Briefly, data were collected at 90 sites where observers recorded the number of all bird species observed during a six-minute, unlimited radius point count survey once during the breeding season. Distance of each individual bird to the observer was recorded using a laser rangefinder. For modeling, we binned the distance measurements into 4 intervals (0-25, 25-50, 50-100, 100-250), removing all observations >250m away. We removed all species with less than 10 observations, leaving us with 16 species observed across the 90 sites. More on the study location can be found [on the NEON website](https://www.neonscience.org/field-sites/dsny). The data are provided as part of the `spAbundance` package and are loaded with `data(neonDWP)`. See the manual page using `help(neonDWP)` for more information on the species included in the data. 
 
 ```{r}
 # Load the data set.
@@ -58,7 +58,7 @@ data(neonDWP)
 str(neonDWP)
 ```
 
-The object `neonDWP` is a list that is structured in the format needed for multi-species distance sampling in `spAbundance`. Specifically, `neonDWP` is a list comprised of the distance sampling data for the 16 species (`y`), covariates to include on either abundance and/or detection (`covs`), the break points of the distance bands (`dist.breaks`), an offset (`offset`), and the spatial coordinates for each site (`coords`). Note the coordinates are only required for spatially-explicit HDS models. The three-dimensional array `y` consists of the distance sampling data for all 16 species in the data set, where the dimensions of `y` correspond to species (16), sites (90), and distance band (5). For single-species distance sampling models in Section 2 and 3, we will only use data for the Eastern Towhee (EATO), so we next subset the `neonDWP` list to only include data from  EATO in a new object `dat.EATO`.
+The object `neonDWP` is a list that is structured in the format needed for multi-species distance sampling in `spAbundance`. Specifically, `neonDWP` is a list comprised of the distance sampling data for the 16 species (`y`), covariates to include on either abundance and/or detection (`covs`), the break points of the distance bands (`dist.breaks`), an offset (`offset`), and the spatial coordinates for each site (`coords`). Note the coordinates are only required for spatially-explicit HDS models. The three-dimensional array `y` consists of the distance sampling data for all 16 species in the data set, where the dimensions of `y` correspond to species (16), sites (90), and distance band (4). For single-species distance sampling models in Section 2 and 3, we will only use data for the Eastern Towhee (EATO), so we next subset the `neonDWP` list to only include data from  EATO in a new object `dat.EATO`.
 
 ```{r}
 sp.names <- dimnames(neonDWP$y)[[1]]
@@ -83,10 +83,10 @@ where $\mu_j$ is the expected abundance at site $j$ and $A_j$ is an offset. In d
 We model $\mu_j$ as a function of spatially-varying covariates with a log link function. More specifically, we have 
 
 \begin{equation}
-  \text{log}(\mu_j) = \textbf{x}_j^\top\bm{\beta},
+  \text{log}(\mu_j) = \bm{x}_j^\top\bm{\beta},
 \end{equation}
 
-where $\bm{\beta}$ is a vector of effects for covariates in $\textbf{x}_j$ (including an intercept)
+where $\bm{\beta}$ is a vector of effects for covariates in $\bm{x}_j$ (including an intercept)
 
 We assume data come from observers that count the number of individuals of the species at any given location (i.e., a line transect or point count survey) and record the distance to the line/center of the point count survey of each bird within a set of $k = 1, \dots, K$ distance bands. Note that if continuous distances are reported, they can be post-hoc binned into a set of $K$ distance bands and fit with the package. Define $\bm{y}_j$ as a vector of $K$ values indicating the number of individuals observed within each distance band $k$ at site $j$. Similarly, let $\bm{y}^\ast_j$ be a vector of $K + 1$ values, where the first $K$ values correspond to $\bm{y}_j$, and the last value is the number of unobserved individuals at that location (i.e., $N_j - \sum_{k = 1}^Ky_{k, j}$.) Note that the last value in $\bm{y}^\ast_j$ is not observed (i.e., since $N_j$ is not known). We model $\bm{y}^\ast_j$ according to 
 
@@ -109,7 +109,7 @@ where $\bar{p}_{j, k}$ is the probability of detecting an individual in distance
 where $b_{k + 1}$ and $b_k$ are the upper and lower distance limits for band $k$, and $B$ is the line transect half-width. Additionally for line transects, we have
 
 \begin{equation}
-  \bar{p}_{j, k} = \frac{1}{B}\int_{b_k}^{b_{k+1}}g(x)dx.
+  \bar{p}_{j, k} = \frac{1}{B}\int_{b_k}^{b_{k+1}}g(\text{x})d\text{x}.
 \end{equation}
 
 For circular point count transects, we have
@@ -121,18 +121,18 @@ For circular point count transects, we have
 where $b_{k + 1}$ and $b_k$ are similarly the upper and lower distance limits for band $k$, and $B$ is the radius of the full point count circle. We then define $\bar{p}_{j, k}$ as 
 
 \begin{equation}
-  \bar{p}_{j, k} = \frac{1}{B^2}\int_{b_k}^{b_{k+1}}g(x)2xdx.
+  \bar{p}_{j, k} = \frac{1}{B^2}\int_{b_k}^{b_{k+1}}g(\text{x})2\text{x}d\text{x}.
 \end{equation}
 
-For both line transects and point count surveys, $g(x)$ is some function of distance $x$ from the transect line/center of point count survey. `spAbundance` currently supports two detection functions: half-normal and negative exponential. Both of these functions are governed by a scale parameter $\sigma_j$, which can vary across sites to allow detection probability to vary across spatial locations. We can then model $\sigma_j$ as 
+For both line transects and point count surveys, $g(\text{x})$ is some function of distance $\text{x}$ from the transect line/center of point count survey. `spAbundance` currently supports two detection functions: half-normal and negative exponential. Both of these functions are governed by a scale parameter $\sigma_j$, which can vary across sites to allow detection probability to vary across spatial locations. We can then model $\sigma_j$ as 
 
 \begin{equation}
-  \text{log}(\sigma_j) = \textbf{v}_j^\top\bm{\alpha},
+  \text{log}(\sigma_j) = \bm{v}_j^\top\bm{\alpha},
 \end{equation}
 
-where $\bm{\alpha}$ is a vector of regression coefficients for covariates $\textbf{V}$ (including an intercept). 
+where $\bm{\alpha}$ is a vector of regression coefficients for covariates $\bm{v_j}$ (including an intercept). 
 
-To complete the Bayesian specification of the models, we assign normal priors to the abundance ($\bm{\beta}$) and detection ($\bm{\alpha}$) regression coefficients, and a uniform prior for the negative binomial overdispersion parameters (if applicable).
+To complete the Bayesian specification of the model, we assign normal priors to the abundance ($\bm{\beta}$) and detection ($\bm{\alpha}$) regression coefficients, and a uniform prior for the negative binomial overdispersion parameters (if applicable).
 
 ## Fitting single-species HDS models with `DS()`
 
@@ -154,7 +154,7 @@ abund.formula <- ~ scale(forest) + scale(grass)
 det.formula <- ~ scale(wind)
 ```
 
-Notice the `dist.breaks` element in `dat.EATO` consists of six values: 
+Notice the `dist.breaks` element in `dat.EATO` consists of five values: 
 
 ```{r}
 dat.EATO$dist.breaks
@@ -175,8 +175,7 @@ Next, we specify the initial values for the MCMC sampler in `inits`. `DS()` (and
 
 ```{r}
 # Starting values
-inits.list <- list(beta = 0, alpha = 0, kappa = 1, 
-                   N = apply(dat.EATO$y, 1, sum))
+inits.list <- list(beta = 0, alpha = 0, kappa = 1, N = apply(dat.EATO$y, 1, sum))
 ```
 
 We next specify the priors for the abundance and detection regression coefficients, as well as the negative binomial overdispersion parameter. We assume normal priors for both the detection and abundance regression coefficients. These priors are specified in a list with tags `beta.normal` for abundance and `alpha.normal` for detection parameters (including intercepts). Each list element is then itself a list, with the first element of the list consisting of the hypermeans for each coefficient and the second element of the list consisting of the hypervariances for each coefficient. Alternatively, the hypermean and hypervariances can be specified as a single value if the same prior is used for all regression coefficients. By default, `spAbundance` will set the hypermeans to 0 and the hypervariances to 100. For the negative binomial overdispersion parameter, we will use a uniform prior. This prior is specified as a tag in the prior list called `kappa.unif`, which should be a vector with two values indicating the lower and upper bound of the uniform distribution. The default prior is to set the lower bound to 0 and the upper bound to 100. Recall that lower values of `kappa` indicate substantial overdispersion and high values of `kappa` indicate minimal overdispersion. If there is little support for overdispersion when fitting a negative binomial model, we will likely see the estimates of `kappa` be close to the upper bound of the uniform prior distribution. For the default prior distribution, if the estimates of `kappa` are very close to 100, this indicates little support for overdispersion in the model, and we can likely switch to using a Poisson distribution (which would also likely be favored by model comparison approaches). Below we use default priors for all parameters, but specify them explicitly for clarity.
@@ -244,7 +243,7 @@ We next use the `summary()` function on the resulting `DS()` object for a concis
 summary(out)
 ```
 
-Notice both the abundance and detection coefficients are printed on the log scale. Recall that since we included an offset in the data list, the abundance values are on the scale of individuals per ha. Thus, at average values of forest cover and grassland, our model estimates there are `r print(paste0("exp(", round(mean(out$beta.samples[, 1]), 2), ')'))` individuals per ha, which is `r round(mean(out$beta.samples[, 1]), 2)`. We also see a positive effect of forest cover on EATO density, and essentially no effect of grassland.
+Notice both the abundance and detection coefficients are printed on the log scale. Recall that since we included an offset in the data list, the abundance values are on the scale of individuals per ha. Thus, at average values of forest cover and grassland, our model estimates there are exp(`r round(mean(out$beta.samples[, 1]), 2)`) individuals per ha, which is `r round(exp(mean(out$beta.samples[, 1])), 2)`. We also see a positive effect of forest cover on EATO density, and essentially no effect of grassland.
 
 The model summary also provides information on convergence of the MCMC chains in the form of the Gelman-Rubin diagnostic [@brooks1998] and the effective sample size (ESS) of the posterior samples. Here we find all Rhat values are less than 1.1 and the ESS values are substantially large for all parameters. The ESS values are also adequately high for all model parameters, indicating adequate mixing of the MCMC chains. We can further look at traceplots of different parameters to get a better sense of convergence. This can be done using the `plot()` function, which has three arguments for all `spAbundance` models: `x` (the resulting object from fitting the model), `param` (the parameter name that you want to display), and `density` (a logical value indicating whether to also generate a density plot in addition to the traceplot). To see the parameter names available to use with `plot()` for a given model type, you can look at the manual page for the function, which for models generated from `DS()` can be accessed with `?plot.DS`. 
 
@@ -254,7 +253,7 @@ Below we generate a traceplot for the three abundance coefficients.
 plot(out, param = 'beta', density = FALSE)
 ```
 
-Looking at the detection portion of the model summary, we see there is a negative effect of wind on detection probability, indicating that as wind increases, detection probability decreases, which is what we would expect. Interpreting the intercept detection parameter is a bit difficult and doesn't itself provide us with a great understanding of how detection varies with distance. Instead, we can plot the relationship between distance and detection using our estimated parameter value. The below code generates a plot of detection probability versus distance (at the average value of wind). Notice we use the nifty `gxhn()` function from unmarked to get the estimated detection probability value for a given distance and scale parameter value when using the half normal function (see `?gxhn` for more details).
+Looking at the detection portion of the model summary, we see there is a negative effect of wind on detection probability, indicating that as wind increases, detection probability decreases, which is what we would expect. Interpreting the intercept detection parameter is a bit difficult and doesn't itself provide us with a great understanding of how detection varies with distance. Instead, we can plot the relationship between distance and detection using our estimated parameter value. The below code generates a plot of detection probability versus distance (at the average value of wind). Notice we use the nifty `gxhn()` function from `unmarked` to get the estimated detection probability value for a given distance and scale parameter value when using the half normal function (see `?gxhn` for more details).
 
 ```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in'}
 det.int.samples <- out$alpha.samples[, 1] 
@@ -263,9 +262,9 @@ det.quants <- quantile(exp(out$alpha.samples[, 1]), c(0.025, 0.5, 0.975))
 x.vals <- seq(0, .125, length.out = 200)
 n.vals <- length(x.vals)
 p.plot.df <- data.frame(med = gxhn(x.vals, det.quants[2]), 
-			low = gxhn(x.vals, det.quants[1]), 
-			high = gxhn(x.vals, det.quants[3]),
-			x.val = x.vals * 1000)
+                        low = gxhn(x.vals, det.quants[1]), 
+                        high = gxhn(x.vals, det.quants[3]),
+                        x.val = x.vals * 1000)
 
 ggplot(data = p.plot.df) + 
   geom_ribbon(aes(x = x.val, ymin = low, ymax = high), fill = 'grey', 
@@ -286,7 +285,18 @@ The function `ppcAbund()` performs a posterior predictive check on all `spAbunda
 3. Compute a fit statistic on both the actual data and also on the model-generated 'replicate data'.
 4. Compare the fit statistics for the true data and replicate data. If they are widely different, this suggests a lack of fit of the model to the actual data set at hand.
 
-To perform a posterior predictive check, we send the resulting `DS` model object as input to the `ppcAbund()` function, along with a fit statistic (`fit.stat`) and a numeric value indicating how to group, or bin, the data (`group`). Currently supported fit statistics include the Freeman-Tukey statistic and the Chi-Squared statistic (`freeman-tukey` or `chi-squared`, respectively, @kery2015applied). For HDS models, `ppcAbund()` allows the user to group the data by row (site; `group = 1`) or not at all (`group = 0`). `ppcAbund()` will then return a set of posterior samples for the fit statistic (or discrepancy measure) using the actual data (`fit.y`) and model generated replicate data set (`fit.y.rep`), summed across all data points in the chosen manner. 
+We calculate the replicate values in two steps. We first predict a value of latent abudance at each site using the expected abundance at site $j$ (i.e., $\mu_j$), and then subsequently generate the estimated counts in each distance bin $k$ at that site $j$. More specifically, the replicate values are calculated as 
+
+\begin{equation}
+\begin{split}
+  \hat{N}_j &\sim \text{Poisson}(\mu_j), \\
+  \hat{\bm{y}}_j &\sim \text{Multinomial}(\hat{N}_j, \bm{\pi}_j).
+\end{split}
+\end{equation}
+
+Note the Poisson distribution is replaced with a negative binomial distribution if that is used to fit the model. This is what we call a "marginal" approach to calculating fitted values. See our [discussion in the N-mixture modeling vignette](https://www.jeffdoser.com/files/spabundance-web/articles/nmixturemodels#posterior-predictive-checks) for further details on different approaches to calculating replicate values in hierarchical models.
+
+To perform a posterior predictive check, we send the resulting `DS` model object as input to the `ppcAbund()` function, along with a fit statistic (`fit.stat`) and a numeric value indicating how to group, or bin, the data (`group`). Currently supported fit statistics include the Freeman-Tukey statistic and the Chi-Squared statistic (`freeman-tukey` or `chi-squared`, respectively, @kery2015applied). For HDS models, `ppcAbund()` allows the user to group the data by row (site; `group = 1`) or not at all (`group = 0`). `ppcAbund()` will then return a set of posterior samples for the fit statistic (or discrepancy measure) using the actual data (`fit.y`) and model generated replicate data set (`fit.y.rep`), summed across all data points in the chosen manner. For example, when setting `group = 1`, `spAbundance` will first sum all of the count values at a given site across all distance bands at that site, then calculate the fit statistic using the site-level sums. When setting `group = 0`, `spAbundance` calculates the fit statistic directly on the count value in each site and distance bin.  
 
 The resulting values from a call to `ppcAbund()` can be used with the `summary()` function to generate a Bayesian p-value, which is the probability, under the fitted model, to obtain a value of the fit statistic that is more extreme (i.e., larger) than the one observed, i.e., for the actual data. Bayesian p-values are sensitive to individual values, so we may also want to explore the discrepancy measures for each (potentially "grouped") data point. `ppcAbund()` returns a matrix of posterior quantiles for the fit statistic for both the observed (`fit.y.group.quants`) and model generated, replicate data (`fit.y.rep.group.quants`) for each "grouped" data point.
 
@@ -308,10 +318,10 @@ For Bayesian hierarchical models like HDS models, the most common Bayesian model
 The WAIC is calculated for all `spAbundance` model objects using the function `waicAbund()`. We calculate the WAIC as
 
 $$
-\text{WAIC} = -2 \times (\text{elpd} - \text{pD}),
+\text{WAIC} = -2 \times (\text{elppd} - \text{pD}),
 $$
 
-where elpd is the expected log point-wise predictive density and PD is the effective number of parameters. We calculate elpd by calculating the likelihood for each posterior sample, taking the mean of these likelihood values, taking the log of the mean of the likelihood values, and summing these values across all sites. We calculate the effective number of parameters by calculating the variance of the log likelihood for each site taken over all posterior samples, and then summing these values across all sites. See Appendix S1 from @broms2016model for more details in the context of occupancy models.
+where elppd is the expected log point-wise predictive density and pD is the effective number of parameters. We calculate elpd by calculating the likelihood for each posterior sample, taking the mean of these likelihood values, taking the log of the mean of the likelihood values, and summing these values across all sites. We calculate the effective number of parameters by calculating the variance of the log likelihood for each site taken over all posterior samples, and then summing these values across all sites. See Appendix S1 from @broms2016model for more details in the context of occupancy models.
 
 We calculate the WAIC using `waicAbund()` for our model below (as always, note some slight differences with your solutions due to Monte Carlo error).
 
@@ -319,7 +329,7 @@ We calculate the WAIC using `waicAbund()` for our model below (as always, note s
 waicAbund(out)
 ```
 
-Note the perhaps somewhat cryptic message that is displayed to the screen when you run the previous line. When calculating WAIC for HDS models, we need to integrate out the latent abundance values, which requires setting an upper bound to the potential value of the latent abundance values $N_j$ at each spatial location. By default, `waicAbund()` will set that upper bound to the largest abundance value at each site plus 10 (as indicated by the message). This upper bound can be controlled further with the `N.max` argument in `waicAbund()`. See the help page for `waicAbund` for details.
+Note the perhaps somewhat cryptic message that is displayed to the screen when you run the previous line. When calculating WAIC for HDS models, we need to integrate out the latent abundance values, which requires setting an upper bound to the potential value of the latent abundance values $N_j$ at each spatial location. By default, `waicAbund()` will set that upper bound to the largest abundance value at each site plus 10 (as indicated by the message). This upper bound can be controlled further with the `N.max` argument in `waicAbund()`. See the help page for `waicAbund` for details. Note that the higher the value of `N.max` the longer the function will take, so `waicAbund()` will be slower when working with data that have large counts. 
 
 Now let's compare our Poisson HDS model to a model that uses a negative binomial distribution for abundance.
 
@@ -429,7 +439,7 @@ gc()
 When working across large spatial domains, accounting for residual spatial autocorrelation in species distributions can often improve predictive performance of a model, leading to more accurate predictions of species abundance patterns [@guelat2018]. We here extend the basic single-species HDS model to incorporate a spatial random effect that accounts for unexplained spatial variation in species abundance across a region of interest. Let $\bm{s}_j$ denote the geographical coordinates of site $j$ for $j = 1, \dots, J$. In all spatially-explicit models, we include $\bm{s}_j$ directly in the notation of spatially-indexed variables to indicate the model is spatially-explicit. More specifically, the expected abundance at site $j$ with coordinates $\bm{s}_j$, $\mu(\bm{s}_j)$, now takes the form
 
 \begin{equation}
-\text{log}(\mu(\bm{s}_j) = \textbf{x}(\bm{s}_j)^{\top}\bm{\beta} + \text{w}(\bm{s}_j),
+\text{log}(\mu(\bm{s}_j) = \bm{x}(\bm{s}_j)^{\top}\bm{\beta} + \text{w}(\bm{s}_j),
 \end{equation}
 
 where $\text{w}(\bm{s}_j)$ is a spatial random effect modeled with a Nearest Neighbor Gaussian Process (NNGP; @datta2016hierarchical). More specifically, we have
@@ -509,7 +519,7 @@ tuning <- list(beta = 0.5, alpha = 0.5, kappa = 0.5, beta.star = 0.5,
                w = 0.5, phi = 0.5)
 ```
 
-The argument `n.omp.threads` specifies the number of threads to use for within-chain parallelization, while `verbose` specifies whether or not to print the progress of the sampler. As before, the argument `n.report` specifies the interval to report the Metropolis-Hastings sampler acceptance rate. Below we set `n.report = 100`, which will result in information on the acceptance rate and tuning parameters every 100th batch.
+The argument `n.omp.threads` specifies the number of threads to use for within-chain parallelization, while `verbose` specifies whether or not to print the progress of the sampler. As before, the argument `n.report` specifies the interval to report the Metropolis-Hastings sampler acceptance rate. Below we set `n.report = 500`, which will result in information on the acceptance rate and tuning parameters every 500th batch.
 
 ```{r}
 verbose <- TRUE
@@ -586,7 +596,7 @@ Here we see fairly substantial improvement in the WAIC for the spatial model com
 
 ## Prediction
 
-We can similarly predict across a region of interest using the `predict()` function as we saw with the non-spatial HDS model. Here we again generate predictions across a 1ha grid of the Disney Wildnerss Preserve. The primary arguments for prediction here are identical to those we saw for the non-spatial model, with the addition of the `coords` argument to specify the spatial coordinates of the prediction locations. These are necessary to generate the predictions of the spatial random effects. We use the same design matrix that we previously formed for the non-spatial predictions (`X.0`), which contains the covariate values standardized by the values used when we fit the model. There are also arguments for parallelization (`n.omp.threads`), reporting sampler progress (`verbose` and `n.report`), and predicting without the spatial random effects (`include.sp`). We generally only recommend setting `include.sp = FALSE` when generating predictions for a marginal probability plot (see the N-mixture model vignette for an example of this).
+We can similarly predict across a region of interest using the `predict()` function as we saw with the non-spatial HDS model. Here we again generate predictions across a 1ha grid of the Disney Wilderness Preserve. The primary arguments for prediction here are identical to those we saw for the non-spatial model, with the addition of the `coords` argument to specify the spatial coordinates of the prediction locations. These are necessary to generate the predictions of the spatial random effects. We use the same design matrix that we previously formed for the non-spatial predictions (`X.0`), which contains the covariate values standardized by the values used when we fit the model. There are also arguments for parallelization (`n.omp.threads`), reporting sampler progress (`verbose` and `n.report`), and predicting without the spatial random effects (`include.sp`). We generally only recommend setting `include.sp = FALSE` when generating predictions for a marginal probability plot (see the [N-mixture model vignette](https://www.jeffdoser.com/files/spabundance-web/articles/nmixturemodels) for an example of this).
 
 ```{r, fig.width = 5, fig.height = 5, fig.align = 'center', units = 'in', message = FALSE, warning = FALSE}
 # Look at the prediction data set again
@@ -629,18 +639,18 @@ There are some interesting differences between the predictions of the spatial an
 Now consider the case where distance sampling data, $\bm{y}_{i, j}$, are collected for multiple species $i = 1, \dots, I$ at each survey location $j$. We are now interested in estimating the abundance of each species $i$ at each location $j$, denoted as $N_{i, j}$. We model $N_{i, j}$ analogous to the single-species HDS model, with expected abundance now varying by species and site according to
 
 \begin{equation}\label{mu-msDS}
-     \text{log}(\mu_{i, j}) = \textbf{x}_j^\top\bm{\beta}_i,
+     \text{log}(\mu_{i, j}) = \bm{x}_j^\top\bm{\beta}_i,
 \end{equation}
 
-where $\bm{\beta}_i$ are the species-specific effects of covariates $\textbf{x}_j$ (including an intercept) . When $N_i(\bm{s}_j)$ is modeled using a negative binomial distribution, we estimate a separate dispersion parameter $\kappa_i$ for each species. We model $\bm{\beta}_i$ as random effects arising from a common, community-level normal distribution, which leads to increased precision of species-specific effects compared to single-species models [@sollmann2016hierarchical]. For example, the species-specific abundance intercept $\beta0_i$ is modeled according to
+where $\bm{\beta}_i$ are the species-specific effects of covariates $\bm{x}_j$ (including an intercept) . When $N_i(\bm{s}_j)$ is modeled using a negative binomial distribution, we estimate a separate dispersion parameter $\kappa_i$ for each species. We model $\bm{\beta}_i$ as random effects arising from a common, community-level normal distribution, which leads to increased precision of species-specific effects compared to single-species models [@sollmann2016hierarchical]. For example, the species-specific abundance intercept $\beta_{0, i}$ is modeled according to
 
 \begin{equation}\label{betaComm}
-     \beta0_i \sim \text{Normal}(\mu_{\beta0}, \tau^2_{\beta0}),
+     \beta_{0, i} \sim \text{Normal}(\mu_{\beta_0}, \tau^2_{\beta_0}),
 \end{equation}
 
-where $\mu_{\beta0}$ is the community-level abundance intercept, and $\tau^2_{\beta0}$ is the variance of the intercept across all $I$ species. The observation portion of the multi-species HDS model is identical to the single-species model, with all parameters indexed by species, and the species-specific coefficients $\bm{\alpha}_i$ modeled hierarchically analogous to the species-specific abundance coefficients just described.
+where $\mu_{\beta_0}$ is the community-level abundance intercept, and $\tau^2_{\beta_0}$ is the variance of the intercept across all $I$ species. The observation portion of the multi-species HDS model is identical to the single-species model, with all parameters indexed by species, and the species-specific coefficients $\bm{\alpha}_i$ modeled hierarchically analogous to the species-specific abundance coefficients just described.
 
-We assign normal priors to the community-level abundance ($\bm{\mu}_{\beta}$) and detection ($\bm{\mu}_{\alpha}$) mean parameters and inverse-Gamma priors to the community-level variance parameters ($\bm{\tau^2}_{\beta}$ and $\bm{\tau^2}_{\alpha}$).
+We assign normal priors to the community-level abundance ($\bm{\mu}_{\beta}$) and detection ($\bm{\mu}_{\alpha}$) mean parameters and inverse-Gamma priors to the community-level variance parameters ($\bm{\tau^2}_{\beta}$ and $\bm{\tau^2}_{\alpha}$). We give independent uniform priors to each of the species-specific negative binomial dispersion parameters $\kappa_i$.
 
 ## Fitting multi-species HDS models with `msDS()`
 
@@ -669,7 +679,7 @@ abund.formula <- ~ scale(forest) + scale(grass)
 det.formula <- ~ scale(wind)
 ```
 
-Next we specify the initial values in `inits`. For multi-species HDS models, we supply initial values for community-level and species-level parameters. In `msDS()`, we will supply initial values for the following parameters: `alpha.comm` (community-level detection coefficients), `beta.comm` (community-level abundance coefficients), `alpha` (species-level detection coefficients), `beta` (species-level abundance coefficients), `tau.sq.beta` (community-level abundance variance parameters), `tau.sq.alpha` (community-level detection variance parameters, `N` (latent abundance values for all species), `kappa` (species-level negative binomial overdispersion parameters), `sigma.sq.mu` (random effect variances for abundance), and `sigma.sq.p` (random effect variances for detection). These are all specified in a single list. Initial values for community-level parameters (including the random effect variances) are either vectors of length corresponding to the number of community-level detection or occurrence parameters in the model (including the intercepts) or a single value if all parameters are assigned the same initial values. Initial values for species level parameters are either matrices with the number of rows indicating the number of species, and each column corresponding to a different regression parameter, or a single value if the same initial value is used for all species and parameters. The initial values for the latent abundance matrix are specified as a matrix with $I$ rows corresponding to the number of species and $J$ columns corresponding to the number of sites.
+Next we specify the initial values in `inits`. For multi-species HDS models, we supply initial values for community-level and species-level parameters. In `msDS()`, we will supply initial values for the following parameters: `alpha.comm` (community-level detection coefficients), `beta.comm` (community-level abundance coefficients), `alpha` (species-level detection coefficients), `beta` (species-level abundance coefficients), `tau.sq.beta` (community-level abundance variance parameters), `tau.sq.alpha` (community-level detection variance parameters), `N` (latent abundance values for all species), `kappa` (species-level negative binomial overdispersion parameters), `sigma.sq.mu` (random effect variances for abundance), and `sigma.sq.p` (random effect variances for detection). These are all specified in a single list. Initial values for community-level parameters (including the random effect variances) are either vectors of length corresponding to the number of community-level detection or occurrence parameters in the model (including the intercepts) or a single value if all parameters are assigned the same initial values. Initial values for species level parameters are either matrices with the number of rows indicating the number of species, and each column corresponding to a different regression parameter, or a single value if the same initial value is used for all species and parameters. Initial values for `kappa` is similarly either a single value that is assumed to be the same for all species, or a vector with a specific initial value for each species. The initial values for the latent abundance matrix are specified as a matrix with $I$ rows corresponding to the number of species and $J$ columns corresponding to the number of sites.
 
 ```{r}
 # Number of species
@@ -808,11 +818,11 @@ mu.sum.samples <- apply(out.ms.pred$mu.0.samples, c(1, 3), sum)
 # Average total abundance at each site
 mu.sum.means <- apply(mu.sum.samples, 2, mean)
 plot.df <- data.frame(Easting = neonPredData$easting,
-		      Northing = neonPredData$northing,
-		      mu.sum.means = mu.sum.means)
+                      Northing = neonPredData$northing,
+                      mu.sum.means = mu.sum.means)
 coords.stars <- st_as_stars(plot.df, crs = st_crs(32617))
 coords.sf <- st_as_sf(as.data.frame(neonDWP$coords), coords = c('easting', 'northing'),
-		      crs = st_crs(32617))
+                      crs = st_crs(32617))
 # Plot of median estimate
 ggplot() +
   geom_stars(data = coords.stars, aes(x = Easting, y = Northing, fill = mu.sum.means)) +
@@ -833,7 +843,7 @@ The latent factor multi-species HDS model is identical to the previously describ
 The model is identical to the previously described multi-species HDS model, with the only addition being a species-specific random effect at each site added to the equation for expected abundance. More specifically, we model species-specific abundance as 
 
 \begin{equation}
-\text{log}(\mu_{i, j}) = \textbf{x}_j^\top\bm{\beta}_i + \text{w}^\ast_{i, j}.
+\text{log}(\mu_{i, j}) = \bm{x}_j^\top\bm{\beta}_i + \text{w}^\ast_{i, j}.
 \end{equation}
 
 The species-specific random effect $\text{w}^\ast_{i, j}$ is used to account for residual correlations between species by assuming that correlation amongst the species can be explained by species-specific effects of a set of $q$ latent variables. More specifically, we use a factor modeling approach [@lopes2004bayesian] to account for species residual correlations in a computationally efficient manner [@tobler2019joint]. This approach is ideal for large groups of species, where estimating a full $I \times I$ covariance matrix would be computatinally intractable (and/or require massive amounts of data). Specifically, we decompose $\text{w}^\ast_{i, j}$ into a linear combination of $q$ latent variables (i.e., factors) and their associated species-specific coefficients (i.e., factor loadings) according to 

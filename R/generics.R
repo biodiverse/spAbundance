@@ -2442,9 +2442,9 @@ summary.msNMix <- function(object,
     }
     cat("\n")
     # Detection
-    if (is(object, 'msNMix')) {
+    if (class(object) %in% c('msNMix', 'lfMsNMix', 'sfMsNMix')) {
       cat("Detection Means (logit scale): \n")
-    } else if (is(object, 'msDS')) {
+    } else if (class(object) %in% c('msDS', 'lfMsDS', 'sfMsDS')) {
       cat("Detection Means (log scale): \n")
     }
     tmp.1 <- t(apply(object$alpha.comm.samples, 2,
@@ -2456,9 +2456,9 @@ summary.msNMix <- function(object,
     colnames(diags) <- c('Rhat', 'ESS')
 
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-    if (is(object, 'msNMix')) {
+    if (class(object) %in% c('msNMix', 'lfMsNMix', 'sfMsNMix')) {
       cat("\nDetection Variances (logit scale): \n")
-    } else if (is(object, 'msDS')) {
+    } else if (class(object) %in% c('msDS', 'lfMsDS', 'sfMsDS')) {
       cat("\nDetection Variances (log scale): \n")
     }
     tmp.1 <- t(apply(object$tau.sq.alpha.samples, 2,
@@ -2472,9 +2472,9 @@ summary.msNMix <- function(object,
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
     if (object$pRE) {
       cat("\n")
-      if (is(object, 'msNMix')) {
+    if (class(object) %in% c('msNMix', 'lfMsNMix', 'sfMsNMix')) {
         cat("Detection Random Effect Variances (logit scale): \n")
-      } else if (is(object, 'msDS')) {
+    } else if (class(object) %in% c('msDS', 'lfMsDS', 'sfMsDS')) {
         cat("Detection Random Effect Variances (log scale): \n")
       }
       tmp.1 <- t(apply(object$sigma.sq.p.samples, 2,
@@ -2506,9 +2506,9 @@ summary.msNMix <- function(object,
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
     cat("\n")
     # Detection
-    if (is(object, 'msNMix')) {
+    if (class(object) %in% c('msNMix', 'lfMsNMix', 'sfMsNMix')) {
       cat("Detection (logit scale): \n")
-    } else if (is(object, 'msDS')) {
+    } else if (class(object) %in% c('msDS', 'lfMsDS', 'sfMsDS')) {
       cat("Detection (log scale): \n")
     }
     tmp.1 <- t(apply(object$alpha.samples, 2,

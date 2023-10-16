@@ -111,7 +111,6 @@ ppcAbund <- function(object, fit.stat, group, type = 'marginal', ...) {
 	} # i
       }
     }
-    # Do the stuff 
     if (group == 1) {
       y.grouped <- apply(y, 1, sum, na.rm = TRUE)
       y.rep.grouped <- apply(y.rep.samples, c(1, 2), sum, na.rm = TRUE)
@@ -440,20 +439,20 @@ ppcAbund <- function(object, fit.stat, group, type = 'marginal', ...) {
               for (k in 1:J) {
                 E.grouped <- det.prob[j, i, k, rep.indx[[k]]] * abund.samples[j, i, k]
                 fit.big.y[j, i, k, rep.indx[[k]]] <- (y[i, k, rep.indx[[k]]] - E.grouped)^2 / (E.grouped + e)
-                fit.y[j, i] <- sum(fit.big.y[j, i, , ], na.rm = TRUE)
                 fit.big.y.rep[j, i, k, rep.indx[[k]]] <- (y.rep.samples[j, i, k, rep.indx[[k]]] - E.grouped)^2 / (E.grouped + e)
-                fit.y.rep[j, i] <- sum(fit.big.y.rep[j, i, , ], na.rm = TRUE)
 	      }
+              fit.y[j, i] <- sum(fit.big.y[j, i, , ], na.rm = TRUE)
+              fit.y.rep[j, i] <- sum(fit.big.y.rep[j, i, , ], na.rm = TRUE)
             }
         } else if (fit.stat == 'freeman-tukey') {
           for (j in 1:n.samples) {
             for (k in 1:J) {
               E.grouped <- det.prob[j, i, k, rep.indx[[k]]] * abund.samples[j, i, k]
               fit.big.y[j, i, k, rep.indx[[k]]] <- (sqrt(y[i, k, rep.indx[[k]]]) - sqrt(E.grouped))^2 
-              fit.y[j, i] <- sum(fit.big.y[j, i, , ], na.rm = TRUE)
               fit.big.y.rep[j, i, k, rep.indx[[k]]] <- (sqrt(y.rep.samples[j, i, k, rep.indx[[k]]]) - sqrt(E.grouped))^2 
-              fit.y.rep[j, i] <- sum(fit.big.y.rep[j, i, , ], na.rm = TRUE)
 	    }
+            fit.y[j, i] <- sum(fit.big.y[j, i, , ], na.rm = TRUE)
+            fit.y.rep[j, i] <- sum(fit.big.y.rep[j, i, , ], na.rm = TRUE)
           }
         }
       }
@@ -556,20 +555,20 @@ ppcAbund <- function(object, fit.stat, group, type = 'marginal', ...) {
               for (k in 1:J) {
                 E.grouped <- pi.samples[j, i, k, ] * N.samples[j, i, k]
                 fit.big.y[j, i, k, ] <- (y[i, k, ] - E.grouped)^2 / (E.grouped + e)
-                fit.y[j, i] <- sum(fit.big.y[j, i, , ], na.rm = TRUE)
                 fit.big.y.rep[j, i, k, ] <- (y.rep.samples[j, i, k, ] - E.grouped)^2 / (E.grouped + e)
-                fit.y.rep[j, i] <- sum(fit.big.y.rep[j, i, , ], na.rm = TRUE)
 	      }
+              fit.y[j, i] <- sum(fit.big.y[j, i, , ], na.rm = TRUE)
+              fit.y.rep[j, i] <- sum(fit.big.y.rep[j, i, , ], na.rm = TRUE)
             }
         } else if (fit.stat == 'freeman-tukey') {
           for (j in 1:n.samples) {
             for (k in 1:J) {
               E.grouped <- pi.samples[j, i, k, ] * N.samples[j, i, k]
               fit.big.y[j, i, k, ] <- (sqrt(y[i, k, ]) - sqrt(E.grouped))^2 
-              fit.y[j, i] <- sum(fit.big.y[j, i, , ], na.rm = TRUE)
               fit.big.y.rep[j, i, k, ] <- (sqrt(y.rep.samples[j, i, k, ]) - sqrt(E.grouped))^2 
-              fit.y.rep[j, i] <- sum(fit.big.y.rep[j, i, , ], na.rm = TRUE)
 	    }
+            fit.y[j, i] <- sum(fit.big.y[j, i, , ], na.rm = TRUE)
+            fit.y.rep[j, i] <- sum(fit.big.y.rep[j, i, , ], na.rm = TRUE)
           }
         }
       }

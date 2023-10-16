@@ -208,7 +208,7 @@ simMsAbund <- function(J.x, J.y, n.rep, n.rep.max, n.sp, beta, kappa, tau.sq, mu
   for (i in 1:p.svc) {
     w.star[[i]] <- matrix(0, nrow = n.sp, ncol = J)
     if (factor.model) {
-      lambda[[i]] <- matrix(rnorm(n.sp * n.factors, 0, 1), n.sp, n.factors) 
+      lambda[[i]] <- matrix(rnorm(n.sp * n.factors, 0, 0.5), n.sp, n.factors) 
       # Set diagonals to 1
       diag(lambda[[i]]) <- 1
       # Set upper tri to 0

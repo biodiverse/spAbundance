@@ -39,16 +39,12 @@ data(dataNMixSim)
 
 \examples{
 \dontrun{
-  # The data set was generated with the following code
-  rm(list = ls())
-  library(spAbundance)
-  
-  # Simulate data -----------------------------------------------------------
-  set.seed(123)
+  set.seed(6)
   J.x <- 15
   J.y <- 15
   J <- J.x * J.y
   n.rep <- sample(3, size = J, replace = TRUE)
+  # n.rep <- rep(5, J) 
   n.sp <- 6
   # Community-level covariate effects
   # Occurrence
@@ -62,8 +58,8 @@ data(dataNMixSim)
   # Random effects
   mu.RE <- list()
   mu.RE <- list(levels = c(10),
-                sigma.sq.mu = c(0.5),
-                beta.indx = list(1))
+  	       sigma.sq.mu = c(0.5),
+                 beta.indx = list(1))
   p.RE <- list()
   # Draw species-level effects from community means.
   beta <- matrix(NA, nrow = n.sp, ncol = p.abund)
@@ -83,9 +79,11 @@ data(dataNMixSim)
   family <- 'Poisson'
   
   dat <- simMsNMix(J.x = J.x, J.y = J.y, n.rep = n.rep, n.sp = n.sp, beta = beta, alpha = alpha,
-                   mu.RE = mu.RE, p.RE = p.RE, sp = sp, kappa = kappa, family = family, 
-                   factor.model = factor.model, phi = phi, 
-                   cov.model = 'exponential', n.factors = n.factors)
+  	        mu.RE = mu.RE, p.RE = p.RE, sp = sp, kappa = kappa, family = family, 
+                  factor.model = factor.model, phi = phi, 
+                  cov.model = 'exponential', n.factors = n.factors)
+  table(dat$N)
+  apply(dat$N, 1, sum)
   
   y <- dat$y
   X <- dat$X
@@ -100,10 +98,10 @@ data(dataNMixSim)
   colnames(abund.covs) <- c('int', 'abund.cov.1', 'abund.factor.1')
   abund.covs <- abund.covs[, -1]
   det.covs <- list(det.cov.1 = X.p[, , 2], 
-                   det.cov.2 = X.p[, , 3]) 
+  		 det.cov.2 = X.p[, , 3]) 
   dataNMixSim <- list(y = y, 
-                      abund.covs = abund.covs, 
-                      det.covs = det.covs, 
+  		    abund.covs = abund.covs, 
+  		    det.covs = det.covs, 
                       coords = coords)
 }
 }
