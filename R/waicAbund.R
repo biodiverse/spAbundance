@@ -119,8 +119,8 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
     kappa.samples <- object$kappa.samples
     y <- object$y
     y.max <- apply(y, 1, max, na.rm = TRUE)
-    K <- apply(y, 1, function(a) sum(!is.na(a)))
-    K.max <- max(K)
+    y.na <- ifelse(is.na(y), 1, 0)
+    K.max <- dim(y)[2]
     mu.samples <- t(apply(object$mu.samples, 1, function(a) a * object$offset))
     if (is(object, 'NMix')) {
       p.samples <- fitted.NMix(object)$p.samples
@@ -139,7 +139,7 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
     storage.mode(n.samples) <- "integer"
     storage.mode(kappa.samples) <- "double"
     storage.mode(y) <- "double"
-    storage.mode(K) <- "integer"
+    storage.mode(y.na) <- 'integer'
     storage.mode(mu.samples) <- "double"
     storage.mode(p.samples) <- "double"
     storage.mode(dist) <- "integer"
@@ -148,7 +148,7 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
     storage.mode(K.max) <- "integer"
     storage.mode(y.max) <- "integer"
 
-    tmp <- .Call("waicAbund", J, K, dist, model.type, 
+    tmp <- .Call("waicAbund", J, y.na, dist, model.type, 
 		 y, n.samples, N.samples, 
 		 kappa.samples, mu.samples, p.samples, 
 		 N.max, K.max, y.max)
@@ -175,8 +175,8 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
       }
       y.max <- apply(y, 1, max, na.rm = TRUE)
       # y.max <- ifelse(y.max == 0, 1, y.max)
-      K <- apply(y, 1, function(a) sum(!is.na(a)))
-      K.max <- max(K)
+      y.na <- ifelse(is.na(y), 1, 0)
+      K.max <- dim(y)[2]
       mu.samples <- object$mu.samples[, i, ]
       mu.samples <- t(apply(mu.samples, 1, function(a) a * object$offset))
       p.samples.curr <- p.samples[, i, , ]
@@ -193,7 +193,7 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
       storage.mode(n.samples) <- "integer"
       storage.mode(kappa.samples) <- "double"
       storage.mode(y) <- "double"
-      storage.mode(K) <- "integer"
+      storage.mode(y.na) <- "integer"
       storage.mode(mu.samples) <- "double"
       storage.mode(p.samples.curr) <- "double"
       storage.mode(dist) <- "integer"
@@ -202,7 +202,7 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
       storage.mode(K.max) <- "integer"
       storage.mode(y.max) <- "integer"
 
-      tmp <- .Call("waicAbund", J, K, dist, model.type, 
+      tmp <- .Call("waicAbund", J, y.na, dist, model.type, 
           	 y, n.samples, N.samples, 
           	 kappa.samples, mu.samples, p.samples.curr, 
           	 N.max.curr, K.max, y.max)
@@ -225,9 +225,9 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
     y <- object$y
     J <- nrow(y)
     y.sum <- apply(y, 1, sum, na.rm = TRUE)
+    y.na <- ifelse(is.na(y), 1, 0)
     # The number of distance bins
-    K <- apply(y, 1, function(a) sum(!is.na(a)))
-    K.max <- max(K)
+    K.max <- dim(y)[2]
     mu.samples <- t(apply(object$mu.samples, 1, function(a) a * object$offset))
     pi.samples <- object$pi.samples
     pi.samples <- array(NA, dim = c(n.samples, J, K.max + 1))
@@ -246,7 +246,7 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
     storage.mode(n.samples) <- "integer"
     storage.mode(kappa.samples) <- "double"
     storage.mode(y) <- "double"
-    storage.mode(K) <- "integer"
+    storage.mode(y.na) <- "integer"
     storage.mode(mu.samples) <- "double"
     storage.mode(pi.samples) <- "double"
     storage.mode(dist) <- "integer"
@@ -255,7 +255,7 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
     storage.mode(K.max) <- "integer"
     storage.mode(y.sum) <- "integer"
 
-    tmp <- .Call("waicAbund", J, K, dist, model.type, 
+    tmp <- .Call("waicAbund", J, y.na, dist, model.type, 
 		 y, n.samples, N.samples, 
 		 kappa.samples, mu.samples, pi.samples, 
 		 N.max, K.max, y.sum)
@@ -281,8 +281,8 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
       }
       y.sum <- apply(y, 1, sum, na.rm = TRUE)
       J <- nrow(y)
-      K <- apply(y, 1, function(a) sum(!is.na(a)))
-      K.max <- max(K)
+      y.na <- ifelse(is.na(y), 1, 0)
+      K.max <- dim(y)[2]
       pi.samples <- array(NA, dim = c(n.samples, J, K.max + 1))
       pi.samples[, , 1:K.max] <- object$pi.samples[, i, , ]
       pi.samples[, , K.max + 1] <- apply(pi.samples[, , 1:K.max], c(1, 2),
@@ -302,7 +302,7 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
       storage.mode(n.samples) <- "integer"
       storage.mode(kappa.samples) <- "double"
       storage.mode(y) <- "double"
-      storage.mode(K) <- "integer"
+      storage.mode(y.na) <- "integer"
       storage.mode(mu.samples) <- "double"
       storage.mode(pi.samples) <- "double"
       storage.mode(dist) <- "integer"
@@ -311,7 +311,7 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
       storage.mode(K.max) <- "integer"
       storage.mode(y.sum) <- "integer"
 
-      tmp <- .Call("waicAbund", J, K, dist, model.type, 
+      tmp <- .Call("waicAbund", J, y.na, dist, model.type, 
           	 y, n.samples, N.samples, 
           	 kappa.samples, mu.samples, pi.samples, 
           	 N.max.curr, K.max, y.sum)

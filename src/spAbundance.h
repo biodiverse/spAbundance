@@ -256,10 +256,10 @@ extern "C" {
           SEXP verbose_r, SEXP nReport_r, SEXP samplesInfo_r,
           SEXP chainInfo_r, SEXP sigmaSqIG_r, SEXP family_r);
 
-  SEXP waicAbund(SEXP J_r, SEXP K_r, SEXP dist_r, SEXP modelType_r, SEXP y_r,
+  SEXP waicAbund(SEXP J_r, SEXP yNA_r, SEXP dist_r, SEXP modelType_r, SEXP y_r,
                  SEXP nSamples_r, SEXP NSamples_r, SEXP kappaSamples_r, 
                  SEXP muSamples_r, SEXP pSamples_r, SEXP NMax_r, SEXP KMax_r, 
-		 SEXP yMax_r);
+		 SEXP yMax_r); 
 
   SEXP abundGaussian(SEXP y_r, SEXP X_r, SEXP XRE_r, SEXP XRandom_r,
                SEXP consts_r, SEXP nRELong_r, 

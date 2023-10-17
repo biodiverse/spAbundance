@@ -18,7 +18,7 @@
 #endif
 
 extern "C" {
-  SEXP waicAbund(SEXP J_r, SEXP K_r, SEXP dist_r, SEXP modelType_r, SEXP y_r,
+  SEXP waicAbund(SEXP J_r, SEXP yNA_r, SEXP dist_r, SEXP modelType_r, SEXP y_r,
                  SEXP nSamples_r, SEXP NSamples_r, SEXP kappaSamples_r, 
                  SEXP muSamples_r, SEXP pSamples_r, SEXP NMax_r, SEXP KMax_r, 
 		 SEXP yMax_r) {
@@ -32,7 +32,7 @@ extern "C" {
      * Get inputs
      *********************************************************************/
     int J = INTEGER(J_r)[0];
-    int *K = INTEGER(K_r);
+    int *yNA = INTEGER(yNA_r);
     int dist = INTEGER(dist_r)[0];
     int modelType = INTEGER(modelType_r)[0];
     double *y = REAL(y_r);
@@ -41,6 +41,7 @@ extern "C" {
     double *muSamples = REAL(muSamples_r);
     double *pSamples = REAL(pSamples_r);
     int *NMax = INTEGER(NMax_r);
+    int KMax = INTEGER(KMax_r)[0];
     int *yMax = INTEGER(yMax_r);
 
     /**********************************************************************
@@ -72,9 +73,10 @@ extern "C" {
         for (j = 0; j < J; j++) {
           for (t = yMax[j]; t < NMax[j]; t++) {
             yProd = 1.0;
-            for (k = 0; k < K[j]; k++) {
-              // Rprintf("pCurr[%i]: %f\n",             
-              yProd *= dbinom(y[k * J + j], t, pSamples[k * JnSamples + j * nSamples + i], 0);
+            for (k = 0; k < KMax; k++) {
+              if (yNA[k * J + j] == 0) {
+                yProd *= dbinom(y[k * J + j], t, pSamples[k * JnSamples + j * nSamples + i], 0);
+	      }
             } // k (replicate)
             if (dist == 1) {
               tmp_0 = dnbinom_mu(t, kappaSamples[i], muSamples[j * nSamples + i], 0);
@@ -98,11 +100,11 @@ extern "C" {
         for (j = 0; j < J; j++) {
           for (t = yMax[j]; t < NMax[j]; t++) {
             yProd = 0.0;
-            for (k = 0; k < K[j]; k++) {
+            for (k = 0; k < KMax; k++) {
 	      yProd -= lgammafn(y[k * J + j] + 1.0); 
 	      yProd += log(pSamples[k * JnSamples + j * nSamples + i]) * y[k * J + j];
             } // k (replicate)
-	    yProd += ((t - yMax[j]) * log(pSamples[K[j] * JnSamples + j * nSamples + i])) +
+	    yProd += ((t - yMax[j]) * log(pSamples[KMax * JnSamples + j * nSamples + i])) +
                      lgammafn(t + 1.0) - lgammafn(t - yMax[j] + 1.0);
             if (dist == 1) {
               tmp_0 = dnbinom_mu(t, kappaSamples[i], muSamples[j * nSamples + i], 0);
