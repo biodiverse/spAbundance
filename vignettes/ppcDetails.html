@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Jeffrey W. Doser" />
+
+<meta name="date" content="2023-01-01" />
+
+<title>Details on posterior predictive checks in spAbundance</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Details on posterior predictive checks in spAbundance</h1>
+<h4 class="author">Jeffrey W. Doser</h4>
+<h4 class="date">2023</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#hierarchical-distance-sampling-models">Hierarchical distance sampling models</a>
+<ul>
+<li><a href="#fit.stat-freeman-tukey-and-group-0"><code>fit.stat = &#39;freeman-tukey&#39;</code> and <code>group = = 0</code></a></li>
+</ul></li>
+<li><a href="#references">References</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>This vignette provides complete details on the calculation of posterior predictive checks in <code>spAbundance</code> with the <code>ppcAbund()</code> function. Here we discuss only the underlying statistical details and calculations used in the posterior predictive checks and do not discuss how to implement the posterior predictive checks using <code>ppcAbund()</code>. Examples of how to use <code>ppcAbund()</code> are provided in the additional model fitting vignettes on the package website.</p>
+</div>
+<div id="hierarchical-distance-sampling-models" class="section level1">
+<h1>Hierarchical distance sampling models</h1>
+<p>Let <span class="math inline">\(l = 1, \dots L\)</span> denote the <span class="math inline">\(L\)</span> MCMC samples obtained from the model fit (after discarding any samples for burn-in and thinning). The first step in performing a posterior predictive check is to generate a set of fitted values. Let <span class="math inline">\(\boldsymbol{y}_j\)</span> denote the vector of count points at site <span class="math inline">\(j\)</span> for each of the <span class="math inline">\(K\)</span> distance bands. Next, let <span class="math inline">\(\hat{\boldsymbol{y}}^{(l)}_j\)</span> denote the set of model generated counts (or fitted values) at site <span class="math inline">\(j\)</span> for each all <span class="math inline">\(K\)</span> distance bins for MCMC sample <span class="math inline">\(l\)</span>. For hierarchical distance sampling models, we calculate fitted values according to</p>
+<p><span class="math display">\[\begin{equation}
+\begin{split}
+\hat{N}^{(l)}_j &amp;\sim \text{Poisson}(\mu^{(l)}_j) \\
+\hat{\boldsymbol{y}}^{\ast, (l)}_j &amp;\sim \text{Multinomial}(\hat{N}^{(l)}_j, \boldsymbol{\pi}^{\ast, (l)}), 
+\end{split}
+\end{equation}\]</span></p>
+<p>where <span class="math inline">\(\hat{\boldsymbol{y}}^{(l)}_j\)</span> is then the <span class="math inline">\(K \times 1\)</span> vector of the first <span class="math inline">\(K\)</span> values of <span class="math inline">\(\hat{\boldsymbol{y}}^{*, (l)}_j\)</span>.</p>
+<p><code>spAbundance</code> provides four different types of posterior predictive checks for HDS models, which differ based on two components (the <code>fit.stat</code> and <code>group</code> arguments in <code>ppcAbund()</code>). First, we can use either a Freeman-Tukey test statistic (<code>fit.stat = &#39;freeman-tukey&#39;</code>) or a Chi-squared test statistic (<code>fit.stat = &#39;chi-squared&#39;</code>). Second, we can calculate the fit statistic using either the raw counts for each site and distance bin (<code>group = 0</code>), or can first sum all the values at a given site across the <span class="math inline">\(K\)</span> distance bins to generate a single value at each site, and then calculate the test statistic using that value (<code>group = 1</code>).</p>
+<div id="fit.stat-freeman-tukey-and-group-0" class="section level2">
+<h2><code>fit.stat = &#39;freeman-tukey&#39;</code> and <code>group = = 0</code></h2>
+<p>Let <span class="math inline">\(T^{(l)}_{j, k}\)</span> denote the test statistic calculated for the true data and <span class="math inline">\(\hat{T}^{(l)}_{j, k}\)</span> the test statistic calculated for the replicate data at each MCMC sample <span class="math inline">\(l\)</span> at site <span class="math inline">\(j\)</span> and distance bin <span class="math inline">\(k\)</span>. Here we have</p>
+<p><span class="math display">\[\begin{equation}
+   \begin{split}
+       T^{(l)}_{j, k} = \Bigg(\sqrt{y_{j, k}} -\sqrt{\pi^{(l)}_{j, k} \cdot \mu^{(l)}_j}\Bigg)^2 \\
+       \hat{T}^{(l)}_{j, k} = \Bigg(\sqrt{\hat{y}^{(l)}_{j, k}} -\sqrt{\pi^{(l)}_{j, k} \cdot \mu^{(l)}_j}\Bigg)^2. \\
+   \end{split}
+\end{equation}\]</span></p>
+<p>The test statistics above can provide information on what locations and/or distance bins are showing inadequate model fit. Posterior quantiles for these values are available in the <code>fit.y.group.quants</code> and <code>fit.y.rep.group.quants</code> components of the resulting list that comes from <code>ppcAbund()</code>. For an overall measure across all sites and distance bands, we calculate</p>
+<!-- \begin{equation} -->
+<!--   \begin{split} -->
+<!--     T^{(l)}_{\dot} &= \sum_{j = 1}^J\sum_{k = 1}^KT^{(l)}_{j, k} \\ -->
+<!--     \hat{T}^{(l)}_{\dot} &= \sum_{j = 1}^J\sum_{k = 1}^K\hat{T}^{(l)}_{j, k} -->
+<!--   \end{split} -->
+<!--\end{equation} -->
+</div>
+</div>
+<div id="references" class="section level1 unnumbered">
+<h1 class="unnumbered">References</h1>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

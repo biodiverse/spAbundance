@@ -6,6 +6,7 @@
 ^pkgdown$
 ^vignettes$
 ^compile$
+^compile-all$
 ^README\.Rmd$
 ^\.Rhistory$
 ^\.gitignore$

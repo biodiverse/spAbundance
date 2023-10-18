@@ -5,6 +5,8 @@
 inst/doc
 docs
 compile
+compile-all
+compilePDF
 pkgdown
 _pkgdown.yml
 src/*.o

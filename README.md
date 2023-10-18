@@ -1,12 +1,12 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# spAbundance <a href='https://www.jeffdoser.com/files/spaccupancy-web/'><img src="man/figures/logo.png" align="right" height="139" width="120"/></a>
+# spAbundance <a href='https://www.jeffdoser.com/files/spabundance-web/'><img src="man/figures/logo.png" align="right" height="139" width="120"/></a>
 
 [![](http://cranlogs.r-pkg.org/badges/grand-total/spAbundance?color=blue)](https://CRAN.R-project.org/package=spAbundance)
 [![CRAN](https://www.r-pkg.org/badges/version/spAbundance)](https://CRAN.R-project.org/package=spAbundance)
 [![Codecov test
-coverage](https://codecov.io/gh/doserjef/spAbundance/branch/main/graph/badge.svg)](https://codecov.io/gh/doserjef/spAbundance?branch=main)
+coverage](https://codecov.io/gh/doserjef/spAbundance/branch/main/graph/badge.svg)](https://app.codecov.io/gh/doserjef/spAbundance?branch=main)
 
 `spAbundance` fits univariate (i.e., single-species) and multivariate
 (i.e., multi-species) spatial N-mixture models, hierarchical distance
@@ -158,7 +158,7 @@ summary(out)
 #> Thinning Rate: 5
 #> Number of Chains: 3
 #> Total Posterior Samples: 6000
-#> Run Time (min): 1.7001
+#> Run Time (min): 1.71
 #> 
 #> Abundance (log scale): 
 #>                  Mean     SD    2.5%     50%   97.5%   Rhat ESS
@@ -202,7 +202,7 @@ summary(ppc.out)
 #> Number of Chains: 3
 #> Total Posterior Samples: 6000
 #> 
-#> Bayesian p-value:  0.9957 
+#> Bayesian p-value:  0.5208 
 #> Fit statistic:  freeman-tukey
 ```
 

@@ -1,0 +1,66 @@
+---
+title: "Details on posterior predictive checks in spAbundance"
+author: "Jeffrey W. Doser"
+date: "2023"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+bibliography: [references.bib]
+biblio-style: apalike
+vignette: >
+  %\VignetteIndexEntry{ppcDetails}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+options(rmarkdown.html_vignette.check_title = FALSE)
+knitr::opts_chunk$set(
+  comment = "", eval = FALSE
+)
+```
+
+\newcommand{\bm}{\boldsymbol}
+
+# Introduction
+
+This vignette provides complete details on the calculation of posterior predictive checks in `spAbundance` with the `ppcAbund()` function. Here we discuss only the underlying statistical details and calculations used in the posterior predictive checks and do not discuss how to implement the posterior predictive checks using `ppcAbund()`. Examples of how to use `ppcAbund()` are provided in the additional model fitting vignettes on the package website.
+
+# Hierarchical distance sampling models
+
+Let $l = 1, \dots L$ denote the $L$ MCMC samples obtained from the model fit (after discarding any samples for burn-in and thinning). The first step in performing a posterior predictive check is to generate a set of fitted values. Let $\bm{y}_j$ denote the vector of count points at site $j$ for each of the $K$ distance bands. Next, let $\hat{\bm{y}}^{(l)}_j$ denote the set of model generated counts (or fitted values) at site $j$ for each all $K$ distance bins for MCMC sample $l$. For hierarchical distance sampling models, we calculate fitted values according to
+
+\begin{equation}
+\begin{split}
+\hat{N}^{(l)}_j &\sim \text{Poisson}(\mu^{(l)}_j) \\
+\hat{\bm{y}}^{\ast, (l)}_j &\sim \text{Multinomial}(\hat{N}^{(l)}_j, \bm{\pi}^{\ast, (l)}), 
+\end{split}
+\end{equation}
+
+where $\hat{\bm{y}}^{(l)}_j$ is then the $K \times 1$ vector of the first $K$ values of $\hat{\bm{y}}^{*, (l)}_j$.
+
+`spAbundance` provides four different types of posterior predictive checks for HDS models, which differ based on two components (the `fit.stat` and `group` arguments in `ppcAbund()`). First, we can use either a Freeman-Tukey test statistic (`fit.stat = 'freeman-tukey'`) or a Chi-squared test statistic (`fit.stat = 'chi-squared'`). Second, we can calculate the fit statistic using either the raw counts for each site and distance bin (`group = 0`), or can first sum all the values at a given site across the $K$ distance bins to generate a single value at each site, and then calculate the test statistic using that value (`group = 1`).
+
+## `fit.stat = 'freeman-tukey'` and `group = = 0`
+
+Let $T^{(l)}_{j, k}$ denote the test statistic calculated for the true data and $\hat{T}^{(l)}_{j, k}$ the test statistic calculated for the replicate data at each MCMC sample $l$ at site $j$ and distance bin $k$. Here we have
+
+\begin{equation}
+   \begin{split}
+       T^{(l)}_{j, k} = \Bigg(\sqrt{y_{j, k}} -\sqrt{\pi^{(l)}_{j, k} \cdot \mu^{(l)}_j}\Bigg)^2 \\
+       \hat{T}^{(l)}_{j, k} = \Bigg(\sqrt{\hat{y}^{(l)}_{j, k}} -\sqrt{\pi^{(l)}_{j, k} \cdot \mu^{(l)}_j}\Bigg)^2. \\
+   \end{split}
+\end{equation}
+
+The test statistics above can provide information on what locations and/or distance bins are showing inadequate model fit. Posterior quantiles for these values are available in the `fit.y.group.quants` and `fit.y.rep.group.quants` components of the resulting list that comes from `ppcAbund()`. For an overall measure across all sites and distance bands, we calculate
+
+<!-- \begin{equation} -->
+<!--   \begin{split} -->
+<!--     T^{(l)}_{\dot} &= \sum_{j = 1}^J\sum_{k = 1}^KT^{(l)}_{j, k} \\ -->
+<!--     \hat{T}^{(l)}_{\dot} &= \sum_{j = 1}^J\sum_{k = 1}^K\hat{T}^{(l)}_{j, k} -->
+<!--   \end{split} -->
+<!--\end{equation} -->
+
+# References {-}
+
