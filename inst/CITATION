@@ -1,0 +1,20 @@
+if (!exists("meta") || is.null(meta)) meta <- packageDescription("spOccupancy")
+
+year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date, perl = TRUE)
+vers <- paste("R package version", meta$Version)
+
+bibentry(bibtype = "Article",
+  title        = "{spAbundance: An R package for univariate and multivariate spatially-explicit abundance models}",
+  author       = c(as.person("Jeffrey W. Doser"), as.person("Andrew O. Finley"), as.person("Marc Kéry"), as.person("Elise F. Zipkin")),
+  journal      = "arXiv Preprint",
+  year         = "2023",
+  volume       = "",
+  number       = "",
+  pages        = "",
+  url          = "",
+
+  textVersion  =
+  paste("Doser, J. W., Finley A. O., Kéry, M., & Zipkin E. F. (2022).",
+        "spAbundance: An R package for univariate and multivariate spatially-explicit abundance models",
+        "arXiv Preprint.")
+)
