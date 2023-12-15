@@ -6,7 +6,7 @@
 [![](http://cranlogs.r-pkg.org/badges/grand-total/spAbundance?color=blue)](https://CRAN.R-project.org/package=spAbundance)
 [![CRAN](https://www.r-pkg.org/badges/version/spAbundance)](https://CRAN.R-project.org/package=spAbundance)
 [![Codecov test
-coverage](https://codecov.io/gh/doserjef/spAbundance/branch/main/graph/badge.svg)](https://app.codecov.io/gh/doserjef/spAbundance?branch=main)
+coverage](https://codecov.io/gh/doserjef/spAbundance/branch/main/graph/badge.svg)](https://codecov.io/gh/doserjef/spAbundance?branch=main)
 
 `spAbundance` fits univariate (i.e., single-species) and multivariate
 (i.e., multi-species) spatial N-mixture models, hierarchical distance
@@ -87,7 +87,7 @@ data set. We use data on 16 birds from the [Disney Wilderness
 Preserve](https://www.neonscience.org/field-sites/dsny) in Central
 Florida, USA, which is available in the `spAbundance` package as the
 `neonDWP` object. Here we will only work with one bird species, the
-Eastern Meadowlark (EAME), and so we subset the `neonDWP` object to only
+Mourning Dove (MODO), and so we subset the `neonDWP` object to only
 include this species.
 
 ``` r
@@ -106,8 +106,8 @@ Below we fit a single-species spatially-explicit hierarchical distance
 sampling model to the MODO data using a Nearest Neighbor Gaussian
 Process. We use the default priors and initial values for the abundance
 (`beta`) and detection (`alpha`) coefficients, the spatial variance
-(`sigma.sq`), the spatial range parameter (`phi`), the spatial random
-effects (`w`), and the latent abundance values (`z`). We also include an
+(`sigma.sq`), the spatial decay parameter (`phi`), the spatial random
+effects (`w`), and the latent abundance values (`N`). We also include an
 offset in `dat.MODO` to provide estimates of density on a per hectare
 basis. We model abundance as a function of local forest cover and
 grassland cover, along with a spatial random intercept. We model
@@ -158,7 +158,7 @@ summary(out)
 #> Thinning Rate: 5
 #> Number of Chains: 3
 #> Total Posterior Samples: 6000
-#> Run Time (min): 1.71
+#> Run Time (min): 4.2247
 #> 
 #> Abundance (log scale): 
 #>                  Mean     SD    2.5%     50%   97.5%   Rhat ESS
@@ -209,8 +209,7 @@ summary(ppc.out)
 ### Model selection using WAIC
 
 The `waicAbund` function computes the Widely Applicable Information
-Criterion (WAIC) for use in model selection and assessment (note that
-due to Monte Carlo error your results will differ slightly).
+Criterion (WAIC) for use in model selection and assessment.
 
 ``` r
 waicAbund(out)
@@ -226,7 +225,7 @@ Prediction is possible using the `predict` function, a set of covariates
 at the desired prediction locations, and the spatial coordinates of the
 locations. The object `neonPredData` contains percent forest cover and
 grassland cover across the Disney Wildnerness Preserve. Below we predict
-MODO densityacross the preserve, which is stored in the `out.pred`
+MODO density across the preserve, which is stored in the `out.pred`
 object.
 
 ``` r
@@ -257,7 +256,7 @@ helpful for fitting models in `spAbundance`.
 Please cite `spAbundance` as:
 
 Doser, J. W., Finley, A. O., Kéry, M., and Zipkin, E. F. (2023).
-spAbundance: An R package for univariate and multivariate
+spAbundance: An R package for single-species and multi-species
 spatially-explicit abundance models. arXiv Preprint.
 
 ## References

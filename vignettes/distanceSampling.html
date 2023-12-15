@@ -686,7 +686,7 @@ Burn-in: 20000
 Thinning Rate: 30
 Number of Chains: 3
 Total Posterior Samples: 3000
-Run Time (min): 0.7076
+Run Time (min): 0.708
 
 Abundance (log scale): 
                 Mean     SD    2.5%    50%  97.5%   Rhat ESS
@@ -732,14 +732,14 @@ scale(wind) -0.0893 0.033 -0.1529 -0.0892 -0.0243 1.0039 2652</code></pre>
 <li>Compute a fit statistic on both the actual data and also on the model-generated ‘replicate data’.</li>
 <li>Compare the fit statistics for the true data and replicate data. If they are widely different, this suggests a lack of fit of the model to the actual data set at hand.</li>
 </ol>
-<p>We calculate the replicate values in two steps. We first predict a value of latent abudance at each site using the expected abundance at site <span class="math inline">\(j\)</span> (i.e., <span class="math inline">\(\mu_j\)</span>), and then subsequently generate the estimated counts in each distance bin <span class="math inline">\(k\)</span> at that site <span class="math inline">\(j\)</span>. More specifically, the replicate values are calculated as</p>
+<p>We calculate the replicate values in two steps. We first predict a value of latent abudance at each site using the expected abundance at site <span class="math inline">\(j\)</span> for each MCMC sample <span class="math inline">\(l\)</span> (i.e., <span class="math inline">\(\mu^{(l)}_j\)</span>), and then subsequently generate the estimated counts in each distance bin <span class="math inline">\(k\)</span> at that site <span class="math inline">\(j\)</span>. More specifically, the replicate values are calculated as</p>
 <p><span class="math display">\[\begin{equation}
 \begin{split}
-  \hat{N}_j &amp;\sim \text{Poisson}(\mu_j), \\
-  \hat{\boldsymbol{y}}_j &amp;\sim \text{Multinomial}(\hat{N}_j, \boldsymbol{\pi}_j).
+  N^{(l)}_{\text{rep}, j} &amp;\sim \text{Poisson}(\mu^{(l)}_j), \\
+  \boldsymbol{y}^{(l)}_{\text{rep}, j} &amp;\sim \text{Multinomial}(N^{(l)}_{\text{rep}, j}, \boldsymbol{\pi}^{(l)}_j).
 \end{split}
 \end{equation}\]</span></p>
-<p>Note the Poisson distribution is replaced with a negative binomial distribution if that is used to fit the model. This is what we call a “marginal” approach to calculating fitted values. See our <a href="https://www.jeffdoser.com/files/spabundance-web/articles/nmixturemodels#posterior-predictive-checks">discussion in the N-mixture modeling vignette</a> for further details on different approaches to calculating replicate values in hierarchical models.</p>
+<p>Note the Poisson distribution is replaced with a negative binomial distribution if that is used to fit the model. This is what we call a “marginal” approach to calculating replicate data values. See our <a href="https://www.jeffdoser.com/files/spabundance-web/articles/nmixturemodels#posterior-predictive-checks">discussion in the N-mixture modeling vignette</a> for further details on different approaches to calculating replicate values in hierarchical models.</p>
 <p>To perform a posterior predictive check, we send the resulting <code>DS</code> model object as input to the <code>ppcAbund()</code> function, along with a fit statistic (<code>fit.stat</code>) and a numeric value indicating how to group, or bin, the data (<code>group</code>). Currently supported fit statistics include the Freeman-Tukey statistic and the Chi-Squared statistic (<code>freeman-tukey</code> or <code>chi-squared</code>, respectively, <span class="citation">Kéry and Royle (2016)</span>). For HDS models, <code>ppcAbund()</code> allows the user to group the data by row (site; <code>group = 1</code>) or not at all (<code>group = 0</code>). <code>ppcAbund()</code> will then return a set of posterior samples for the fit statistic (or discrepancy measure) using the actual data (<code>fit.y</code>) and model generated replicate data set (<code>fit.y.rep</code>), summed across all data points in the chosen manner. For example, when setting <code>group = 1</code>, <code>spAbundance</code> will first sum all of the count values at a given site across all distance bands at that site, then calculate the fit statistic using the site-level sums. When setting <code>group = 0</code>, <code>spAbundance</code> calculates the fit statistic directly on the count value in each site and distance bin.</p>
 <p>The resulting values from a call to <code>ppcAbund()</code> can be used with the <code>summary()</code> function to generate a Bayesian p-value, which is the probability, under the fitted model, to obtain a value of the fit statistic that is more extreme (i.e., larger) than the one observed, i.e., for the actual data. Bayesian p-values are sensitive to individual values, so we may also want to explore the discrepancy measures for each (potentially “grouped”) data point. <code>ppcAbund()</code> returns a matrix of posterior quantiles for the fit statistic for both the observed (<code>fit.y.group.quants</code>) and model generated, replicate data (<code>fit.y.rep.group.quants</code>) for each “grouped” data point.</p>
 <p>We next perform a posterior predictive check using the Freeman-Tukey statistic grouping the data by sites. We summarize the posterior predictive check with the <code>summary()</code> function, which reports a Bayesian p-value. A Bayesian p-value that hovers around 0.5 indicates adequate model fit, while values less than 0.1 or greater than 0.9 suggest our model does not fit the data well <span class="citation">(Hobbs and Hooten 2015)</span>. As always with a simulation-based analysis using MCMC, you will get numerically slightly different values.</p>
@@ -1113,7 +1113,7 @@ Burn-in: 20000
 Thinning Rate: 30
 Number of Chains: 3
 Total Posterior Samples: 3000
-Run Time (min): 3.9378
+Run Time (min): 3.8517
 
 Abundance (log scale): 
                  Mean     SD    2.5%     50%  97.5%   Rhat ESS
@@ -1695,7 +1695,7 @@ Burn-in: 20000
 Thinning Rate: 30
 Number of Chains: 3
 Total Posterior Samples: 3000
-Run Time (min): 14.7372
+Run Time (min): 15.0033
 
 ----------------------------------------
     Community Level
@@ -2457,7 +2457,7 @@ Burn-in: 20000
 Thinning Rate: 30
 Number of Chains: 3
 Total Posterior Samples: 3000
-Run Time (min): 17.3838
+Run Time (min): 17.6691
 
 ----------------------------------------
     Community Level
@@ -3005,7 +3005,7 @@ Burn-in: 20000
 Thinning Rate: 30
 Number of Chains: 1
 Total Posterior Samples: 1000
-Run Time (min): 6.774
+Run Time (min): 6.9519
 
 ----------------------------------------
     Community Level

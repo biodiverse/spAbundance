@@ -31,6 +31,12 @@ data(neonDWP)
 	counts (DP1.10003.001), RELEASE-2023. https://doi.org/10.48443/00pg-vm19. 
 	Dataset accessed from https://data.neonscience.org on May 25, 2023}
 
+\note{These data were updated on November 28, 2023 (v0.1.1), and thus any analyses run 
+      with the data from v0.1.0 will not give the same results. The data were updated after
+      NEON discovered an error in how the bird count data was associated with the spatial 
+      locations of each site. These data have been updated following the procedures
+      outlined at \url{https://www.neonscience.org/impact/observatory-blog/bird-point-ids-within-grids-were-transposed-resulting-inaccurate-point}.}
+
 \references{
   Barnett, D. T., Duffy, P. A., Schimel, D. S., Krauss, R. E., Irvine, K. M., 
   Davis, F. W.,Gross, J. E., Azuaje, E. I., Thorpe, A. S., Gudex-Cross, D., et al. (2019). 

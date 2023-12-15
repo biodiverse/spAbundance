@@ -263,7 +263,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <li><a href="#introduction">Introduction</a></li>
 <li><a href="#hierarchical-distance-sampling-models">Hierarchical distance sampling models</a>
 <ul>
-<li><a href="#fit.stat-freeman-tukey-and-group-0"><code>fit.stat = &#39;freeman-tukey&#39;</code> and <code>group = = 0</code></a></li>
+<li><a href="#fit.stat-freeman-tukey-and-group-0"><code>fit.stat = &#39;freeman-tukey&#39;</code> and <code>group = 0</code></a></li>
 </ul></li>
 <li><a href="#references">References</a></li>
 </ul>
@@ -285,7 +285,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <p>where <span class="math inline">\(\hat{\boldsymbol{y}}^{(l)}_j\)</span> is then the <span class="math inline">\(K \times 1\)</span> vector of the first <span class="math inline">\(K\)</span> values of <span class="math inline">\(\hat{\boldsymbol{y}}^{*, (l)}_j\)</span>.</p>
 <p><code>spAbundance</code> provides four different types of posterior predictive checks for HDS models, which differ based on two components (the <code>fit.stat</code> and <code>group</code> arguments in <code>ppcAbund()</code>). First, we can use either a Freeman-Tukey test statistic (<code>fit.stat = &#39;freeman-tukey&#39;</code>) or a Chi-squared test statistic (<code>fit.stat = &#39;chi-squared&#39;</code>). Second, we can calculate the fit statistic using either the raw counts for each site and distance bin (<code>group = 0</code>), or can first sum all the values at a given site across the <span class="math inline">\(K\)</span> distance bins to generate a single value at each site, and then calculate the test statistic using that value (<code>group = 1</code>).</p>
 <div id="fit.stat-freeman-tukey-and-group-0" class="section level2">
-<h2><code>fit.stat = &#39;freeman-tukey&#39;</code> and <code>group = = 0</code></h2>
+<h2><code>fit.stat = &#39;freeman-tukey&#39;</code> and <code>group = 0</code></h2>
 <p>Let <span class="math inline">\(T^{(l)}_{j, k}\)</span> denote the test statistic calculated for the true data and <span class="math inline">\(\hat{T}^{(l)}_{j, k}\)</span> the test statistic calculated for the replicate data at each MCMC sample <span class="math inline">\(l\)</span> at site <span class="math inline">\(j\)</span> and distance bin <span class="math inline">\(k\)</span>. Here we have</p>
 <p><span class="math display">\[\begin{equation}
    \begin{split}
@@ -293,13 +293,17 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
        \hat{T}^{(l)}_{j, k} = \Bigg(\sqrt{\hat{y}^{(l)}_{j, k}} -\sqrt{\pi^{(l)}_{j, k} \cdot \mu^{(l)}_j}\Bigg)^2. \\
    \end{split}
 \end{equation}\]</span></p>
-<p>The test statistics above can provide information on what locations and/or distance bins are showing inadequate model fit. Posterior quantiles for these values are available in the <code>fit.y.group.quants</code> and <code>fit.y.rep.group.quants</code> components of the resulting list that comes from <code>ppcAbund()</code>. For an overall measure across all sites and distance bands, we calculate</p>
-<!-- \begin{equation} -->
-<!--   \begin{split} -->
-<!--     T^{(l)}_{\dot} &= \sum_{j = 1}^J\sum_{k = 1}^KT^{(l)}_{j, k} \\ -->
-<!--     \hat{T}^{(l)}_{\dot} &= \sum_{j = 1}^J\sum_{k = 1}^K\hat{T}^{(l)}_{j, k} -->
-<!--   \end{split} -->
-<!--\end{equation} -->
+<p>The test statistics above can provide information on what locations and/or distance bins are showing inadequate model fit. Posterior quantiles for these values are available in the <code>fit.y.group.quants</code> and <code>fit.y.rep.group.quants</code> components of the resulting list that comes from <code>ppcAbund()</code>. For an overall GoF statistic across all sites and distance bands, we calculate</p>
+<p><span class="math display">\[\begin{equation}
+  \begin{split}
+     T^{(l)}_{\cdot} &amp;= \sum_{j = 1}^J\sum_{k = 1}^KT^{(l)}_{j, k} \\ 
+     \hat{T}^{(l)}_{\cdot} &amp;= \sum_{j = 1}^J\sum_{k = 1}^K\hat{T}^{(l)}_{j, k}.
+  \end{split}
+\end{equation}\]</span></p>
+<p>Posterior quantiles (2.5, 25, 50, 75, and 97.5) of <span class="math inline">\(T^{(l)}_{j, k}\)</span> (<code>fit.y.group.quants</code>) and <span class="math inline">\(\hat{T}^{(l)}_{j, k}\)</span> (<code>fit.y.rep.group.quants</code>) are included in the resulting model object when calling <code>ppcAbund()</code>, and thus can be visualized to understand where the model is fitting well and where it is not. The full sets of MCMC samples is returned for <span class="math inline">\(T^{(l)}_{\cdot}\)</span> (<code>fit.y</code>) and <span class="math inline">\(\hat{T}^{(l)}_{\cdot}\)</span> (<code>fit.y.rep</code>) are included in the resulting object from <code>ppcAbund()</code>, which are then used to calculate a Bayesian p-value according to</p>
+<p><span class="math display">\[\begin{equation}
+\text{Bayesian p-value} = \frac{\sum_{l = 1}^L I(\hat{T}^{(l)}_{\cdot} &gt; T^{(l)}_{\cdot})}{L}
+\end{equation}\]</span></p>
 </div>
 </div>
 <div id="references" class="section level1 unnumbered">

@@ -71,7 +71,7 @@ All model fitting functions allow for Poisson and negative binomial distribution
 
 ### Load package and data
 
-To get started with `spAbundance` we load the package and an example data set. We use data on 16 birds from the [Disney Wilderness Preserve](https://www.neonscience.org/field-sites/dsny) in Central Florida, USA, which is available in the `spAbundance` package as the `neonDWP` object. Here we will only work with one bird species, the Eastern Meadowlark (EAME), and so we subset the `neonDWP` object to only include this species.
+To get started with `spAbundance` we load the package and an example data set. We use data on 16 birds from the [Disney Wilderness Preserve](https://www.neonscience.org/field-sites/dsny) in Central Florida, USA, which is available in the `spAbundance` package as the `neonDWP` object. Here we will only work with one bird species, the Mourning Dove (MODO), and so we subset the `neonDWP` object to only include this species.
 
 ```{r}
 library(spAbundance)
@@ -85,7 +85,7 @@ dat.MODO$y <- dat.MODO$y[sp.names == "MODO", , ]
 
 ### Fit a spatial hierarchical distance sampling model using `spDS()`
 
-Below we fit a single-species spatially-explicit hierarchical distance sampling model to the MODO data using a Nearest Neighbor Gaussian Process. We use the default priors and initial values for the abundance (`beta`) and detection (`alpha`) coefficients, the spatial variance (`sigma.sq`), the spatial range parameter (`phi`), the spatial random effects (`w`), and the latent abundance values (`z`). We also include an offset in `dat.MODO` to provide estimates of density on a per hectare basis. We model abundance as a function of local forest cover and grassland cover, along with a spatial random intercept. We model detection probability as a function of linear and quadratic day of survey and a linear effect of wind.
+Below we fit a single-species spatially-explicit hierarchical distance sampling model to the MODO data using a Nearest Neighbor Gaussian Process. We use the default priors and initial values for the abundance (`beta`) and detection (`alpha`) coefficients, the spatial variance (`sigma.sq`), the spatial decay parameter (`phi`), the spatial random effects (`w`), and the latent abundance values (`N`). We also include an offset in `dat.MODO` to provide estimates of density on a per hectare basis. We model abundance as a function of local forest cover and grassland cover, along with a spatial random intercept. We model detection probability as a function of linear and quadratic day of survey and a linear effect of wind.
 
 ```{r}
 # Specify model formulas
@@ -123,7 +123,7 @@ summary(ppc.out)
 
 ### Model selection using WAIC
 
-The `waicAbund` function computes the Widely Applicable Information Criterion (WAIC) for use in model selection and assessment (note that due to Monte Carlo error your results will differ slightly).
+The `waicAbund` function computes the Widely Applicable Information Criterion (WAIC) for use in model selection and assessment.
 
 ```{r}
 waicAbund(out)
@@ -131,7 +131,7 @@ waicAbund(out)
 
 ### Prediction
 
-Prediction is possible using the `predict` function, a set of covariates at the desired prediction locations, and the spatial coordinates of the locations. The object `neonPredData` contains percent forest cover and grassland cover across the Disney Wildnerness Preserve. Below we predict MODO densityacross the preserve, which is stored in the `out.pred` object.
+Prediction is possible using the `predict` function, a set of covariates at the desired prediction locations, and the spatial coordinates of the locations. The object `neonPredData` contains percent forest cover and grassland cover across the Disney Wildnerness Preserve. Below we predict MODO density across the preserve, which is stored in the `out.pred` object.
 
 ```{r, eval = FALSE}
 # First standardize elevation using mean and sd from fitted model
@@ -153,7 +153,7 @@ The `vignette("distanceSampling")`, `vignette("nMixtureModels")`, and `vignette(
 
 Please cite `spAbundance` as: 
 
-Doser, J. W., Finley, A. O., Kéry, M., and Zipkin, E. F. (2023). spAbundance: An R package for univariate and multivariate spatially-explicit abundance models. arXiv Preprint. 
+Doser, J. W., Finley, A. O., Kéry, M., and Zipkin, E. F. (2023). spAbundance: An R package for single-species and multi-species spatially-explicit abundance models. arXiv Preprint. 
 
 ## References
 

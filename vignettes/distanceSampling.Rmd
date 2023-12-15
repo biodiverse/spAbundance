@@ -2,7 +2,7 @@
 title: "Fitting hierarchical distance sampling models in spAbundance"
 author: "Jeffrey W. Doser, Marc K&eacute;ry"
 description: Learn how to fit single-species and multi-species distance sampling models in spAbundance
-date: "2023"
+date: "2023 (last update: November 29, 2023)"
 output: 
   rmarkdown::html_vignette:
     toc: true
@@ -285,16 +285,16 @@ The function `ppcAbund()` performs a posterior predictive check on all `spAbunda
 3. Compute a fit statistic on both the actual data and also on the model-generated 'replicate data'.
 4. Compare the fit statistics for the true data and replicate data. If they are widely different, this suggests a lack of fit of the model to the actual data set at hand.
 
-We calculate the replicate values in two steps. We first predict a value of latent abudance at each site using the expected abundance at site $j$ (i.e., $\mu_j$), and then subsequently generate the estimated counts in each distance bin $k$ at that site $j$. More specifically, the replicate values are calculated as 
+We calculate the replicate values in two steps. We first predict a value of latent abudance at each site using the expected abundance at site $j$ for each MCMC sample $l$ (i.e., $\mu^{(l)}_j$), and then subsequently generate the estimated counts in each distance bin $k$ at that site $j$. More specifically, the replicate values are calculated as 
 
 \begin{equation}
 \begin{split}
-  \hat{N}_j &\sim \text{Poisson}(\mu_j), \\
-  \hat{\bm{y}}_j &\sim \text{Multinomial}(\hat{N}_j, \bm{\pi}_j).
+  N^{(l)}_{\text{rep}, j} &\sim \text{Poisson}(\mu^{(l)}_j), \\
+  \bm{y}^{(l)}_{\text{rep}, j} &\sim \text{Multinomial}(N^{(l)}_{\text{rep}, j}, \bm{\pi}^{(l)}_j).
 \end{split}
 \end{equation}
 
-Note the Poisson distribution is replaced with a negative binomial distribution if that is used to fit the model. This is what we call a "marginal" approach to calculating fitted values. See our [discussion in the N-mixture modeling vignette](https://www.jeffdoser.com/files/spabundance-web/articles/nmixturemodels#posterior-predictive-checks) for further details on different approaches to calculating replicate values in hierarchical models.
+Note the Poisson distribution is replaced with a negative binomial distribution if that is used to fit the model. This is what we call a "marginal" approach to calculating replicate data values. See our [discussion in the N-mixture modeling vignette](https://www.jeffdoser.com/files/spabundance-web/articles/nmixturemodels#posterior-predictive-checks) for further details on different approaches to calculating replicate values in hierarchical models.
 
 To perform a posterior predictive check, we send the resulting `DS` model object as input to the `ppcAbund()` function, along with a fit statistic (`fit.stat`) and a numeric value indicating how to group, or bin, the data (`group`). Currently supported fit statistics include the Freeman-Tukey statistic and the Chi-Squared statistic (`freeman-tukey` or `chi-squared`, respectively, @kery2015applied). For HDS models, `ppcAbund()` allows the user to group the data by row (site; `group = 1`) or not at all (`group = 0`). `ppcAbund()` will then return a set of posterior samples for the fit statistic (or discrepancy measure) using the actual data (`fit.y`) and model generated replicate data set (`fit.y.rep`), summed across all data points in the chosen manner. For example, when setting `group = 1`, `spAbundance` will first sum all of the count values at a given site across all distance bands at that site, then calculate the fit statistic using the site-level sums. When setting `group = 0`, `spAbundance` calculates the fit statistic directly on the count value in each site and distance bin.  
 
