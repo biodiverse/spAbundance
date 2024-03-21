@@ -1,5 +1,5 @@
-simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = list(),  
-		     offset = 1, sp = FALSE, svc.cols = 1, cov.model, sigma.sq, phi, 
+simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = list(),
+		     offset = 1, sp = FALSE, svc.cols = 1, cov.model, sigma.sq, phi,
 		     nu, family = 'Poisson', z, x.positive = FALSE, ...) {
 
   # Check for unused arguments ------------------------------------------
@@ -93,7 +93,7 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
     }
     cov.model.names <- c("exponential", "spherical", "matern", "gaussian")
     if(! cov.model %in% cov.model.names){
-      stop("error: specified cov.model '",cov.model,"' is not a valid option; choose from ", 
+      stop("error: specified cov.model '",cov.model,"' is not a valid option; choose from ",
            paste(cov.model.names, collapse=", ", sep="") ,".")
     }
     if (cov.model == 'matern' & missing(nu)) {
@@ -133,7 +133,7 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
   # Form abundance covariates (if any) ------------------------------------
   n.beta <- length(beta)
   X <- array(NA, dim = c(J, n.rep.max, n.beta))
-  # Get index of surveyed replicates for each site. 
+  # Get index of surveyed replicates for each site.
   rep.indx <- list()
   for (j in 1:J) {
     rep.indx[[j]] <- sample(1:n.rep.max, n.rep[j], replace = FALSE)
@@ -144,11 +144,11 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
       for (j in 1:J) {
         if (x.positive) {
           X[j, rep.indx[[j]], i] <- runif(n.rep[j], 0, 5)
-           
+
 	} else {
           X[j, rep.indx[[j]], i] <- rnorm(n.rep[j])
 	}
-      } 
+      }
     } # i
   }
 
@@ -191,13 +191,18 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
     X.re <- array(NA, dim = c(J, n.rep.max, length(unique(re.col.indx))))
     for (i in 1:length(unique(re.col.indx))) {
       for (j in 1:J) {
-        X.re[j, rep.indx[[j]], i] <- sample(1:mu.RE$levels[i], n.rep[j], replace = TRUE)  
+        X.re[j, rep.indx[[j]], i] <- sample(1:mu.RE$levels[i], n.rep[j], replace = TRUE)
       }
     }
     indx.mat <- X.re[, , re.col.indx, drop = FALSE]
     for (i in 1:p.nmix.re) {
-      beta.star[which(beta.star.indx == i)] <- rnorm(n.nmix.re.long[i], 0, 
+      beta.star[which(beta.star.indx == i)] <- rnorm(n.nmix.re.long[i], 0,
 						     sqrt(sigma.sq.mu[i]))
+    }
+    if (length(mu.RE$levels) > 1) {
+      for (j in 2:length(mu.RE$levels)) {
+        X.re[, j] <- X.re[, j] + max(X.re[, j - 1], na.rm = TRUE)
+      }
     }
     if (p.nmix.re > 1) {
       for (j in 2:p.nmix.re) {
@@ -206,7 +211,7 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
     }
     beta.star.sites <- matrix(NA, J, n.rep.max)
     for (j in 1:J) {
-      for (k in rep.indx[[j]]) {  
+      for (k in rep.indx[[j]]) {
         beta.star.sites[j, k] <- beta.star[indx.mat[j, k, ]] %*% as.matrix(X.random[j, k, ])
       } # k
     } # j
@@ -221,17 +226,17 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
   # Offset ----------------------------
   # Single value
   if (length(offset) == 1) {
-    offset <- matrix(offset, J, n.rep.max) 
+    offset <- matrix(offset, J, n.rep.max)
   } else if (length(dim(offset)) == 1) { # Value for each site
     if (length(offset) != J) {
-      stop(paste0("offset must be a single value, vector of length ", J, " or a matrix with ", 
-	         J, " rows and ", n.rep.max, " columns."))	
+      stop(paste0("offset must be a single value, vector of length ", J, " or a matrix with ",
+	         J, " rows and ", n.rep.max, " columns."))
     }
     offset <- matrix(offset, J, n.rep.max)
   } else if (length(dim(offset)) == 2) { # Value for each site/obs
     if (nrow(offset) != J | ncol(offset) != n.rep.max) {
-      stop(paste0("offset must be a single value, vector of length ", J, " or a matrix with ", 
-                  J, " rows and ", n.rep.max, " columns."))	
+      stop(paste0("offset must be a single value, vector of length ", J, " or a matrix with ",
+                  J, " rows and ", n.rep.max, " columns."))
 
     }
   }
@@ -239,16 +244,16 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
     for (k in rep.indx[[j]]) {
       if (sp) {
         if (length(mu.RE) > 0) {
-          mu[j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
-      			   t(as.matrix(X.w[j, k, ])) %*% as.matrix(w.mat[j, ]) + 
+          mu[j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta) +
+      			   t(as.matrix(X.w[j, k, ])) %*% as.matrix(w.mat[j, ]) +
       			   beta.star.sites[j, k]
         } else {
-          mu[j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
+          mu[j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta) +
 		      t(as.matrix(X.w[j, k, ])) %*% as.matrix(w.mat[j, ])
         }
       } else {
         if (length(mu.RE) > 0) {
-          mu[j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta) + 
+          mu[j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta) +
       			   beta.star.sites[j, k]
         } else {
           mu[j, k] <- t(as.matrix(X[j, k, ])) %*% as.matrix(beta)
@@ -283,7 +288,7 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
   }
 
   return(
-    list(X = X, coords = coords, w = w.mat, mu = mu, 
+    list(X = X, coords = coords, w = w.mat, mu = mu,
 	 y = y, X.re = X.re, beta.star = beta.star)
   )
 }

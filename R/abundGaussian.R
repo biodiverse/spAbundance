@@ -1,7 +1,7 @@
-abundGaussian <- function(formula, data, inits, priors, tuning, n.batch, 
+abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
 		     batch.length, accept.rate = 0.43, family = 'Gaussian',
-		     n.omp.threads = 1, verbose = TRUE, n.report = 100, 
-		     n.burn = round(.10 * n.batch * batch.length), 
+		     n.omp.threads = 1, verbose = TRUE, n.report = 100,
+		     n.burn = round(.10 * n.batch * batch.length),
 		     n.thin = 1, n.chains = 1, save.fitted = TRUE, ...){
 
   ptm <- proc.time()
@@ -20,7 +20,7 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
     1/rgamma(n = n, shape = a, rate = b)
   }
 
-  # Check for unused arguments ------------------------------------------	
+  # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
   elip.args <- names(list(...))
   for(i in elip.args){
@@ -28,8 +28,8 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
           warning("'",i, "' is not an argument")
   }
   # Call ----------------------------------------------------------------
-  # Returns a call in which all of the specified arguments are 
-  # specified by their full names. 
+  # Returns a call in which all of the specified arguments are
+  # specified by their full names.
   cl <- match.call()
 
   # Some initial checks -------------------------------------------------
@@ -82,8 +82,8 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   } else {
     z <- rep(1, length(y))
   }
-  
-  # First subset covariates to only use those that are included in the analysis. 
+
+  # First subset covariates to only use those that are included in the analysis.
   # Get occurrence covariates in proper format
   # Subset covariates to only use those that are included in the analysis
   data$covs <- data$covs[names(data$covs) %in% all.vars(formula)]
@@ -93,7 +93,7 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   }
   # Ordered by rep, then site within rep
   data$covs <- data.frame(lapply(data$covs, function(a) unlist(c(a))))
-  
+
   # Check first-stage sample ----------------------------------------------
   if (length(z) != length(y)) {
     stop(paste("z must be a vector of length ", length(y), ".", sep = ''))
@@ -110,7 +110,7 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   y <- y[z.indx]
   data$covs <- data$covs[z.indx, , drop = FALSE]
   data$covs <- as.data.frame(data$covs)
-  
+
   # Checking missing values ---------------------------------------------
   # y -------------------------------
   if (sum(is.na(y) > 0)) {
@@ -118,18 +118,18 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   }
   # covs ------------------------
   if (sum(is.na(data$covs)) != 0) {
-    stop("error: missing values in covs. Please remove these sites from all objects in data or somehow replace the NA values with non-missing values (e.g., mean imputation).") 
+    stop("error: missing values in covs. Please remove these sites from all objects in data or somehow replace the NA values with non-missing values (e.g., mean imputation).")
   }
 
   # Check whether random effects are sent in as numeric, and
-  # return error if they are. 
+  # return error if they are.
   # Occurrence ----------------------
   if (!is.null(findbars(formula))) {
     re.names <- unique(unlist(sapply(findbars(formula), all.vars)))
     for (i in 1:length(re.names)) {
       if (is(data$covs[, re.names[i]], 'factor')) {
         stop(paste("error: random effect variable ", re.names[i], " specified as a factor. Random effect variables must be specified as numeric.", sep = ''))
-      } 
+      }
       if (is(data$covs[, re.names[i]], 'character')) {
         stop(paste("error: random effect variable ", re.names[i], " specified as character. Random effect variables must be specified as numeric.", sep = ''))
       }
@@ -162,7 +162,7 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   # Get basic info from inputs ------------------------------------------
   # Number of sites
   J <- nrow(X)
-  # Number of parameters 
+  # Number of parameters
   p <- ncol(X)
   # Number of random effect parameters
   p.re <- ncol(X.re)
@@ -182,8 +182,8 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   if (n.thin > n.samples) {
     stop("error: n.thin must be less than n.samples")
   }
-  n.post.samples <- length(seq(from = n.burn + 1, 
-                               to = n.samples, 
+  n.post.samples <- length(seq(from = n.burn + 1,
+                               to = n.samples,
                                by = as.integer(n.thin)))
 
   # Get random effect matrices all set ----------------------------------
@@ -240,7 +240,7 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
     Sigma.beta <- diag(p) * 100
   }
   # tau.sq.t ----------------------
-  if ("tau.sq.ig" %in% names(priors)) { 
+  if ("tau.sq.ig" %in% names(priors)) {
     if (!is.vector(priors$tau.sq.ig) | !is.atomic(priors$tau.sq.ig) | length(priors$tau.sq.ig) != 2) {
       stop("error: tau.sq.ig must be a vector of length 2 with elements corresponding to tau.sq's shape and scale parameters")
     }
@@ -264,19 +264,19 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
       sigma.sq.mu.b <- priors$sigma.sq.mu.ig[[2]]
       if (length(sigma.sq.mu.a) != p.re & length(sigma.sq.mu.a) != 1) {
         if (p.re == 1) {
-        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ", 
+        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ",
         	   p.re, " with elements corresponding to sigma.sq.mus' shape", sep = ""))
         } else {
-        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ", 
+        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ",
         	   p.re, " or 1 with elements corresponding to sigma.sq.mus' shape", sep = ""))
         }
       }
       if (length(sigma.sq.mu.b) != p.re & length(sigma.sq.mu.b) != 1) {
         if (p.re == 1) {
-          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ",
         	   p.re, " with elements corresponding to sigma.sq.mus' scale", sep = ""))
         } else {
-          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ",
         	   p.re, " or 1with elements corresponding to sigma.sq.mus' scale", sep = ""))
         }
       }
@@ -287,7 +287,7 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
         sigma.sq.mu.b <- rep(sigma.sq.mu.b, p.re)
       }
   }   else {
-      if (verbose) {	    
+      if (verbose) {
         message("No prior specified for sigma.sq.mu.ig.\nSetting prior shape to 0.1 and prior scale to 0.1\n")
       }
       sigma.sq.mu.a <- rep(0.1, p.re)
@@ -343,10 +343,10 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
       sigma.sq.mu.inits <- inits[["sigma.sq.mu"]]
       if (length(sigma.sq.mu.inits) != p.re & length(sigma.sq.mu.inits) != 1) {
         if (p.re == 1) {
-          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.re, 
+          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.re,
       	       sep = ""))
         } else {
-          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.re, 
+          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.re,
       	       " or 1", sep = ""))
         }
       }
@@ -414,8 +414,8 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   storage.mode(n.report) <- "integer"
   chain.info <- c(curr.chain, n.chains)
   storage.mode(chain.info) <- "integer"
-  n.post.samples <- length(seq(from = n.burn + 1, 
-      			 to = n.samples, 
+  n.post.samples <- length(seq(from = n.burn + 1,
+      			 to = n.samples,
       			 by = as.integer(n.thin)))
   storage.mode(n.post.samples) <- "integer"
   samples.info <- c(n.burn, n.thin, n.post.samples)
@@ -450,15 +450,15 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
       tau.sq.inits <- runif(1, 0.1, 10)
     }
     storage.mode(chain.info) <- "integer"
-    # Run the model in C    
-    out.tmp[[i]] <- .Call("abundGaussian", y, X, X.re, X.random, 
-    		          consts, n.re.long, 
-                          beta.inits, tau.sq.inits, sigma.sq.mu.inits, beta.star.inits, 
-                          beta.star.indx, beta.level.indx, mu.beta, 
-                          Sigma.beta, tau.sq.a, tau.sq.b,  
-    		          sigma.sq.mu.a, sigma.sq.mu.b, 
-                          n.batch, batch.length, 
-                          accept.rate, n.omp.threads, verbose, n.report, 
+    # Run the model in C
+    out.tmp[[i]] <- .Call("abundGaussian", y, X, X.re, X.random,
+    		          consts, n.re.long,
+                          beta.inits, tau.sq.inits, sigma.sq.mu.inits, beta.star.inits,
+                          beta.star.indx, beta.level.indx, mu.beta,
+                          Sigma.beta, tau.sq.a, tau.sq.b,
+    		          sigma.sq.mu.a, sigma.sq.mu.b,
+                          n.batch, batch.length,
+                          accept.rate, n.omp.threads, verbose, n.report,
                           samples.info, chain.info)
     chain.info[1] <- chain.info[1] + 1
     seeds.list[[i]] <- .Random.seed
@@ -466,17 +466,17 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   # Calculate R-Hat ---------------
   out$rhat <- list()
   if (n.chains > 1) {
-    # as.vector removes the "Upper CI" when there is only 1 variable. 
-    out$rhat$beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-    					         mcmc(t(a$beta.samples)))), 
-    			     autoburnin = FALSE)$psrf[, 2])
-    out$rhat$tau.sq <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-    					      mcmc(t(a$tau.sq.samples)))), 
-    			     autoburnin = FALSE)$psrf[, 2])
+    # as.vector removes the "Upper CI" when there is only 1 variable.
+    out$rhat$beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+    					         mcmc(t(a$beta.samples)))),
+    			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
+    out$rhat$tau.sq <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+    					      mcmc(t(a$tau.sq.samples)))),
+    			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
     if (p.re > 0) {
-      out$rhat$sigma.sq.mu <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-      					      mcmc(t(a$sigma.sq.mu.samples)))), 
-      			     autoburnin = FALSE)$psrf[, 2])
+      out$rhat$sigma.sq.mu <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+      					      mcmc(t(a$sigma.sq.mu.samples)))),
+      			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
     }
   } else {
     out$rhat$beta <- rep(NA, p)
@@ -508,7 +508,7 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   }
   out$X <- X
   out$X.re <- X.re
-  out$y <- y.orig 
+  out$y <- y.orig
   if (p.re > 0) {
     out$sigma.sq.mu.samples <- mcmc(
       do.call(rbind, lapply(out.tmp, function(a) t(a$sigma.sq.mu.samples))))

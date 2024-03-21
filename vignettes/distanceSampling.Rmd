@@ -2,7 +2,7 @@
 title: "Fitting hierarchical distance sampling models in spAbundance"
 author: "Jeffrey W. Doser, Marc K&eacute;ry"
 description: Learn how to fit single-species and multi-species distance sampling models in spAbundance
-date: "2023 (last update: November 29, 2023)"
+date: "2023 (last update: March 21, 2024)"
 output: 
   rmarkdown::html_vignette:
     toc: true
@@ -49,7 +49,7 @@ set.seed(123)
 
 ## Example data set: Birds in the southeastern US
 
-As an example data set throughout this vignette, we will use distance sampling data from the National Ecological Observatory Network (NEON). Here we use data on 16 bird species collected in 2018 in the Disney Wilderness Preserve in Florida, USA. Briefly, data were collected at 90 sites where observers recorded the number of all bird species observed during a six-minute, unlimited radius point count survey once during the breeding season. Distance of each individual bird to the observer was recorded using a laser rangefinder. For modeling, we binned the distance measurements into 4 intervals (0-25, 25-50, 50-100, 100-250), removing all observations >250m away. We removed all species with less than 10 observations, leaving us with 16 species observed across the 90 sites. More on the study location can be found [on the NEON website](https://www.neonscience.org/field-sites/dsny). The data are provided as part of the `spAbundance` package and are loaded with `data(neonDWP)`. See the manual page using `help(neonDWP)` for more information on the species included in the data. 
+As an example data set throughout this vignette, we will use distance sampling data from the National Ecological Observatory Network (NEON). Here we use data on 16 bird species collected in 2018 in the Disney Wilderness Preserve in Florida, USA. Briefly, data were collected at 90 sites where observers recorded the number of all bird species observed during a six-minute, unlimited radius point count survey once during the breeding season. Distance of each individual bird to the observer was recorded using a laser rangefinder. For modeling, we binned the distance measurements into 4 intervals (0-25, 25-50, 50-100, 100-250), removing all observations >250m away. We removed all species with less than 10 observations, leaving us with 16 species observed across the 90 sites. More on the study location can be found [on the NEON website](https://www.neonscience.org/field-sites/dsny). The data are provided as part of the `spAbundance` package and are loaded with `data(neonDWP)`. See the manual page using `help(neonDWP)` for more information on the species included in the data. Note that the `neonDWP` data set was updated in `spAbundance` v0.1.1 after NEON discovered an error in the processing of the data (more details [here](https://www.neonscience.org/impact/observatory-blog/bird-point-ids-within-grids-were-transposed-resulting-inaccurate-point)), and so if you are running this vignette with `spAbundance` v0.1.0 you will get slightly different results.
 
 ```{r}
 # Load the data set.
@@ -537,7 +537,7 @@ We will use the same amount of burn-in and thinning as we did with the non-spati
 n.burn <- 20000
 n.thin <- 30
 n.chains <- 3
-# Approx. run time: 3.5 minutes
+# Approx. run time: 2 minutes
 out.sp <- spDS(abund.formula = abund.formula,
                det.formula = det.formula,
                data = dat.EATO,
@@ -712,7 +712,7 @@ As before, we will fit a model with a Poisson distribution for abundance (`famil
 ```{r}
 # Specify initial tuning values
 ms.tuning <- list(beta = 0.3, alpha = 0.3, beta.star = 0.5, kappa = 0.5)
-# Approx. run time:  11.5 min
+# Approx. run time:  6 min
 out.ms <- msDS(abund.formula = abund.formula,
                det.formula = det.formula,
                data = neonDWP,
@@ -920,13 +920,13 @@ ms.priors <- list(beta.comm.normal = list(mean = 0, var = 100),
                   kappa.unif = list(a = 0, b = 100))
 ```
 
-We finish up by specifying the tuning values, where now we specify the initial tuning variance for the factor loadings `lambda` as well as the latent factors `w`. We then run the model for 50,000 iterations (2000 batches of length 25) with a burn-in of 20,000 samples and a thinning rate of 30, for each of 3 chains, yielding a total of 3000 posterior samples. We will fit the model with a Poisson distribution for abundance.
+We finish up by specifying the tuning values, where now we specify the initial tuning variance for the factor loadings `lambda` as well as the latent factors `w`. We then run the model for a single chain of 50,000 iterations (2000 batches of length 25) with a burn-in of 20,000 samples and a thinning rate of 30. For a complete analysis we would run multiple chains, but here we use a single chain to keep run times reasonable for example purposes. We will fit the model with a Poisson distribution for abundance.
 
 ```{r}
 # Specify initial tuning values
 ms.tuning <- list(beta = 0.3, alpha = 0.3, beta.star = 0.5, kappa = 0.5, 
                   w = 0.5, lambda = 0.5)
-# Approx. run time:  16.5876 min
+# Approx. run time:  2.5 min
 out.lf.ms <- lfMsDS(abund.formula = abund.formula,
                     det.formula = det.formula,
                     data = neonDWP,
@@ -944,15 +944,13 @@ out.lf.ms <- lfMsDS(abund.formula = abund.formula,
                     n.report = 500,
                     n.burn = 20000,
                     n.thin = 30,
-                    n.chains = 3)
+                    n.chains = 1)
 summary(out.lf.ms)
 ```
 
-We see adequate convergence of all model parameters shown in the summary output. Note that the factor loadings themselves are not shown in the `summary()` output, but are available in the `lambda.samples` portion of the model list object.
+Note that the factor loadings themselves are not shown in the `summary()` output, but are available in the `lambda.samples` portion of the model list object.
 
 ```{r}
-# Rhats for lambda (the factor loadings)
-out.lf.ms$rhat$lambda.lower.tri
 # ESS for lambda
 out.lf.ms$ESS$lambda
 # Posterior quantiles for the latent factor loadings
@@ -1065,7 +1063,7 @@ ms.priors <- list(beta.comm.normal = list(mean = 0, var = 100),
 # Specify initial tuning values
 ms.tuning <- list(beta = 0.3, alpha = 0.3, beta.star = 0.5, kappa = 0.5, 
                   w = 0.5, lambda = 0.5, phi = 0.5)
-# Approx. run time (note only for one chain):  16.5876 min
+# Approx. run time:  2.88 min
 out.sf.ms <- sfMsDS(abund.formula = abund.formula,
                     det.formula = det.formula,
                     data = neonDWP,

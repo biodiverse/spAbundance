@@ -22,8 +22,8 @@ summary.ppcAbund <- function(object, level = 'both',
     cat("Fit statistic: ", object$fit.stat, "\n")
   }
 
-  if (object$class %in% c('msAbund', 'spMsAbund', 'lfMsAbund', 'sfMsAbund', 
-			  'msNMix', 'spMsNMix', 'lfMsNMix', 'sfMsNMix', 
+  if (object$class %in% c('msAbund', 'spMsAbund', 'lfMsAbund', 'sfMsAbund',
+			  'msNMix', 'spMsNMix', 'lfMsNMix', 'sfMsNMix',
 			  'msDS', 'lfMsDS', 'sfMsDS')) {
 
     if (tolower(level) == 'community') {
@@ -188,7 +188,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
     stop("error: X.0 must be a matrix with two columns corresponding to site and covariate or a three-dimensional array with dimensions corresponding to site, replicate, and covariate")
   }
   if (length(dim(X.0)) == 2) {
-    tmp <- colnames(X.0) 
+    tmp <- colnames(X.0)
     X.0 <- array(X.0, dim = c(nrow(X.0), 1, ncol(X.0)))
     dimnames(X.0)[[3]] <- tmp
   }
@@ -205,7 +205,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
   J.0 <- nrow(X.0)
   K.max.0 <- ncol(X.0)
   n.post <- object$n.post * object$n.chains
-  
+
   # Check z.0.samples -----------------------------------------------------
   # Check stage 1 samples
   if (object$dist == 'zi-Gaussian') {
@@ -213,11 +213,11 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
       stop("z.0.samples must be supplied for a zi-Gaussian model")
     }
     if (!is.matrix(z.0.samples)) {
-      stop(paste("z.0.samples must be a matrix with ", n.post, " rows and ", 
+      stop(paste("z.0.samples must be a matrix with ", n.post, " rows and ",
 		 J.0, " columns.", sep = ''))
     }
     if (nrow(z.0.samples) != n.post | ncol(z.0.samples) != J.0) {
-      stop(paste("z.0.samples must be a matrix with ", n.post, " rows and ", 
+      stop(paste("z.0.samples must be a matrix with ", n.post, " rows and ",
 		 J.0, " columns.", sep = ''))
     }
   } else {
@@ -243,7 +243,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
     tau.sq.samples <- as.matrix(object$tau.sq.samples)
   }
 
-  # Get X.0 in long format. 
+  # Get X.0 in long format.
   tmp.names <- dimnames(X.0)[[3]]
   X.0 <- matrix(X.0, nrow = nrow(X.0) * ncol(X.0), ncol = dim(X.0)[3])
   colnames(X.0) <- tmp.names
@@ -261,7 +261,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
       x.re.names <- dimnames(object$X.re)[[3]]
     }
     x.0.names <- colnames(X.0)
-    # Get the number of times each factor is used. 
+    # Get the number of times each factor is used.
     re.long.indx <- sapply(re.cols, length)
     tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
     indx <- list()
@@ -284,7 +284,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
         }
         # Convert desired column names into the numeric column index
         re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
-        
+
       } else if (is.numeric(re.cols[[i]])) {
         # Check if all column indices are in 1:p.abund
         if (!all(re.cols %in% 1:p.abund)) {
@@ -304,28 +304,28 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
       for (j in 1:nrow(X.re)) {
         tmp <- which(re.level.names[[i]] == X.re[j, i])
         if (length(tmp) > 0) {
-          X.re.ind[j, i] <- tmp 
+          X.re.ind[j, i] <- tmp
         }
       }
     }
     if (p.abund.re > 1) {
       for (j in 2:p.abund.re) {
-        X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+        X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
       }
     }
-    # Create the random effects corresponding to each 
+    # Create the random effects corresponding to each
     # new location
     # ORDER: ordered by site, then species within site.
     beta.star.sites.0.samples <- matrix(0, n.post,  nrow(X.re))
     for (t in 1:p.abund.re) {
       for (j in 1:nrow(X.re)) {
         if (!is.na(X.re.ind[j, t])) {
-          beta.star.sites.0.samples[, j] <- 
-            beta.star.samples[, X.re.ind[j, t]] * X.random[j, t] + 
+          beta.star.sites.0.samples[, j] <-
+            beta.star.samples[, X.re.ind[j, t]] * X.random[j, t] +
             beta.star.sites.0.samples[, j]
         } else {
-          beta.star.sites.0.samples[, j] <- 
-            rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+          beta.star.sites.0.samples[, j] <-
+            rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] +
             beta.star.sites.0.samples[, j]
         }
       } # j
@@ -338,11 +338,11 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
 
   tmp <- matrix(NA, n.post, length(c(missing.indx, non.missing.indx)))
   if (object$dist %in% c('Poisson', 'NB')) {
-  mu.long <- exp(t(X.fix %*% t(beta.samples) + 
+  mu.long <- exp(t(X.fix %*% t(beta.samples) +
 	       t(beta.star.sites.0.samples)))
-  } 
+  }
   if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
-  mu.long <- t(X.fix %*% t(beta.samples) + 
+  mu.long <- t(X.fix %*% t(beta.samples) +
 	       t(beta.star.sites.0.samples))
   }
   tmp[, non.missing.indx] <- mu.long
@@ -354,19 +354,19 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
     for (k in 1:K.max.0) {
       if (sum(is.na(out$mu.0.samples[, j, k])) == 0) {
         if (object$dist == 'NB') {
-          out$y.0.samples[, j, k] <- rnbinom(n.post, kappa.samples, 
+          out$y.0.samples[, j, k] <- rnbinom(n.post, kappa.samples,
           				   mu = out$mu.0.samples[, j, k])
         } else if (object$dist == 'Poisson') {
           out$y.0.samples[, j, k] <- rpois(n.post, out$mu.0.samples[, j, k])
         } else if (object$dist == 'Gaussian') {
-          out$y.0.samples[, j, k] <- rnorm(n.post, out$mu.0.samples[, j, k], 
+          out$y.0.samples[, j, k] <- rnorm(n.post, out$mu.0.samples[, j, k],
                                            sqrt(tau.sq.samples))
         } else if (object$dist == 'zi-Gaussian') {
-          out$y.0.samples[, j, k] <- ifelse(z.0.samples[, j] == 1, 
-          				  rnorm(n.post, out$mu.0.samples[, j, k], 
-          					sqrt(tau.sq.samples)), 
+          out$y.0.samples[, j, k] <- ifelse(z.0.samples[, j] == 1,
+          				  rnorm(n.post, out$mu.0.samples[, j, k],
+          					sqrt(tau.sq.samples)),
           				  rnorm(n.post, 0, sqrt(0.0001)))
-          out$mu.0.samples[, j, k] <- ifelse(z.0.samples[, j] == 1, 
+          out$mu.0.samples[, j, k] <- ifelse(z.0.samples[, j] == 1,
           				   out$mu.0.samples[, j, k], 0)
         }
       }
@@ -374,8 +374,8 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
   }
   # If Gaussian, collapse to a matrix
   if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
-    out$y.0.samples <- out$y.0.samples[, , 1]  
-    out$mu.0.samples <- out$mu.0.samples[, , 1]  
+    out$y.0.samples <- out$y.0.samples[, , 1]
+    out$mu.0.samples <- out$mu.0.samples[, , 1]
   }
 
   out$call <- cl
@@ -472,7 +472,7 @@ summary.spAbund <- function(object,
 
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
   }
-  
+
   if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
     cat("\n")
     cat("Residual variance: \n")
@@ -488,12 +488,12 @@ summary.spAbund <- function(object,
   }
 }
 
-predict.spAbund <- function(object, X.0, coords.0,  
+predict.spAbund <- function(object, X.0, coords.0,
 			    n.omp.threads = 1, verbose = TRUE, n.report = 100,
 			    ignore.RE = FALSE, z.0.samples, include.sp = TRUE, ...) {
 
   if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
-    predict.svcAbund(object, X.0, coords.0, n.omp.threads, 
+    predict.svcAbund(object, X.0, coords.0, n.omp.threads,
 		     verbose, n.report, ignore.RE, z.0.samples)
   } else {
     ptm <- proc.time()
@@ -531,7 +531,7 @@ predict.spAbund <- function(object, X.0, coords.0,
         stop("error: X.0 must be a matrix with two columns corresponding to site and covariate or a three-dimensional array with dimensions corresponding to site, replicate, and covariate")
       }
       if (length(dim(X.0)) == 2) {
-        tmp <- colnames(X.0) 
+        tmp <- colnames(X.0)
         X.0 <- array(X.0, dim = c(nrow(X.0), 1, ncol(X.0)))
         dimnames(X.0)[[3]] <- tmp
       }
@@ -548,7 +548,7 @@ predict.spAbund <- function(object, X.0, coords.0,
       sites.0.indx <- rep(0:(nrow(X.0) - 1), times = ncol(X.0))
       K.max.0 <- ncol(X.0)
 
-      # Get X.0 in long format. 
+      # Get X.0 in long format.
       tmp.names <- dimnames(X.0)[[3]]
       X.0 <- matrix(X.0, nrow = nrow(X.0) * ncol(X.0), ncol = dim(X.0)[3])
       colnames(X.0) <- tmp.names
@@ -590,10 +590,10 @@ predict.spAbund <- function(object, X.0, coords.0,
         # Get columns in design matrix with random effects
         x.re.names <- dimnames(object$X.re)[[3]]
         x.0.names <- colnames(X.0)
-        # Get the number of times each factor is used. 
+        # Get the number of times each factor is used.
         re.long.indx <- sapply(re.cols, length)
         # Need sapply to keep the replicate columns if a factor is used
-        # in both a random intercept and random slope. 
+        # in both a random intercept and random slope.
         tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
         # tmp <- which(colnames(X.0) %in% x.re.names)
         indx <- list()
@@ -616,7 +616,7 @@ predict.spAbund <- function(object, X.0, coords.0,
             }
             # Convert desired column names into the numeric column index
             re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
-            
+
           } else if (is.numeric(re.cols[[i]])) {
             # Check if all column indices are in 1:p.abund
             if (!all(re.cols %in% 1:p.abund)) {
@@ -636,28 +636,28 @@ predict.spAbund <- function(object, X.0, coords.0,
           for (j in 1:nrow(X.re)) {
             tmp <- which(re.level.names[[i]] == X.re[j, i])
             if (length(tmp) > 0) {
-              X.re.ind[j, i] <- tmp 
+              X.re.ind[j, i] <- tmp
             }
           }
         }
         if (p.abund.re > 1) {
           for (j in 2:p.abund.re) {
-            X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+            X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
           }
         }
-        # Create the random effects corresponding to each 
+        # Create the random effects corresponding to each
         # new location
         # ORDER: ordered by site, then species within site.
         beta.star.sites.0.samples <- matrix(0, n.post,  nrow(X.re))
         for (t in 1:p.abund.re) {
           for (j in 1:nrow(X.re)) {
             if (!is.na(X.re.ind[j, t])) {
-              beta.star.sites.0.samples[, j] <- 
-                beta.star.samples[, X.re.ind[j, t]] * X.random[j, t] + 
+              beta.star.sites.0.samples[, j] <-
+                beta.star.samples[, X.re.ind[j, t]] * X.random[j, t] +
                 beta.star.sites.0.samples[, j]
             } else {
-              beta.star.sites.0.samples[, j] <- 
-                rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+              beta.star.sites.0.samples[, j] <-
+                rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] +
                 beta.star.sites.0.samples[, j]
             }
           } # j
@@ -725,9 +725,9 @@ predict.spAbund <- function(object, X.0, coords.0,
         ptm <- proc.time()
 
         out <- .Call("spAbundNNGPPredict", coords, J, n.obs, p.abund, n.neighbors,
-                     X.fix, coords.0, J.0, n.obs.0, sites.link, sites.0.sampled, sites.0.indx, 
+                     X.fix, coords.0, J.0, n.obs.0, sites.link, sites.0.sampled, sites.0.indx,
             	 nn.indx.0, beta.samples,
-                     theta.samples, w.samples, beta.star.sites.0.samples, kappa.samples, 
+                     theta.samples, w.samples, beta.star.sites.0.samples, kappa.samples,
             	 n.post, cov.model.indx, n.omp.threads, verbose, n.report, family.c)
       }
 
@@ -737,13 +737,6 @@ predict.spAbund <- function(object, X.0, coords.0,
       tmp <- matrix(NA, n.post, length(c(missing.indx, non.missing.indx)))
       tmp[, non.missing.indx] <- t(out$mu.0.samples)
       out$mu.0.samples <- array(tmp, dim = c(n.post, J.0, K.max.0))
-      # This gives the same result, just switched the order
-      # tmp <- matrix(NA, length(c(missing.indx, non.missing.indx)), n.post)
-      # tmp[non.missing.indx, ] <- out$y.0.samples
-      # out$y.0.samples <- array(tmp, dim = c(J.0, K.max.0, n.post))
-      # tmp <- matrix(NA, length(c(missing.indx, non.missing.indx)), n.post)
-      # tmp[non.missing.indx, ] <- out$mu.0.samples
-      # out$mu.0.samples <- array(tmp, dim = c(J.0, K.max.0, n.post))
       out$w.0.samples <- mcmc(t(out$w.0.samples))
       out$run.time <- proc.time() - ptm
     }
@@ -787,8 +780,8 @@ summary.msAbund <- function(object,
     cat("\tCommunity Level\n");
     cat("----------------------------------------\n");
 
-    # Abundance 
-    # Abundance 
+    # Abundance
+    # Abundance
     if (object$dist %in% c('Poisson', 'NB')) {
       cat("Abundance Means (log scale): \n")
     }
@@ -859,7 +852,7 @@ summary.msAbund <- function(object,
     colnames(diags) <- c('Rhat', 'ESS')
 
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-    
+
     # NB Overdispersion
     if (object$dist == "NB") {
       cat("\n")
@@ -929,7 +922,7 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
     stop("error: X.0 must be a matrix with two columns corresponding to site and covariate or a three-dimensional array with dimensions corresponding to site, replicate, and covariate")
   }
   if (length(dim(X.0)) == 2) {
-    tmp <- colnames(X.0) 
+    tmp <- colnames(X.0)
     X.0 <- array(X.0, dim = c(nrow(X.0), 1, ncol(X.0)))
     dimnames(X.0)[[3]] <- tmp
   }
@@ -964,7 +957,7 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
     p.abund.re <- 0
   }
 
-  # Get X.0 in long format. 
+  # Get X.0 in long format.
   tmp.names <- dimnames(X.0)[[3]]
   X.0 <- matrix(X.0, nrow = nrow(X.0) * ncol(X.0), ncol = dim(X.0)[3])
   colnames(X.0) <- tmp.names
@@ -982,7 +975,7 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
       x.re.names <- dimnames(object$X.re)[[3]]
     }
     x.0.names <- colnames(X.0)
-    # Get the number of times each factor is used. 
+    # Get the number of times each factor is used.
     re.long.indx <- sapply(re.cols, length)
     tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
     indx <- list()
@@ -1005,7 +998,7 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
         }
         # Convert desired column names into the numeric column index
         re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
-        
+
       } else if (is.numeric(re.cols[[i]])) {
         # Check if all column indices are in 1:p.abund
         if (!all(re.cols %in% 1:p.abund)) {
@@ -1025,28 +1018,28 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
       for (j in 1:nrow(X.re)) {
         tmp <- which(re.level.names[[i]] == X.re[j, i])
         if (length(tmp) > 0) {
-          X.re.ind[j, i] <- tmp 
+          X.re.ind[j, i] <- tmp
         }
       }
     }
     if (p.abund.re > 1) {
       for (j in 2:p.abund.re) {
-        X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+        X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
       }
     }
-    # Create the random effects corresponding to each 
+    # Create the random effects corresponding to each
     # new location
     beta.star.sites.0.samples <- array(0, dim = c(n.post, n.sp, nrow(X.re)))
     for (i in 1:n.sp) {
       for (t in 1:p.abund.re) {
         for (j in 1:nrow(X.re)) {
           if (!is.na(X.re.ind[j, t])) {
-            beta.star.sites.0.samples[, i, j] <- 
-              beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] + 
+            beta.star.sites.0.samples[, i, j] <-
+              beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] +
               beta.star.sites.0.samples[, i, j]
           } else {
-            beta.star.sites.0.samples[, i, j] <- 
-              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+            beta.star.sites.0.samples[, i, j] <-
+              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] +
               beta.star.sites.0.samples[, i, j]
           }
         } # j
@@ -1064,12 +1057,12 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
       stop("z.0.samples must be supplied for a zi-Gaussian model")
     }
     if (length(dim(z.0.samples)) != 3) {
-      stop(paste("z.0.samples must be a three-dimensional array with dimensions of ", 
+      stop(paste("z.0.samples must be a three-dimensional array with dimensions of ",
 		 n.post, ", ", n.sp, ", and ", J.0, sep = ''))
     }
     if (dim(z.0.samples)[1] != n.post | dim(z.0.samples)[2] != n.sp |
 	dim(z.0.samples)[3] != J.0) {
-      stop(paste("z.0.samples must be a three-dimensional array with dimensions of ", 
+      stop(paste("z.0.samples must be a three-dimensional array with dimensions of ",
 		 n.post, ", ", n.sp, ", and ", J.0, sep = ''))
     }
   } else {
@@ -1085,11 +1078,11 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
   mu.long <- array(NA, dim = c(n.post, n.sp, nrow(X.fix)))
   for (i in 1:n.sp) {
     if (object$dist %in% c('Poisson', 'NB')) {
-      mu.long[, i, ] <- exp(t(X.fix %*% t(beta.samples[, sp.indx == i]) + 
+      mu.long[, i, ] <- exp(t(X.fix %*% t(beta.samples[, sp.indx == i]) +
 	                    t(beta.star.sites.0.samples[, i, ])))
     }
     if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
-      mu.long[, i, ] <- t(X.fix %*% t(beta.samples[, sp.indx == i]) + 
+      mu.long[, i, ] <- t(X.fix %*% t(beta.samples[, sp.indx == i]) +
 	                    t(beta.star.sites.0.samples[, i, ]))
     }
     tmp[, non.missing.indx] <- mu.long[, i, ]
@@ -1102,22 +1095,22 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
       for (k in 1:K.max.0) {
         if (sum(is.na(out$mu.0.samples[, i, j, k])) == 0) {
           if (object$dist == 'NB') {
-            out$y.0.samples[, i, j, k] <- rnbinom(n.post, kappa.samples[, i], 
+            out$y.0.samples[, i, j, k] <- rnbinom(n.post, kappa.samples[, i],
             				        mu = out$mu.0.samples[, i, j, k])
-          } 
+          }
           if (object$dist == 'Poisson') {
             out$y.0.samples[, i, j, k] <- rpois(n.post, out$mu.0.samples[, i, j, k])
           }
 	  if (object$dist == 'Gaussian') {
-            out$y.0.samples[, i, j, k] <- rnorm(n.post, out$mu.0.samples[, i, j, k], 
+            out$y.0.samples[, i, j, k] <- rnorm(n.post, out$mu.0.samples[, i, j, k],
 	                                        sqrt(object$tau.sq.samples[, i]))
 	  }
 	  if (object$dist == 'zi-Gaussian') {
-            out$y.0.samples[, i, j, k] <- ifelse(z.0.samples[, i, j] == 1, 
-	    				  rnorm(n.post, out$mu.0.samples[, i, j, k], 
-	    					sqrt(object$tau.sq.samples[, i])), 
+            out$y.0.samples[, i, j, k] <- ifelse(z.0.samples[, i, j] == 1,
+	    				  rnorm(n.post, out$mu.0.samples[, i, j, k],
+	    					sqrt(object$tau.sq.samples[, i])),
 	    				  rnorm(n.post, 0, sqrt(0.0001)))
-            out$mu.0.samples[, i, j, k] <- ifelse(z.0.samples[, i, j] == 1, 
+            out$mu.0.samples[, i, j, k] <- ifelse(z.0.samples[, i, j] == 1,
 	  				   out$mu.0.samples[, i, j, k], 0)
 	  }
 	}
@@ -1125,10 +1118,10 @@ predict.msAbund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
     }
   }
   out$call <- cl
-  # If Gaussian, collapse to a 3D array 
+  # If Gaussian, collapse to a 3D array
   if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
-    out$y.0.samples <- out$y.0.samples[, , , 1]  
-    out$mu.0.samples <- out$mu.0.samples[, , , 1]  
+    out$y.0.samples <- out$y.0.samples[, , , 1]
+    out$mu.0.samples <- out$mu.0.samples[, , , 1]
   }
 
   class(out) <- "predict.msAbund"
@@ -1167,7 +1160,7 @@ summary.sfMsAbund <- function(object, level = 'both',
     cat("\tCommunity Level\n");
     cat("----------------------------------------\n");
 
-    # Abundance 
+    # Abundance
     if (object$dist %in% c('Poisson', 'NB')) {
       cat("Abundance Means (log scale): \n")
     }
@@ -1297,7 +1290,7 @@ predict.sfMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
 			      ignore.RE = FALSE, z.0.samples, include.sp = TRUE, ...) {
 
   if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
-    predict.svcMsAbund(object, X.0, coords.0, n.omp.threads, 
+    predict.svcMsAbund(object, X.0, coords.0, n.omp.threads,
 		       verbose, n.report, ignore.RE, z.0.samples)
   } else {
 
@@ -1337,7 +1330,7 @@ predict.sfMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
         stop("error: X.0 must be a matrix with two columns corresponding to site and covariate or a three-dimensional array with dimensions corresponding to site, replicate, and covariate")
       }
       if (length(dim(X.0)) == 2) {
-        tmp <- colnames(X.0) 
+        tmp <- colnames(X.0)
         X.0 <- array(X.0, dim = c(nrow(X.0), 1, ncol(X.0)))
         dimnames(X.0)[[3]] <- tmp
       }
@@ -1354,7 +1347,7 @@ predict.sfMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
       sites.0.indx <- rep(0:(nrow(X.0) - 1), times = ncol(X.0))
       K.max.0 <- ncol(X.0)
 
-      # Get X.0 in long format. 
+      # Get X.0 in long format.
       tmp.names <- dimnames(X.0)[[3]]
       X.0 <- matrix(X.0, nrow = nrow(X.0) * ncol(X.0), ncol = dim(X.0)[3])
       colnames(X.0) <- tmp.names
@@ -1413,7 +1406,7 @@ predict.sfMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
         # Get columns in design matrix with random effects
         x.re.names <- dimnames(object$X.re)[[3]]
         x.0.names <- colnames(X.0)
-        # Get the number of times each factor is used. 
+        # Get the number of times each factor is used.
         re.long.indx <- sapply(re.cols, length)
         tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
         indx <- list()
@@ -1436,7 +1429,7 @@ predict.sfMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
             }
             # Convert desired column names into the numeric column index
             re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
-            
+
           } else if (is.numeric(re.cols[[i]])) {
             # Check if all column indices are in 1:p.abund
             if (!all(re.cols %in% 1:p.abund)) {
@@ -1456,28 +1449,28 @@ predict.sfMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
           for (j in 1:nrow(X.re)) {
             tmp <- which(re.level.names[[i]] == X.re[j, i])
             if (length(tmp) > 0) {
-              X.re.ind[j, i] <- tmp 
+              X.re.ind[j, i] <- tmp
             }
           }
         }
         if (p.abund.re > 1) {
           for (j in 2:p.abund.re) {
-            X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+            X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
           }
         }
-        # Create the random effects corresponding to each 
+        # Create the random effects corresponding to each
         # new location
         beta.star.sites.0.samples <- array(0, dim = c(n.post, n.sp, nrow(X.re)))
         for (i in 1:n.sp) {
           for (t in 1:p.abund.re) {
             for (j in 1:nrow(X.re)) {
               if (!is.na(X.re.ind[j, t])) {
-                beta.star.sites.0.samples[, i, j] <- 
-                  beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] + 
+                beta.star.sites.0.samples[, i, j] <-
+                  beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] +
                   beta.star.sites.0.samples[, i, j]
               } else {
-                beta.star.sites.0.samples[, i, j] <- 
-                  rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+                beta.star.sites.0.samples[, i, j] <-
+                  rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] +
                   beta.star.sites.0.samples[, i, j]
               }
             } # j
@@ -1550,9 +1543,9 @@ predict.sfMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
         storage.mode(n.report) <- "integer"
         storage.mode(family.c) <- "integer"
 
-        out <- .Call("sfMsAbundNNGPPredict", coords, J, n.obs, family.c, 
+        out <- .Call("sfMsAbundNNGPPredict", coords, J, n.obs, family.c,
           	         n.sp, q, p.abund, n.neighbors,
-                     X.fix, coords.0, J.0, n.obs.0, sites.link, sites.0.sampled, 
+                     X.fix, coords.0, J.0, n.obs.0, sites.link, sites.0.sampled,
             	 sites.0.indx, nn.indx.0, beta.samples,
                      theta.samples, kappa.samples, lambda.samples, w.samples,
             	 beta.star.sites.0.samples, n.post,
@@ -1582,7 +1575,7 @@ predict.sfMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
 
 # NMix --------------------------------------------------------------------
 print.NMix <- function(x, ...) {
-  cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)), 
+  cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)),
       "", sep = "\n")
 }
 
@@ -1621,7 +1614,7 @@ fitted.NMix <- function(object, type = 'marginal', ...) {
   N.long.indx <- N.long.indx[!is.na(c(y))]
   if (object$pRE) {
     X.p.random <- object$X.p.random
-    # Add 1 to get it to R indexing from the C indexing. 
+    # Add 1 to get it to R indexing from the C indexing.
     X.p.re <- object$X.p.re + 1
   }
   y <- c(y)
@@ -1635,7 +1628,7 @@ fitted.NMix <- function(object, type = 'marginal', ...) {
       if (object$dist == 'Poisson') {
         N.samples[i, ] <- rpois(J, object$mu.samples[i, ] * object$offset)
       } else if (object$dist == 'NB') {
-        N.samples[i, ] <- rnbinom(J, object$kappa.samples[i], 
+        N.samples[i, ] <- rnbinom(J, object$kappa.samples[i],
 				  mu = object$mu.samples[i, ] * object$offset)
       }
     }
@@ -1647,7 +1640,7 @@ fitted.NMix <- function(object, type = 'marginal', ...) {
     for (i in 1:n.post) {
       alpha.star.sum <- apply(apply(X.p.re, 2, function(a) object$alpha.star.samples[i, a]) * X.p.random,
                               1, sum)
-      det.prob.samples[i, ] <- logit.inv(X.p %*% alpha.samples[i, ] + 
+      det.prob.samples[i, ] <- logit.inv(X.p %*% alpha.samples[i, ] +
 					 alpha.star.sum)
     }
   } else {
@@ -1656,8 +1649,8 @@ fitted.NMix <- function(object, type = 'marginal', ...) {
   y.rep.samples <- array(NA, dim = dim(det.prob.samples))
   n.obs <- ncol(det.prob.samples)
   for (i in 1:n.post) {
-    y.rep.samples[i, ] <- rbinom(n.obs, N.samples[i, N.long.indx], 
-				det.prob.samples[i, ]) 
+    y.rep.samples[i, ] <- rbinom(n.obs, N.samples[i, N.long.indx],
+				det.prob.samples[i, ])
   }
   tmp <- array(NA, dim = c(J * K.max, n.post))
   names.long <- which(!is.na(c(object$y)))
@@ -1674,7 +1667,7 @@ fitted.NMix <- function(object, type = 'marginal', ...) {
   return(out)
 }
 
-predict.NMix <- function(object, X.0, ignore.RE = FALSE, 
+predict.NMix <- function(object, X.0, ignore.RE = FALSE,
 			  type = 'abundance', ...) {
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -1706,7 +1699,7 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
     stop("error: X.0 must be a data.frame or matrix\n")
   }
   # Abundance predictions ------------------------------------------------
-  if (tolower(type) == 'abundance') {  
+  if (tolower(type) == 'abundance') {
     p.abund <- ncol(object$X)
     # p.design <- p.abund
     # if (object$muRE & !ignore.RE) {
@@ -1758,7 +1751,7 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
           }
           # Convert desired column names into the numeric column index
           re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
-          
+
         } else if (is.numeric(re.cols[[i]])) {
           # Check if all column indices are in 1:p.abund
           if (!all(re.cols %in% 1:p.abund)) {
@@ -1777,28 +1770,28 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
         for (j in 1:nrow(X.re)) {
           tmp <- which(re.level.names[[i]] == X.re[j, i])
           if (length(tmp) > 0) {
-            X.re.ind[j, i] <- tmp 
+            X.re.ind[j, i] <- tmp
           }
         }
       }
       if (p.abund.re > 1) {
         for (j in 2:p.abund.re) {
-          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
         }
       }
-      # Create the random effects corresponding to each 
+      # Create the random effects corresponding to each
       # new location
       # ORDER: ordered by site, then species within site.
       beta.star.sites.0.samples <- matrix(0, n.post,  nrow(X.re))
       for (t in 1:p.abund.re) {
         for (j in 1:nrow(X.re)) {
           if (!is.na(X.re.ind[j, t])) {
-            beta.star.sites.0.samples[, j] <- 
-              beta.star.samples[, X.re.ind[j, t]] * X.random[j, t] + 
+            beta.star.sites.0.samples[, j] <-
+              beta.star.samples[, X.re.ind[j, t]] * X.random[j, t] +
               beta.star.sites.0.samples[, j]
           } else {
-            beta.star.sites.0.samples[, j] <- 
-              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+            beta.star.sites.0.samples[, j] <-
+              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] +
               beta.star.sites.0.samples[, j]
           }
         } # j
@@ -1810,15 +1803,15 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
     }
 
     J.str <- nrow(X.0)
-    out$mu.0.samples <- mcmc(exp(t(X.fix %*% t(beta.samples) + 
+    out$mu.0.samples <- mcmc(exp(t(X.fix %*% t(beta.samples) +
           				t(beta.star.sites.0.samples))))
     if (object$dist == 'NB') {
-      out$N.0.samples <- mcmc(matrix(rnbinom(length(out$mu.0.samples), kappa.samples, 
-					   mu = c(out$mu.0.samples)), nrow = n.post, 
+      out$N.0.samples <- mcmc(matrix(rnbinom(length(out$mu.0.samples), kappa.samples,
+					   mu = c(out$mu.0.samples)), nrow = n.post,
 				   ncol = nrow(X.0)))
     } else {
-      out$N.0.samples <- mcmc(matrix(rpois(length(out$mu.0.samples),  
-					   lambda = c(out$mu.0.samples)), nrow = n.post, 
+      out$N.0.samples <- mcmc(matrix(rpois(length(out$mu.0.samples),
+					   lambda = c(out$mu.0.samples)), nrow = n.post,
 				   ncol = nrow(X.0)))
     }
   }
@@ -1872,7 +1865,7 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
           }
           # Convert desired column names into the numeric column index
           re.det.cols[[i]] <- which(x.p.0.names %in% re.det.cols[[i]])
-          
+
         } else if (is.numeric(re.det.cols[[i]])) {
           # Check if all column indices are in 1:p.abund
           if (!all(re.det.cols %in% 1:p.det)) {
@@ -1891,28 +1884,28 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
         for (j in 1:nrow(X.re)) {
           tmp <- which(p.re.level.names[[i]] == X.re[j, i])
           if (length(tmp) > 0) {
-            X.re.ind[j, i] <- tmp 
+            X.re.ind[j, i] <- tmp
           }
         }
       }
       if (p.det.re > 1) {
         for (j in 2:p.det.re) {
-          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
         }
       }
-      # Create the random effects corresponding to each 
+      # Create the random effects corresponding to each
       # new location
       # ORDER: ordered by site, then species within site.
       alpha.star.sites.0.samples <- matrix(0, n.post,  nrow(X.re))
       for (t in 1:p.det.re) {
         for (j in 1:nrow(X.re)) {
           if (!is.na(X.re.ind[j, t])) {
-            alpha.star.sites.0.samples[, j] <- 
-              alpha.star.samples[, X.re.ind[j, t]] * X.random[j, t] + 
+            alpha.star.sites.0.samples[, j] <-
+              alpha.star.samples[, X.re.ind[j, t]] * X.random[j, t] +
               alpha.star.sites.0.samples[, j]
           } else {
-            alpha.star.sites.0.samples[, j] <- 
-              rnorm(n.post, 0, sqrt(object$sigma.sq.p.samples[, t])) * X.random[j, t] + 
+            alpha.star.sites.0.samples[, j] <-
+              rnorm(n.post, 0, sqrt(object$sigma.sq.p.samples[, t])) * X.random[j, t] +
               alpha.star.sites.0.samples[, j]
           }
         } # j
@@ -1922,7 +1915,7 @@ predict.NMix <- function(object, X.0, ignore.RE = FALSE,
       alpha.star.sites.0.samples <- matrix(0, n.post, nrow(X.0))
       p.det.re <- 0
     }
-    out$p.0.samples <- mcmc(logit.inv(t(X.fix %*% t(alpha.samples) + 
+    out$p.0.samples <- mcmc(logit.inv(t(X.fix %*% t(alpha.samples) +
           				t(alpha.star.sites.0.samples))))
   }
   out$call <- cl
@@ -2107,10 +2100,10 @@ summary.spNMix <- function(object,
   cat("\n")
   # Covariance ------------------------
   cat("Spatial Covariance: \n")
-  tmp.1 <- t(apply(object$theta.samples, 2, 
+  tmp.1 <- t(apply(object$theta.samples, 2,
 		   function(x) c(mean(x), sd(x))))
   colnames(tmp.1) <- c("Mean", "SD")
-  tmp <- t(apply(object$theta.samples, 2, 
+  tmp <- t(apply(object$theta.samples, 2,
 		 function(x) quantile(x, prob = quantiles)))
   diags <- matrix(c(object$rhat$theta, round(object$ESS$theta, 0)), ncol = 2)
   colnames(diags) <- c('Rhat', 'ESS')
@@ -2135,9 +2128,9 @@ fitted.spNMix <- function(object, type = 'marginal', ...) {
   fitted.NMix(object, type = type)
 }
 
-predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1, 
-			   verbose = TRUE, n.report = 100, 
-			   ignore.RE = FALSE, 
+predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
+			   verbose = TRUE, n.report = 100,
+			   ignore.RE = FALSE,
 			   type = 'abundance', include.sp = TRUE, ...) {
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -2175,7 +2168,7 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
     }
 
     # Abundance predictions ------------------------------------------------
-    if (tolower(type) == 'abundance') {  
+    if (tolower(type) == 'abundance') {
       if (missing(coords.0)) {
         stop("error: coords.0 must be specified\n")
       }
@@ -2186,7 +2179,7 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
         stop("error: coords.0 must have two columns\n")
       }
       coords.0 <- as.matrix(coords.0)
-      
+
       p.abund <- ncol(object$X)
       p.design <- p.abund
       # if (object$muRE & !ignore.RE) {
@@ -2251,7 +2244,7 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
             }
             # Convert desired column names into the numeric column index
             re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
-            
+
           } else if (is.numeric(re.cols[[i]])) {
             # Check if all column indices are in 1:p.abund
             if (!all(re.cols %in% 1:p.abund)) {
@@ -2270,28 +2263,28 @@ predict.spNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
           for (j in 1:nrow(X.re)) {
             tmp <- which(re.level.names[[i]] == X.re[j, i])
             if (length(tmp) > 0) {
-              X.re.ind[j, i] <- tmp 
+              X.re.ind[j, i] <- tmp
             }
           }
         }
         if (p.abund.re > 1) {
           for (j in 2:p.abund.re) {
-            X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+            X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
           }
         }
-        # Create the random effects corresponding to each 
+        # Create the random effects corresponding to each
         # new location
         # ORDER: ordered by site, then species within site.
         beta.star.sites.0.samples <- matrix(0, n.post,  nrow(X.re))
         for (t in 1:p.abund.re) {
           for (j in 1:nrow(X.re)) {
             if (!is.na(X.re.ind[j, t])) {
-              beta.star.sites.0.samples[, j] <- 
-                beta.star.samples[, X.re.ind[j, t]] * X.random[j, t] + 
+              beta.star.sites.0.samples[, j] <-
+                beta.star.samples[, X.re.ind[j, t]] * X.random[j, t] +
                 beta.star.sites.0.samples[, j]
             } else {
-              beta.star.sites.0.samples[, j] <- 
-                rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+              beta.star.sites.0.samples[, j] <-
+                rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] +
                 beta.star.sites.0.samples[, j]
             }
           } # j
@@ -2406,7 +2399,7 @@ summary.msNMix <- function(object,
     cat("\tCommunity Level\n");
     cat("----------------------------------------\n");
 
-    # Abundance 
+    # Abundance
     cat("Abundance Means (log scale): \n")
     tmp.1 <- t(apply(object$beta.comm.samples, 2,
           	   function(x) c(mean(x), sd(x))))
@@ -2519,7 +2512,7 @@ summary.msNMix <- function(object,
     diags <- matrix(c(object$rhat$alpha, round(object$ESS$alpha, 0)), ncol = 2)
     colnames(diags) <- c('Rhat', 'ESS')
     print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
-    
+
     # NB Overdispersion
     if (object$dist == "NB") {
       cat("\n")
@@ -2583,7 +2576,7 @@ fitted.msNMix <- function(object, type = 'marginal', ...) {
         if (object$dist == 'Poisson') {
           N.samples[j, i, ] <- rpois(J, object$mu.samples[j, i, ] * object$offset)
         } else if (object$dist == 'NB') {
-          N.samples[j, i, ] <- rnbinom(J, object$kappa.samples[j, i], 
+          N.samples[j, i, ] <- rnbinom(J, object$kappa.samples[j, i],
           			  mu = object$mu.samples[j, i, ] * object$offset)
         }
       }
@@ -2598,14 +2591,14 @@ fitted.msNMix <- function(object, type = 'marginal', ...) {
   for (i in 1:n.sp) {
     if (object$pRE) {
       sp.re.indx <- rep(1:n.sp, each = ncol(object$alpha.star.samples) / n.sp)
-      # Add 1 to get it to R indexing. 
+      # Add 1 to get it to R indexing.
       X.p.re <- object$X.p.re + 1
       X.p.random <- object$X.p.random
       # tmp.samples <- matrix(0, n.post, n.obs)
       tmp.alpha.star <- object$alpha.star.samples[, sp.re.indx == i]
       for (j in 1:n.post) {
-        alpha.star.sum <- apply(apply(X.p.re, 2, function(a) tmp.alpha.star[j, a]) * X.p.random, 
-                               1, sum) 
+        alpha.star.sum <- apply(apply(X.p.re, 2, function(a) tmp.alpha.star[j, a]) * X.p.random,
+                               1, sum)
         det.prob.samples[, i, j] <- logit.inv(X.p %*% alpha.samples[j, sp.indx == i] + alpha.star.sum)
       }
     } else {
@@ -2615,7 +2608,7 @@ fitted.msNMix <- function(object, type = 'marginal', ...) {
 
   out <- list()
   # Get detection probability
-  # Need to be careful here that all arrays line up. 
+  # Need to be careful here that all arrays line up.
   det.prob.samples <- aperm(det.prob.samples, c(3, 2, 1))
   tmp <- array(NA, dim = c(n.post, n.sp, J * K.max))
   names.long <- which(!is.na(c(object$y[1, , ])))
@@ -2625,7 +2618,7 @@ fitted.msNMix <- function(object, type = 'marginal', ...) {
   # Get fitted values
   y.rep.samples <- array(NA, dim = dim(det.prob.samples))
   for (i in 1:n.sp) {
-    y.rep.samples[, i, ] <- rbinom(n.obs * n.post, N.samples[, i, N.long.indx], 
+    y.rep.samples[, i, ] <- rbinom(n.obs * n.post, N.samples[, i, N.long.indx],
 				   det.prob.samples[, i, ])
   }
   tmp <- array(NA, dim = c(n.post, n.sp, J * K.max))
@@ -2636,7 +2629,7 @@ fitted.msNMix <- function(object, type = 'marginal', ...) {
   return(out)
 }
 
-predict.msNMix <- function(object, X.0, ignore.RE = FALSE, 
+predict.msNMix <- function(object, X.0, ignore.RE = FALSE,
 			  type = 'abundance', ...) {
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -2718,7 +2711,7 @@ predict.msNMix <- function(object, X.0, ignore.RE = FALSE,
           }
           # Convert desired column names into the numeric column index
           re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
-          
+
         } else if (is.numeric(re.cols[[i]])) {
           # Check if all column indices are in 1:p.abund
           if (!all(re.cols %in% 1:p.abund)) {
@@ -2737,16 +2730,16 @@ predict.msNMix <- function(object, X.0, ignore.RE = FALSE,
         for (j in 1:nrow(X.re)) {
           tmp <- which(re.level.names[[i]] == X.re[j, i])
           if (length(tmp) > 0) {
-            X.re.ind[j, i] <- tmp 
+            X.re.ind[j, i] <- tmp
           }
         }
       }
       if (p.abund.re > 1) {
         for (j in 2:p.abund.re) {
-          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
         }
       }
-      # Create the random effects corresponding to each 
+      # Create the random effects corresponding to each
       # new location
       # ORDER: ordered by site, then species within site.
       beta.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.re))
@@ -2754,17 +2747,17 @@ predict.msNMix <- function(object, X.0, ignore.RE = FALSE,
         for (t in 1:p.abund.re) {
           for (j in 1:nrow(X.re)) {
             if (!is.na(X.re.ind[j, t])) {
-              beta.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
-                beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] + 
+              beta.star.sites.0.samples[, (j - 1) * n.sp + i] <-
+                beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] +
                 beta.star.sites.0.samples[, (j - 1) * n.sp + i]
             } else {
-              beta.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
-                rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+              beta.star.sites.0.samples[, (j - 1) * n.sp + i] <-
+                rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] +
                 beta.star.sites.0.samples[, (j - 1) * n.sp + i]
             }
           } # j
         } # t
-      } # i 
+      } # i
     } else {
       X.fix <- X.0
       beta.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.0))
@@ -2774,14 +2767,14 @@ predict.msNMix <- function(object, X.0, ignore.RE = FALSE,
     # Make predictions
     for (i in 1:n.sp) {
       for (j in 1:J.str) {
-        out$mu.0.samples[, i, j] <- exp(t(as.matrix(X.fix[j, ])) %*% 
-          				     t(beta.samples[, sp.indx == i]) + 
+        out$mu.0.samples[, i, j] <- exp(t(as.matrix(X.fix[j, ])) %*%
+          				     t(beta.samples[, sp.indx == i]) +
                                                beta.star.sites.0.samples[, (j - 1) * n.sp + i])
         if (object$dist == 'NB') {
-          out$N.0.samples[, i, j] <- rnbinom(n.post, kappa.samples[, i], 
+          out$N.0.samples[, i, j] <- rnbinom(n.post, kappa.samples[, i],
 					     mu = out$mu.0.samples[, i, j])
 	} else {
-          out$N.0.samples[, i, j] <- rpois(n.post, out$mu.0.samples[, i, j]) 
+          out$N.0.samples[, i, j] <- rpois(n.post, out$mu.0.samples[, i, j])
 	}
       } # j
     } # i
@@ -2830,7 +2823,7 @@ predict.msNMix <- function(object, X.0, ignore.RE = FALSE,
           }
           # Convert desired column names into the numeric column index
           re.det.cols[[i]] <- which(x.p.0.names %in% re.det.cols[[i]])
-          
+
         } else if (is.numeric(re.det.cols[[i]])) {
           # Check if all column indices are in 1:p.abund
           if (!all(re.det.cols %in% 1:p.det)) {
@@ -2849,16 +2842,16 @@ predict.msNMix <- function(object, X.0, ignore.RE = FALSE,
         for (j in 1:nrow(X.re)) {
           tmp <- which(p.re.level.names[[i]] == X.re[j, i])
           if (length(tmp) > 0) {
-            X.re.ind[j, i] <- tmp 
+            X.re.ind[j, i] <- tmp
           }
         }
       }
       if (p.det.re > 1) {
         for (j in 2:p.det.re) {
-          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
         }
       }
-      # Create the random effects corresponding to each 
+      # Create the random effects corresponding to each
       # new location
       # ORDER: ordered by site, then species within site.
       alpha.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.re))
@@ -2866,17 +2859,17 @@ predict.msNMix <- function(object, X.0, ignore.RE = FALSE,
         for (t in 1:p.det.re) {
           for (j in 1:nrow(X.re)) {
             if (!is.na(X.re.ind[j, t])) {
-              alpha.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
-                alpha.star.samples[, (i - 1) * n.det.re + X.re.ind[j, t]] * X.random[j, t] + 
+              alpha.star.sites.0.samples[, (j - 1) * n.sp + i] <-
+                alpha.star.samples[, (i - 1) * n.det.re + X.re.ind[j, t]] * X.random[j, t] +
                 alpha.star.sites.0.samples[, (j - 1) * n.sp + i]
             } else {
-              alpha.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
-                rnorm(n.post, 0, sqrt(object$sigma.sq.p.samples[, t])) * X.random[j, t] + 
+              alpha.star.sites.0.samples[, (j - 1) * n.sp + i] <-
+                rnorm(n.post, 0, sqrt(object$sigma.sq.p.samples[, t])) * X.random[j, t] +
                 alpha.star.sites.0.samples[, (j - 1) * n.sp + i]
             }
           } # j
         } # t
-      } # i 
+      } # i
     } else {
       X.fix <- X.0
       alpha.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.0))
@@ -2886,8 +2879,8 @@ predict.msNMix <- function(object, X.0, ignore.RE = FALSE,
     # Make predictions
     for (i in 1:n.sp) {
       for (j in 1:J.str) {
-        out$p.0.samples[, i, j] <- logit.inv(t(as.matrix(X.fix[j, ])) %*% 
-          				     t(alpha.samples[, sp.indx == i]) + 
+        out$p.0.samples[, i, j] <- logit.inv(t(as.matrix(X.fix[j, ])) %*%
+          				     t(alpha.samples[, sp.indx == i]) +
                                                alpha.star.sites.0.samples[, (j - 1) * n.sp + i])
       } # j
     } # i
@@ -2930,7 +2923,7 @@ summary.sfMsNMix <- function(object, level = 'both',
     cat("\tCommunity Level\n");
     cat("----------------------------------------\n");
 
-    # Abundance 
+    # Abundance
     cat("Abundance Means (log scale): \n")
     tmp.1 <- t(apply(object$beta.comm.samples, 2,
           	   function(x) c(mean(x), sd(x))))
@@ -3076,14 +3069,14 @@ summary.sfMsNMix <- function(object, level = 'both',
       print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
     }
 }
-# 
+#
 fitted.sfMsNMix <- function(object, type = 'marginal', ...) {
   fitted.msNMix(object, type)
 }
 
 predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
 			      verbose = TRUE, n.report = 100,
-			      ignore.RE = FALSE, type = 'abundance', 
+			      ignore.RE = FALSE, type = 'abundance',
 			      include.sp = TRUE, ...) {
 
   # Check for unused arguments ------------------------------------------
@@ -3171,21 +3164,15 @@ predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
       coords.0.indx <- which(is.na(match.indx))
       coords.indx <- match.indx[!is.na(match.indx)]
       coords.place.indx <- which(!is.na(match.indx))
-      coords.0.new <- coords.0[coords.0.indx, , drop = FALSE]
-      X.0.new <- X.0[coords.0.indx, , drop = FALSE]
-
-      if (length(coords.indx) == nrow(X.0)) {
-        stop("error: no new locations to predict at. See object$mu.samples for expected abundances at sampled sites.")
-      }
 
       if (object$muRE & !ignore.RE) {
         beta.star.samples <- object$beta.star.samples
         re.level.names <- object$re.level.names
         # Get columns in design matrix with random effects
         x.re.names <- colnames(object$X.re)
-        x.0.names <- colnames(X.0.new)
+        x.0.names <- colnames(X.0)
         re.long.indx <- sapply(re.cols, length)
-        tmp <- sapply(x.re.names, function(a) which(colnames(X.0.new) %in% a))
+        tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
         indx <- list()
         for (i in 1:length(tmp)) {
           indx[[i]] <- rep(tmp[i], re.long.indx[i])
@@ -3206,7 +3193,7 @@ predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
             }
             # Convert desired column names into the numeric column index
             re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
-            
+
           } else if (is.numeric(re.cols[[i]])) {
             # Check if all column indices are in 1:p.abund
             if (!all(re.cols %in% 1:p.abund)) {
@@ -3216,25 +3203,25 @@ predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
           }
         }
         re.cols <- unlist(re.cols)
-        X.re <- as.matrix(X.0.new[, indx, drop = FALSE])
-        X.fix <- as.matrix(X.0.new[, -indx, drop = FALSE])
-        X.random <- as.matrix(X.0.new[, re.cols, drop = FALSE])
+        X.re <- as.matrix(X.0[, indx, drop = FALSE])
+        X.fix <- as.matrix(X.0[, -indx, drop = FALSE])
+        X.random <- as.matrix(X.0[, re.cols, drop = FALSE])
         n.abund.re <- length(unlist(re.level.names))
         X.re.ind <- matrix(NA, nrow(X.re), p.abund.re)
         for (i in 1:p.abund.re) {
           for (j in 1:nrow(X.re)) {
             tmp <- which(re.level.names[[i]] == X.re[j, i])
             if (length(tmp) > 0) {
-              X.re.ind[j, i] <- tmp 
+              X.re.ind[j, i] <- tmp
             }
           }
         }
         if (p.abund.re > 1) {
           for (j in 2:p.abund.re) {
-            X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+            X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
           }
         }
-        # Create the random effects corresponding to each 
+        # Create the random effects corresponding to each
         # new location
         # ORDER: ordered by site, then species within site.
         beta.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.re))
@@ -3242,20 +3229,20 @@ predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
           for (t in 1:p.abund.re) {
             for (j in 1:nrow(X.re)) {
               if (!is.na(X.re.ind[j, t])) {
-                beta.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
-                  beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] + 
+                beta.star.sites.0.samples[, (j - 1) * n.sp + i] <-
+                  beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] +
                   beta.star.sites.0.samples[, (j - 1) * n.sp + i]
               } else {
-                beta.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
-                  rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+                beta.star.sites.0.samples[, (j - 1) * n.sp + i] <-
+                  rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] +
                   beta.star.sites.0.samples[, (j - 1) * n.sp + i]
               }
             } # j
           } # t
-        } # i 
+        } # i
       } else {
-        X.fix <- X.0.new
-        beta.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.0.new))
+        X.fix <- X.0
+        beta.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.0))
         p.abund.re <- 0
       }
 
@@ -3269,14 +3256,20 @@ predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
       w.samples <- aperm(w.samples, c(2, 3, 1))
       beta.star.sites.0.samples <- t(beta.star.sites.0.samples)
 
-      J.str <- nrow(X.0.new)
+      J.str <- nrow(X.0)
+      sites.0.indx <- 0:(nrow(X.0) - 1)
+      sites.0.sampled <- ifelse(!is.na(match.indx), 1, 0)
+      sites.link <- rep(NA, J.str)
+      sites.link[which(!is.na(match.indx))] <- coords.indx
+      # For C
+      sites.link <- sites.link - 1
 
       if (sp.type == 'GP') {
         # Not currently implemented or accessed.
       } else {
         # Get nearest neighbors
         # nn2 is a function from RANN.
-        nn.indx.0 <- nn2(coords, coords.0.new, k=n.neighbors)$nn.idx-1
+        nn.indx.0 <- nn2(coords, coords.0, k=n.neighbors)$nn.idx-1
 
         storage.mode(coords) <- "double"
         storage.mode(n.sp) <- "integer"
@@ -3284,7 +3277,7 @@ predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
         storage.mode(p.abund) <- "integer"
         storage.mode(n.neighbors) <- "integer"
         storage.mode(X.fix) <- "double"
-        storage.mode(coords.0.new) <- "double"
+        storage.mode(coords.0) <- "double"
         storage.mode(J.str) <- "integer"
         storage.mode(q) <- "integer"
         storage.mode(beta.samples) <- "double"
@@ -3300,13 +3293,16 @@ predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
         storage.mode(verbose) <- "integer"
         storage.mode(n.report) <- "integer"
         storage.mode(family.c) <- "integer"
+        storage.mode(sites.link) <- "integer"
+        storage.mode(sites.0.sampled) <- 'integer'
 
-        out <- .Call("sfMsNMixNNGPPredict", coords, J, family.c, 
-          	   n.sp, q, p.abund, n.neighbors, 
-                     X.fix, coords.0.new, J.str, nn.indx.0, beta.samples,
+        out <- .Call("sfMsNMixNNGPPredict", coords, J, family.c,
+          	     n.sp, q, p.abund, n.neighbors,
+                     X.fix, coords.0, J.str, nn.indx.0, beta.samples,
                      theta.samples, kappa.samples, lambda.samples, w.samples,
-            	   beta.star.sites.0.samples, n.post,
-                     cov.model.indx, n.omp.threads, verbose, n.report)
+            	     beta.star.sites.0.samples, n.post,
+                     cov.model.indx, n.omp.threads, verbose, n.report, 
+                     sites.link, sites.0.sampled)
       }
       out$N.0.samples <- array(out$N.0.samples, dim = c(n.sp, J.str, n.post))
       out$N.0.samples <- aperm(out$N.0.samples, c(3, 1, 2))
@@ -3314,23 +3310,7 @@ predict.sfMsNMix <- function(object, X.0, coords.0, n.omp.threads = 1,
       out$w.0.samples <- aperm(out$w.0.samples, c(3, 1, 2))
       out$mu.0.samples <- array(out$mu.0.samples, dim = c(n.sp, J.str, n.post))
       out$mu.0.samples <- aperm(out$mu.0.samples, c(3, 1, 2))
-
-      # If some of the sites are sampled
-      if (nrow(X.0) != J.str) {
-        tmp <- array(NA, dim = c(n.post, n.sp, nrow(X.0)))
-        tmp[, , coords.0.indx] <- out$N.0.samples
-        tmp[, , coords.place.indx] <- object$N.samples[, , coords.indx]
-        out$N.0.samples <- tmp
-        tmp <- array(NA, dim = c(n.post, n.sp, nrow(X.0)))
-        tmp[, , coords.0.indx] <- out$mu.0.samples
-        tmp[, , coords.place.indx] <- object$mu.samples[, , coords.indx]
-        out$mu.0.samples <- tmp
-        tmp <- array(NA, dim = c(n.post, q, nrow(X.0)))
-        tmp[, , coords.0.indx] <- out$w.0.samples
-        tmp[, , coords.place.indx] <- object$w.samples[, , coords.indx]
-        out$w.0.samples <- tmp
-      }
-    } # occurrence predictions
+    } # abundance predictions
     # Detection predictions -------------------------------------------------
     if (tolower(type) == 'detection') {
       out <- predict.msNMix(object, X.0, ignore.RE, type)
@@ -3362,7 +3342,7 @@ summary.lfMsNMix <- function(object,
 fitted.lfMsNMix <- function(object, type = 'marginal', ...) {
   fitted.msNMix(object, type)
 }
-predict.lfMsNMix <- function(object, X.0, coords.0, ignore.RE = FALSE, 
+predict.lfMsNMix <- function(object, X.0, coords.0, ignore.RE = FALSE,
 			  type = 'abundance', include.w = TRUE, ...) {
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -3425,31 +3405,29 @@ predict.lfMsNMix <- function(object, X.0, coords.0, ignore.RE = FALSE,
       }
       re.cols <- object$re.cols
 
-      # Eliminate prediction sites that have already been sampled for now
+      # Figure out what locations are part of the fitted model.
       if (!missing(coords.0)) {
-        match.indx <- match(do.call("paste", as.data.frame(coords.0)), 
+        match.indx <- match(do.call("paste", as.data.frame(coords.0)),
               	      do.call("paste", as.data.frame(coords)))
         coords.0.indx <- which(is.na(match.indx))
         coords.indx <- match.indx[!is.na(match.indx)]
         coords.place.indx <- which(!is.na(match.indx))
-        coords.0.new <- coords.0[coords.0.indx, , drop = FALSE]
-        X.0.new <- X.0[coords.0.indx, , drop = FALSE]
-        if (length(coords.indx) == nrow(X.0)) {
-          stop("error: no new locations to predict at. See object$psi.samples for occurrence probabilities at sampled sites.")
-        }
+        # Indicates whether a site has been sampled. 1 = sampled
+        sites.0.sampled <- ifelse(!is.na(match.indx), 1, 0)
+        sites.link <- rep(NA, J.0)
+        sites.link[which(!is.na(match.indx))] <- coords.indx
       } else {
-        X.0.new <- X.0
+        sites.0.sampled <- rep(0, J.0)
       }
-
 
       if (object$muRE & !ignore.RE) {
         beta.star.samples <- object$beta.star.samples
         re.level.names <- object$re.level.names
         # Get columns in design matrix with random effects
         x.re.names <- colnames(object$X.re)
-        x.0.names <- colnames(X.0.new)
+        x.0.names <- colnames(X.0)
         re.long.indx <- sapply(re.cols, length)
-        tmp <- sapply(x.re.names, function(a) which(colnames(X.0.new) %in% a))
+        tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
         indx <- list()
         for (i in 1:length(tmp)) {
           indx[[i]] <- rep(tmp[i], re.long.indx[i])
@@ -3470,7 +3448,7 @@ predict.lfMsNMix <- function(object, X.0, coords.0, ignore.RE = FALSE,
             }
             # Convert desired column names into the numeric column index
             re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
-            
+
           } else if (is.numeric(re.cols[[i]])) {
             # Check if all column indices are in 1:p.abund
             if (!all(re.cols %in% 1:p.abund)) {
@@ -3480,25 +3458,25 @@ predict.lfMsNMix <- function(object, X.0, coords.0, ignore.RE = FALSE,
           }
         }
         re.cols <- unlist(re.cols)
-        X.re <- as.matrix(X.0.new[, indx, drop = FALSE])
-        X.fix <- as.matrix(X.0.new[, -indx, drop = FALSE])
-        X.random <- as.matrix(X.0.new[, re.cols, drop = FALSE])
+        X.re <- as.matrix(X.0[, indx, drop = FALSE])
+        X.fix <- as.matrix(X.0[, -indx, drop = FALSE])
+        X.random <- as.matrix(X.0[, re.cols, drop = FALSE])
         n.abund.re <- length(unlist(re.level.names))
         X.re.ind <- matrix(NA, nrow(X.re), p.abund.re)
         for (i in 1:p.abund.re) {
           for (j in 1:nrow(X.re)) {
             tmp <- which(re.level.names[[i]] == X.re[j, i])
             if (length(tmp) > 0) {
-              X.re.ind[j, i] <- tmp 
+              X.re.ind[j, i] <- tmp
             }
           }
         }
         if (p.abund.re > 1) {
           for (j in 2:p.abund.re) {
-            X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+            X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
           }
         }
-        # Create the random effects corresponding to each 
+        # Create the random effects corresponding to each
         # new location
         # ORDER: ordered by site, then species within site.
         beta.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.re))
@@ -3506,58 +3484,53 @@ predict.lfMsNMix <- function(object, X.0, coords.0, ignore.RE = FALSE,
           for (t in 1:p.abund.re) {
             for (j in 1:nrow(X.re)) {
               if (!is.na(X.re.ind[j, t])) {
-                beta.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
-                  beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] + 
+                beta.star.sites.0.samples[, (j - 1) * n.sp + i] <-
+                  beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] +
                   beta.star.sites.0.samples[, (j - 1) * n.sp + i]
               } else {
-                beta.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
-                  rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+                beta.star.sites.0.samples[, (j - 1) * n.sp + i] <-
+                  rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] +
                   beta.star.sites.0.samples[, (j - 1) * n.sp + i]
               }
             } # j
           } # t
-        } # i 
+        } # i
       } else {
-        X.fix <- X.0.new
-        beta.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.0.new))
+        X.fix <- X.0
+        beta.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.0))
         p.abund.re <- 0
       }
-      J.str <- nrow(X.0.new)
-      # Create new random normal latent factors at unobserved sites. 
+      J.str <- nrow(X.0)
+      # Create new random normal latent factors at all sites.
       w.0.samples <- array(rnorm(n.post * q * J.str), dim = c(n.post, q, J.str))
+      # Replace already sampled sites with values from model fit.
+      for (j in 1:J.str) {
+        if (sites.0.sampled[j] == 1) {
+          w.0.samples[, , j] <- w.samples[, , sites.link[j]]
+        }
+      }
       w.star.0.samples <- array(NA, dim = c(n.post, n.sp, J.str))
 
       for (i in 1:n.post) {
         w.star.0.samples[i, , ] <- matrix(lambda.samples[i, , ], n.sp, q) %*%
                                  matrix(w.0.samples[i, , ], q, J.str)
       }
+
       # Make predictions
       for (i in 1:n.sp) {
         for (j in 1:J.str) {
-          out$mu.0.samples[, i, j] <- exp(t(as.matrix(X.fix[j, ])) %*% 
-            				     t(beta.samples[, sp.indx == i]) + 
-          				     w.star.0.samples[, i, j] + 
+          out$mu.0.samples[, i, j] <- exp(t(as.matrix(X.fix[j, ])) %*%
+            				     t(beta.samples[, sp.indx == i]) +
+          				     w.star.0.samples[, i, j] +
                                                  beta.star.sites.0.samples[, (j - 1) * n.sp + i])
           if (object$dist == 'NB') {
-            out$N.0.samples[, i, j] <- rnbinom(n.post, kappa.samples[, i], 
+            out$N.0.samples[, i, j] <- rnbinom(n.post, kappa.samples[, i],
           				     mu = out$mu.0.samples[, i, j])
           } else {
-            out$N.0.samples[, i, j] <- rpois(n.post, out$mu.0.samples[, i, j]) 
+            out$N.0.samples[, i, j] <- rpois(n.post, out$mu.0.samples[, i, j])
           }
         } # j
       } # i
-
-      # If some of the sites are sampled
-      if (nrow(X.0) != J.str) {
-        tmp <- array(NA, dim = c(n.post, n.sp, nrow(X.0)))
-        tmp[, , coords.0.indx] <- out$N.0.samples
-        tmp[, , coords.place.indx] <- object$N.samples[, , coords.indx]
-        out$N.0.samples <- tmp
-        tmp <- array(NA, dim = c(n.post, n.sp, nrow(X.0)))
-        tmp[, , coords.0.indx] <- out$mu.0.samples
-        tmp[, , coords.place.indx] <- object$mu.samples[, , coords.indx]
-        out$mu.0.samples <- tmp
-      }
     } # abundance predictions
     # Detection predictions -------------------------------------------------
     if (tolower(type) == 'detection') {
@@ -3587,7 +3560,7 @@ fitted.lfMsAbund <- function(object, ...) {
   return(object$y.rep.samples)
 }
 
-predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE, 
+predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
 			      z.0.samples, include.w = TRUE, ...) {
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -3598,7 +3571,7 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
   }
   # Call ----------------------------------------------------------------
   cl <- match.call()
-  
+
   # Call predict.msAbund if don't care about latent effects
   if (!include.w) {
     out <- predict.msAbund(object, X.0, ignore.RE, z.0.samples)
@@ -3624,7 +3597,7 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
       stop("error: X.0 must be a matrix with two columns corresponding to site and covariate or a three-dimensional array with dimensions corresponding to site, replicate, and covariate")
     }
     if (length(dim(X.0)) == 2) {
-      tmp <- colnames(X.0) 
+      tmp <- colnames(X.0)
       X.0 <- array(X.0, dim = c(nrow(X.0), 1, ncol(X.0)))
       dimnames(X.0)[[3]] <- tmp
     }
@@ -3666,7 +3639,7 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
       p.abund.re <- 0
     }
 
-    # Get X.0 in long format. 
+    # Get X.0 in long format.
     tmp.names <- dimnames(X.0)[[3]]
     X.0 <- matrix(X.0, nrow = nrow(X.0) * ncol(X.0), ncol = dim(X.0)[3])
     colnames(X.0) <- tmp.names
@@ -3686,7 +3659,7 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
         x.re.names <- dimnames(object$X.re)[[3]]
       }
       x.0.names <- colnames(X.0)
-      # Get the number of times each factor is used. 
+      # Get the number of times each factor is used.
       re.long.indx <- sapply(re.cols, length)
       tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
       indx <- list()
@@ -3709,7 +3682,7 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
           }
           # Convert desired column names into the numeric column index
           re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
-          
+
         } else if (is.numeric(re.cols[[i]])) {
           # Check if all column indices are in 1:p.abund
           if (!all(re.cols %in% 1:p.abund)) {
@@ -3729,28 +3702,28 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
         for (j in 1:nrow(X.re)) {
           tmp <- which(re.level.names[[i]] == X.re[j, i])
           if (length(tmp) > 0) {
-            X.re.ind[j, i] <- tmp 
+            X.re.ind[j, i] <- tmp
           }
         }
       }
       if (p.abund.re > 1) {
         for (j in 2:p.abund.re) {
-          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
         }
       }
-      # Create the random effects corresponding to each 
+      # Create the random effects corresponding to each
       # new location
       beta.star.sites.0.samples <- array(0, dim = c(n.post, n.sp, nrow(X.re)))
       for (i in 1:n.sp) {
         for (t in 1:p.abund.re) {
           for (j in 1:nrow(X.re)) {
             if (!is.na(X.re.ind[j, t])) {
-              beta.star.sites.0.samples[, i, j] <- 
-                beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] + 
+              beta.star.sites.0.samples[, i, j] <-
+                beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] +
                 beta.star.sites.0.samples[, i, j]
             } else {
-              beta.star.sites.0.samples[, i, j] <- 
-                rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+              beta.star.sites.0.samples[, i, j] <-
+                rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] +
                 beta.star.sites.0.samples[, i, j]
             }
           } # j
@@ -3778,12 +3751,12 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
         stop("z.0.samples must be supplied for a zi-Gaussian model")
       }
       if (length(dim(z.0.samples)) != 3) {
-        stop(paste("z.0.samples must be a three-dimensional array with dimensions of ", 
+        stop(paste("z.0.samples must be a three-dimensional array with dimensions of ",
           	 n.post, ", ", n.sp, ", and ", J.0, sep = ''))
       }
       if (dim(z.0.samples)[1] != n.post | dim(z.0.samples)[2] != n.sp |
           dim(z.0.samples)[3] != J.0) {
-        stop(paste("z.0.samples must be a three-dimensional array with dimensions of ", 
+        stop(paste("z.0.samples must be a three-dimensional array with dimensions of ",
           	 n.post, ", ", n.sp, ", and ", J.0, sep = ''))
       }
     } else {
@@ -3814,13 +3787,13 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
     mu.long <- array(NA, dim = c(n.post, n.sp, nrow(X.fix)))
     for (i in 1:n.sp) {
       if (object$dist %in% c('Poisson', 'NB')) {
-        mu.long[, i, ] <- exp(t(X.fix %*% t(beta.samples[, sp.indx == i]) + 
-                              t(beta.star.sites.0.samples[, i, ]) + 
+        mu.long[, i, ] <- exp(t(X.fix %*% t(beta.samples[, sp.indx == i]) +
+                              t(beta.star.sites.0.samples[, i, ]) +
           		    t(w.star.0.samples[, i, sites.0.indx])))
       }
       if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
-        mu.long[, i, ] <- t(X.fix %*% t(beta.samples[, sp.indx == i]) + 
-                              t(beta.star.sites.0.samples[, i, ]) + 
+        mu.long[, i, ] <- t(X.fix %*% t(beta.samples[, sp.indx == i]) +
+                              t(beta.star.sites.0.samples[, i, ]) +
                             t(w.star.0.samples[, i, sites.0.indx]))
       }
       tmp[, non.missing.indx] <- mu.long[, i, ]
@@ -3834,22 +3807,22 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
         for (k in 1:K.max.0) {
           if (sum(is.na(out$mu.0.samples[, i, j, k])) == 0) {
             if (object$dist == 'NB') {
-              out$y.0.samples[, i, j, k] <- rnbinom(n.post, kappa.samples[, i], 
+              out$y.0.samples[, i, j, k] <- rnbinom(n.post, kappa.samples[, i],
               				        mu = out$mu.0.samples[, i, j, k])
-            } 
+            }
             if (object$dist == 'Poisson') {
               out$y.0.samples[, i, j, k] <- rpois(n.post, out$mu.0.samples[, i, j, k])
             }
             if (object$dist == 'Gaussian') {
-              out$y.0.samples[, i, j, k] <- rnorm(n.post, out$mu.0.samples[, i, j, k], 
+              out$y.0.samples[, i, j, k] <- rnorm(n.post, out$mu.0.samples[, i, j, k],
                                                   sqrt(object$tau.sq.samples[, i]))
             }
             if (object$dist == 'zi-Gaussian') {
-              out$y.0.samples[, i, j, k] <- ifelse(z.0.samples[, i, j] == 1, 
-              				  rnorm(n.post, out$mu.0.samples[, i, j, k], 
-              					sqrt(object$tau.sq.samples[, i])), 
+              out$y.0.samples[, i, j, k] <- ifelse(z.0.samples[, i, j] == 1,
+              				  rnorm(n.post, out$mu.0.samples[, i, j, k],
+              					sqrt(object$tau.sq.samples[, i])),
               				  rnorm(n.post, 0, sqrt(0.0001)))
-              out$mu.0.samples[, i, j, k] <- ifelse(z.0.samples[, i, j] == 1, 
+              out$mu.0.samples[, i, j, k] <- ifelse(z.0.samples[, i, j] == 1,
             				   out$mu.0.samples[, i, j, k], 0)
             }
           }
@@ -3859,10 +3832,10 @@ predict.lfMsAbund <- function(object, X.0, coords.0, ignore.RE = FALSE,
     out$w.0.samples <- w.0.samples
   }
   out$call <- cl
-  # If Gaussian, collapse to a 3D array 
+  # If Gaussian, collapse to a 3D array
   if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
-    out$y.0.samples <- out$y.0.samples[, , , 1]  
-    out$mu.0.samples <- out$mu.0.samples[, , , 1]  
+    out$y.0.samples <- out$y.0.samples[, , , 1]
+    out$mu.0.samples <- out$mu.0.samples[, , , 1]
   }
 
   class(out) <- "predict.lfMsAbund"
@@ -3879,7 +3852,7 @@ summary.DS <- function(object,
   summary.NMix(object, quantiles, digits)
 }
 
-predict.DS <- function(object, X.0, ignore.RE = FALSE, 
+predict.DS <- function(object, X.0, ignore.RE = FALSE,
 			  type = 'abundance', ...) {
 
   # Check for unused arguments ------------------------------------------
@@ -3912,7 +3885,7 @@ predict.DS <- function(object, X.0, ignore.RE = FALSE,
     stop("error: X.0 must be a data.frame or matrix\n")
   }
 
-  # Abundance predictions ------------------------------------------------- 
+  # Abundance predictions -------------------------------------------------
   if (tolower(type) == 'abundance') {
     p.abund <- ncol(object$X)
 
@@ -3958,7 +3931,7 @@ predict.DS <- function(object, X.0, ignore.RE = FALSE,
           }
           # Convert desired column names into the numeric column index
           re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
-          
+
         } else if (is.numeric(re.cols[[i]])) {
           # Check if all column indices are in 1:p.abund
           if (!all(re.cols %in% 1:p.abund)) {
@@ -3977,28 +3950,28 @@ predict.DS <- function(object, X.0, ignore.RE = FALSE,
         for (j in 1:nrow(X.re)) {
           tmp <- which(re.level.names[[i]] == X.re[j, i])
           if (length(tmp) > 0) {
-            X.re.ind[j, i] <- tmp 
+            X.re.ind[j, i] <- tmp
           }
         }
       }
       if (p.abund.re > 1) {
         for (j in 2:p.abund.re) {
-          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
         }
       }
-      # Create the random effects corresponding to each 
+      # Create the random effects corresponding to each
       # new location
       # ORDER: ordered by site, then species within site.
       beta.star.sites.0.samples <- matrix(0, n.post,  nrow(X.re))
       for (t in 1:p.abund.re) {
         for (j in 1:nrow(X.re)) {
           if (!is.na(X.re.ind[j, t])) {
-            beta.star.sites.0.samples[, j] <- 
-              beta.star.samples[, X.re.ind[j, t]] * X.random[j, t] + 
+            beta.star.sites.0.samples[, j] <-
+              beta.star.samples[, X.re.ind[j, t]] * X.random[j, t] +
               beta.star.sites.0.samples[, j]
           } else {
-            beta.star.sites.0.samples[, j] <- 
-              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+            beta.star.sites.0.samples[, j] <-
+              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] +
               beta.star.sites.0.samples[, j]
           }
         } # j
@@ -4010,19 +3983,19 @@ predict.DS <- function(object, X.0, ignore.RE = FALSE,
     }
 
     J.str <- nrow(X.0)
-    out$mu.0.samples <- mcmc(exp(t(X.fix %*% t(beta.samples) + 
+    out$mu.0.samples <- mcmc(exp(t(X.fix %*% t(beta.samples) +
           				t(beta.star.sites.0.samples))))
     if (object$dist == 'NB') {
-      out$N.0.samples <- mcmc(matrix(rnbinom(length(out$mu.0.samples), kappa.samples, 
-					   mu = c(t(apply(out$mu.0.samples, 1, 
-							  function(a) a)))), 
-				     nrow = n.post, 
+      out$N.0.samples <- mcmc(matrix(rnbinom(length(out$mu.0.samples), kappa.samples,
+					   mu = c(t(apply(out$mu.0.samples, 1,
+							  function(a) a)))),
+				     nrow = n.post,
 				     ncol = nrow(X.0)))
     } else {
-      out$N.0.samples <- mcmc(matrix(rpois(length(out$mu.0.samples),  
-					   lambda = c(t(apply(out$mu.0.samples, 1, 
-							      function(a) a)))), 
-				     nrow = n.post, 
+      out$N.0.samples <- mcmc(matrix(rpois(length(out$mu.0.samples),
+					   lambda = c(t(apply(out$mu.0.samples, 1,
+							      function(a) a)))),
+				     nrow = n.post,
 				     ncol = nrow(X.0)))
     }
   }
@@ -4076,7 +4049,7 @@ predict.DS <- function(object, X.0, ignore.RE = FALSE,
           }
           # Convert desired column names into the numeric column index
           re.det.cols[[i]] <- which(x.p.0.names %in% re.det.cols[[i]])
-          
+
         } else if (is.numeric(re.det.cols[[i]])) {
           # Check if all column indices are in 1:p.abund
           if (!all(re.det.cols %in% 1:p.det)) {
@@ -4095,28 +4068,28 @@ predict.DS <- function(object, X.0, ignore.RE = FALSE,
         for (j in 1:nrow(X.re)) {
           tmp <- which(p.re.level.names[[i]] == X.re[j, i])
           if (length(tmp) > 0) {
-            X.re.ind[j, i] <- tmp 
+            X.re.ind[j, i] <- tmp
           }
         }
       }
       if (p.det.re > 1) {
         for (j in 2:p.det.re) {
-          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
         }
       }
-      # Create the random effects corresponding to each 
+      # Create the random effects corresponding to each
       # new location
       # ORDER: ordered by site, then species within site.
       alpha.star.sites.0.samples <- matrix(0, n.post,  nrow(X.re))
       for (t in 1:p.det.re) {
         for (j in 1:nrow(X.re)) {
           if (!is.na(X.re.ind[j, t])) {
-            alpha.star.sites.0.samples[, j] <- 
-              alpha.star.samples[, X.re.ind[j, t]] * X.random[j, t] + 
+            alpha.star.sites.0.samples[, j] <-
+              alpha.star.samples[, X.re.ind[j, t]] * X.random[j, t] +
               alpha.star.sites.0.samples[, j]
           } else {
-            alpha.star.sites.0.samples[, j] <- 
-              rnorm(n.post, 0, sqrt(object$sigma.sq.p.samples[, t])) * X.random[j, t] + 
+            alpha.star.sites.0.samples[, j] <-
+              rnorm(n.post, 0, sqrt(object$sigma.sq.p.samples[, t])) * X.random[j, t] +
               alpha.star.sites.0.samples[, j]
           }
         } # j
@@ -4126,7 +4099,7 @@ predict.DS <- function(object, X.0, ignore.RE = FALSE,
       alpha.star.sites.0.samples <- matrix(0, n.post, nrow(X.0))
       p.det.re <- 0
     }
-    out$sigma.0.samples <- mcmc(exp(t(X.fix %*% t(alpha.samples) + 
+    out$sigma.0.samples <- mcmc(exp(t(X.fix %*% t(alpha.samples) +
                                 t(alpha.star.sites.0.samples))))
   }
   out$call <- cl
@@ -4159,14 +4132,14 @@ fitted.spDS <- function(object, ...) {
   return(out)
 }
 
-predict.spDS <- function(object, X.0, coords.0, n.omp.threads = 1, 
-			   verbose = TRUE, n.report = 100, 
-			   ignore.RE = FALSE,  
+predict.spDS <- function(object, X.0, coords.0, n.omp.threads = 1,
+			   verbose = TRUE, n.report = 100,
+			   ignore.RE = FALSE,
 			   type = 'abundance', include.sp = TRUE, ...) {
   if (tolower(type) == 'abundance') {
-    out <- predict.spNMix(object, X.0, coords.0, n.omp.threads, 
-                          verbose, n.report, 
-                          ignore.RE, type, include.sp, ...)  
+    out <- predict.spNMix(object, X.0, coords.0, n.omp.threads,
+                          verbose, n.report,
+                          ignore.RE, type, include.sp, ...)
   } else {
     out <- predict.DS(object, X.0, ignore.RE, type)
   }
@@ -4193,7 +4166,7 @@ fitted.msDS <- function(object, ...) {
   return(out)
 }
 
-predict.msDS <- function(object, X.0, ignore.RE = FALSE, 
+predict.msDS <- function(object, X.0, ignore.RE = FALSE,
                          type = 'abundance', ...) {
 
   # Check for unused arguments ------------------------------------------
@@ -4225,7 +4198,7 @@ predict.msDS <- function(object, X.0, ignore.RE = FALSE,
   if (!any(is.data.frame(X.0), is.matrix(X.0))) {
     stop("error: X.0 must be a data.frame or matrix\n")
   }
-  # Abundance predictions ------------------------------------------------- 
+  # Abundance predictions -------------------------------------------------
   if (tolower(type) == 'abundance') {
     out <- predict.msNMix(object, X.0, ignore.RE, type)
   }
@@ -4273,7 +4246,7 @@ predict.msDS <- function(object, X.0, ignore.RE = FALSE,
           }
           # Convert desired column names into the numeric column index
           re.det.cols[[i]] <- which(x.p.0.names %in% re.det.cols[[i]])
-          
+
         } else if (is.numeric(re.det.cols[[i]])) {
           # Check if all column indices are in 1:p.abund
           if (!all(re.det.cols %in% 1:p.det)) {
@@ -4292,16 +4265,16 @@ predict.msDS <- function(object, X.0, ignore.RE = FALSE,
         for (j in 1:nrow(X.re)) {
           tmp <- which(p.re.level.names[[i]] == X.re[j, i])
           if (length(tmp) > 0) {
-            X.re.ind[j, i] <- tmp 
+            X.re.ind[j, i] <- tmp
           }
         }
       }
       if (p.det.re > 1) {
         for (j in 2:p.det.re) {
-          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+          X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
         }
       }
-      # Create the random effects corresponding to each 
+      # Create the random effects corresponding to each
       # new location
       # ORDER: ordered by site, then species within site.
       alpha.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.re))
@@ -4309,17 +4282,17 @@ predict.msDS <- function(object, X.0, ignore.RE = FALSE,
         for (t in 1:p.det.re) {
           for (j in 1:nrow(X.re)) {
             if (!is.na(X.re.ind[j, t])) {
-              alpha.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
-                alpha.star.samples[, (i - 1) * n.det.re + X.re.ind[j, t]] * X.random[j, t] + 
+              alpha.star.sites.0.samples[, (j - 1) * n.sp + i] <-
+                alpha.star.samples[, (i - 1) * n.det.re + X.re.ind[j, t]] * X.random[j, t] +
                 alpha.star.sites.0.samples[, (j - 1) * n.sp + i]
             } else {
-              alpha.star.sites.0.samples[, (j - 1) * n.sp + i] <- 
-                rnorm(n.post, 0, sqrt(object$sigma.sq.p.samples[, t])) * X.random[j, t] + 
+              alpha.star.sites.0.samples[, (j - 1) * n.sp + i] <-
+                rnorm(n.post, 0, sqrt(object$sigma.sq.p.samples[, t])) * X.random[j, t] +
                 alpha.star.sites.0.samples[, (j - 1) * n.sp + i]
             }
           } # j
         } # t
-      } # i 
+      } # i
     } else {
       X.fix <- X.0
       alpha.star.sites.0.samples <- matrix(0, n.post, n.sp * nrow(X.0))
@@ -4329,8 +4302,8 @@ predict.msDS <- function(object, X.0, ignore.RE = FALSE,
     # Make predictions
     for (i in 1:n.sp) {
       for (j in 1:J.str) {
-        out$sigma.0.samples[, i, j] <- exp(t(as.matrix(X.fix[j, ])) %*% 
-                                           t(alpha.samples[, sp.indx == i]) + 
+        out$sigma.0.samples[, i, j] <- exp(t(as.matrix(X.fix[j, ])) %*%
+                                           t(alpha.samples[, sp.indx == i]) +
                                            alpha.star.sites.0.samples[, (j - 1) * n.sp + i])
       } # j
     } # i
@@ -4359,7 +4332,7 @@ fitted.lfMsDS <- function(object, ...) {
 predict.lfMsDS <- function(object, X.0, coords.0, ignore.RE = FALSE,
                          type = 'abundance', include.w = TRUE, ...) {
 
-  # Abundance predictions ------------------------------------------------- 
+  # Abundance predictions -------------------------------------------------
   if (tolower(type) == 'abundance') {
     out <- predict.lfMsNMix(object, X.0, coords.0, ignore.RE, type = 'abundance', include.w)
   }
@@ -4391,7 +4364,7 @@ fitted.sfMsDS <- function(object, ...) {
 
 predict.sfMsDS <- function(object, X.0, coords.0, n.omp.threads = 1,
 			   verbose = TRUE, n.report = 100,
-			   ignore.RE = FALSE, type = 'abundance', 
+			   ignore.RE = FALSE, type = 'abundance',
 			   include.sp = TRUE, ...) {
   if (tolower(type) == 'abundance') {
     out <- predict.sfMsNMix(object, X.0, coords.0, n.omp.threads,
@@ -4421,8 +4394,8 @@ summary.svcAbund <- function(object,
 
 }
 
-predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1, 
-                             verbose = TRUE, n.report = 100, 
+predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
+                             verbose = TRUE, n.report = 100,
                              ignore.RE = FALSE, z.0.samples, ...) {
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -4462,7 +4435,7 @@ predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
     stop("error: coords.0 must have two columns\n")
   }
   coords.0 <- as.matrix(coords.0)
-  
+
   p.abund <- ncol(object$X)
   p.design <- p.abund
   X <- object$X
@@ -4532,7 +4505,7 @@ predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
         }
         # Convert desired column names into the numeric column index
         re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
-        
+
       } else if (is.numeric(re.cols[[i]])) {
         # Check if all column indices are in 1:p.abund
         if (!all(re.cols %in% 1:p.abund)) {
@@ -4551,28 +4524,28 @@ predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
       for (j in 1:nrow(X.re)) {
         tmp <- which(re.level.names[[i]] == X.re[j, i])
         if (length(tmp) > 0) {
-          X.re.ind[j, i] <- tmp 
+          X.re.ind[j, i] <- tmp
         }
       }
     }
     if (p.abund.re > 1) {
       for (j in 2:p.abund.re) {
-        X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+        X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
       }
     }
-    # Create the random effects corresponding to each 
+    # Create the random effects corresponding to each
     # new location
     # ORDER: ordered by site, then species within site.
     beta.star.sites.0.samples <- matrix(0, n.post,  nrow(X.re))
     for (t in 1:p.abund.re) {
       for (j in 1:nrow(X.re)) {
         if (!is.na(X.re.ind[j, t])) {
-          beta.star.sites.0.samples[, j] <- 
-            beta.star.samples[, X.re.ind[j, t]] * X.random[j, t] + 
+          beta.star.sites.0.samples[, j] <-
+            beta.star.samples[, X.re.ind[j, t]] * X.random[j, t] +
             beta.star.sites.0.samples[, j]
         } else {
-          beta.star.sites.0.samples[, j] <- 
-            rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+          beta.star.sites.0.samples[, j] <-
+            rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] +
             beta.star.sites.0.samples[, j]
         }
       } # j
@@ -4585,7 +4558,7 @@ predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
   # Get samples in proper format for C++
   beta.samples <- t(beta.samples)
   w.samples <- matrix(w.samples, n.post, J * p.svc)
-  # Order: iteration, site within iteration, svc within site. 
+  # Order: iteration, site within iteration, svc within site.
   # Example: site 1, svc 1, iter 1, site 1, svc 2, iter 1, ..., site 2, svc 1, iter 1
   w.samples <- t(w.samples)
   beta.star.sites.0.samples <- t(beta.star.sites.0.samples)
@@ -4610,11 +4583,11 @@ predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
       stop("z.0.samples must be supplied for a zi-Gaussian model")
     }
     if (!is.matrix(z.0.samples)) {
-      stop(paste("z.0.samples must be a matrix with ", n.post, " rows and ", 
+      stop(paste("z.0.samples must be a matrix with ", n.post, " rows and ",
 		 J.0, " columns.", sep = ''))
     }
     if (nrow(z.0.samples) != n.post | ncol(z.0.samples) != J.0) {
-      stop(paste("z.0.samples must be a matrix with ", n.post, " rows and ", 
+      stop(paste("z.0.samples must be a matrix with ", n.post, " rows and ",
 		 J.0, " columns.", sep = ''))
     }
   } else {
@@ -4688,8 +4661,8 @@ print.svcMsAbund <- function(x, ...) {
 summary.svcMsAbund <- function(object, level = 'both',
                               quantiles = c(0.025, 0.5, 0.975),
                               digits = max(3L, getOption("digits") - 3L), ...) {
-  summary.sfMsAbund(object, level = 'both', 
-		    quantiles = c(0.025, 0.5, 0.975), 
+  summary.sfMsAbund(object, level = 'both',
+		    quantiles = c(0.025, 0.5, 0.975),
 		    digits = max(3L, getOption("digits") - 3L))
 }
 fitted.svcMsAbund <- function(object, ...) {
@@ -4787,7 +4760,7 @@ predict.svcMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
     # Get columns in design matrix with random effects
     x.re.names <- dimnames(object$X.re)[[2]]
     x.0.names <- colnames(X.0)
-    # Get the number of times each factor is used. 
+    # Get the number of times each factor is used.
     re.long.indx <- sapply(re.cols, length)
     tmp <- sapply(x.re.names, function(a) which(colnames(X.0) %in% a))
     indx <- list()
@@ -4810,7 +4783,7 @@ predict.svcMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
         }
         # Convert desired column names into the numeric column index
         re.cols[[i]] <- which(x.0.names %in% re.cols[[i]])
-        
+
       } else if (is.numeric(re.cols[[i]])) {
         # Check if all column indices are in 1:p.abund
         if (!all(re.cols %in% 1:p.abund)) {
@@ -4830,28 +4803,28 @@ predict.svcMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
       for (j in 1:nrow(X.re)) {
         tmp <- which(re.level.names[[i]] == X.re[j, i])
         if (length(tmp) > 0) {
-          X.re.ind[j, i] <- tmp 
+          X.re.ind[j, i] <- tmp
         }
       }
     }
     if (p.abund.re > 1) {
       for (j in 2:p.abund.re) {
-        X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1]) 
+        X.re.ind[, j] <- X.re.ind[, j] + max(X.re.ind[, j - 1])
       }
     }
-    # Create the random effects corresponding to each 
+    # Create the random effects corresponding to each
     # new location
     beta.star.sites.0.samples <- array(0, dim = c(n.post, n.sp, nrow(X.re)))
     for (i in 1:n.sp) {
       for (t in 1:p.abund.re) {
         for (j in 1:nrow(X.re)) {
           if (!is.na(X.re.ind[j, t])) {
-            beta.star.sites.0.samples[, i, j] <- 
-              beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] + 
+            beta.star.sites.0.samples[, i, j] <-
+              beta.star.samples[, (i - 1) * n.abund.re + X.re.ind[j, t]] * X.random[j, t] +
               beta.star.sites.0.samples[, i, j]
           } else {
-            beta.star.sites.0.samples[, i, j] <- 
-              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] + 
+            beta.star.sites.0.samples[, i, j] <-
+              rnorm(n.post, 0, sqrt(object$sigma.sq.mu.samples[, t])) * X.random[j, t] +
               beta.star.sites.0.samples[, i, j]
           }
         } # j
@@ -4903,12 +4876,12 @@ predict.svcMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
       stop("z.0.samples must be supplied for a zi-Gaussian model")
     }
     if (length(dim(z.0.samples)) != 3) {
-      stop(paste("z.0.samples must be a three-dimensional array with dimensions of ", 
+      stop(paste("z.0.samples must be a three-dimensional array with dimensions of ",
 		 n.post, ", ", n.sp, ", and ", J.0, sep = ''))
     }
     if (dim(z.0.samples)[1] != n.post | dim(z.0.samples)[2] != n.sp |
 	dim(z.0.samples)[3] != J.0) {
-      stop(paste("z.0.samples must be a three-dimensional array with dimensions of ", 
+      stop(paste("z.0.samples must be a three-dimensional array with dimensions of ",
 		 n.post, ", ", n.sp, ", and ", J.0, sep = ''))
     }
   } else {
@@ -4955,9 +4928,9 @@ predict.svcMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
     storage.mode(family.c) <- "integer"
     storage.mode(z.0.samples) <- 'double'
 
-    out <- .Call("svcMsAbundGaussianNNGPPredict", coords, J, family.c, 
+    out <- .Call("svcMsAbundGaussianNNGPPredict", coords, J, family.c,
       	         n.sp, q, p.abund, p.svc, n.neighbors,
-                 X.fix, X.w.0, coords.0, J.0, sites.link, sites.0.sampled, 
+                 X.fix, X.w.0, coords.0, J.0, sites.link, sites.0.sampled,
 		 nn.indx.0, beta.samples,
                  theta.samples, tau.sq.samples, lambda.samples, w.samples,
         	 beta.star.sites.0.samples, n.post,

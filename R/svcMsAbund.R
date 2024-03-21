@@ -1,9 +1,9 @@
-svcMsAbund <- function(formula, data, inits, priors, tuning, 
-		       svc.cols = 1, cov.model = 'exponential', NNGP = TRUE, 
-                       n.neighbors = 15, search.type = "cb", n.factors, 
+svcMsAbund <- function(formula, data, inits, priors, tuning,
+		       svc.cols = 1, cov.model = 'exponential', NNGP = TRUE,
+                       n.neighbors = 15, search.type = "cb", n.factors,
                        n.batch, batch.length, accept.rate = 0.43, family = 'Gaussian',
-                       n.omp.threads = 1, verbose = TRUE, n.report = 100, 
-                       n.burn = round(.10 * n.batch * batch.length), 
+                       n.omp.threads = 1, verbose = TRUE, n.report = 100,
+                       n.burn = round(.10 * n.batch * batch.length),
                        n.thin = 1, n.chains = 1, ...){
 
   ptm <- proc.time()
@@ -14,7 +14,7 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     cat("\tPreparing to run the model\n");
     cat("----------------------------------------\n");
   }
-  # Check for unused arguments ------------------------------------------	
+  # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
   elip.args <- names(list(...))
   for(i in elip.args){
@@ -22,14 +22,14 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
           warning("'",i, "' is not an argument")
   }
   # Call ----------------------------------------------------------------
-  # Returns a call in which all of the specified arguments are 
-  # specified by their full names. 
+  # Returns a call in which all of the specified arguments are
+  # specified by their full names.
   cl <- match.call()
 
   # Some initial checks -------------------------------------------------
   # Only implemented for NNGP
   if (!NNGP) {
-    stop("error: svcMsAbundGaussian is currently only implemented for NNGPs, not full Gaussian Processes. Please set NNGP = TRUE.") 
+    stop("error: svcMsAbundGaussian is currently only implemented for NNGPs, not full Gaussian Processes. Please set NNGP = TRUE.")
   }
   if (missing(data)) {
     stop("error: data must be specified")
@@ -91,7 +91,7 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     z <- matrix(1, nrow(y), ncol(y))
   }
 
-  # First subset covariates to only use those that are included in the analysis. 
+  # First subset covariates to only use those that are included in the analysis.
   # Get occurrence covariates in proper format
   # Subset covariates to only use those that are included in the analysis
   data$covs <- data$covs[names(data$covs) %in% all.vars(formula)]
@@ -104,9 +104,9 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
 
   # Neighbors and Ordering ----------------------------------------------
   if (NNGP) {
-    u.search.type <- 2 
-    ## Order by x column. Could potentially allow this to be user defined. 
-    ord <- order(coords[,1]) 
+    u.search.type <- 2
+    ## Order by x column. Could potentially allow this to be user defined.
+    ord <- order(coords[,1])
     # Reorder everything to align with NN ordering
     y <- y[, ord, drop = FALSE]
     z <- z[, ord, drop = FALSE]
@@ -118,18 +118,18 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
   # Checking missing values ---------------------------------------------
   # covs ------------------------
   if (sum(is.na(data$covs)) != 0) {
-    stop("error: missing values in covs. Please remove these sites from all objects in data or somehow replace the NA values with non-missing values (e.g., mean imputation).") 
+    stop("error: missing values in covs. Please remove these sites from all objects in data or somehow replace the NA values with non-missing values (e.g., mean imputation).")
   }
 
   # Check whether random effects are sent in as numeric, and
-  # return error if they are. 
+  # return error if they are.
   # Abundance -------------------------
   if (!is.null(findbars(formula))) {
     abund.re.names <- unique(unlist(sapply(findbars(formula), all.vars)))
     for (i in 1:length(abund.re.names)) {
       if (is(data$covs[, abund.re.names[i]], 'factor')) {
         stop(paste("error: random effect variable ", abund.re.names[i], " specified as a factor. Random effect variables must be specified as numeric.", sep = ''))
-      } 
+      }
       if (is(data$covs[, abund.re.names[i]], 'character')) {
         stop(paste("error: random effect variable ", abund.re.names[i], " specified as character. Random effect variables must be specified as numeric.", sep = ''))
       }
@@ -158,11 +158,11 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
   x.re.names <- x.random.names
 
   # Extract data from inputs --------------------------------------------
-  # Number of species 
+  # Number of species
   N <- dim(y)[1]
   # Number of latent factors
   q <- n.factors
-  # Number of fixed effects 
+  # Number of fixed effects
   p <- ncol(X)
   # Number of random effect parameters
   p.re <- ncol(X.re)
@@ -185,7 +185,7 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     stop("error: n.thin must be less than n.samples")
   }
 
-  # y is ordered by site, then species within site. 
+  # y is ordered by site, then species within site.
   y.orig <- y
   y <- c(y)
 
@@ -198,7 +198,7 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     }
     # Convert desired column names into the numeric column index
     svc.cols <- (1:p)[x.names %in% svc.cols]
-    
+
   } else if (is.numeric(svc.cols)) {
     # Check if all column indices are in 1:p
     if (!all(svc.cols %in% 1:p)) {
@@ -227,10 +227,10 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
       message("Beta parameters will be estimated independently\n")
       ind.betas <- TRUE
     } else if (priors$independent.betas == FALSE) {
-      ind.betas <- FALSE 
+      ind.betas <- FALSE
     }
   } else {
-    ind.betas <- FALSE 
+    ind.betas <- FALSE
   }
   # beta.comm -----------------------
   if ("beta.comm.normal" %in% names(priors)) {
@@ -270,7 +270,7 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     }
     mu.beta.comm <- rep(0, p)
     sigma.beta.comm <- rep(1000, p)
-    Sigma.beta.comm <- diag(p) * 1000 
+    Sigma.beta.comm <- diag(p) * 1000
   }
 
   # tau.sq.beta -----------------------
@@ -282,19 +282,19 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     tau.sq.beta.b <- priors$tau.sq.beta.ig[[2]]
     if (length(tau.sq.beta.a) != p & length(tau.sq.beta.a) != 1) {
       if (p == 1) {
-        stop(paste("error: tau.sq.beta.ig[[1]] must be a vector of length ", 
+        stop(paste("error: tau.sq.beta.ig[[1]] must be a vector of length ",
       	   p, " with elements corresponding to tau.sq.betas' shape", sep = ""))
       } else {
-        stop(paste("error: tau.sq.beta.ig[[1]] must be a vector of length ", 
+        stop(paste("error: tau.sq.beta.ig[[1]] must be a vector of length ",
       	   p, " or 1 with elements corresponding to tau.sq.betas' shape", sep = ""))
       }
     }
     if (length(tau.sq.beta.b) != p & length(tau.sq.beta.b) != 1) {
       if (p == 1) {
-        stop(paste("error: tau.sq.beta.ig[[2]] must be a vector of length ", 
+        stop(paste("error: tau.sq.beta.ig[[2]] must be a vector of length ",
       	   p, " with elements corresponding to tau.sq.betas' scale", sep = ""))
       } else {
-        stop(paste("error: tau.sq.beta.ig[[2]] must be a vector of length ", 
+        stop(paste("error: tau.sq.beta.ig[[2]] must be a vector of length ",
       	   p, " or 1 with elements corresponding to tau.sq.betas' scale", sep = ""))
       }
     }
@@ -305,13 +305,13 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
       tau.sq.beta.b <- rep(tau.sq.beta.b, p)
     }
   } else {
-    if (verbose & !ind.betas) {	    
+    if (verbose & !ind.betas) {
       message("No prior specified for tau.sq.beta.ig.\nSetting prior shape to 0.1 and prior scale to 0.1\n")
     }
     tau.sq.beta.a <- rep(0.1, p)
     tau.sq.beta.b <- rep(0.1, p)
   }
-  
+
   # tau.sq -----------------------
   if ("tau.sq.ig" %in% names(priors)) {
     if (!is.list(priors$tau.sq.ig) | length(priors$tau.sq.ig) != 2) {
@@ -320,11 +320,11 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     tau.sq.a <- priors$tau.sq.ig[[1]]
     tau.sq.b <- priors$tau.sq.ig[[2]]
     if (length(tau.sq.a) != N & length(tau.sq.a) != 1) {
-      stop(paste("error: tau.sq.ig[[1]] must be a vector of length ", 
+      stop(paste("error: tau.sq.ig[[1]] must be a vector of length ",
       	   N, " or 1 with elements corresponding to tau.sqs' shape", sep = ""))
     }
     if (length(tau.sq.b) != N & length(tau.sq.b) != 1) {
-      stop(paste("error: tau.sq.ig[[2]] must be a vector of length ", 
+      stop(paste("error: tau.sq.ig[[2]] must be a vector of length ",
       	   p, " or 1 with elements corresponding to tau.sqs' scale", sep = ""))
     }
     if (length(tau.sq.a) != N) {
@@ -334,7 +334,7 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
       tau.sq.b <- rep(tau.sq.b, N)
     }
   } else {
-    if (verbose) {	    
+    if (verbose) {
       message("No prior specified for tau.sq.ig.\nSetting prior shape to 0.1 and prior scale to 0.1\n")
     }
     tau.sq.a <- rep(0.1, N)
@@ -349,13 +349,13 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     phi.a <- priors$phi.unif[[1]]
     phi.b <- priors$phi.unif[[2]]
     if (length(phi.a) != q.p.svc & length(phi.a) != 1) {
-      stop(paste("error: phi.unif[[1]] must be a vector of length ", 
-      	   q.p.svc, ", a matrix with ", q, " rows and ", p.svc, 
+      stop(paste("error: phi.unif[[1]] must be a vector of length ",
+      	   q.p.svc, ", a matrix with ", q, " rows and ", p.svc,
 	   " columns, or a vector of length 1 with elements corresponding to phis' lower bound for each latent factor and spatially-varying coefficient", sep = ""))
     }
     if (length(phi.b) != q.p.svc & length(phi.b) != 1) {
-      stop(paste("error: phi.unif[[2]] must be a vector of length ", 
-      	   q.p.svc, ", a matrix with ", q, " rows and ", p.svc, 
+      stop(paste("error: phi.unif[[2]] must be a vector of length ",
+      	   q.p.svc, ", a matrix with ", q, " rows and ", p.svc,
 	   " columns, or a vector of length 1 with elements corresponding to phis' upper bound for each latent factor and spatially-varying coefficient", sep = ""))
     }
     if (length(phi.a) != q.p.svc) {
@@ -383,13 +383,13 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
       stop("error: nu.unif must be a list of length 2")
     }
     if (length(nu.a) != q.p.svc & length(nu.a) != 1) {
-      stop(paste("error: nu.unif[[1]] must be a vector of length ", 
-      	   q.p.svc, ", a matrix with ", q, " rows and ", p.svc, 
+      stop(paste("error: nu.unif[[1]] must be a vector of length ",
+      	   q.p.svc, ", a matrix with ", q, " rows and ", p.svc,
 	   " columns, or a vector of length 1 with elements corresponding to nus' lower bound for each latent factor and spatially-varying coefficient", sep = ""))
     }
     if (length(nu.b) != q & length(nu.b) != 1) {
-      stop(paste("error: nu.unif[[2]] must be a vector of length ", 
-      	   q.p.svc, ", a matrix with ", q, " rows and ", p.svc, 
+      stop(paste("error: nu.unif[[2]] must be a vector of length ",
+      	   q.p.svc, ", a matrix with ", q, " rows and ", p.svc,
 	   " columns, or a vector of length 1 with elements corresponding to nus' upper bound for each latent factor and spatially-varying coefficient", sep = ""))
     }
     if (length(nu.a) != q.p.svc) {
@@ -413,19 +413,19 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
       sigma.sq.mu.b <- priors$sigma.sq.mu.ig[[2]]
       if (length(sigma.sq.mu.a) != p.re & length(sigma.sq.mu.a) != 1) {
         if (p.re == 1) {
-        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ", 
+        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ",
         	   p.re, " with elements corresponding to sigma.sq.mus' shape", sep = ""))
         } else {
-        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ", 
+        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ",
         	   p.re, " or 1 with elements corresponding to sigma.sq.mus' shape", sep = ""))
         }
       }
       if (length(sigma.sq.mu.b) != p.re & length(sigma.sq.mu.b) != 1) {
         if (p.re == 1) {
-          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ",
         	   p.re, " with elements corresponding to sigma.sq.mus' scale", sep = ""))
         } else {
-          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ",
         	   p.re, " or 1with elements corresponding to sigma.sq.mus' scale", sep = ""))
         }
       }
@@ -436,7 +436,7 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
         sigma.sq.mu.b <- rep(sigma.sq.mu.b, p.re)
       }
   }   else {
-      if (verbose) {	    
+      if (verbose) {
         message("No prior specified for sigma.sq.mu.ig.\nSetting prior shape to 0.1 and prior scale to 0.1\n")
       }
       sigma.sq.mu.a <- rep(0.1, p.re)
@@ -458,10 +458,10 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     beta.comm.inits <- inits[["beta.comm"]]
     if (length(beta.comm.inits) != p & length(beta.comm.inits) != 1) {
       if (p == 1) {
-        stop(paste("error: initial values for beta.comm must be of length ", p, 
+        stop(paste("error: initial values for beta.comm must be of length ", p,
       	   sep = ""))
       } else {
-        stop(paste("error: initial values for beta.comm must be of length ", p, 
+        stop(paste("error: initial values for beta.comm must be of length ", p,
       	   , " or 1", sep = ""))
       }
     }
@@ -480,10 +480,10 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     tau.sq.beta.inits <- inits[["tau.sq.beta"]]
     if (length(tau.sq.beta.inits) != p & length(tau.sq.beta.inits) != 1) {
       if (p == 1) {
-        stop(paste("error: initial values for tau.sq.beta must be of length ", p, 
+        stop(paste("error: initial values for tau.sq.beta must be of length ", p,
       	   sep = ""))
       } else {
-        stop(paste("error: initial values for tau.sq.beta must be of length ", p, 
+        stop(paste("error: initial values for tau.sq.beta must be of length ", p,
       	   " or 1", sep = ""))
       }
     }
@@ -501,7 +501,7 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
   if ("tau.sq" %in% names(inits)) {
     tau.sq.inits <- inits[["tau.sq"]]
     if (length(tau.sq.inits) != N & length(tau.sq.inits) != 1) {
-      stop(paste("error: initial values for tau.sq must be of length ", N, 
+      stop(paste("error: initial values for tau.sq must be of length ", N,
       	   " or 1", sep = ""))
     }
     if (length(tau.sq.inits) != N) {
@@ -514,18 +514,18 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     }
   }
   # beta ----------------------------
-  # ORDER: N x p matrix sent in as a column-major vector ordered by 
-  #        parameter then species within parameter. 
+  # ORDER: N x p matrix sent in as a column-major vector ordered by
+  #        parameter then species within parameter.
   if ("beta" %in% names(inits)) {
     beta.inits <- inits[["beta"]]
     if (is.matrix(beta.inits)) {
       if (ncol(beta.inits) != p | nrow(beta.inits) != N) {
-        stop(paste("error: initial values for beta must be a matrix with dimensions ", 
+        stop(paste("error: initial values for beta must be a matrix with dimensions ",
         	   N, "x", p, " or a single numeric value", sep = ""))
       }
     }
     if (!is.matrix(beta.inits) & length(beta.inits) != 1) {
-      stop(paste("error: initial values for beta must be a matrix with dimensions ", 
+      stop(paste("error: initial values for beta must be a matrix with dimensions ",
       	   N, " x ", p, " or a single numeric value", sep = ""))
     }
     if (length(beta.inits) == 1) {
@@ -537,16 +537,16 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
         message('beta is not specified in initial values.\nSetting initial values to random values from the community-level normal distribution\n')
       }
   }
-  # Create a N * p x 1 matrix of the species-level regression coefficients. 
-  # This is ordered by parameter, then species within a parameter. 
+  # Create a N * p x 1 matrix of the species-level regression coefficients.
+  # This is ordered by parameter, then species within a parameter.
   beta.inits <- c(beta.inits)
   # phi -----------------------------
-  # ORDER: a q x p.svc matrix sent in as a column-major vector sorted first by 
+  # ORDER: a q x p.svc matrix sent in as a column-major vector sorted first by
   #        the spatially-varying coefficient, then latent factor within svc.
   if ("phi" %in% names(inits)) {
     phi.inits <- inits[["phi"]]
     if (length(phi.inits) != q.p.svc & length(phi.inits) != 1) {
-      stop(paste("error: initial values for phi must be of length ", q.p.svc, " or 1", 
+      stop(paste("error: initial values for phi must be of length ", q.p.svc, " or 1",
       	   sep = ""))
     }
     if (length(phi.inits) != q.p.svc) {
@@ -579,20 +579,20 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     }
   }
   # lambda ----------------------------
-  # ORDER: an p.svc N x q matrices sent in as a list, each in 
-  #        column-major vector, which is ordered by factor, 
-  #        then species within factor. Eventually sent into 
-  #        C++ as a stacked p.svc x N x q matrix, ordered by 
+  # ORDER: an p.svc N x q matrices sent in as a list, each in
+  #        column-major vector, which is ordered by factor,
+  #        then species within factor. Eventually sent into
+  #        C++ as a stacked p.svc x N x q matrix, ordered by
   #        svc, then factor within svc, then species within factor.
   if ("lambda" %in% names(inits)) {
     lambda.inits <- inits[["lambda"]]
     if (!is.list(lambda.inits)) {
-      stop(paste("error: initial values for lambda must be a list comprised of ", 
+      stop(paste("error: initial values for lambda must be a list comprised of ",
 		 p.svc, " matrices, each with dimensions ", N, " x ", q, sep = ""))
     }
     for (i in 1:p.svc) {
       if (nrow(lambda.inits[[i]]) != N | ncol(lambda.inits[[i]]) != q) {
-        stop(paste("error: initial values for lambda[[", i, 
+        stop(paste("error: initial values for lambda[[", i,
 		   "]] must be a matrix with dimensions ", N, " x ", q, sep = ""))
       }
       if (!all.equal(diag(lambda.inits[[i]]), rep(1, q))) {
@@ -619,7 +619,7 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
   if ("w" %in% names(inits)) {
     w.inits <- inits[["w"]]
     if (!is.list(w.inits)) {
-      stop(paste("error: initial values for w must be a list comprised of ", 
+      stop(paste("error: initial values for w must be a list comprised of ",
 		 p.svc, " matrices, each with dimensions ", q, " x ", J, sep = ""))
     }
     for (i in 1:p.svc) {
@@ -653,10 +653,10 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
       sigma.sq.mu.inits <- inits[["sigma.sq.mu"]]
       if (length(sigma.sq.mu.inits) != p.re & length(sigma.sq.mu.inits) != 1) {
         if (p.re == 1) {
-          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.re, 
+          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.re,
       	     sep = ""))
         } else {
-          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.re, 
+          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.re,
       	     " or 1", sep = ""))
         }
       }
@@ -694,7 +694,7 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
   # Order must match util.cpp spCor.
   cov.model.names <- c("exponential", "spherical", "matern", "gaussian")
   if(! cov.model %in% cov.model.names){
-    stop("error: specified cov.model '",cov.model,"' is not a valid option; choose from ", 
+    stop("error: specified cov.model '",cov.model,"' is not a valid option; choose from ",
          paste(cov.model.names, collapse=", ", sep="") ,".")}
   # Obo for cov model lookup on c side
   cov.model.indx <- which(cov.model == cov.model.names) - 1
@@ -704,7 +704,7 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
   x.w.names <- colnames(X.w)
 
   # Get tuning values ---------------------------------------------------
-  # Not accessed, but necessary to keep things in line with the underlying functions. 
+  # Not accessed, but necessary to keep things in line with the underlying functions.
   sigma.sq.tuning <- rep(0, q.p.svc)
   phi.tuning <- rep(0, q.p.svc)
   nu.tuning <- rep(0, q.p.svc)
@@ -748,13 +748,13 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
   # Names for spatial parameters
   if (cov.model != 'matern') {
     theta.names <- paste(rep(c('phi'), each = q), 1:q, sep = '-')
-    theta.names <- paste(rep(theta.names, times = p.svc), 
+    theta.names <- paste(rep(theta.names, times = p.svc),
       		   rep(x.w.names, each = q), sep = '-')
   } else {
     theta.names <- paste(rep(c('phi', 'nu'), each = q), 1:q, sep = '-')
-    theta.names <- paste(rep(theta.names, times = p.svc), 
+    theta.names <- paste(rep(theta.names, times = p.svc),
       		   rep(x.w.names, each = 2 * q), sep = '-')
-  } 
+  }
 
   # Other miscellaneous ---------------------------------------------------
   # For prediction with random slopes
@@ -766,10 +766,10 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
       names(re.cols)[j] <- split.names[[j]][2]
     }
   }
- 
+
   if (!NNGP) {
 
-    stop("error: svcMsAbund is currently only implemented for NNGPs, not full Gaussian Processes. Please set NNGP = TRUE.") 
+    stop("error: svcMsAbund is currently only implemented for NNGPs, not full Gaussian Processes. Please set NNGP = TRUE.")
 
   } else {
 
@@ -781,32 +781,32 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     }
 
     search.type.names <- c("brute", "cb")
-    
+
     if(!search.type %in% search.type.names){
       stop("error: specified search.type '",search.type,
-	   "' is not a valid option; choose from ", 
+	   "' is not a valid option; choose from ",
 	   paste(search.type.names, collapse=", ", sep="") ,".")
     }
-    
+
     ## Indexes
     if(search.type == "brute"){
       indx <- mkNNIndx(coords, n.neighbors, n.omp.threads)
     } else{
       indx <- mkNNIndxCB(coords, n.neighbors, n.omp.threads)
     }
-    
+
     nn.indx <- indx$nnIndx
     nn.indx.lu <- indx$nnIndxLU
     nn.indx.run.time <- indx$run.time
-    
+
     if(verbose){
       cat("----------------------------------------\n");
       cat("Building the neighbors of neighbors list\n");
       cat("----------------------------------------\n");
     }
-    
+
     indx <- mkUIndx(J, n.neighbors, nn.indx, nn.indx.lu, u.search.type)
-    
+
     u.indx <- indx$u.indx
     u.indx.lu <- indx$u.indx.lu
     ui.indx <- indx$ui.indx
@@ -855,8 +855,8 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     # chain.info order: current chain, total number of chains
     chain.info <- c(curr.chain, n.chains)
     storage.mode(chain.info) <- "integer"
-    n.post.samples <- length(seq(from = n.burn + 1, 
-				 to = n.samples, 
+    n.post.samples <- length(seq(from = n.burn + 1,
+				 to = n.samples,
 				 by = as.integer(n.thin)))
     # samples.info order: burn-in, thinning rate, number of posterior samples
     samples.info <- c(n.burn, n.thin, n.post.samples)
@@ -885,7 +885,7 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
           beta.comm.inits <- rnorm(p, mu.beta.comm, sqrt(sigma.beta.comm))
           tau.sq.beta.inits <- runif(p, 0.5, 10)
 	}
-        beta.inits <- matrix(rnorm(N * p, beta.comm.inits, 
+        beta.inits <- matrix(rnorm(N * p, beta.comm.inits,
               		     sqrt(tau.sq.beta.inits)), N, p)
         beta.inits <- c(beta.inits)
         tau.sq.inits <- runif(N, 0.01, 3)
@@ -909,17 +909,17 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
 
       storage.mode(chain.info) <- "integer"
       # Run the model in C
-      out.tmp[[i]] <- .Call("svcMsAbundGaussianNNGP", y, X, X.w, coords, X.re, 
-			    X.random, consts, n.re.long, 
+      out.tmp[[i]] <- .Call("svcMsAbundGaussianNNGP", y, X, X.w, coords, X.re,
+			    X.random, consts, n.re.long,
         	            n.neighbors, nn.indx, nn.indx.lu, u.indx, u.indx.lu, ui.indx,
         	            beta.inits, beta.comm.inits, tau.sq.beta.inits, tau.sq.inits,
-        	            phi.inits, lambda.inits, nu.inits, w.inits, sigma.sq.mu.inits, 
-        		    beta.star.inits, beta.star.indx, beta.level.indx, mu.beta.comm, 
+        	            phi.inits, lambda.inits, nu.inits, w.inits, sigma.sq.mu.inits,
+        		    beta.star.inits, beta.star.indx, beta.level.indx, mu.beta.comm,
         	            Sigma.beta.comm,
         	            tau.sq.beta.a, tau.sq.beta.b, tau.sq.a, tau.sq.b, phi.a, phi.b,
-        	            nu.a, nu.b, sigma.sq.mu.a, sigma.sq.mu.b, 
-        		    tuning.c, cov.model.indx, n.batch, 
-        	            batch.length, accept.rate, n.omp.threads, verbose, n.report, 
+        	            nu.a, nu.b, sigma.sq.mu.a, sigma.sq.mu.b,
+        		    tuning.c, cov.model.indx, n.batch,
+        	            batch.length, accept.rate, n.omp.threads, verbose, n.report,
         	            samples.info, chain.info, z, family.c)
       chain.info[1] <- chain.info[1] + 1
     }
@@ -927,37 +927,37 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     out$rhat <- list()
     if (n.chains > 1) {
       if (!ind.betas) {
-        out$rhat$beta.comm <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-        					      mcmc(t(a$beta.comm.samples)))), 
-        			     autoburnin = FALSE)$psrf[, 2])
-        out$rhat$tau.sq.beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-        					      mcmc(t(a$tau.sq.beta.samples)))), 
-        			     autoburnin = FALSE)$psrf[, 2])
+        out$rhat$beta.comm <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+        					      mcmc(t(a$beta.comm.samples)))),
+        			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
+        out$rhat$tau.sq.beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+        					      mcmc(t(a$tau.sq.beta.samples)))),
+        			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
       } else {
         out$rhat$beta.comm <- rep(NA, p)
         out$rhat$tau.sq.beta <- rep(NA, p)
       }
-      out$rhat$tau.sq <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-      					      mcmc(t(a$tau.sq.samples)))), 
-      			     autoburnin = FALSE)$psrf[, 2])
-      out$rhat$beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-      					         mcmc(t(a$beta.samples)))), 
-      			     autoburnin = FALSE)$psrf[, 2])
-      out$rhat$theta <- gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-      					      mcmc(t(a$theta.samples)))), 
-      			      autoburnin = FALSE)$psrf[, 2]
+      out$rhat$tau.sq <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+      					      mcmc(t(a$tau.sq.samples)))),
+      			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
+      out$rhat$beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+      					         mcmc(t(a$beta.samples)))),
+      			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
+      out$rhat$theta <- gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+      					      mcmc(t(a$theta.samples)))),
+      			      autoburnin = FALSE, multivariate = FALSE)$psrf[, 2]
       out$rhat$lambda.lower.tri <- list()
       for (j in 1:p.svc) {
         lambda.mat <- matrix(0, N, q)
         indx <- (((j - 1) * N * q + 1):(j * N * q))[c(lower.tri(lambda.mat))]
-        out$rhat$lambda.lower.tri[[j]] <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-          					       mcmc(t(a$lambda.samples[indx, ])))), 
-          					       autoburnin = FALSE)$psrf[, 2])
+        out$rhat$lambda.lower.tri[[j]] <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+          					       mcmc(t(a$lambda.samples[indx, ])))),
+          					       autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
       }
       if (p.re > 0) {
-        out$rhat$sigma.sq.mu <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-        					      mcmc(t(a$sigma.sq.mu.samples)))), 
-        			     autoburnin = FALSE)$psrf[, 2])
+        out$rhat$sigma.sq.mu <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+        					      mcmc(t(a$sigma.sq.mu.samples)))),
+        			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
       }
     } else {
       out$rhat$beta.comm <- rep(NA, p)
@@ -973,7 +973,7 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     # Put everything into MCMC objects
     out$beta.comm.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$beta.comm.samples))))
     colnames(out$beta.comm.samples) <- x.names
-    out$tau.sq.beta.samples <- mcmc(do.call(rbind, 
+    out$tau.sq.beta.samples <- mcmc(do.call(rbind,
       				lapply(out.tmp, function(a) t(a$tau.sq.beta.samples))))
     colnames(out$tau.sq.beta.samples) <- x.names
 
@@ -984,7 +984,7 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
     out$beta.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$beta.samples))))
     colnames(out$beta.samples) <- coef.names
     out$tau.sq.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$tau.sq.samples))))
-    colnames(out$tau.sq.samples) <- sp.names 
+    colnames(out$tau.sq.samples) <- sp.names
     if (p.re > 0) {
       out$sigma.sq.mu.samples <- mcmc(
         do.call(rbind, lapply(out.tmp, function(a) t(a$sigma.sq.mu.samples))))
@@ -998,35 +998,35 @@ svcMsAbund <- function(formula, data, inits, priors, tuning,
       out$re.level.names <- re.level.names
     }
     loadings.names <- paste(rep(sp.names, times = q), rep(1:q, each = N), sep = '-')
-    loadings.names <- paste(rep(loadings.names, times = p.svc), 
+    loadings.names <- paste(rep(loadings.names, times = p.svc),
         		    rep(x.w.names, each = N * q), sep = '-')
     out$lambda.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$lambda.samples))))
     colnames(out$lambda.samples) <- loadings.names
     out$theta.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$theta.samples))))
     colnames(out$theta.samples) <- theta.names
 
-    # Account for case when there is only 1 svc. 
+    # Account for case when there is only 1 svc.
     if (p.svc == 1) {
-      tmp <- do.call(abind, lapply(out.tmp, function(a) array(a$w.samples, 
+      tmp <- do.call(abind, lapply(out.tmp, function(a) array(a$w.samples,
         						      dim = c(q, J, n.post.samples))))
       tmp <- tmp[, order(ord), , drop = FALSE]
       out$w.samples <- array(NA, dim = c(q, J, p.svc, n.post.samples * n.chains))
       out$w.samples[, , 1, ] <- tmp
     } else {
-      out$w.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$w.samples, 
+      out$w.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$w.samples,
         								dim = c(q, J, p.svc, n.post.samples))))
       out$w.samples <- out$w.samples[, order(ord), , , drop = FALSE]
     }
     out$w.samples <- aperm(out$w.samples, c(4, 1, 2, 3))
-    out$mu.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$mu.samples, 
+    out$mu.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$mu.samples,
       								dim = c(N, J, n.post.samples))))
     out$mu.samples <- out$mu.samples[, order(ord), ]
     out$mu.samples <- aperm(out$mu.samples, c(3, 1, 2))
-    out$like.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$like.samples, 
+    out$like.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$like.samples,
       								dim = c(N, J, n.post.samples))))
     out$like.samples <- out$like.samples[, order(ord), ]
     out$like.samples <- aperm(out$like.samples, c(3, 1, 2))
-    out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
+    out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples,
       								dim = c(N, J, n.post.samples))))
     out$y.rep.samples <- out$y.rep.samples[, order(ord), ]
     out$y.rep.samples <- aperm(out$y.rep.samples, c(3, 1, 2))

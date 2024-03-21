@@ -708,22 +708,22 @@ msAbund <- function(formula, data, inits, priors, tuning,
       # as.vector removes the "Upper CI" when there is only 1 variable.
       out$rhat$beta.comm <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
       					      mcmc(t(a$beta.comm.samples)))),
-      			     autoburnin = FALSE)$psrf[, 2])
+      			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
       out$rhat$tau.sq.beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
       					      mcmc(t(a$tau.sq.beta.samples)))),
-      			     autoburnin = FALSE)$psrf[, 2])
+      			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
       out$rhat$beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
       					         mcmc(t(a$beta.samples)))),
-      			     autoburnin = FALSE)$psrf[, 2])
+      			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
       if (family == 'NB') {
         out$rhat$kappa <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
       					      mcmc(t(a$kappa.samples)))),
-      			     autoburnin = FALSE)$psrf[, 2])
+      			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
       }
       if (p.abund.re > 0) {
         out$rhat$sigma.sq.mu <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
         					      mcmc(t(a$sigma.sq.mu.samples)))),
-        			     autoburnin = FALSE)$psrf[, 2])
+        			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
       }
     } else {
       out$rhat$beta.comm <- rep(NA, p.abund)

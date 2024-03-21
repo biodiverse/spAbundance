@@ -1,9 +1,9 @@
 spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
-		   cov.model = 'exponential', NNGP = TRUE, 
+		   cov.model = 'exponential', NNGP = TRUE,
 		   n.neighbors = 15, search.type = 'cb',
-		   n.batch, batch.length, accept.rate = 0.43, family = 'Poisson', 
+		   n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
 		   n.omp.threads = 1, verbose = TRUE,
-		   n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
+		   n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1,
 		   n.chains = 1, ...){
 
   ptm <- proc.time()
@@ -51,7 +51,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   if (!'y' %in% names(data)) {
     stop("error: data y must be specified in data")
   }
-  y <- as.matrix(data$y) 
+  y <- as.matrix(data$y)
   # Offset
   if ('offset' %in% names(data)) {
     offset <- data$offset
@@ -119,14 +119,14 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
 
   if (family == 'NB' & verbose) {
-    message('**NOTE**: spatial negative binomial models can be difficult to\nestimate as they contain two forms of overdispersion.\nIf experiencing very poor mixing/convergence of MCMC chains (particularly kappa and phi),\nconsider using a spatial Poisson model or more informative priors on kappa or phi.\n') 
+    message('**NOTE**: spatial negative binomial models can be difficult to\nestimate as they contain two forms of overdispersion.\nIf experiencing very poor mixing/convergence of MCMC chains (particularly kappa and phi),\nconsider using a spatial Poisson model or more informative priors on kappa or phi.\n')
   }
 
   # Neighbors and Ordering ----------------------------------------------
   if (NNGP) {
-    u.search.type <- 2 
-    ## Order by x column. Could potentially allow this to be user defined. 
-    ord <- order(coords[,1]) 
+    u.search.type <- 2
+    ## Order by x column. Could potentially allow this to be user defined.
+    ord <- order(coords[,1])
     # Reorder everything to align with NN ordering
     y <- y[ord, , drop = FALSE]
     coords <- coords[ord, , drop = FALSE]
@@ -144,28 +144,28 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
   y.mat <- y
 
-  # First subset detection covariates to only use those that are included in the analysis. 
+  # First subset detection covariates to only use those that are included in the analysis.
   data$det.covs <- data$det.covs[names(data$det.covs) %in% all.vars(det.formula)]
   # Null model support
   if (length(data$det.covs) == 0) {
     data$det.covs <- list(int = rep(1, dim(y)[1]))
   }
   # Make both covariates a data frame. Unlist is necessary for when factors
-  # are supplied. 
+  # are supplied.
   data$det.covs <- data.frame(lapply(data$det.covs, function(a) unlist(c(a))))
   # Indicator of whether all det.covs are site level or not
-  site.level.ind <- ifelse(nrow(data$det.covs) == nrow(y), TRUE, FALSE) 
+  site.level.ind <- ifelse(nrow(data$det.covs) == nrow(y), TRUE, FALSE)
   data$abund.covs <- as.data.frame(data$abund.covs)
 
   # Check whether random effects are sent in as numeric, and
-  # return error if they are. 
+  # return error if they are.
   # Abundance -------------------------
   if (!is.null(findbars(abund.formula))) {
     abund.re.names <- unique(unlist(sapply(findbars(abund.formula), all.vars)))
     for (i in 1:length(abund.re.names)) {
       if (is(data$abund.covs[, abund.re.names[i]], 'factor')) {
         stop(paste("error: random effect variable ", abund.re.names[i], " specified as a factor. Random effect variables must be specified as numeric.", sep = ''))
-      } 
+      }
       if (is(data$abund.covs[, abund.re.names[i]], 'character')) {
         stop(paste("error: random effect variable ", abund.re.names[i], " specified as character. Random effect variables must be specified as numeric.", sep = ''))
       }
@@ -177,7 +177,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     for (i in 1:length(det.re.names)) {
       if (is(data$det.covs[, det.re.names[i]], 'factor')) {
         stop(paste("error: random effect variable ", det.re.names[i], " specified as a factor. Random effect variables must be specified as numeric.", sep = ''))
-      } 
+      }
       if (is(data$det.covs[, det.re.names[i]], 'character')) {
         stop(paste("error: random effect variable ", det.re.names[i], " specified as character. Random effect variables must be specified as numeric.", sep = ''))
       }
@@ -192,13 +192,13 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
   # abund.covs ------------------------
   if (sum(is.na(data$abund.covs)) != 0) {
-    stop("error: missing values in abund.covs. Please remove these sites from all objects in data or somehow replace the NA values with non-missing values (e.g., mean imputation).") 
+    stop("error: missing values in abund.covs. Please remove these sites from all objects in data or somehow replace the NA values with non-missing values (e.g., mean imputation).")
   }
   # det.covs ------------------------
   if (!site.level.ind) {
     for (i in 1:ncol(data$det.covs)) {
       if (sum(is.na(data$det.covs[, i])) > sum(is.na(y))) {
-        stop("error: some elements in det.covs have missing values where there is an observed data value in y. Please either replace the NA values in det.covs with non-missing values (e.g., mean imputation) or set the corresponding values in y to NA where the covariate is missing.") 
+        stop("error: some elements in det.covs have missing values where there is an observed data value in y. Please either replace the NA values in det.covs with non-missing values (e.g., mean imputation) or set the corresponding values in y to NA where the covariate is missing.")
       }
     }
     # Misalignment between y and det.covs
@@ -216,7 +216,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
   if (site.level.ind) {
     if (sum(is.na(data$det.covs)) != 0) {
-      stop("missing values in site-level det.covs. Please remove these sites from all objects in data or somehow replace the NA values with non-missing values (e.g., mean imputation).") 
+      stop("missing values in site-level det.covs. Please remove these sites from all objects in data or somehow replace the NA values with non-missing values (e.g., mean imputation).")
     }
   }
 
@@ -298,9 +298,9 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     X.p.random <- X.p.random[N.long.indx + 1, , drop = FALSE]
   }
   # Remove missing observations when the covariate data are available but
-  # there are missing detection-nondetection data. 
+  # there are missing detection-nondetection data.
   if (nrow(X.p) == length(y)) {
-    X.p <- X.p[!is.na(y), , drop = FALSE]  
+    X.p <- X.p[!is.na(y), , drop = FALSE]
   }
   if (nrow(X.p.re) == length(y) & p.det.re > 0) {
     X.p.re <- X.p.re[!is.na(y), , drop = FALSE]
@@ -366,7 +366,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     }
     mu.beta <- rep(0, p.abund)
     sigma.beta <- rep(100, p.abund)
-    Sigma.beta <- diag(p.abund) * sigma.beta 
+    Sigma.beta <- diag(p.abund) * sigma.beta
   }
   # alpha -----------------------
   if ("alpha.normal" %in% names(priors)) {
@@ -418,19 +418,19 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       sigma.sq.mu.b <- priors$sigma.sq.mu.ig[[2]]
       if (length(sigma.sq.mu.a) != p.abund.re & length(sigma.sq.mu.a) != 1) {
         if (p.abund.re == 1) {
-        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ", 
+        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ",
         	   p.abund.re, " with elements corresponding to sigma.sq.mus' shape", sep = ""))
         } else {
-        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ", 
+        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ",
         	   p.abund.re, " or 1 with elements corresponding to sigma.sq.mus' shape", sep = ""))
         }
       }
       if (length(sigma.sq.mu.b) != p.abund.re & length(sigma.sq.mu.b) != 1) {
         if (p.abund.re == 1) {
-          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ",
         	   p.abund.re, " with elements corresponding to sigma.sq.mus' scale", sep = ""))
         } else {
-          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ",
         	   p.abund.re, " or 1with elements corresponding to sigma.sq.mus' scale", sep = ""))
         }
       }
@@ -441,7 +441,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
         sigma.sq.mu.b <- rep(sigma.sq.mu.b, p.abund.re)
       }
   }   else {
-      if (verbose) {	    
+      if (verbose) {
         message("No prior specified for sigma.sq.mu.ig.\nSetting prior shape to 0.1 and prior scale to 0.1\n")
       }
       sigma.sq.mu.a <- rep(0.1, p.abund.re)
@@ -461,19 +461,19 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       sigma.sq.p.b <- priors$sigma.sq.p.ig[[2]]
       if (length(sigma.sq.p.a) != p.det.re & length(sigma.sq.p.a) != 1) {
         if (p.det.re == 1) {
-          stop(paste("error: sigma.sq.p.ig[[1]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.p.ig[[1]] must be a vector of length ",
         	   p.det.re, " with elements corresponding to sigma.sq.ps' shape", sep = ""))
         } else {
-          stop(paste("error: sigma.sq.p.ig[[1]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.p.ig[[1]] must be a vector of length ",
         	   p.det.re, " or 1 with elements corresponding to sigma.sq.ps' shape", sep = ""))
         }
       }
       if (length(sigma.sq.p.b) != p.det.re & length(sigma.sq.p.b) != 1) {
         if (p.det.re == 1) {
-          stop(paste("error: sigma.sq.p.ig[[2]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.p.ig[[2]] must be a vector of length ",
         	     p.det.re, " with elements corresponding to sigma.sq.ps' scale", sep = ""))
         } else {
-          stop(paste("error: sigma.sq.p.ig[[2]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.p.ig[[2]] must be a vector of length ",
         	     p.det.re, " or 1 with elements corresponding to sigma.sq.ps' scale", sep = ""))
         }
       }
@@ -484,7 +484,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
         sigma.sq.p.b <- rep(sigma.sq.p.b, p.det.re)
       }
   }   else {
-      if (verbose) {	    
+      if (verbose) {
         message("No prior specified for sigma.sq.p.ig.\nSetting prior shape to 0.1 and prior scale to 0.1\n")
       }
       sigma.sq.p.a <- rep(0.1, p.det.re)
@@ -506,8 +506,8 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       if (verbose) {
         message("No prior specified for kappa.unif.\nSetting uniform bounds of 0 and 100.\n")
       }
-      kappa.a <- 0 
-      kappa.b <- 100 
+      kappa.a <- 0
+      kappa.b <- 100
     }
   } else {
     kappa.a <- 0
@@ -648,10 +648,10 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       sigma.sq.mu.inits <- inits[["sigma.sq.mu"]]
       if (length(sigma.sq.mu.inits) != p.abund.re & length(sigma.sq.mu.inits) != 1) {
         if (p.abund.re == 1) {
-          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.abund.re, 
+          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.abund.re,
       	       sep = ""))
         } else {
-          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.abund.re, 
+          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.abund.re,
       	       " or 1", sep = ""))
         }
       }
@@ -677,12 +677,12 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       sigma.sq.p.inits <- inits[["sigma.sq.p"]]
       if (length(sigma.sq.p.inits) != p.det.re & length(sigma.sq.p.inits) != 1) {
         if (p.det.re == 1) {
-          stop(paste("error: initial values for sigma.sq.p must be of length ", p.det.re, 
+          stop(paste("error: initial values for sigma.sq.p must be of length ", p.det.re,
       	     sep = ""))
         } else {
-          stop(paste("error: initial values for sigma.sq.p must be of length ", p.det.re, 
+          stop(paste("error: initial values for sigma.sq.p must be of length ", p.det.re,
       	       " or 1", sep = ""))
-          
+
         }
       }
       if (length(sigma.sq.p.inits) != p.det.re) {
@@ -756,7 +756,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       stop(paste("error: initial values for w must be a vector of length ",
       	   J, sep = ""))
     }
-    # Reorder user supplied initial values. 
+    # Reorder user supplied initial values.
     w.inits <- w.inits[ord]
   } else {
     w.inits <- rep(0, J)
@@ -797,7 +797,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
   # Order must match util.cpp spCor.
   cov.model.names <- c("exponential", "spherical", "matern", "gaussian")
   if(! cov.model %in% cov.model.names){
-    stop("error: specified cov.model '",cov.model,"' is not a valid option; choose from ", 
+    stop("error: specified cov.model '",cov.model,"' is not a valid option; choose from ",
          paste(cov.model.names, collapse=", ", sep="") ,".")}
   # Obo for cov model lookup on c side
   cov.model.indx <- which(cov.model == cov.model.names) - 1
@@ -835,9 +835,9 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     }
     beta.tuning <- tuning$beta
     if (length(beta.tuning) != 1 & length(beta.tuning) != p.abund) {
-      stop(paste("error: beta tuning must be a single value or a vector of length ", 
+      stop(paste("error: beta tuning must be a single value or a vector of length ",
         	 p.abund, sep = ''))
-    } 
+    }
     if (length(beta.tuning) == 1) {
       beta.tuning <- rep(beta.tuning, p.abund)
     }
@@ -849,10 +849,10 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       beta.star.tuning <- tuning$beta.star
       if (length(beta.star.tuning) != 1) {
         stop("error: beta.star tuning must be a single value")
-      } 
+      }
       beta.star.tuning <- rep(beta.star.tuning, n.abund.re)
     } else {
-      beta.star.tuning <- NULL 
+      beta.star.tuning <- NULL
     }
     # alpha ---------------------------
     if(!"alpha" %in% names(tuning)) {
@@ -860,9 +860,9 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     }
     alpha.tuning <- tuning$alpha
     if (length(alpha.tuning) != 1 & length(alpha.tuning) != p.det) {
-      stop(paste("error: alpha tuning must be a single value or a vector of length ", 
+      stop(paste("error: alpha tuning must be a single value or a vector of length ",
         	 p.det, sep = ''))
-    } 
+    }
     if (length(alpha.tuning) == 1) {
       alpha.tuning <- rep(alpha.tuning, p.det)
     }
@@ -874,7 +874,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       alpha.star.tuning <- tuning$alpha.star
       if (length(alpha.star.tuning) != 1) {
         stop("error: alpha.star tuning must be a single value")
-      } 
+      }
       alpha.star.tuning <- rep(alpha.star.tuning, n.det.re)
     } else {
       alpha.star.tuning <- NULL
@@ -887,7 +887,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       kappa.tuning <- tuning$kappa
       if (length(kappa.tuning) != 1) {
         stop("error: kappa tuning must be a single value")
-      } 
+      }
     } else {
       kappa.tuning <- NULL
     }
@@ -897,9 +897,9 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     }
     w.tuning <- tuning$w
     if (length(w.tuning) != 1 & length(w.tuning) != J) {
-      stop(paste("error: w tuning must be a single value or a vector of length ", 
+      stop(paste("error: w tuning must be a single value or a vector of length ",
         	 J, sep = ''))
-    } 
+    }
     if (length(w.tuning) == 1) {
       w.tuning <- rep(w.tuning, J)
     }
@@ -910,7 +910,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     phi.tuning <- tuning$phi
     if (length(phi.tuning) != 1) {
       stop("error: phi tuning must be a single value")
-    } 
+    }
     if (cov.model == 'matern') {
       # nu --------------------------
       if(!"nu" %in% names(tuning)) {
@@ -919,7 +919,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       nu.tuning <- tuning$nu
       if (length(nu.tuning) != 1) {
         stop("error: nu tuning must be a single value")
-      } 
+      }
     } else {
       nu.tuning <- NULL
     }
@@ -931,11 +931,11 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       sigma.sq.tuning <- tuning$sigma.sq
       if (length(sigma.sq.tuning) != 1) {
         stop("error: sigma.sq tuning must be a single value")
-      } 
+      }
     }
   }
-  tuning.c <- log(c(beta.tuning, alpha.tuning, beta.star.tuning, 
-		    alpha.star.tuning, sigma.sq.tuning, phi.tuning, 
+  tuning.c <- log(c(beta.tuning, alpha.tuning, beta.star.tuning,
+		    alpha.star.tuning, sigma.sq.tuning, phi.tuning,
 		    nu.tuning, w.tuning, kappa.tuning))
 
   curr.chain <- 1
@@ -970,13 +970,13 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     }
 
     search.type.names <- c("brute", "cb")
-    
+
     if(!search.type %in% search.type.names){
       stop("error: specified search.type '",search.type,
-	   "' is not a valid option; choose from ", 
+	   "' is not a valid option; choose from ",
 	   paste(search.type.names, collapse=", ", sep="") ,".")
     }
-    
+
     storage.mode(n.neighbors) <- "integer"
     storage.mode(n.omp.threads) <- "integer"
     ## Indexes
@@ -985,11 +985,11 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     } else{
       indx <- mkNNIndxCB(coords, n.neighbors, n.omp.threads)
     }
-    
+
     nn.indx <- indx$nnIndx
     nn.indx.lu <- indx$nnIndxLU
     nn.indx.run.time <- indx$run.time
-    
+
     storage.mode(nn.indx) <- "integer"
     storage.mode(nn.indx.lu) <- "integer"
     storage.mode(u.search.type) <- "integer"
@@ -1000,9 +1000,9 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       cat("Building the neighbors of neighbors list\n");
       cat("----------------------------------------\n");
     }
-    
+
     indx <- mkUIndx(J, n.neighbors, nn.indx, nn.indx.lu, u.search.type)
-    
+
     u.indx <- indx$u.indx
     u.indx.lu <- indx$u.indx.lu
     ui.indx <- indx$ui.indx
@@ -1019,7 +1019,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     storage.mode(coords) <- "double"
     storage.mode(y.max) <- "double"
     storage.mode(offset) <- "double"
-    consts <- c(J, n.obs, p.abund, p.abund.re, n.abund.re, 
+    consts <- c(J, n.obs, p.abund, p.abund.re, n.abund.re,
                 p.det, p.det.re, n.det.re)
     storage.mode(consts) <- "integer"
     storage.mode(K) <- "double"
@@ -1060,8 +1060,8 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     storage.mode(cov.model.indx) <- "integer"
     chain.info <- c(curr.chain, n.chains)
     storage.mode(chain.info) <- "integer"
-    n.post.samples <- length(seq(from = n.burn + 1, 
-        			 to = n.samples, 
+    n.post.samples <- length(seq(from = n.burn + 1,
+        			 to = n.samples,
         			 by = as.integer(n.thin)))
     storage.mode(n.post.samples) <- "integer"
     samples.info <- c(n.burn, n.thin, n.post.samples)
@@ -1120,52 +1120,52 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
       }
       storage.mode(chain.info) <- "integer"
       # Run the model in C
-      out.tmp[[i]] <- .Call("spNMixNNGP", y, X, X.p, coords, X.re, X.p.re, X.random, X.p.random, 
-        		    y.max, consts, 
-        		    n.abund.re.long, n.det.re.long, 
-          	            n.neighbors, nn.indx, nn.indx.lu, u.indx, u.indx.lu, ui.indx, 
-        		    beta.inits, alpha.inits, kappa.inits, 
-          		    sigma.sq.mu.inits, sigma.sq.p.inits, beta.star.inits, 
-          		    alpha.star.inits, N.inits, w.inits, phi.inits, sigma.sq.inits, nu.inits, 
-        		    N.long.indx, beta.star.indx, beta.level.indx, 
-        		    alpha.star.indx, alpha.level.indx, mu.beta, Sigma.beta, mu.alpha, 
+      out.tmp[[i]] <- .Call("spNMixNNGP", y, X, X.p, coords, X.re, X.p.re, X.random, X.p.random,
+        		    y.max, consts,
+        		    n.abund.re.long, n.det.re.long,
+          	            n.neighbors, nn.indx, nn.indx.lu, u.indx, u.indx.lu, ui.indx,
+        		    beta.inits, alpha.inits, kappa.inits,
+          		    sigma.sq.mu.inits, sigma.sq.p.inits, beta.star.inits,
+          		    alpha.star.inits, N.inits, w.inits, phi.inits, sigma.sq.inits, nu.inits,
+        		    N.long.indx, beta.star.indx, beta.level.indx,
+        		    alpha.star.indx, alpha.level.indx, mu.beta, Sigma.beta, mu.alpha,
         		    Sigma.alpha, phi.a, phi.b, sigma.sq.a, sigma.sq.b, nu.a, nu.b,
-        		    sigma.sq.mu.a, sigma.sq.mu.b, 
-          		    sigma.sq.p.a, sigma.sq.p.b, kappa.a, kappa.b, 
-        		    tuning.c, cov.model.indx, n.batch, batch.length, accept.rate, 
-        		    n.omp.threads, verbose, n.report, samples.info, chain.info, 
+        		    sigma.sq.mu.a, sigma.sq.mu.b,
+          		    sigma.sq.p.a, sigma.sq.p.b, kappa.a, kappa.b,
+        		    tuning.c, cov.model.indx, n.batch, batch.length, accept.rate,
+        		    n.omp.threads, verbose, n.report, samples.info, chain.info,
         		    sigma.sq.ig, family.c, offset)
       chain.info[1] <- chain.info[1] + 1
-    } # i   
+    } # i
     # Calculate R-Hat ---------------
     out <- list()
     out$rhat <- list()
     if (n.chains > 1) {
-      # as.vector removes the "Upper CI" when there is only 1 variable. 
-      out$rhat$beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-      					      mcmc(t(a$beta.samples)))), 
-      			     autoburnin = FALSE)$psrf[, 2])
-      out$rhat$alpha <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-      					      mcmc(t(a$alpha.samples)))), 
-      			      autoburnin = FALSE)$psrf[, 2])
+      # as.vector removes the "Upper CI" when there is only 1 variable.
+      out$rhat$beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+      					      mcmc(t(a$beta.samples)))),
+      			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
+      out$rhat$alpha <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+      					      mcmc(t(a$alpha.samples)))),
+      			      autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
       if (p.det.re > 0) {
-      out$rhat$sigma.sq.p <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-      					      mcmc(t(a$sigma.sq.p.samples)))), 
-      			     autoburnin = FALSE)$psrf[, 2])
+      out$rhat$sigma.sq.p <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+      					      mcmc(t(a$sigma.sq.p.samples)))),
+      			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
       }
       if (p.abund.re > 0) {
-      out$rhat$sigma.sq.mu <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-      					      mcmc(t(a$sigma.sq.mu.samples)))), 
-      			     autoburnin = FALSE)$psrf[, 2])
+      out$rhat$sigma.sq.mu <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+      					      mcmc(t(a$sigma.sq.mu.samples)))),
+      			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
       }
     if (family == 'NB') {
-      out$rhat$kappa <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-        						       mcmc(t(a$kappa.samples)))), 
-        					autoburnin = FALSE)$psrf[, 2])
+      out$rhat$kappa <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+        						       mcmc(t(a$kappa.samples)))),
+        					autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
     }
-      out$rhat$theta <- gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-      					        mcmc(t(a$theta.samples)))), 
-      			      autoburnin = FALSE)$psrf[, 2]
+      out$rhat$theta <- gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+      					        mcmc(t(a$theta.samples)))),
+      			      autoburnin = FALSE, multivariate = FALSE)$psrf[, 2]
     } else {
       out$rhat$beta <- rep(NA, p.abund)
       out$rhat$kappa <- NA
@@ -1181,7 +1181,7 @@ spNMix <- function(abund.formula, det.formula, data, inits, priors, tuning,
     # Put everything into MCMC objects
     out$beta.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$beta.samples))))
     colnames(out$beta.samples) <- x.names
-    out$alpha.samples <- mcmc(do.call(rbind, 
+    out$alpha.samples <- mcmc(do.call(rbind,
       				lapply(out.tmp, function(a) t(a$alpha.samples))))
     colnames(out$alpha.samples) <- x.p.names
     if (family == 'NB') {

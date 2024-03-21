@@ -2,7 +2,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
                  n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
                  transect = 'line', det.func = 'halfnormal',
                  n.omp.threads = 1, verbose = TRUE,
-                 n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1, 
+                 n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1,
                  n.chains = 1, ...){
 
   ptm <- proc.time()
@@ -116,14 +116,14 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   data$covs <- as.data.frame(data$covs)
 
   # Check whether random effects are sent in as numeric, and
-  # return error if they are. 
+  # return error if they are.
   # Abundance -------------------------
   if (!is.null(findbars(abund.formula))) {
     abund.re.names <- unique(unlist(sapply(findbars(abund.formula), all.vars)))
     for (i in 1:length(abund.re.names)) {
       if (is(data$covs[, abund.re.names[i]], 'factor')) {
         stop(paste("error: random effect variable ", abund.re.names[i], " specified as a factor. Random effect variables must be specified as numeric.", sep = ''))
-      } 
+      }
       if (is(data$covs[, abund.re.names[i]], 'character')) {
         stop(paste("error: random effect variable ", abund.re.names[i], " specified as character. Random effect variables must be specified as numeric.", sep = ''))
       }
@@ -135,7 +135,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     for (i in 1:length(det.re.names)) {
       if (is(data$covs[, det.re.names[i]], 'factor')) {
         stop(paste("error: random effect variable ", det.re.names[i], " specified as a factor. Random effect variables must be specified as numeric.", sep = ''))
-      } 
+      }
       if (is(data$covs[, det.re.names[i]], 'character')) {
         stop(paste("error: random effect variable ", det.re.names[i], " specified as character. Random effect variables must be specified as numeric.", sep = ''))
       }
@@ -149,7 +149,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
   # covs ------------------------
   if (sum(is.na(data$covs)) != 0) {
-    stop("error: missing values in covs. Please remove these sites from all objects in data or somehow replace the NA values with non-missing values (e.g., mean imputation).") 
+    stop("error: missing values in covs. Please remove these sites from all objects in data or somehow replace the NA values with non-missing values (e.g., mean imputation).")
   }
 
   # Formula -------------------------------------------------------------
@@ -190,7 +190,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   # Number of species
   n.sp <- dim(y)[1]
   # Number of sites
-  J <- nrow(X) 
+  J <- nrow(X)
   # Number of abundance parameters
   p.abund <- ncol(X)
   # Number of abundance random effect parameters
@@ -207,17 +207,17 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   n.det.re.long <- apply(X.p.re, 2, function(a) length(unique(a)))
   if (p.det.re == 0) n.det.re.long <- 0
   # Number of distance bands/bins
-  K <- dim(y)[3] 
+  K <- dim(y)[3]
 
   # Just to keep things consistent with other functions
   N.long.indx <- rep(1:J, dim(y.mat)[3])
   N.long.indx <- N.long.indx[!is.na(c(y.mat[1, , ]))]
   # Subtract 1 for indices in C
   N.long.indx <- N.long.indx - 1
-  # Note that y is ordered by distance bin, then site within bin. 
+  # Note that y is ordered by distance bin, then site within bin.
   y <- c(y)
-  # Assumes the missing data are constant across species, which seems likely, 
-  # but may eventually need some updating. 
+  # Assumes the missing data are constant across species, which seems likely,
+  # but may eventually need some updating.
   names.long <- which(!is.na(c(y.mat[1, , ])))
   # Total number of data points per species
   n.obs <- J * K
@@ -239,7 +239,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   # Grab specific distance sampling information ---------------------------
   det.func.names <- c("halfnormal", "negexp")
   if (! det.func %in% det.func.names) {
-    stop("error: specified det.func '", det.func, "' is not a valid option; choose from ", 
+    stop("error: specified det.func '", det.func, "' is not a valid option; choose from ",
 	 paste(det.func.names, collapse = ', ', sep = ''), ".")
   }
   # Obo for det.func lookup on c side
@@ -250,7 +250,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   }
   # For C side, line = 0, point = 1
   transect.c <- ifelse(transect == 'line', 0, 1)
-  
+
   # Priors --------------------------------------------------------------
   if (missing(priors)) {
     priors <- list()
@@ -294,7 +294,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     }
     mu.beta.comm <- rep(0, p.abund)
     sigma.beta.comm <- rep(100, p.abund)
-    Sigma.beta.comm <- diag(p.abund) * 100 
+    Sigma.beta.comm <- diag(p.abund) * 100
   }
   # alpha.comm -----------------------
   if ("alpha.comm.normal" %in% names(priors)) {
@@ -334,7 +334,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     }
     mu.alpha.comm <- rep(0, p.det)
     sigma.alpha.comm <- rep(100, p.det)
-    Sigma.alpha.comm <- diag(p.det) * 100 
+    Sigma.alpha.comm <- diag(p.det) * 100
   }
   # tau.sq.beta -----------------------
   if ("tau.sq.beta.ig" %in% names(priors)) {
@@ -345,19 +345,19 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     tau.sq.beta.b <- priors$tau.sq.beta.ig[[2]]
     if (length(tau.sq.beta.a) != p.abund & length(tau.sq.beta.a) != 1) {
       if (p.abund == 1) {
-        stop(paste("error: tau.sq.beta.ig[[1]] must be a vector of length ", 
+        stop(paste("error: tau.sq.beta.ig[[1]] must be a vector of length ",
       	   p.abund, " with elements corresponding to tau.sq.betas' shape", sep = ""))
       } else {
-        stop(paste("error: tau.sq.beta.ig[[1]] must be a vector of length ", 
+        stop(paste("error: tau.sq.beta.ig[[1]] must be a vector of length ",
       	   p.abund, " or 1 with elements corresponding to tau.sq.betas' shape", sep = ""))
       }
     }
     if (length(tau.sq.beta.b) != p.abund & length(tau.sq.beta.b) != 1) {
       if (p.abund == 1) {
-        stop(paste("error: tau.sq.beta.ig[[2]] must be a vector of length ", 
+        stop(paste("error: tau.sq.beta.ig[[2]] must be a vector of length ",
       	   p.abund, " with elements corresponding to tau.sq.betas' scale", sep = ""))
       } else {
-        stop(paste("error: tau.sq.beta.ig[[2]] must be a vector of length ", 
+        stop(paste("error: tau.sq.beta.ig[[2]] must be a vector of length ",
       	   p.abund, " or 1 with elements corresponding to tau.sq.betas' scale", sep = ""))
       }
     }
@@ -368,7 +368,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       tau.sq.beta.b <- rep(tau.sq.beta.b, p.abund)
     }
   } else {
-    if (verbose) {	    
+    if (verbose) {
       message("No prior specified for tau.sq.beta.ig.\nSetting prior shape to 0.1 and prior scale to 0.1\n")
     }
     tau.sq.beta.a <- rep(0.1, p.abund)
@@ -384,19 +384,19 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     tau.sq.alpha.b <- priors$tau.sq.alpha.ig[[2]]
     if (length(tau.sq.alpha.a) != p.det & length(tau.sq.alpha.a) != 1) {
       if (p.det == 1) {
-        stop(paste("error: tau.sq.alpha.ig[[1]] must be a vector of length ", 
+        stop(paste("error: tau.sq.alpha.ig[[1]] must be a vector of length ",
       	   p.det, " with elements corresponding to tau.sq.alphas' shape", sep = ""))
       } else {
-        stop(paste("error: tau.sq.alpha.ig[[1]] must be a vector of length ", 
+        stop(paste("error: tau.sq.alpha.ig[[1]] must be a vector of length ",
       	   p.det, " or 1 with elements corresponding to tau.sq.alphas' shape", sep = ""))
       }
     }
     if (length(tau.sq.alpha.b) != p.det & length(tau.sq.alpha.b) != 1) {
       if (p.det == 1) {
-        stop(paste("error: tau.sq.alpha.ig[[2]] must be a vector of length ", 
+        stop(paste("error: tau.sq.alpha.ig[[2]] must be a vector of length ",
       	   p.det, " with elements corresponding to tau.sq.alphas' scale", sep = ""))
       } else {
-        stop(paste("error: tau.sq.alpha.ig[[2]] must be a vector of length ", 
+        stop(paste("error: tau.sq.alpha.ig[[2]] must be a vector of length ",
       	   p.det, " or 1 with elements corresponding to tau.sq.alphas' scale", sep = ""))
       }
     }
@@ -407,7 +407,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       tau.sq.alpha.b <- rep(tau.sq.alpha.b, p.det)
     }
   } else {
-    if (verbose) {	    
+    if (verbose) {
       message("No prior specified for tau.sq.alpha.ig.\nSetting prior shape to 0.1 and prior scale to 0.1\n")
     }
     tau.sq.alpha.a <- rep(0.1, p.det)
@@ -424,19 +424,19 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       sigma.sq.mu.b <- priors$sigma.sq.mu.ig[[2]]
       if (length(sigma.sq.mu.a) != p.abund.re & length(sigma.sq.mu.a) != 1) {
         if (p.abund.re == 1) {
-        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ", 
+        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ",
         	   p.abund.re, " with elements corresponding to sigma.sq.mus' shape", sep = ""))
         } else {
-        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ", 
+        stop(paste("error: sigma.sq.mu.ig[[1]] must be a vector of length ",
         	   p.abund.re, " or 1 with elements corresponding to sigma.sq.mus' shape", sep = ""))
         }
       }
       if (length(sigma.sq.mu.b) != p.abund.re & length(sigma.sq.mu.b) != 1) {
         if (p.abund.re == 1) {
-          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ",
         	   p.abund.re, " with elements corresponding to sigma.sq.mus' scale", sep = ""))
         } else {
-          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.mu.ig[[2]] must be a vector of length ",
         	   p.abund.re, " or 1with elements corresponding to sigma.sq.mus' scale", sep = ""))
         }
       }
@@ -447,7 +447,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
         sigma.sq.mu.b <- rep(sigma.sq.mu.b, p.abund.re)
       }
   }   else {
-      if (verbose) {	    
+      if (verbose) {
         message("No prior specified for sigma.sq.mu.ig.\nSetting prior shape to 0.1 and prior scale to 0.1\n")
       }
       sigma.sq.mu.a <- rep(0.1, p.abund.re)
@@ -467,19 +467,19 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       sigma.sq.p.b <- priors$sigma.sq.p.ig[[2]]
       if (length(sigma.sq.p.a) != p.det.re & length(sigma.sq.p.a) != 1) {
         if (p.det.re == 1) {
-          stop(paste("error: sigma.sq.p.ig[[1]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.p.ig[[1]] must be a vector of length ",
         	   p.det.re, " with elements corresponding to sigma.sq.ps' shape", sep = ""))
         } else {
-          stop(paste("error: sigma.sq.p.ig[[1]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.p.ig[[1]] must be a vector of length ",
         	   p.det.re, " or 1 with elements corresponding to sigma.sq.ps' shape", sep = ""))
         }
       }
       if (length(sigma.sq.p.b) != p.det.re & length(sigma.sq.p.b) != 1) {
         if (p.det.re == 1) {
-          stop(paste("error: sigma.sq.p.ig[[2]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.p.ig[[2]] must be a vector of length ",
         	     p.det.re, " with elements corresponding to sigma.sq.ps' scale", sep = ""))
         } else {
-          stop(paste("error: sigma.sq.p.ig[[2]] must be a vector of length ", 
+          stop(paste("error: sigma.sq.p.ig[[2]] must be a vector of length ",
         	     p.det.re, " or 1 with elements corresponding to sigma.sq.ps' scale", sep = ""))
         }
       }
@@ -490,7 +490,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
         sigma.sq.p.b <- rep(sigma.sq.p.b, p.det.re)
       }
   }   else {
-      if (verbose) {	    
+      if (verbose) {
         message("No prior specified for sigma.sq.p.ig.\nSetting prior shape to 0.1 and prior scale to 0.1\n")
       }
       sigma.sq.p.a <- rep(0.1, p.det.re)
@@ -509,11 +509,11 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       kappa.a <- priors$kappa.unif[[1]]
       kappa.b <- priors$kappa.unif[[2]]
       if (length(kappa.a) != n.sp & length(kappa.a) != 1) {
-        stop(paste("error: kappa.unif[[1]] must be a vector of length ", 
+        stop(paste("error: kappa.unif[[1]] must be a vector of length ",
         	   n.sp, " or 1 with elements corresponding to kappas' lower bound for each species", sep = ""))
       }
       if (length(kappa.b) != n.sp & length(kappa.b) != 1) {
-        stop(paste("error: kappa.unif[[2]] must be a vector of length ", 
+        stop(paste("error: kappa.unif[[2]] must be a vector of length ",
         	   n.sp, " or 1 with elements corresponding to kappas' upper bound for each species", sep = ""))
       }
       if (length(kappa.a) != n.sp) {
@@ -542,11 +542,11 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   if ("n" %in% names(inits)) {
     N.inits <- inits$n
     if (!is.matrix(N.inits)) {
-      stop(paste("error: initial values for N must be a matrix with dimensions ", 
+      stop(paste("error: initial values for N must be a matrix with dimensions ",
       	   n.sp, " x ", J, sep = ""))
     }
     if (nrow(N.inits) != n.sp | ncol(N.inits) != J) {
-      stop(paste("error: initial values for N must be a matrix with dimensions ", 
+      stop(paste("error: initial values for N must be a matrix with dimensions ",
       	   n.sp, " x ", J, sep = ""))
     }
     N.test <- apply(y.mat, c(1, 2), sum, na.rm = TRUE)
@@ -565,10 +565,10 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     beta.comm.inits <- inits[["beta.comm"]]
     if (length(beta.comm.inits) != p.abund & length(beta.comm.inits) != 1) {
       if (p.abund == 1) {
-        stop(paste("error: initial values for beta.comm must be of length ", p.abund, 
+        stop(paste("error: initial values for beta.comm must be of length ", p.abund,
       	   sep = ""))
       } else {
-        stop(paste("error: initial values for beta.comm must be of length ", p.abund, 
+        stop(paste("error: initial values for beta.comm must be of length ", p.abund,
       	   , " or 1", sep = ""))
       }
     }
@@ -586,10 +586,10 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     alpha.comm.inits <- inits[["alpha.comm"]]
     if (length(alpha.comm.inits) != p.det & length(alpha.comm.inits) != 1) {
       if (p.det == 1) {
-        stop(paste("error: initial values for alpha.comm must be of length ", p.det, 
+        stop(paste("error: initial values for alpha.comm must be of length ", p.det,
       	   sep = ""))
       } else {
-        stop(paste("error: initial values for alpha.comm must be of length ", p.det, 
+        stop(paste("error: initial values for alpha.comm must be of length ", p.det,
 		   " or 1", sep = ""))
       }
     }
@@ -607,10 +607,10 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     tau.sq.beta.inits <- inits[["tau.sq.beta"]]
     if (length(tau.sq.beta.inits) != p.abund & length(tau.sq.beta.inits) != 1) {
       if (p.abund == 1) {
-        stop(paste("error: initial values for tau.sq.beta must be of length ", p.abund, 
+        stop(paste("error: initial values for tau.sq.beta must be of length ", p.abund,
       	   sep = ""))
       } else {
-        stop(paste("error: initial values for tau.sq.beta must be of length ", p.abund, 
+        stop(paste("error: initial values for tau.sq.beta must be of length ", p.abund,
       	   " or 1", sep = ""))
       }
     }
@@ -628,10 +628,10 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     tau.sq.alpha.inits <- inits[["tau.sq.alpha"]]
     if (length(tau.sq.alpha.inits) != p.det & length(tau.sq.alpha.inits) != 1) {
       if (p.det == 1) {
-        stop(paste("error: initial values for tau.sq.alpha must be of length ", p.det, 
+        stop(paste("error: initial values for tau.sq.alpha must be of length ", p.det,
       	   sep = ""))
       } else {
-        stop(paste("error: initial values for tau.sq.alpha must be of length ", p.det, 
+        stop(paste("error: initial values for tau.sq.alpha must be of length ", p.det,
       	   " or 1", sep = ""))
       }
     }
@@ -649,12 +649,12 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     beta.inits <- inits[["beta"]]
     if (is.matrix(beta.inits)) {
       if (ncol(beta.inits) != p.abund | nrow(beta.inits) != n.sp) {
-        stop(paste("error: initial values for beta must be a matrix with dimensions ", 
+        stop(paste("error: initial values for beta must be a matrix with dimensions ",
         	   n.sp, "x", p.abund, " or a single numeric value", sep = ""))
       }
     }
     if (!is.matrix(beta.inits) & length(beta.inits) != 1) {
-      stop(paste("error: initial values for beta must be a matrix with dimensions ", 
+      stop(paste("error: initial values for beta must be a matrix with dimensions ",
       	   n.sp, " x ", p.abund, " or a single numeric value", sep = ""))
     }
     if (length(beta.inits) == 1) {
@@ -672,12 +672,12 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     alpha.inits <- inits[["alpha"]]
     if (is.matrix(alpha.inits)) {
       if (ncol(alpha.inits) != p.det | nrow(alpha.inits) != n.sp) {
-        stop(paste("error: initial values for alpha must be a matrix with dimensions ", 
+        stop(paste("error: initial values for alpha must be a matrix with dimensions ",
         	   n.sp, "x", p.det, " or a single numeric value", sep = ""))
       }
     }
     if (!is.matrix(alpha.inits) & length(alpha.inits) != 1) {
-      stop(paste("error: initial values for alpha must be a matrix with dimensions ", 
+      stop(paste("error: initial values for alpha must be a matrix with dimensions ",
       	   n.sp, " x ", p.det, " or a single numeric value", sep = ""))
     }
     if (length(alpha.inits) == 1) {
@@ -696,15 +696,15 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       sigma.sq.mu.inits <- inits[["sigma.sq.mu"]]
       if (length(sigma.sq.mu.inits) != p.abund.re & length(sigma.sq.mu.inits) != 1) {
         if (p.abund.re == 1) {
-          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.abund.re, 
+          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.abund.re,
       	     sep = ""))
         } else {
-          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.abund.re, 
+          stop(paste("error: initial values for sigma.sq.mu must be of length ", p.abund.re,
       	     " or 1", sep = ""))
         }
       }
       if (length(sigma.sq.mu.inits) != p.abund.re) {
-        sigma.sq.mu.inits <- rep(sigma.sq.mu.inits, p.abund.re)  
+        sigma.sq.mu.inits <- rep(sigma.sq.mu.inits, p.abund.re)
       }
     } else {
       sigma.sq.mu.inits <- runif(p.abund.re, 0.05, 1)
@@ -714,7 +714,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     }
     beta.star.indx <- rep(0:(p.abund.re - 1), n.abund.re.long)
     beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
-    # Starting values for all species 
+    # Starting values for all species
     beta.star.inits <- rep(beta.star.inits, n.sp)
   } else {
     sigma.sq.mu.inits <- 0
@@ -727,10 +727,10 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       sigma.sq.p.inits <- inits[["sigma.sq.p"]]
       if (length(sigma.sq.p.inits) != p.det.re & length(sigma.sq.p.inits) != 1) {
         if (p.det.re == 1) {
-          stop(paste("error: initial values for sigma.sq.p must be of length ", p.det.re, 
+          stop(paste("error: initial values for sigma.sq.p must be of length ", p.det.re,
       	     sep = ""))
         } else {
-          stop(paste("error: initial values for sigma.sq.p must be of length ", p.det.re, 
+          stop(paste("error: initial values for sigma.sq.p must be of length ", p.det.re,
       	     " or 1", sep = ""))
         }
       }
@@ -758,7 +758,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     if ("kappa" %in% names(inits)) {
       kappa.inits <- inits[["kappa"]]
       if (length(kappa.inits) != n.sp & length(kappa.inits) != 1) {
-        stop(paste("error: initial values for kappa must be of length ", n.sp, " or 1", 
+        stop(paste("error: initial values for kappa must be of length ", n.sp, " or 1",
         	   sep = ""))
       }
       if (length(kappa.inits) != n.sp) {
@@ -801,9 +801,9 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     }
     beta.tuning <- tuning$beta
     if (length(beta.tuning) != 1 & length(beta.tuning) != p.abund * n.sp) {
-      stop(paste("error: beta tuning must be a single value or a vector of length ", 
+      stop(paste("error: beta tuning must be a single value or a vector of length ",
         	 p.abund * n.sp, sep = ''))
-    } 
+    }
     if (length(beta.tuning) == 1) {
       beta.tuning <- rep(beta.tuning, p.abund * n.sp)
     }
@@ -813,9 +813,9 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     }
     alpha.tuning <- tuning$alpha
     if (length(alpha.tuning) != 1 & length(alpha.tuning) != p.det * n.sp) {
-      stop(paste("error: alpha tuning must be a single value or a vector of length ", 
+      stop(paste("error: alpha tuning must be a single value or a vector of length ",
         	 p.det * n.sp, sep = ''))
-    } 
+    }
     if (length(alpha.tuning) == 1) {
       alpha.tuning <- rep(alpha.tuning, p.det * n.sp)
     }
@@ -827,10 +827,10 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       beta.star.tuning <- tuning$beta.star
       if (length(beta.star.tuning) != 1) {
         stop("error: beta.star tuning must be a single value")
-      } 
+      }
       beta.star.tuning <- rep(beta.star.tuning, n.abund.re * n.sp)
     } else {
-      beta.star.tuning <- NULL 
+      beta.star.tuning <- NULL
     }
     if (p.det.re > 0) {
       # alpha.star ---------------------------
@@ -840,10 +840,10 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       alpha.star.tuning <- tuning$alpha.star
       if (length(alpha.star.tuning) != 1) {
         stop("error: alpha.star tuning must be a single value")
-      } 
+      }
       alpha.star.tuning <- rep(alpha.star.tuning, n.det.re * n.sp)
     } else {
-      alpha.star.tuning <- NULL 
+      alpha.star.tuning <- NULL
     }
     # kappa ---------------------------
     if (family == 'NB') {
@@ -861,8 +861,8 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       kappa.tuning <- NULL
     }
   }
-  tuning.c <- log(c(beta.tuning, alpha.tuning, 
-		    beta.star.tuning, alpha.star.tuning, 
+  tuning.c <- log(c(beta.tuning, alpha.tuning,
+		    beta.star.tuning, alpha.star.tuning,
 		    kappa.tuning))
   curr.chain <- 1
 
@@ -896,7 +896,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   storage.mode(X.p) <- "double"
   storage.mode(y.max) <- "double"
   storage.mode(offset) <- "double"
-  consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re, 
+  consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re,
 	      p.det, p.det.re, n.det.re)
   storage.mode(consts) <- "integer"
   storage.mode(K) <- "integer"
@@ -927,8 +927,8 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   storage.mode(n.report) <- "integer"
   chain.info <- c(curr.chain, n.chains)
   storage.mode(chain.info) <- "integer"
-  n.post.samples <- length(seq(from = n.burn + 1, 
-      			 to = n.samples, 
+  n.post.samples <- length(seq(from = n.burn + 1,
+      			 to = n.samples,
       			 by = as.integer(n.thin)))
   storage.mode(n.post.samples) <- "integer"
   samples.info <- c(n.burn, n.thin, n.post.samples)
@@ -974,7 +974,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
       alpha.comm.inits <- rnorm(p.det)
       tau.sq.beta.inits <- runif(p.abund, 0.05, 1)
       tau.sq.alpha.inits <- runif(p.det, 0.05, 1)
-      beta.inits <- matrix(rnorm(n.sp * p.abund, beta.comm.inits, 
+      beta.inits <- matrix(rnorm(n.sp * p.abund, beta.comm.inits,
             		     sqrt(tau.sq.beta.inits)), n.sp, p.abund)
       alpha.inits <- matrix(runif(n.sp * p.det, -10, 10), n.sp, p.det)
       if (p.abund.re > 0) {
@@ -994,88 +994,88 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
     }
     storage.mode(chain.info) <- "integer"
     # Check alpha initial values
-    tmp <- .Call("checkMSAlphaDS", y, X.p, X.p.re, X.p.random, y.max, 
+    tmp <- .Call("checkMSAlphaDS", y, X.p, X.p.re, X.p.random, y.max,
 			 consts, K, alpha.inits, alpha.comm.inits,
 			 tau.sq.alpha.inits,
-			 sigma.sq.p.inits, alpha.star.inits, N.inits, 
-			 alpha.star.indx, alpha.level.indx, 
-			 mu.alpha.comm, Sigma.alpha.comm, 
+			 sigma.sq.p.inits, alpha.star.inits, N.inits,
+			 alpha.star.indx, alpha.level.indx,
+			 mu.alpha.comm, Sigma.alpha.comm,
 			 det.func.indx, transect.c, dist.breaks)
     alpha.message <- FALSE
     for (j in 1:n.sp) {
       alpha.check <- ifelse(is.nan(tmp$alpha.like.val)[j, 1], TRUE, FALSE)
       if (i == 1 & alpha.input & alpha.check & verbose & !alpha.message) {
-        message("user-supplied initial values for alpha result in an invalid\nlikelihood. Re-drawing alpha initial values from a Uniform(-10, 10).") 
+        message("user-supplied initial values for alpha result in an invalid\nlikelihood. Re-drawing alpha initial values from a Uniform(-10, 10).")
         alpha.message <- TRUE
       }
       while(alpha.check) {
         alpha.inits[j, ] <- runif(p.det, -10, 10)
-        tmp <- .Call("checkMSAlphaDS", y, X.p, X.p.re, X.p.random, y.max, 
+        tmp <- .Call("checkMSAlphaDS", y, X.p, X.p.re, X.p.random, y.max,
 			 consts, K, alpha.inits, alpha.comm.inits,
 			 tau.sq.alpha.inits,
-			 sigma.sq.p.inits, alpha.star.inits, N.inits, 
-			 alpha.star.indx, alpha.level.indx, 
-			 mu.alpha.comm, Sigma.alpha.comm, 
+			 sigma.sq.p.inits, alpha.star.inits, N.inits,
+			 alpha.star.indx, alpha.level.indx,
+			 mu.alpha.comm, Sigma.alpha.comm,
 			 det.func.indx, transect.c, dist.breaks)
         alpha.check <- ifelse(is.nan(tmp$alpha.like.val)[j, 1], TRUE, FALSE)
       }
     }
     # Run the model in C
-    out.tmp[[i]] <- .Call("msDS", y, X, X.p, X.re, X.p.re, X.random, X.p.random, 
-        		    y.max, offset, consts, K, n.abund.re.long, 
-        		    n.det.re.long, beta.inits, alpha.inits, kappa.inits, 
-      		    N.inits, beta.comm.inits, alpha.comm.inits, 
-      		    tau.sq.beta.inits, tau.sq.alpha.inits, 
-      		    sigma.sq.mu.inits, sigma.sq.p.inits, beta.star.inits, 
-        		    alpha.star.inits, N.long.indx, beta.star.indx, 
-                          beta.level.indx, alpha.star.indx, alpha.level.indx, 
-                          mu.beta.comm, Sigma.beta.comm, mu.alpha.comm, Sigma.alpha.comm, 
-                          sigma.sq.mu.a, sigma.sq.mu.b, 
-        		    sigma.sq.p.a, sigma.sq.p.b, kappa.a, kappa.b, 
+    out.tmp[[i]] <- .Call("msDS", y, X, X.p, X.re, X.p.re, X.random, X.p.random,
+        		    y.max, offset, consts, K, n.abund.re.long,
+        		    n.det.re.long, beta.inits, alpha.inits, kappa.inits,
+      		    N.inits, beta.comm.inits, alpha.comm.inits,
+      		    tau.sq.beta.inits, tau.sq.alpha.inits,
+      		    sigma.sq.mu.inits, sigma.sq.p.inits, beta.star.inits,
+        		    alpha.star.inits, N.long.indx, beta.star.indx,
+                          beta.level.indx, alpha.star.indx, alpha.level.indx,
+                          mu.beta.comm, Sigma.beta.comm, mu.alpha.comm, Sigma.alpha.comm,
+                          sigma.sq.mu.a, sigma.sq.mu.b,
+        		    sigma.sq.p.a, sigma.sq.p.b, kappa.a, kappa.b,
       		    tau.sq.beta.a, tau.sq.beta.b, tau.sq.alpha.a, tau.sq.alpha.b,
         		    det.func.indx, transect.c, dist.breaks,
-                          tuning.c, n.batch, batch.length, accept.rate, 
-                          n.omp.threads, verbose, n.report, 
+                          tuning.c, n.batch, batch.length, accept.rate,
+                          n.omp.threads, verbose, n.report,
       		    samples.info, chain.info, family.c)
     chain.info[1] <- chain.info[1] + 1
-  } # i   
+  } # i
   # Calculate R-Hat ---------------
   out <- list()
   out$rhat <- list()
   if (n.chains > 1) {
-    # as.vector removes the "Upper CI" when there is only 1 variable. 
-    out$rhat$beta.comm <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-    					      mcmc(t(a$beta.comm.samples)))), 
-    			     autoburnin = FALSE)$psrf[, 2])
-    out$rhat$alpha.comm <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-    					      mcmc(t(a$alpha.comm.samples)))), 
-    			     autoburnin = FALSE)$psrf[, 2])
-    out$rhat$tau.sq.beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-    					      mcmc(t(a$tau.sq.beta.samples)))), 
-    			     autoburnin = FALSE)$psrf[, 2])
-    out$rhat$tau.sq.alpha <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-    					      mcmc(t(a$tau.sq.alpha.samples)))), 
-    			     autoburnin = FALSE)$psrf[, 2])
-    out$rhat$beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-    					      mcmc(t(a$beta.samples)))), 
-    			     autoburnin = FALSE)$psrf[, 2])
-    out$rhat$alpha <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-    					      mcmc(t(a$alpha.samples)))), 
-    			      autoburnin = FALSE)$psrf[, 2])
+    # as.vector removes the "Upper CI" when there is only 1 variable.
+    out$rhat$beta.comm <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+    					      mcmc(t(a$beta.comm.samples)))),
+    			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
+    out$rhat$alpha.comm <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+    					      mcmc(t(a$alpha.comm.samples)))),
+    			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
+    out$rhat$tau.sq.beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+    					      mcmc(t(a$tau.sq.beta.samples)))),
+    			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
+    out$rhat$tau.sq.alpha <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+    					      mcmc(t(a$tau.sq.alpha.samples)))),
+    			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
+    out$rhat$beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+    					      mcmc(t(a$beta.samples)))),
+    			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
+    out$rhat$alpha <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+    					      mcmc(t(a$alpha.samples)))),
+    			      autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
     if (p.det.re > 0) {
-    out$rhat$sigma.sq.p <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-    					      mcmc(t(a$sigma.sq.p.samples)))), 
-    			     autoburnin = FALSE)$psrf[, 2])
+    out$rhat$sigma.sq.p <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+    					      mcmc(t(a$sigma.sq.p.samples)))),
+    			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
     }
     if (p.abund.re > 0) {
-    out$rhat$sigma.sq.mu <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-    					      mcmc(t(a$sigma.sq.mu.samples)))), 
-    			     autoburnin = FALSE)$psrf[, 2])
+    out$rhat$sigma.sq.mu <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+    					      mcmc(t(a$sigma.sq.mu.samples)))),
+    			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
     }
     if (family == 'NB') {
-        out$rhat$kappa <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a) 
-        						       mcmc(t(a$kappa.samples)))), 
-        					autoburnin = FALSE)$psrf[, 2])
+        out$rhat$kappa <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+        						       mcmc(t(a$kappa.samples)))),
+        					autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
     }
   } else {
     out$rhat$beta.comm <- rep(NA, p.abund)
@@ -1095,13 +1095,13 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   # Put everything into MCMC objects
   out$beta.comm.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$beta.comm.samples))))
   colnames(out$beta.comm.samples) <- x.names
-  out$alpha.comm.samples <- mcmc(do.call(rbind, 
+  out$alpha.comm.samples <- mcmc(do.call(rbind,
     				lapply(out.tmp, function(a) t(a$alpha.comm.samples))))
   colnames(out$alpha.comm.samples) <- x.p.names
-  out$tau.sq.beta.samples <- mcmc(do.call(rbind, 
+  out$tau.sq.beta.samples <- mcmc(do.call(rbind,
     				lapply(out.tmp, function(a) t(a$tau.sq.beta.samples))))
   colnames(out$tau.sq.beta.samples) <- x.names
-  out$tau.sq.alpha.samples <- mcmc(do.call(rbind, 
+  out$tau.sq.alpha.samples <- mcmc(do.call(rbind,
     				lapply(out.tmp, function(a) t(a$tau.sq.alpha.samples))))
   colnames(out$tau.sq.alpha.samples) <- x.p.names
 
@@ -1116,20 +1116,20 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   colnames(out$alpha.samples) <- coef.names.det
   if (family == 'NB') {
     out$kappa.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$kappa.samples))))
-    colnames(out$kappa.samples) <- paste('kappa', sp.names, sep = '-') 
+    colnames(out$kappa.samples) <- paste('kappa', sp.names, sep = '-')
   }
-  out$N.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$N.samples, 
+  out$N.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$N.samples,
     								dim = c(n.sp, J, n.post.samples))))
   out$N.samples <- aperm(out$N.samples, c(3, 1, 2))
-  out$mu.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$mu.samples, 
+  out$mu.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$mu.samples,
     								dim = c(n.sp, J, n.post.samples))))
   out$mu.samples <- aperm(out$mu.samples, c(3, 1, 2))
 
-  out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples, 
+  out$y.rep.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$y.rep.samples,
         								c(n.sp, J, K + 1, n.post.samples))))
   out$y.rep.samples <- aperm(out$y.rep.samples, c(4, 1, 2, 3))
   out$y.rep.samples <- out$y.rep.samples[, , , -c(K + 1)]
-  out$pi.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$pi.samples, 
+  out$pi.samples <- do.call(abind, lapply(out.tmp, function(a) array(a$pi.samples,
         								c(n.sp, J, K + 1, n.post.samples))))
   out$pi.samples <- aperm(out$pi.samples, c(4, 1, 2, 3))
   out$pi.samples <- out$pi.samples[, , , -c(K + 1)]
@@ -1196,7 +1196,7 @@ msDS <- function(abund.formula, det.formula, data, inits, priors, tuning,
   out$re.det.cols <- re.det.cols
   out$det.func <- det.func
   out$dist.breaks <- dist.breaks
-  out$dist <- family 
+  out$dist <- family
   out$transect <- transect
   if (p.det.re > 0) {
     out$pRE <- TRUE
