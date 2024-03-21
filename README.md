@@ -6,7 +6,7 @@
 [![](http://cranlogs.r-pkg.org/badges/grand-total/spAbundance?color=blue)](https://CRAN.R-project.org/package=spAbundance)
 [![CRAN](https://www.r-pkg.org/badges/version/spAbundance)](https://CRAN.R-project.org/package=spAbundance)
 [![Codecov test
-coverage](https://codecov.io/gh/doserjef/spAbundance/branch/main/graph/badge.svg)](https://codecov.io/gh/doserjef/spAbundance?branch=main)
+coverage](https://codecov.io/gh/doserjef/spAbundance/branch/main/graph/badge.svg)](https://app.codecov.io/gh/doserjef/spAbundance?branch=main)
 
 `spAbundance` fits univariate (i.e., single-species) and multivariate
 (i.e., multi-species) spatial N-mixture models, hierarchical distance
@@ -45,7 +45,7 @@ C++ on a Mac, you can install `XCode` from the Mac app store.
 ## Functionality
 
 | `spAbundance` Function | Description                                                               |
-| ---------------------- | ------------------------------------------------------------------------- |
+|------------------------|---------------------------------------------------------------------------|
 | `DS()`                 | Single-species hierarchical distance sampling (HDS) model                 |
 | `spDS()`               | Single-species spatial HDS model                                          |
 | `msDS()`               | Multi-species HDS model                                                   |
@@ -93,7 +93,7 @@ include this species.
 ``` r
 library(spAbundance)
 # Set seed to get exact same results
-set.seed(100)
+set.seed(500)
 data(neonDWP)
 sp.names <- dimnames(neonDWP$y)[[1]]
 dat.MODO <- neonDWP
@@ -129,7 +129,7 @@ resulting 6,000 samples from the joint posterior. We fit the model using
 `?spDS` for more detailed information on all function arguments.
 
 ``` r
-# Run the model (Approx run time: 1.2 min)
+# Run the model (Approx run time: 1 min)
 out <- spDS(abund.formula = MODO.abund.formula,
             det.formula = MODO.det.formula,
             data = dat.MODO, n.batch = 800, batch.length = 25,
@@ -158,25 +158,25 @@ summary(out)
 #> Thinning Rate: 5
 #> Number of Chains: 3
 #> Total Posterior Samples: 6000
-#> Run Time (min): 4.2247
+#> Run Time (min): 0.7641
 #> 
 #> Abundance (log scale): 
 #>                  Mean     SD    2.5%     50%   97.5%   Rhat ESS
-#> (Intercept)   -1.7565 0.3078 -2.3898 -1.7507 -1.1726 1.0176  76
-#> scale(forest) -0.1111 0.1822 -0.4706 -0.1124  0.2704 1.0459 210
-#> scale(grass)   0.1925 0.1857 -0.1689  0.1946  0.5537 1.1173 236
+#> (Intercept)   -1.8186 0.3428 -2.5560 -1.8020 -1.1956 1.0692  64
+#> scale(forest) -0.1999 0.2056 -0.5818 -0.2102  0.2443 1.0292 160
+#> scale(grass)   0.1206 0.1939 -0.2720  0.1244  0.4938 1.0210 229
 #> 
 #> Detection (log scale): 
 #>                    Mean     SD    2.5%     50%   97.5%   Rhat ESS
-#> (Intercept)     -2.5567 0.1140 -2.7680 -2.5600 -2.3285 1.0044 272
-#> scale(day)      -0.1717 0.0847 -0.3617 -0.1666 -0.0216 1.0246 311
-#> I(scale(day)^2)  0.0202 0.0867 -0.1436  0.0158  0.1991 1.0262 319
-#> scale(wind)     -0.1522 0.0816 -0.3276 -0.1487 -0.0046 1.0260 575
+#> (Intercept)     -2.5392 0.1196 -2.7602 -2.5436 -2.2815 1.0850 204
+#> scale(day)      -0.1658 0.0807 -0.3380 -0.1629 -0.0187 1.0341 364
+#> I(scale(day)^2)  0.0011 0.0828 -0.1530 -0.0011  0.1648 1.0391 352
+#> scale(wind)     -0.1352 0.0769 -0.2931 -0.1344  0.0126 1.0037 534
 #> 
 #> Spatial Covariance: 
 #>            Mean     SD   2.5%   50%  97.5%   Rhat ESS
-#> sigma.sq 0.4830 0.2527 0.1734 0.425 1.1549 1.0351 252
-#> phi      0.0014 0.0014 0.0003 0.001 0.0059 1.0445 188
+#> sigma.sq 0.4941 0.2648 0.1725 0.431 1.1929 1.0156 169
+#> phi      0.0016 0.0018 0.0003 0.001 0.0072 1.0644 102
 ```
 
 ### Posterior predictive check
@@ -202,7 +202,7 @@ summary(ppc.out)
 #> Number of Chains: 3
 #> Total Posterior Samples: 6000
 #> 
-#> Bayesian p-value:  0.5208 
+#> Bayesian p-value:  0.535 
 #> Fit statistic:  freeman-tukey
 ```
 
@@ -216,7 +216,7 @@ waicAbund(out)
 #> N.max not specified. Setting upper index of integration of N to 10 plus
 #> the largest estimated abundance value at each site in object$N.samples
 #>       elpd         pD       WAIC 
-#> -168.03803   13.45534  362.98673
+#> -167.74186   14.03248  363.54866
 ```
 
 ### Prediction

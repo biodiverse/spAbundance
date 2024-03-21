@@ -76,7 +76,7 @@ To get started with `spAbundance` we load the package and an example data set. W
 ```{r}
 library(spAbundance)
 # Set seed to get exact same results
-set.seed(100)
+set.seed(500)
 data(neonDWP)
 sp.names <- dimnames(neonDWP$y)[[1]]
 dat.MODO <- neonDWP
@@ -96,7 +96,7 @@ MODO.det.formula <- ~ scale(day) + I(scale(day)^2) + scale(wind)
 We run the model using an Adaptive MCMC sampler with a target acceptance rate of 0.43. We run 3 chains of the model each for 20,000 iterations split into 800 batches each of length 25. For each chain, we discard the first 10,000 iterations as burn-in and use a thinning rate of 5 for a resulting 6,000 samples from the joint posterior. We fit the model using 15 nearest neighbors and an exponential correlation function. Run `?spDS` for more detailed information on all function arguments.
 
 ```{r}
-# Run the model (Approx run time: 1.2 min)
+# Run the model (Approx run time: 1 min)
 out <- spDS(abund.formula = MODO.abund.formula,
             det.formula = MODO.det.formula,
             data = dat.MODO, n.batch = 800, batch.length = 25,

@@ -201,7 +201,7 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
     }
     if (length(mu.RE$levels) > 1) {
       for (j in 2:length(mu.RE$levels)) {
-        X.re[, j] <- X.re[, j] + max(X.re[, j - 1], na.rm = TRUE)
+        X.re[, , j] <- X.re[, , j] + max(X.re[, , j - 1], na.rm = TRUE)
       }
     }
     if (p.nmix.re > 1) {
