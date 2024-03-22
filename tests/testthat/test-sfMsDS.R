@@ -2417,7 +2417,7 @@ test_that("fitted works for g", {
 test_that("predict works for g", {
   X.0 <- cbind(dat$X, dat$X.re)
   colnames(X.0) <- c('(Intercept)', 'abund.cov.1', 'abund.factor.1', 'abund.factor.2')
-  pred.out <- predict(out, X.0, coords.0, verbose = FALSE)
+  pred.out <- predict(out, X.0, dat$coords, verbose = FALSE)
   expect_type(pred.out, "list")
   expect_equal(dim(pred.out$mu.0.samples), c(out$n.post * out$n.chains, n.sp, J))
   expect_equal(dim(pred.out$N.0.samples), c(out$n.post * out$n.chains, n.sp, J))
@@ -2429,4 +2429,3 @@ test_that("detection prediction works", {
   expect_type(pred.out, 'list')
   expect_equal(dim(pred.out$sigma.0.samples), c(out$n.post * out$n.chains, n.sp, J))
 })
-
