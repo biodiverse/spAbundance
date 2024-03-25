@@ -506,6 +506,7 @@ extern "C" {
          *Update latent effects (w) 
          *******************************************************************/
         for (ii = 0; ii < J; ii++) {
+          zeros(tmp_Nq, Nq);
           // tmp_qq = lambda' S_beta lambda 
           for (i = 0; i < N; i++) {
             if (z[ii * N + i] == 1.0) {
@@ -527,6 +528,7 @@ extern "C" {
           if (info != 0){error("c++ error: dpotri var failed\n");}
 
           // mu
+	  zeros(tmp_N, N);
           for (k = 0; k < N; k++) {
             if (z[ii * N + k] == 1.0) {
               tmp_N[k] = (y[ii * N + k] - F77_NAME(ddot)(&p, &X[ii], &J, &beta[k], &N) - betaStarSites[k * J + ii]) / tauSq[k];
