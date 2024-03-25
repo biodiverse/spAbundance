@@ -331,7 +331,6 @@ Note the somewhat cryptic message that is displayed to the screen when you run t
 Now let's do a bit of model comparison. We will fit the same model as before, except now we will use a negative binomial distribution. We fit the model below, setting `verbose = FALSE` to hide the messages printed by the model fitting functions.
 
 ```{r}
-# Approx run time: 1 minute
 out.2 <- NMix(abund.formula = ~ abund.cov.1 + (1 | abund.factor.1),
               det.formula = det.formula, data = data.one.sp, 
               inits = inits, priors = priors, n.batch = n.batch, 
@@ -507,7 +506,7 @@ We will use the same amount of burn-in and thinning as we did with the non-spati
 n.burn <- 20000
 n.thin <- 20
 n.chains <- 3
-# Approx run time: 8 min
+# Approx run time: 3.5 min
 out.sp <- spNMix(abund.formula = abund.formula, 
                  det.formula = det.formula, 
                  data = data.one.sp, 
@@ -666,7 +665,7 @@ All that's now left to do is specify the number of threads to use (`n.omp.thread
 ```{r}
 # Specify initial tuning values
 ms.tuning <- list(beta = 0.3, alpha = 0.3, beta.star = 0.5, kappa = 0.5)
-# Approx. run time:  6.5 min
+# Approx. run time:  3 min
 out.ms <- msNMix(abund.formula = abund.ms.formula,
                  det.formula = det.ms.formula,
                  data = dataNMixSim,
@@ -718,7 +717,7 @@ waicAbund(out)
 Here we see nearly identical WAIC values for species 1 across a single-species model vs. a multi-species model. Next, we fit a multi-species negative binomial N-mixture model for comparison with the Poisson multi-species model
 
 ```{r}
-# Approx. run time:  6.5 min
+# Approx. run time:  3 min
 out.ms.nb <- msNMix(abund.formula = abund.ms.formula,
                     det.formula = det.ms.formula,
                     data = dataNMixSim,
@@ -861,7 +860,7 @@ We finish up by specifying the tuning values, where now we specify the initial t
 ```{r}
 # Specify initial tuning values
 ms.tuning <- list(beta = 0.3, alpha = 0.3, beta.star = 0.5, kappa = 0.5, w = 0.5, lambda = 0.5)
-# Approx. run time: ~11 min
+# Approx. run time: ~4.5 min
 out.lf.ms <- lfMsNMix(abund.formula = abund.ms.formula,
                       det.formula = det.ms.formula,
                       data = dataNMixSim,
@@ -1044,7 +1043,7 @@ We lastly specify the tuning values and run the model for 40,000 iterations with
 # Specify initial tuning values
 ms.tuning <- list(beta = 0.3, alpha = 0.3, beta.star = 0.5, kappa = 0.5, 
                   w = 0.5, lambda = 0.5, phi = 0.5)
-# Approx. run time: ~30 min
+# Approx. run time: ~13 min
 out.sf.ms <- sfMsNMix(abund.formula = abund.ms.formula,
                       det.formula = det.ms.formula,
                       data = dataNMixSim,

@@ -434,7 +434,7 @@ We will use the same amount of burn-in and thinning as we did with the non-spati
 n.burn <- 10000
 n.thin <- 10
 n.chains <- 3
-# Approx run time: 1.5 minutes
+# Approx run time: 1 minute
 out.sp <- spAbund(formula = howa.formula,
                   data = data.HOWA,
                   inits = inits,
@@ -590,7 +590,7 @@ All that's now left to do is specify the number of threads to use (`n.omp.thread
 ```{r}
 # Specify initial tuning values
 ms.tuning <- list(beta = 0.3, beta.star = 0.5, kappa = 0.5)
-# Approx. run time:  2 min
+# Approx. run time:  1 min
 out.ms <- msAbund(formula = ms.formula,
                   data = bbsData,
                   inits = ms.inits,
@@ -631,7 +631,7 @@ summary(ppc.ms.out)
 Model selection (sometimes also called model comparison) proceeds exactly as before using WAIC. We compare our previous model to the same model, but now use a negative binomial distribution. Note that for multivariate models the logical argument `by.sp` allows us to calculate WAIC individually for each species if set to `TRUE`.
 
 ```{r}
-# Approx. run time:  2 min
+# Approx. run time:  1 min
 out.ms.nb <- msAbund(formula = ms.formula,
                      data = bbsData,
                      inits = ms.inits,
@@ -770,7 +770,7 @@ We finish up by specifying the tuning values, where now we specify the initial t
 ```{r}
 # Specify initial tuning values
 ms.tuning <- list(beta = 0.3, beta.star = 0.5, kappa = 0.5, w = 0.5, lambda = 0.5)
-# Approx. run time: 3 min
+# Approx. run time: 1.5 min
 out.lf.ms <- lfMsAbund(formula = ms.formula,
                        data = bbsData,
                        inits = ms.inits,
@@ -945,7 +945,7 @@ We lastly specify the tuning values and run the model for 20,000 iterations with
 # Specify initial tuning values
 ms.tuning <- list(beta = 0.3, beta.star = 0.5, kappa = 0.5,
                   w = 0.5, lambda = 0.5, phi = 0.5)
-# Approx. run time: ~10 min
+# Approx. run time: ~4.5 min
 out.sf.ms <- sfMsAbund(formula = ms.formula,
                       data = bbsData,
                       inits = ms.inits,

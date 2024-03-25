@@ -193,6 +193,18 @@ lfMsAbundGaussian <- function(formula, data, inits, priors, tuning, n.factors,
   }
   names(priors) <- tolower(names(priors))
 
+  # Independent beta parameters -----
+  if ('independent.betas' %in% names(priors)) {
+    if (priors$independent.betas == TRUE) {
+      message("Beta parameters will be estimated independently\n")
+      ind.betas <- TRUE
+    } else if (priors$independent.betas == FALSE) {
+      ind.betas <- FALSE
+    }
+  } else {
+    ind.betas <- FALSE
+  }
+
   # beta.comm -----------------------
   if ("beta.comm.normal" %in% names(priors)) {
     if (!is.list(priors$beta.comm.normal) | length(priors$beta.comm.normal) != 2) {
@@ -226,7 +238,7 @@ lfMsAbundGaussian <- function(formula, data, inits, priors, tuning, n.factors,
     }
     Sigma.beta.comm <- sigma.beta.comm * diag(p)
   } else {
-    if (verbose) {
+    if (verbose & !ind.betas) {
       message("No prior specified for beta.comm.normal.\nSetting prior mean to 0 and prior variance to 1000\n")
     }
     mu.beta.comm <- rep(0, p)
@@ -266,7 +278,7 @@ lfMsAbundGaussian <- function(formula, data, inits, priors, tuning, n.factors,
       tau.sq.beta.b <- rep(tau.sq.beta.b, p)
     }
   } else {
-    if (verbose) {
+    if (verbose & !ind.betas) {
       message("No prior specified for tau.sq.beta.ig.\nSetting prior shape to 0.1 and prior scale to 0.1\n")
     }
     tau.sq.beta.a <- rep(0.1, p)
@@ -551,7 +563,7 @@ lfMsAbundGaussian <- function(formula, data, inits, priors, tuning, n.factors,
   storage.mode(y) <- "double"
   storage.mode(X) <- "double"
   storage.mode(z) <- 'double'
-  consts <- c(N, J, p, p.re, n.re, q, save.fitted)
+  consts <- c(N, J, p, p.re, n.re, q, save.fitted, ind.betas)
   storage.mode(consts) <- "integer"
   storage.mode(beta.inits) <- "double"
   storage.mode(beta.comm.inits) <- "double"
@@ -603,8 +615,10 @@ lfMsAbundGaussian <- function(formula, data, inits, priors, tuning, n.factors,
   for (i in 1:n.chains) {
     # Change initial values if i > 1
     if ((i > 1) & (!fix.inits)) {
-      beta.comm.inits <- rnorm(p, mu.beta.comm, sqrt(sigma.beta.comm))
-      tau.sq.beta.inits <- runif(p, 0.5, 10)
+      if (!ind.betas) { 
+        beta.comm.inits <- rnorm(p, mu.beta.comm, sqrt(sigma.beta.comm))
+        tau.sq.beta.inits <- runif(p, 0.5, 10)
+      }
       beta.inits <- matrix(rnorm(N * p, beta.comm.inits,
             		     sqrt(tau.sq.beta.inits)), N, p)
       beta.inits <- c(beta.inits)
@@ -637,12 +651,17 @@ lfMsAbundGaussian <- function(formula, data, inits, priors, tuning, n.factors,
   out$rhat <- list()
   if (n.chains > 1) {
     # as.vector removes the "Upper CI" when there is only 1 variable.
-    out$rhat$beta.comm <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
-    					      mcmc(t(a$beta.comm.samples)))),
-    			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
-    out$rhat$tau.sq.beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
-    					      mcmc(t(a$tau.sq.beta.samples)))),
-    			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
+    if (!ind.betas) {
+      out$rhat$beta.comm <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+      					      mcmc(t(a$beta.comm.samples)))),
+      			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
+      out$rhat$tau.sq.beta <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
+      					      mcmc(t(a$tau.sq.beta.samples)))),
+      			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])
+    } else {
+      out$rhat$beta.comm <- rep(NA, p)
+      out$rhat$tau.sq.beta <- rep(NA, p)
+    }
     out$rhat$tau.sq <- as.vector(gelman.diag(mcmc.list(lapply(out.tmp, function(a)
     					      mcmc(t(a$tau.sq.samples)))),
     			     autoburnin = FALSE, multivariate = FALSE)$psrf[, 2])

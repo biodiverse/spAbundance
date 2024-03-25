@@ -1,7 +1,7 @@
 Package: spAbundance
 Type: Package
 Title: Univariate and Multivariate Spatial Modeling of Species Abundance 
-Version: 0.1.1
+Version: 0.1.2
 Authors@R: c(person("Jeffrey", "Doser", role=c("aut", "cre"), email="doserjef@msu.edu"), person("Andrew", "Finley", role = c("aut")))
 Description: Fits single-species (univariate) and multi-species (multivariate) non-spatial and spatial abundance models in a Bayesian framework using Markov Chain Monte Carlo (MCMC). Spatial models are fit using Nearest Neighbor Gaussian Processes (NNGPs). Details on NNGP models are given in Datta, Banerjee, Finley, and Gelfand (2016) <doi:10.1080/01621459.2015.1044091> and Finley, Datta, and Banerjee (2020) <arXiv:2001.09111>. Fits single-species and multi-species spatial and non-spatial versions of generalized linear mixed models (Gaussian, Poisson, Negative Binomial), N-mixture models (Royle 2004 <doi:10.1111/j.0006-341X.2004.00142.x>) and hierarchical distance sampling models (Royle, Dawson, Bates (2004) <doi:10.1890/03-3127>). Multi-species spatial models are fit using a spatial factor modeling approach with NNGPs for computational efficiency. 
 License: GPL (>= 3)
