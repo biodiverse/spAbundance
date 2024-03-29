@@ -573,6 +573,8 @@ extern "C" {
            *mu
            *****************************/
           // zStar - X %*% beta
+	  zeros(tmp_J, J); 
+	  zeros(tmp_Jq, Jq);
           for (j = 0; j < J; j++) {
             if (z[j * N + i] == 1.0) {
               tmp_J[j] = y[j * N + i] - F77_NAME(ddot)(&p, &X[j], &J, &beta[i], &N) -
@@ -586,10 +588,10 @@ extern "C" {
 
           // S_beta %*% W' = tmp_Jq
           // aka multiply W[j, ] by omegaOcc[j] of the current species you're on. 
-          for (j = 0, l = 0; j < J; j++) {
+          for (j = 0; j < J; j++) {
             if (z[j * N + i] == 1.0) {
-              for (ll = 0; ll < q; ll++, l++) {
-                tmp_Jq[l] = w[j * q + ll] / tauSq[i];  
+              for (ll = 0; ll < q; ll++) {
+                tmp_Jq[j * q + ll] = w[j * q + ll] / tauSq[i];  
               }
 	    }
           }

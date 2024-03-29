@@ -19,11 +19,11 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
 			     'msAbund', 'lfMsAbund', 
 			     'sfMsAbund', 'msNMix', 
 			     'lfMsNMix', 'sfMsNMix', 'DS', 'spDS', 
-			     'msDS', 'lfMsDS', 'sfMsDS', 'svcAbund'))) {
-    stop("error: object must be one of the following classes: abund, spAbund, NMix, spNMix, msAbund, lfMsAbund, sfMsAbund, msNMix, lfMsNMix, sfMsNMix, DS, spDS, msDS, lfMsDS, sfMsDS, svcAbund\n")
+			     'msDS', 'lfMsDS', 'sfMsDS', 'svcAbund', 'svcMsAbund'))) {
+    stop("error: object must be one of the following classes: abund, spAbund, NMix, spNMix, msAbund, lfMsAbund, sfMsAbund, msNMix, lfMsNMix, sfMsNMix, DS, spDS, msDS, lfMsDS, sfMsDS, svcAbund, svcMsAbund\n")
   }
 
-  if (!(class(object) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund', 'sfMsAbund', 'svcAbund'))) {
+  if (!(class(object) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund', 'sfMsAbund', 'svcAbund', 'svcMsAbund'))) {
     if (missing(N.max)) {
       message("N.max not specified. Setting upper index of integration of N to 10 plus\nthe largest estimated abundance value at each site in object$N.samples")
       if (class(object) %in% c('msNMix', 'lfMsNMix', 'sfMsNMix', 
@@ -86,7 +86,7 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
   }
 
   # Multi-species abundance GLMs ------------------------------------------
-  if (class(object) %in% c('msAbund', 'lfMsAbund', 'sfMsAbund')) {
+  if (class(object) %in% c('msAbund', 'lfMsAbund', 'sfMsAbund', 'svcMsAbund')) {
     if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
       if (object$dist == 'zi-Gaussian') {
         message("Calculated WAIC is only for stage 2 of the hurdle model\n")
