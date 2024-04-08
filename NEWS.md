@@ -3,6 +3,7 @@
 + Added in the `independent.betas` tag into the `priors` list for certain multi-species model types to allow for specifying an independent prior on the species-specific random effects as opposed to treating species-specific effects as random effects. This can be useful under certain circumstances when the distribution of effects across species may not be adequately represented by a Gaussian distribution. This tag is available for the following functions: `lfMsAbund` (Gaussian only), `sfMsAbund` (Gaussian only), and `svcMsAbund`.
 + Fixed a bug in zero-inflated Gaussian latent factor abundance models (`lfMsAbund`). 
 + Fixed a bug in `waicAbund()` that prevented it from working with `svcMsAbund` models.
++ Fixed minor issues in C++ to pass CRAN additional checks.
 
 # spAbundance 0.1.1
 

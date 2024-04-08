@@ -23,7 +23,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"msNMix", (DL_FUNC) &msNMix, 53},
     {"lfMsNMix", (DL_FUNC) &lfMsNMix, 55},
     {"sfMsNMixNNGP", (DL_FUNC) &sfMsNMixNNGP, 65},
-    {"sfMsNMixNNGPPredict", (DL_FUNC) &sfMsNMixNNGPPredict, 22},
+    {"sfMsNMixNNGPPredict", (DL_FUNC) &sfMsNMixNNGPPredict, 24},
     {"DS", (DL_FUNC) &DS, 49},
     {"spDSNNGP", (DL_FUNC) &spDSNNGP, 63},
     {"msDS", (DL_FUNC) &msDS, 57},
