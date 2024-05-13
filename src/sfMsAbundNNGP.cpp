@@ -257,46 +257,46 @@ extern "C" {
     // Community level
     SEXP betaCommSamples_r; 
     PROTECT(betaCommSamples_r = allocMatrix(REALSXP, pAbund, nPost)); nProtect++;
-    zeros(REAL(betaCommSamples_r), pAbund * nPost);
+    memset(REAL(betaCommSamples_r), 0.0, pAbund * nPost * sizeof(double));
     SEXP tauSqBetaSamples_r; 
     PROTECT(tauSqBetaSamples_r = allocMatrix(REALSXP, pAbund, nPost)); nProtect++; 
-    zeros(REAL(tauSqBetaSamples_r), pAbund * nPost);
+    memset(REAL(tauSqBetaSamples_r), 0.0, pAbund * nPost * sizeof(double));
     // Species level
     SEXP betaSamples_r;
     PROTECT(betaSamples_r = allocMatrix(REALSXP, pAbundnSp, nPost)); nProtect++;
-    zeros(REAL(betaSamples_r), pAbundnSp * nPost);
+    memset(REAL(betaSamples_r), 0.0, pAbundnSp * nPost * sizeof(double));
     SEXP yRepSamples_r; 
     SEXP muSamples_r; 
     SEXP likeSamples_r;
     if (saveFitted == 1) {
       PROTECT(yRepSamples_r = allocMatrix(REALSXP, nObsnSp, nPost)); nProtect++; 
-      zeros(REAL(yRepSamples_r), nObsnSp * nPost);
+      memset(REAL(yRepSamples_r), 0.0, nObsnSp * nPost * sizeof(double));
       PROTECT(muSamples_r = allocMatrix(REALSXP, nObsnSp, nPost)); nProtect++; 
-      zeros(REAL(muSamples_r), nObsnSp * nPost);
+      memset(REAL(muSamples_r), 0.0, nObsnSp * nPost * sizeof(double));
       PROTECT(likeSamples_r = allocMatrix(REALSXP, nObsnSp, nPost)); nProtect++;
-      zeros(REAL(likeSamples_r), nObsnSp * nPost);
+      memset(REAL(likeSamples_r), 0.0, nObsnSp * nPost * sizeof(double));
     }
     // Spatial parameters
     SEXP lambdaSamples_r; 
     PROTECT(lambdaSamples_r = allocMatrix(REALSXP, nSpq, nPost)); nProtect++;
-    zeros(REAL(lambdaSamples_r), nSpq * nPost);
+    memset(REAL(lambdaSamples_r), 0.0, nSpq * nPost * sizeof(double));
     SEXP wSamples_r; 
     PROTECT(wSamples_r = allocMatrix(REALSXP, Jq, nPost)); nProtect++; 
-    zeros(REAL(wSamples_r), Jq * nPost);
+    memset(REAL(wSamples_r), 0.0, Jq * nPost * sizeof(double));
     // Abundance random effects
     SEXP sigmaSqMuSamples_r; 
     SEXP betaStarSamples_r; 
     if (pAbundRE > 0) {
       PROTECT(sigmaSqMuSamples_r = allocMatrix(REALSXP, pAbundRE, nPost)); nProtect++;
-      zeros(REAL(sigmaSqMuSamples_r), pAbundRE * nPost);
+      memset(REAL(sigmaSqMuSamples_r), 0.0, pAbundRE * nPost * sizeof(double));
       PROTECT(betaStarSamples_r = allocMatrix(REALSXP, nAbundREnSp, nPost)); nProtect++;
-      zeros(REAL(betaStarSamples_r), nAbundREnSp * nPost);
+      memset(REAL(betaStarSamples_r), 0.0, nAbundREnSp * nPost * sizeof(double));
     }
     // Overdispersion
     SEXP kappaSamples_r;
     if (family == 1) {
       PROTECT(kappaSamples_r = allocMatrix(REALSXP, nSp, nPost)); nProtect++;
-      zeros(REAL(kappaSamples_r), nSp * nPost);
+      memset(REAL(kappaSamples_r), 0.0, nSp * nPost * sizeof(double));
     }
     
     /**********************************************************************
@@ -377,6 +377,7 @@ extern "C" {
     SEXP thetaSamples_r; 
     PROTECT(thetaSamples_r = allocMatrix(REALSXP, nThetaqSave, nPost)); nProtect++; 
     zeros(REAL(thetaSamples_r), nThetaqSave * nPost);
+    memset(REAL(thetaSamples_r), 0.0, nThetaqSave * nPost * sizeof(double));
     // Species-level spatial random effects
     double *wStar = (double *) R_alloc(JnSp, sizeof(double)); zeros(wStar, JnSp);
     // Multiply Lambda %*% w[j] to get wStar. 
@@ -465,10 +466,10 @@ extern "C" {
     double *accept = (double *) R_alloc(nAMCMC, sizeof(double)); zeros(accept, nAMCMC); 
     SEXP acceptSamples_r; 
     PROTECT(acceptSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
-    zeros(REAL(acceptSamples_r), nAMCMC * nBatch);
+    memset(REAL(acceptSamples_r), 0.0, nAMCMC * nBatch * sizeof(double));
     SEXP tuningSamples_r; 
     PROTECT(tuningSamples_r = allocMatrix(REALSXP, nAMCMC, nBatch)); nProtect++; 
-    zeros(REAL(tuningSamples_r), nAMCMC * nBatch);
+    memset(REAL(tuningSamples_r), 0.0, nAMCMC * nBatch * sizeof(double));
     // Set the initial candidate values for everything to the inital values. 
     double *betaCand = (double *) R_alloc(pAbund * nSp, sizeof(double)); 
     // beta is sorted by parameter, then species within parameter.
@@ -513,6 +514,71 @@ extern "C" {
       phiCand[ll] = phi[ll];
       nuCand[ll] = nu[ll];
     }
+
+
+    /**********************************************************************
+     * Make final return object 
+     * *******************************************************************/
+    SEXP result_r, resultName_r;
+    int nResultListObjs = 11;
+    if (pAbundRE > 0) {
+      nResultListObjs += 2;
+    }
+    if (family == 1) {
+      nResultListObjs += 1;
+    }
+
+    PROTECT(result_r = allocVector(VECSXP, nResultListObjs)); nProtect++;
+    PROTECT(resultName_r = allocVector(VECSXP, nResultListObjs)); nProtect++;
+
+    SET_VECTOR_ELT(result_r, 0, betaCommSamples_r);
+    SET_VECTOR_ELT(result_r, 1, tauSqBetaSamples_r);
+    SET_VECTOR_ELT(result_r, 2, betaSamples_r);
+    if (saveFitted == 1) {
+      SET_VECTOR_ELT(result_r, 3, yRepSamples_r);
+      SET_VECTOR_ELT(result_r, 4, muSamples_r);
+      SET_VECTOR_ELT(result_r, 10, likeSamples_r); 
+    }
+    SET_VECTOR_ELT(result_r, 5, lambdaSamples_r);
+    SET_VECTOR_ELT(result_r, 6, wSamples_r); 
+    SET_VECTOR_ELT(result_r, 7, thetaSamples_r); 
+    SET_VECTOR_ELT(result_r, 8, tuningSamples_r); 
+    SET_VECTOR_ELT(result_r, 9, acceptSamples_r); 
+    if (pAbundRE > 0) {
+      SET_VECTOR_ELT(result_r, 11, sigmaSqMuSamples_r);
+      SET_VECTOR_ELT(result_r, 12, betaStarSamples_r);
+    }
+    if (family == 1) {
+      if (pAbundRE > 0) {
+        tmp_0 = 13;
+      } else {
+        tmp_0 = 11;
+      }
+      SET_VECTOR_ELT(result_r, tmp_0, kappaSamples_r);
+    }
+
+    SET_VECTOR_ELT(resultName_r, 0, mkChar("beta.comm.samples")); 
+    SET_VECTOR_ELT(resultName_r, 1, mkChar("tau.sq.beta.samples")); 
+    SET_VECTOR_ELT(resultName_r, 2, mkChar("beta.samples")); 
+    if (saveFitted == 1) {
+      SET_VECTOR_ELT(resultName_r, 3, mkChar("y.rep.samples")); 
+      SET_VECTOR_ELT(resultName_r, 4, mkChar("mu.samples")); 
+      SET_VECTOR_ELT(resultName_r, 10, mkChar("like.samples")); 
+    }
+    SET_VECTOR_ELT(resultName_r, 5, mkChar("lambda.samples")); 
+    SET_VECTOR_ELT(resultName_r, 6, mkChar("w.samples")); 
+    SET_VECTOR_ELT(resultName_r, 7, mkChar("theta.samples")); 
+    SET_VECTOR_ELT(resultName_r, 8, mkChar("tune")); 
+    SET_VECTOR_ELT(resultName_r, 9, mkChar("accept")); 
+    if (pAbundRE > 0) {
+      SET_VECTOR_ELT(resultName_r, 11, mkChar("sigma.sq.mu.samples")); 
+      SET_VECTOR_ELT(resultName_r, 12, mkChar("beta.star.samples")); 
+    }
+    if (family == 1) {
+      SET_VECTOR_ELT(resultName_r, tmp_0, mkChar("kappa.samples")); 
+    }
+   
+    namesgets(result_r, resultName_r);
     
     GetRNGstate();
 
@@ -1059,18 +1125,7 @@ extern "C" {
     }
     PutRNGstate();
 
-    SEXP result_r, resultName_r;
-    int nResultListObjs = 11;
-    if (pAbundRE > 0) {
-      nResultListObjs += 2;
-    }
-    if (family == 1) {
-      nResultListObjs += 1;
-    }
-
-    PROTECT(result_r = allocVector(VECSXP, nResultListObjs)); nProtect++;
-    PROTECT(resultName_r = allocVector(VECSXP, nResultListObjs)); nProtect++;
-
+    // Setting components of the final output list after filling all the arrays in.
     SET_VECTOR_ELT(result_r, 0, betaCommSamples_r);
     SET_VECTOR_ELT(result_r, 1, tauSqBetaSamples_r);
     SET_VECTOR_ELT(result_r, 2, betaSamples_r);
@@ -1097,29 +1152,6 @@ extern "C" {
       SET_VECTOR_ELT(result_r, tmp_0, kappaSamples_r);
     }
 
-    SET_VECTOR_ELT(resultName_r, 0, mkChar("beta.comm.samples")); 
-    SET_VECTOR_ELT(resultName_r, 1, mkChar("tau.sq.beta.samples")); 
-    SET_VECTOR_ELT(resultName_r, 2, mkChar("beta.samples")); 
-    if (saveFitted == 1) {
-      SET_VECTOR_ELT(resultName_r, 3, mkChar("y.rep.samples")); 
-      SET_VECTOR_ELT(resultName_r, 4, mkChar("mu.samples")); 
-      SET_VECTOR_ELT(resultName_r, 10, mkChar("like.samples")); 
-    }
-    SET_VECTOR_ELT(resultName_r, 5, mkChar("lambda.samples")); 
-    SET_VECTOR_ELT(resultName_r, 6, mkChar("w.samples")); 
-    SET_VECTOR_ELT(resultName_r, 7, mkChar("theta.samples")); 
-    SET_VECTOR_ELT(resultName_r, 8, mkChar("tune")); 
-    SET_VECTOR_ELT(resultName_r, 9, mkChar("accept")); 
-    if (pAbundRE > 0) {
-      SET_VECTOR_ELT(resultName_r, 11, mkChar("sigma.sq.mu.samples")); 
-      SET_VECTOR_ELT(resultName_r, 12, mkChar("beta.star.samples")); 
-    }
-    if (family == 1) {
-      SET_VECTOR_ELT(resultName_r, tmp_0, mkChar("kappa.samples")); 
-    }
-   
-    namesgets(result_r, resultName_r);
-    
     UNPROTECT(nProtect);
     
     return(result_r);
