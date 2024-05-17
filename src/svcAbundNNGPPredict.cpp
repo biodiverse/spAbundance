@@ -6,6 +6,7 @@
 #include <omp.h>
 #endif
 
+#define R_NO_REMAP
 #include <R.h>
 #include <Rmath.h>
 #include <Rinternals.h>
@@ -18,22 +19,22 @@
 
 extern "C" {
 
-  SEXP svcAbundNNGPPredict(SEXP coords_r, SEXP J_r, SEXP family_r, 
-		           SEXP pAbund_r, SEXP pTilde_r, 
-		           SEXP m_r, SEXP X0_r, SEXP Xw0_r, SEXP coords0_r, 
-			   SEXP J0_r, SEXP nnIndx0_r, SEXP betaSamples_r, 
-			   SEXP thetaSamples_r, SEXP tauSqSamples_r, SEXP wSamples_r, 
-			   SEXP betaStarSiteSamples_r, SEXP sitesLink_r, 
-			   SEXP sites0Sampled_r, SEXP sites0_r, SEXP nSamples_r, 
-			   SEXP covModel_r, SEXP nThreads_r, SEXP verbose_r, 
-			   SEXP nReport_r, SEXP z0Samples_r){
+  SEXP svcAbundNNGPPredict(SEXP coords_r, SEXP J_r, SEXP family_r,
+                           SEXP pAbund_r, SEXP pTilde_r,
+                           SEXP m_r, SEXP X0_r, SEXP Xw0_r, SEXP coords0_r,
+                           SEXP J0_r, SEXP nnIndx0_r, SEXP betaSamples_r,
+                           SEXP thetaSamples_r, SEXP tauSqSamples_r, SEXP wSamples_r,
+                           SEXP betaStarSiteSamples_r, SEXP sitesLink_r,
+                           SEXP sites0Sampled_r, SEXP sites0_r, SEXP nSamples_r,
+                           SEXP covModel_r, SEXP nThreads_r, SEXP verbose_r,
+                           SEXP nReport_r, SEXP z0Samples_r){
 
     int i, j, ll, k, l, s, info, nProtect=0;
     const int inc = 1;
     const double one = 1.0;
     const double zero = 0.0;
     char const *lower = "L";
-    
+
     double *coords = REAL(coords_r);
     int J = INTEGER(J_r)[0];
     int pAbund = INTEGER(pAbund_r)[0];
@@ -44,37 +45,37 @@ extern "C" {
     double *Xw0 = REAL(Xw0_r);
     double *coords0 = REAL(coords0_r);
     int J0 = INTEGER(J0_r)[0];
-    int m = INTEGER(m_r)[0]; 
-    int mm = m * m; 
+    int m = INTEGER(m_r)[0];
+    int mm = m * m;
     int JpTilde = J * pTilde;
-    int J0pTilde = J0 * pTilde; 
+    int J0pTilde = J0 * pTilde;
     int *sitesLink = INTEGER(sitesLink_r);
     int *sites0Sampled = INTEGER(sites0Sampled_r);
 
-    int *nnIndx0 = INTEGER(nnIndx0_r);        
+    int *nnIndx0 = INTEGER(nnIndx0_r);
     double *beta = REAL(betaSamples_r);
     double *theta = REAL(thetaSamples_r);
     double *w = REAL(wSamples_r);
     double *betaStarSite = REAL(betaStarSiteSamples_r);
     double *tauSq = REAL(tauSqSamples_r);
-    double *z0 = REAL(z0Samples_r); 
-    
+    double *z0 = REAL(z0Samples_r);
+
     int nSamples = INTEGER(nSamples_r)[0];
     int covModel = INTEGER(covModel_r)[0];
     std::string corName = getCorName(covModel);
     int nThreads = INTEGER(nThreads_r)[0];
     int verbose = INTEGER(verbose_r)[0];
     int nReport = INTEGER(nReport_r)[0];
-    
+
 #ifdef _OPENMP
     omp_set_num_threads(nThreads);
 #else
     if(nThreads > 1){
-      warning("n.omp.threads > %i, but source not compiled with OpenMP support.", nThreads);
+      Rf_warning("n.omp.threads > %i, but source not compiled with OpenMP support.", nThreads);
       nThreads = 1;
     }
 #endif
-    
+
     if(verbose){
       Rprintf("----------------------------------------\n");
       Rprintf("\tPrediction description\n");
@@ -85,14 +86,14 @@ extern "C" {
       Rprintf("Using the %s spatial correlation model.\n\n", corName.c_str());
       Rprintf("Using %i nearest neighbors.\n\n", m);
       Rprintf("Number of MCMC samples: %i.\n\n", nSamples);
-      Rprintf("Predicting at %i non-sampled locations.\n\n", J0);  
+      Rprintf("Predicting at %i non-sampled locations.\n\n", J0);
 #ifdef _OPENMP
       Rprintf("\nSource compiled with OpenMP support and model fit using %i threads.\n", nThreads);
 #else
       Rprintf("\n\nSource not compiled with OpenMP support.\n");
 #endif
-    } 
-    
+    }
+
     // parameters
     int nTheta, sigmaSqIndx,  phiIndx, nuIndx;
 
@@ -104,16 +105,16 @@ extern "C" {
 	sigmaSqIndx = 0; phiIndx = 1; nuIndx = 2;
       }
     int nThetapTilde = nTheta * pTilde;
-    
+
     // get max nu
     double *nuMax = (double *) R_alloc(pTilde, sizeof(double));
-    int *nb = (int *) R_alloc(pTilde, sizeof(nb)); 
+    int *nb = (int *) R_alloc(pTilde, sizeof(nb));
     // Fill in with zeros
     for (ll = 0; ll < pTilde; ll++) {
-      nuMax[ll] = 0.0; 
-      nb[ll] = 0; 
+      nuMax[ll] = 0.0;
+      nb[ll] = 0;
     }
-    
+
     if(corName == "matern"){
       for (ll = 0; ll < pTilde; ll++) {
         for(s = 0; s < nSamples; s++){
@@ -125,15 +126,15 @@ extern "C" {
       }
     }
 
-    int nbMax = 0; 
+    int nbMax = 0;
     for (ll = 0; ll < pTilde; ll++) {
       if (nb[ll] > nbMax) {
-        nbMax = nb[ll]; 
+        nbMax = nb[ll];
       }
     }
 
     double *bk = (double *) R_alloc(nThreads*nbMax, sizeof(double));
-   
+
     double *C = (double *) R_alloc(nThreads*mm, sizeof(double)); zeros(C, nThreads*mm);
     double *c = (double *) R_alloc(nThreads*m, sizeof(double)); zeros(c, nThreads*m);
     double *tmp_m  = (double *) R_alloc(nThreads*m, sizeof(double));
@@ -141,14 +142,14 @@ extern "C" {
     int threadID = 0, status = 0;
 
     SEXP y0_r, w0_r, mu0_r;
-    PROTECT(y0_r = allocMatrix(REALSXP, J0, nSamples)); nProtect++; 
-    PROTECT(mu0_r = allocMatrix(REALSXP, J0, nSamples)); nProtect++; 
-    PROTECT(w0_r = allocMatrix(REALSXP, J0pTilde, nSamples)); nProtect++;
+    PROTECT(y0_r = Rf_allocMatrix(REALSXP, J0, nSamples)); nProtect++;
+    PROTECT(mu0_r = Rf_allocMatrix(REALSXP, J0, nSamples)); nProtect++;
+    PROTECT(w0_r = Rf_allocMatrix(REALSXP, J0pTilde, nSamples)); nProtect++;
     double *y0 = REAL(y0_r);
-    double *mu0 = REAL(mu0_r); 
+    double *mu0 = REAL(mu0_r);
     double *w0 = REAL(w0_r);
-    double wSites; 
- 
+    double wSites;
+
     if (verbose) {
       Rprintf("-------------------------------------------------\n");
       Rprintf("\t\tPredicting\n");
@@ -162,20 +163,20 @@ extern "C" {
     double *wV = (double *) R_alloc(J0pTilde*nSamples, sizeof(double));
 
     GetRNGstate();
-    
+
     for(i = 0; i < J0pTilde*nSamples; i++){
       wV[i] = rnorm(0.0,1.0);
     }
-    
+
     for(j = 0; j < J0; j++){
       for (ll = 0; ll < pTilde; ll++) {
 #ifdef _OPENMP
 #pragma omp parallel for private(threadID, phi, nu, sigmaSq, k, l, d, info)
-#endif     
+#endif
         for(s = 0; s < nSamples; s++){
 #ifdef _OPENMP
 	  threadID = omp_get_thread_num();
-#endif 	
+#endif
 	  if (sites0Sampled[j] == 1) {
             w0[s * J0pTilde + j * pTilde + ll] = w[s * JpTilde + sitesLink[j] * pTilde + ll];
 	  } else {
@@ -194,10 +195,10 @@ extern "C" {
 	      }
 	    }
 
-	    F77_NAME(dpotrf)(lower, &m, &C[threadID*mm], &m, &info FCONE); 
-	    if(info != 0){error("c++ error: dpotrf failed\n");}
-	    F77_NAME(dpotri)(lower, &m, &C[threadID*mm], &m, &info FCONE); 
-	    if(info != 0){error("c++ error: dpotri failed\n");}
+	    F77_NAME(dpotrf)(lower, &m, &C[threadID*mm], &m, &info FCONE);
+	    if(info != 0){Rf_error("c++ error: dpotrf failed\n");}
+	    F77_NAME(dpotri)(lower, &m, &C[threadID*mm], &m, &info FCONE);
+	    if(info != 0){Rf_error("c++ error: dpotri failed\n");}
 
 	    F77_NAME(dsymv)(lower, &m, &one, &C[threadID*mm], &m, &c[threadID*m], &inc, &zero, &tmp_m[threadID*m], &inc FCONE);
 
@@ -208,7 +209,7 @@ extern "C" {
 
 	    #ifdef _OPENMP
             #pragma omp atomic
-            #endif   
+            #endif
 	    vIndx++;
 
 	    w0[s * J0pTilde + j * pTilde + ll] = sqrt(sigmaSq - F77_NAME(ddot)(&m, &tmp_m[threadID*m], &inc, &c[threadID*m], &inc))*wV[vIndx] + d;
@@ -216,7 +217,7 @@ extern "C" {
 
         } // sample
       } // covariate
-      
+
       if(verbose){
 	if(status == nReport){
 	  Rprintf("Location: %i of %i, %3.2f%%\n", j, J0, 100.0*j/J0);
@@ -229,7 +230,7 @@ extern "C" {
       status++;
       R_CheckUserInterrupt();
     } // location
-    
+
     if(verbose){
       Rprintf("Location: %i of %i, %3.2f%%\n", j, J0, 100.0*j/J0);
       #ifdef Win32
@@ -245,10 +246,10 @@ extern "C" {
       for(s = 0; s < nSamples; s++){
         if (family == 3) {
           if (z0[s * J0 + j] == 1.0) {
-          wSites = F77_NAME(ddot)(&pTilde, &Xw0[j], &J0, 
+          wSites = F77_NAME(ddot)(&pTilde, &Xw0[j], &J0,
 	  		        &w0[s * J0pTilde + j * pTilde], &inc);
-	    mu0[s * J0 + j] = F77_NAME(ddot)(&pAbund, &X0[j], &J0, 
-				                     &beta[s*pAbund], &inc) + 
+	    mu0[s * J0 + j] = F77_NAME(ddot)(&pAbund, &X0[j], &J0,
+				                     &beta[s*pAbund], &inc) +
 			              wSites + betaStarSite[s * J0 + j];
             y0[s * J0 + j] = rnorm(mu0[s * J0 + j], sqrt(tauSq[s]));
 	  } else {
@@ -256,10 +257,10 @@ extern "C" {
 	    y0[s * J0 + j] = rnorm(mu0[s * J0 + j], sqrt(0.0001));
 	  }
 	} else {
-          wSites = F77_NAME(ddot)(&pTilde, &Xw0[j], &J0, 
+          wSites = F77_NAME(ddot)(&pTilde, &Xw0[j], &J0,
 	  		        &w0[s * J0pTilde + j * pTilde], &inc);
-	  mu0[s * J0 + j] = F77_NAME(ddot)(&pAbund, &X0[j], &J0, 
-				                     &beta[s*pAbund], &inc) + 
+	  mu0[s * J0 + j] = F77_NAME(ddot)(&pAbund, &X0[j], &J0,
+				                     &beta[s*pAbund], &inc) +
 			              wSites + betaStarSite[s * J0 + j];
           y0[s * J0 + j] = rnorm(mu0[s * J0 + j], sqrt(tauSq[s]));
 	}
@@ -267,32 +268,32 @@ extern "C" {
     } // i
 
     PutRNGstate();
-    
+
     //make return object
     SEXP result_r, resultName_r;
     int nResultListObjs = 3;
 
-    PROTECT(result_r = allocVector(VECSXP, nResultListObjs)); nProtect++;
-    PROTECT(resultName_r = allocVector(VECSXP, nResultListObjs)); nProtect++;
+    PROTECT(result_r = Rf_allocVector(VECSXP, nResultListObjs)); nProtect++;
+    PROTECT(resultName_r = Rf_allocVector(VECSXP, nResultListObjs)); nProtect++;
 
     SET_VECTOR_ELT(result_r, 0, y0_r);
-    SET_VECTOR_ELT(resultName_r, 0, mkChar("y.0.samples")); 
-    
+    SET_VECTOR_ELT(resultName_r, 0, Rf_mkChar("y.0.samples"));
+
     SET_VECTOR_ELT(result_r, 1, w0_r);
-    SET_VECTOR_ELT(resultName_r, 1, mkChar("w.0.samples"));
+    SET_VECTOR_ELT(resultName_r, 1, Rf_mkChar("w.0.samples"));
 
     SET_VECTOR_ELT(result_r, 2, mu0_r);
-    SET_VECTOR_ELT(resultName_r, 2, mkChar("mu.0.samples")); 
+    SET_VECTOR_ELT(resultName_r, 2, Rf_mkChar("mu.0.samples"));
 
-    namesgets(result_r, resultName_r);
-    
+    Rf_namesgets(result_r, resultName_r);
+
     //unprotect
     UNPROTECT(nProtect);
-    
+
     return(result_r);
-  
+
   }
 }
 
-    
+
 

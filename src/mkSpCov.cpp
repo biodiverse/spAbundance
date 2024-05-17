@@ -1,5 +1,6 @@
 #define USE_FC_LEN_T
 #include <string>
+#define R_NO_REMAP
 #include <R.h>
 #include <Rinternals.h>
 #include <R_ext/Linpack.h>
@@ -11,16 +12,16 @@
 #endif
 
 extern"C" {
-  
+
   SEXP mkSpCov(SEXP coords_r, SEXP n_r, SEXP m_r, SEXP Psi_r, SEXP V_r, SEXP theta_r, SEXP covModel_r){
-    
+
     /*****************************************
                 Common variables
     *****************************************/
     int h, i, j, k, l, ii, jj, info;
     char const *lower = "L";
     const int incOne = 1;
-    
+
     double *coords = REAL(coords_r);
     int n = INTEGER(n_r)[0];
     int m = INTEGER(m_r)[0];
@@ -28,34 +29,34 @@ extern"C" {
     double *V = REAL(V_r);
     double *theta = REAL(theta_r);
     std::string covModel = CHAR(STRING_ELT(covModel_r,0));
-    
+
     double *gamma = (double *) R_alloc(2, sizeof(double));
-    
+
     int mm = m*m;
     int nn = n*n;
     int nm = n*m;
-    
+
     double *D = (double *) R_alloc(nn, sizeof(double));
     for(i = 0; i < n; i++){
       for(j = 0; j < n; j++){
 	D[n*j+i] = sqrt(pow(coords[i]-coords[j],2) + pow(coords[n+i]-coords[n+j],2));
       }
     }
-    
+
     SEXP C;
-    PROTECT(C = allocMatrix(REALSXP, nm, nm)); 
-    
+    PROTECT(C = Rf_allocMatrix(REALSXP, nm, nm));
+
     //Get A
     double *A = (double *) R_alloc(mm, sizeof(double));
     F77_NAME(dcopy)(&mm, V, &incOne, A, &incOne);
-    F77_NAME(dpotrf)(lower, &m, A, &m, &info FCONE); if(info != 0){error("Cholesky failed\n");}
-    clearUT(A, m);    
-    
+    F77_NAME(dpotrf)(lower, &m, A, &m, &info FCONE); if(info != 0){Rf_error("Cholesky failed\n");}
+    clearUT(A, m);
+
     for(jj = 0; jj < n; jj++){
-      for(ii = 0; ii < n; ii++){	
+      for(ii = 0; ii < n; ii++){
 	for(k = 0; k < m; k++){
 	  for(l = 0; l < m; l++){
-	    REAL(C)[(k+jj*m)*nm+(ii*m+l)] = 0.0; 
+	    REAL(C)[(k+jj*m)*nm+(ii*m+l)] = 0.0;
 	    for(h = 0; h < m; h++){
 	      gamma[0] = theta[h];
 	      if(covModel == "matern"){
@@ -67,7 +68,7 @@ extern"C" {
 	}
       }
     }
-    
+
     for(i = 0; i < n; i++){
       for(k = 0; k < m; k++){
 	for(l = 0; l < m; l++){
@@ -75,11 +76,11 @@ extern"C" {
 	}
       }
     }
-    
+
     UNPROTECT(1);
-    
+
     return(C);
-    
-  } 
+
+  }
 }
 

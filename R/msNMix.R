@@ -1,7 +1,7 @@
 msNMix <- function(abund.formula, det.formula, data, inits, priors,
 		   tuning, n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
 		   n.omp.threads = 1, verbose = TRUE, n.report = 100,
-		   n.burn = round(.10 * n.samples), n.thin = 1,
+		   n.burn = round(.10 * n.batch * batch.length), n.thin = 1,
 		   n.chains = 1, ...){
 
   ptm <- proc.time()
@@ -92,6 +92,10 @@ msNMix <- function(abund.formula, det.formula, data, inits, priors,
   }
   if (n.thin > n.samples) {
     stop("error: n.thin must be less than n.samples")
+  }
+  # Check if n.burn, n.thin, and n.samples result in an integer and error if otherwise.
+  if (((n.samples - n.burn) / n.thin) %% 1 != 0) {
+    stop("the number of posterior samples to save ((n.samples - n.burn) / n.thin) is not a whole number. Please respecify the MCMC criteria such that the number of posterior samples saved is a whole number.")
   }
 
   # First subset detection covariates to only use those that are included in the analysis.

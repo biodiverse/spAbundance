@@ -176,6 +176,10 @@ lfMsAbundGaussian <- function(formula, data, inits, priors, tuning, n.factors,
   if (n.thin > n.samples) {
     stop("error: n.thin must be less than n.samples")
   }
+  # Check if n.burn, n.thin, and n.samples result in an integer and error if otherwise.
+  if (((n.samples - n.burn) / n.thin) %% 1 != 0) {
+    stop("the number of posterior samples to save ((n.samples - n.burn) / n.thin) is not a whole number. Please respecify the MCMC criteria such that the number of posterior samples saved is a whole number.")
+  }
 
   # y is ordered by site, then species within site.
   y.orig <- y
@@ -615,7 +619,7 @@ lfMsAbundGaussian <- function(formula, data, inits, priors, tuning, n.factors,
   for (i in 1:n.chains) {
     # Change initial values if i > 1
     if ((i > 1) & (!fix.inits)) {
-      if (!ind.betas) { 
+      if (!ind.betas) {
         beta.comm.inits <- rnorm(p, mu.beta.comm, sqrt(sigma.beta.comm))
         tau.sq.beta.inits <- runif(p, 0.5, 10)
       }
