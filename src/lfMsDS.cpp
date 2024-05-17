@@ -128,7 +128,7 @@ extern "C" {
     omp_set_num_threads(nThreads);
 #else
     if(nThreads > 1){
-      warning("n.omp.threads > 1, but source not compiled with OpenMP support.");
+      Rf_warning("n.omp.threads > 1, but source not compiled with OpenMP support.");
       nThreads = 1;
     }
 #endif
@@ -841,7 +841,7 @@ extern "C" {
 	      for (j = 0; j < J; j++) {
                 likeVal = 0.0;
                 tmp_0 = 0.0;
-                if ((XpRE[alphaStarIndx[l] * J + j] == alphaLevelIndx[l])) {
+                if (XpRE[alphaStarIndx[l] * J + j] == alphaLevelIndx[l]) {
                   /********************************
                    * Candidate
                    *******************************/
