@@ -298,9 +298,9 @@ extern "C" {
             for (j = 0; j < J; j++) {
               if (XRE[betaStarIndx[l] * J + j] == betaLevelIndx[l]) {
                 tmp_02 = 0.0;
-		for (ll = 0; ll < pRE; ll++) {
+                for (ll = 0; ll < pRE; ll++) {
                   tmp_02 += betaStar[betaStarLongIndx[ll * J + j]] * XRandom[ll * J + j];
-		}
+                }
                 tmp_one[0] += XRandom[betaStarIndx[l] * J + j] * (y[j] - F77_NAME(ddot)(&p, &X[j], &J, beta, &inc) -
           		    tmp_02 + (betaStar[l] * XRandom[betaStarIndx[l] * J + j])) / tauSq;
                 tmp_0 += XRandom[betaStarIndx[l] * J + j] * XRandom[betaStarIndx[l] * J + j] / tauSq;

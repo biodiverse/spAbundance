@@ -1,6 +1,6 @@
-simNMix <- function(J.x, J.y, n.rep, n.rep.max, beta, alpha, 
-		    kappa, mu.RE = list(), p.RE = list(), 
-		    offset = 1, sp = FALSE, cov.model, sigma.sq, 
+simNMix <- function(J.x, J.y, n.rep, n.rep.max, beta, alpha,
+		    kappa, mu.RE = list(), p.RE = list(),
+		    offset = 1, sp = FALSE, cov.model, sigma.sq,
 		    phi, nu, family = 'Poisson', ...) {
 
   # Check for unused arguments ------------------------------------------
@@ -95,7 +95,7 @@ simNMix <- function(J.x, J.y, n.rep, n.rep.max, beta, alpha,
     }
     cov.model.names <- c("exponential", "spherical", "matern", "gaussian")
     if(! cov.model %in% cov.model.names){
-      stop("error: specified cov.model '",cov.model,"' is not a valid option; choose from ", 
+      stop("error: specified cov.model '",cov.model,"' is not a valid option; choose from ",
            paste(cov.model.names, collapse=", ", sep="") ,".")
     }
     if (cov.model == 'matern' & missing(nu)) {
@@ -128,7 +128,7 @@ simNMix <- function(J.x, J.y, n.rep, n.rep.max, beta, alpha,
   n.alpha <- length(alpha)
   X.p <- array(NA, dim = c(J, n.rep.max, n.alpha))
   X.p[, , 1] <- 1
-  # Get index of surveyed replicates for each site. 
+  # Get index of surveyed replicates for each site.
   rep.indx <- list()
   for (j in 1:J) {
     rep.indx[[j]] <- sample(1:n.rep.max, n.rep[j], replace = FALSE)
@@ -174,11 +174,11 @@ simNMix <- function(J.x, J.y, n.rep, n.rep.max, beta, alpha,
     n.random <- ncol(X.random)
     X.re <- matrix(NA, J, length(mu.RE$levels))
     for (i in 1:length(mu.RE$levels)) {
-      X.re[, i] <- sample(1:mu.RE$levels[i], J, replace = TRUE)  
+      X.re[, i] <- sample(1:mu.RE$levels[i], J, replace = TRUE)
     }
     indx.mat <- X.re[, re.col.indx, drop = FALSE]
     for (i in 1:p.nmix.re) {
-      beta.star[which(beta.star.indx == i)] <- rnorm(n.nmix.re.long[i], 0, 
+      beta.star[which(beta.star.indx == i)] <- rnorm(n.nmix.re.long[i], 0,
 						     sqrt(sigma.sq.mu[i]))
     }
     if (length(mu.RE$levels) > 1) {
@@ -212,8 +212,8 @@ simNMix <- function(J.x, J.y, n.rep, n.rep.max, beta, alpha,
     X.p.random <- X.p[, , unlist(p.RE$alpha.indx), drop = FALSE]
     X.p.re <- array(NA, dim = c(J, n.rep.max, length(p.RE$levels)))
     for (i in 1:length(p.RE$levels)) {
-      X.p.re[, , i] <- matrix(sample(1:p.RE$levels[i], J * n.rep.max, replace = TRUE), 
-		              J, n.rep.max)	      
+      X.p.re[, , i] <- matrix(sample(1:p.RE$levels[i], J * n.rep.max, replace = TRUE),
+		              J, n.rep.max)
     }
     for (i in 1:p.det.re) {
       alpha.star[which(alpha.star.indx == i)] <- rnorm(n.det.re.long[i], 0, sqrt(sigma.sq.p[i]))
@@ -229,7 +229,7 @@ simNMix <- function(J.x, J.y, n.rep, n.rep.max, beta, alpha,
     }
     if (p.det.re > 1) {
       for (j in 2:p.det.re) {
-        indx.mat[, , j] <- indx.mat[, , j] + max(indx.mat[, , j - 1], na.rm = TRUE) 
+        indx.mat[, , j] <- indx.mat[, , j] + max(indx.mat[, , j - 1], na.rm = TRUE)
       }
     }
     alpha.star.sites <- matrix(NA, J, n.rep.max)
@@ -258,7 +258,7 @@ simNMix <- function(J.x, J.y, n.rep, n.rep.max, beta, alpha,
         mu <- exp(X %*% as.matrix(beta))
       }
     }
-    # Get mean and overdispersion parameter 
+    # Get mean and overdispersion parameter
     N <- rnbinom(J, size = kappa, mu = mu * offset)
   } else if (family == 'Poisson') {
     if (sp) {
@@ -282,7 +282,7 @@ simNMix <- function(J.x, J.y, n.rep, n.rep.max, beta, alpha,
   y <- matrix(NA, nrow = J, ncol = n.rep.max)
   for (j in 1:J) {
     if (length(p.RE) > 0) {
-      p[j, rep.indx[[j]]] <- logit.inv(X.p[j, rep.indx[[j]], ] %*% as.matrix(alpha) + 
+      p[j, rep.indx[[j]]] <- logit.inv(X.p[j, rep.indx[[j]], ] %*% as.matrix(alpha) +
 				    alpha.star.sites[j, rep.indx[[j]]])
     } else {
       p[j, rep.indx[[j]]] <- logit.inv(X.p[j, rep.indx[[j]], ] %*% as.matrix(alpha))

@@ -71,6 +71,8 @@ extern "C" {
     int pDet = INTEGER(consts_r)[6];
     int pDetRE = INTEGER(consts_r)[7];
     int nDetRE = INTEGER(consts_r)[8];
+    int indBetas = INTEGER(consts_r)[9];
+    int indAlphas = INTEGER(consts_r)[10];
     int ppDet = pDet * pDet;
     int ppAbund = pAbund * pAbund;
     double *muBetaComm = REAL(muBetaComm_r);
@@ -451,95 +453,103 @@ extern "C" {
         /********************************************************************
          Update Community level Abundance Coefficients
          *******************************************************************/
-        /********************************
-         Compute b.beta.comm
-         *******************************/
-        zeros(tmp_pAbund, pAbund);
-        for (i = 0; i < nSp; i++) {
-          F77_NAME(dgemv)(ytran, &pAbund, &pAbund, &one, TauBetaInv, &pAbund, &beta[i], &nSp, &one, tmp_pAbund, &inc FCONE);
-        } // i
-        for (q = 0; q < pAbund; q++) {
-          tmp_pAbund[q] += SigmaBetaCommInvMuBeta[q];
-        } // j
+        if (indBetas == 0) {
+          /********************************
+           Compute b.beta.comm
+           *******************************/
+          zeros(tmp_pAbund, pAbund);
+          for (i = 0; i < nSp; i++) {
+            F77_NAME(dgemv)(ytran, &pAbund, &pAbund, &one, TauBetaInv, &pAbund, &beta[i], &nSp, &one, tmp_pAbund, &inc FCONE);
+          } // i
+          for (q = 0; q < pAbund; q++) {
+            tmp_pAbund[q] += SigmaBetaCommInvMuBeta[q];
+          } // j
 
-        /********************************
-         Compute A.beta.comm
-         *******************************/
-        for (q = 0; q < ppAbund; q++) {
-          tmp_ppAbund[q] = SigmaBetaCommInv[q] + nSp * TauBetaInv[q];
+          /********************************
+           Compute A.beta.comm
+           *******************************/
+          for (q = 0; q < ppAbund; q++) {
+            tmp_ppAbund[q] = SigmaBetaCommInv[q] + nSp * TauBetaInv[q];
+          }
+          F77_NAME(dpotrf)(lower, &pAbund, tmp_ppAbund, &pAbund, &info FCONE);
+          if(info != 0){Rf_error("c++ error: dpotrf ABetaComm failed\n");}
+          F77_NAME(dpotri)(lower, &pAbund, tmp_ppAbund, &pAbund, &info FCONE);
+          if(info != 0){Rf_error("c++ error: dpotri ABetaComm failed\n");}
+          F77_NAME(dsymv)(lower, &pAbund, &one, tmp_ppAbund, &pAbund, tmp_pAbund, &inc, &zero, tmp_pAbund2, &inc FCONE);
+          F77_NAME(dpotrf)(lower, &pAbund, tmp_ppAbund, &pAbund, &info FCONE);
+          if(info != 0){Rf_error("c++ error: dpotrf ABetaComm failed\n");}
+          mvrnorm(betaComm, tmp_pAbund2, tmp_ppAbund, pAbund);
         }
-        F77_NAME(dpotrf)(lower, &pAbund, tmp_ppAbund, &pAbund, &info FCONE);
-        if(info != 0){Rf_error("c++ error: dpotrf ABetaComm failed\n");}
-        F77_NAME(dpotri)(lower, &pAbund, tmp_ppAbund, &pAbund, &info FCONE);
-        if(info != 0){Rf_error("c++ error: dpotri ABetaComm failed\n");}
-        F77_NAME(dsymv)(lower, &pAbund, &one, tmp_ppAbund, &pAbund, tmp_pAbund, &inc, &zero, tmp_pAbund2, &inc FCONE);
-        F77_NAME(dpotrf)(lower, &pAbund, tmp_ppAbund, &pAbund, &info FCONE);
-        if(info != 0){Rf_error("c++ error: dpotrf ABetaComm failed\n");}
-        mvrnorm(betaComm, tmp_pAbund2, tmp_ppAbund, pAbund);
         /********************************************************************
          Update Community level Detection Coefficients
          *******************************************************************/
-        /********************************
-         * Compute b.alpha.comm
-         *******************************/
-         zeros(tmp_pDet, pDet);
-         for (i = 0; i < nSp; i++) {
-           F77_NAME(dgemv)(ytran, &pDet, &pDet, &one, TauAlphaInv, &pDet, &alpha[i], &nSp, &one, tmp_pDet, &inc FCONE);
-         } // i
-         for (q = 0; q < pDet; q++) {
-           tmp_pDet[q] += SigmaAlphaCommInvMuAlpha[q];
-         } // j
-        /********************************
-         * Compute A.alpha.comm
-         *******************************/
-        for (q = 0; q < ppDet; q++) {
-          tmp_ppDet[q] = SigmaAlphaCommInv[q] + nSp * TauAlphaInv[q];
+        if (indAlphas == 0) {
+          /********************************
+           * Compute b.alpha.comm
+           *******************************/
+           zeros(tmp_pDet, pDet);
+           for (i = 0; i < nSp; i++) {
+             F77_NAME(dgemv)(ytran, &pDet, &pDet, &one, TauAlphaInv, &pDet, &alpha[i], &nSp, &one, tmp_pDet, &inc FCONE);
+           } // i
+           for (q = 0; q < pDet; q++) {
+             tmp_pDet[q] += SigmaAlphaCommInvMuAlpha[q];
+           } // j
+          /********************************
+           * Compute A.alpha.comm
+           *******************************/
+          for (q = 0; q < ppDet; q++) {
+            tmp_ppDet[q] = SigmaAlphaCommInv[q] + nSp * TauAlphaInv[q];
+          }
+          F77_NAME(dpotrf)(lower, &pDet, tmp_ppDet, &pDet, &info FCONE);
+          if(info != 0){Rf_error("c++ error: dpotrf AAlphaComm failed\n");}
+          F77_NAME(dpotri)(lower, &pDet, tmp_ppDet, &pDet, &info FCONE);
+          if(info != 0){Rf_error("c++ error: dpotri AAlphaComm failed\n");}
+          F77_NAME(dsymv)(lower, &pDet, &one, tmp_ppDet, &pDet, tmp_pDet, &inc, &zero, tmp_pDet2, &inc FCONE);
+          F77_NAME(dpotrf)(lower, &pDet, tmp_ppDet, &pDet, &info FCONE);
+          if(info != 0){Rf_error("c++ error: dpotrf AAlphaComm failed\n");}
+          mvrnorm(alphaComm, tmp_pDet2, tmp_ppDet, pDet);
         }
-        F77_NAME(dpotrf)(lower, &pDet, tmp_ppDet, &pDet, &info FCONE);
-        if(info != 0){Rf_error("c++ error: dpotrf AAlphaComm failed\n");}
-        F77_NAME(dpotri)(lower, &pDet, tmp_ppDet, &pDet, &info FCONE);
-        if(info != 0){Rf_error("c++ error: dpotri AAlphaComm failed\n");}
-        F77_NAME(dsymv)(lower, &pDet, &one, tmp_ppDet, &pDet, tmp_pDet, &inc, &zero, tmp_pDet2, &inc FCONE);
-        F77_NAME(dpotrf)(lower, &pDet, tmp_ppDet, &pDet, &info FCONE);
-        if(info != 0){Rf_error("c++ error: dpotrf AAlphaComm failed\n");}
-        mvrnorm(alphaComm, tmp_pDet2, tmp_ppDet, pDet);
 
         /********************************************************************
          Update Community Abundance Variance Parameter
         ********************************************************************/
-        for (q = 0; q < pAbund; q++) {
-          tmp_0 = 0.0;
-          for (i = 0; i < nSp; i++) {
-            tmp_0 += (beta[q * nSp + i] - betaComm[q]) * (beta[q * nSp + i] - betaComm[q]);
-          } // i
-          tmp_0 *= 0.5;
-          tauSqBeta[q] = rigamma(tauSqBetaA[q] + nSp / 2.0, tauSqBetaB[q] + tmp_0);
-        } // q
-        for (q = 0; q < pAbund; q++) {
-          TauBetaInv[q * pAbund + q] = tauSqBeta[q];
-        } // q
-        F77_NAME(dpotrf)(lower, &pAbund, TauBetaInv, &pAbund, &info FCONE);
-        if(info != 0){Rf_error("c++ error: dpotrf TauBetaInv failed\n");}
-        F77_NAME(dpotri)(lower, &pAbund, TauBetaInv, &pAbund, &info FCONE);
-        if(info != 0){Rf_error("c++ error: dpotri TauBetaInv failed\n");}
+        if (indBetas == 0) {
+          for (q = 0; q < pAbund; q++) {
+            tmp_0 = 0.0;
+            for (i = 0; i < nSp; i++) {
+              tmp_0 += (beta[q * nSp + i] - betaComm[q]) * (beta[q * nSp + i] - betaComm[q]);
+            } // i
+            tmp_0 *= 0.5;
+            tauSqBeta[q] = rigamma(tauSqBetaA[q] + nSp / 2.0, tauSqBetaB[q] + tmp_0);
+          } // q
+          for (q = 0; q < pAbund; q++) {
+            TauBetaInv[q * pAbund + q] = tauSqBeta[q];
+          } // q
+          F77_NAME(dpotrf)(lower, &pAbund, TauBetaInv, &pAbund, &info FCONE);
+          if(info != 0){Rf_error("c++ error: dpotrf TauBetaInv failed\n");}
+          F77_NAME(dpotri)(lower, &pAbund, TauBetaInv, &pAbund, &info FCONE);
+          if(info != 0){Rf_error("c++ error: dpotri TauBetaInv failed\n");}
+        }
         /********************************************************************
          Update Community Detection Variance Parameter
         ********************************************************************/
-        for (q = 0; q < pDet; q++) {
-          tmp_0 = 0.0;
-          for (i = 0; i < nSp; i++) {
-            tmp_0 += (alpha[q * nSp + i] - alphaComm[q]) * (alpha[q * nSp + i] - alphaComm[q]);
-          } // i
-          tmp_0 *= 0.5;
-          tauSqAlpha[q] = rigamma(tauSqAlphaA[q] + nSp / 2.0, tauSqAlphaB[q] + tmp_0);
-        } // q
-        for (q = 0; q < pDet; q++) {
-          TauAlphaInv[q * pDet + q] = tauSqAlpha[q];
-        } // q
-        F77_NAME(dpotrf)(lower, &pDet, TauAlphaInv, &pDet, &info FCONE);
-        if(info != 0){Rf_error("c++ error: dpotrf TauAlphaInv failed\n");}
-        F77_NAME(dpotri)(lower, &pDet, TauAlphaInv, &pDet, &info FCONE);
-        if(info != 0){Rf_error("c++ error: dpotri TauAlphaInv failed\n");}
+        if (indAlphas == 0) {
+          for (q = 0; q < pDet; q++) {
+            tmp_0 = 0.0;
+            for (i = 0; i < nSp; i++) {
+              tmp_0 += (alpha[q * nSp + i] - alphaComm[q]) * (alpha[q * nSp + i] - alphaComm[q]);
+            } // i
+            tmp_0 *= 0.5;
+            tauSqAlpha[q] = rigamma(tauSqAlphaA[q] + nSp / 2.0, tauSqAlphaB[q] + tmp_0);
+          } // q
+          for (q = 0; q < pDet; q++) {
+            TauAlphaInv[q * pDet + q] = tauSqAlpha[q];
+          } // q
+          F77_NAME(dpotrf)(lower, &pDet, TauAlphaInv, &pDet, &info FCONE);
+          if(info != 0){Rf_error("c++ error: dpotrf TauAlphaInv failed\n");}
+          F77_NAME(dpotri)(lower, &pDet, TauAlphaInv, &pDet, &info FCONE);
+          if(info != 0){Rf_error("c++ error: dpotri TauAlphaInv failed\n");}
+        }
 
         /********************************************************************
          *Update Abundance random effects variance

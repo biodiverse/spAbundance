@@ -299,6 +299,29 @@ msNMix <- function(abund.formula, det.formula, data, inits, priors,
   }
   names(priors) <- tolower(names(priors))
 
+  # Independent beta parameters -----
+  if ('independent.betas' %in% names(priors)) {
+    if (priors$independent.betas == TRUE) {
+      message("Beta parameters will be estimated independently\n")
+      ind.betas <- TRUE
+    } else if (priors$independent.betas == FALSE) {
+      ind.betas <- FALSE
+    }
+  } else {
+    ind.betas <- FALSE
+  }
+  # Independent alpha parameters -----
+  if ('independent.alphas' %in% names(priors)) {
+    if (priors$independent.alphas == TRUE) {
+      message("Alpha parameters will be estimated independently\n")
+      ind.alphas <- TRUE
+    } else if (priors$independent.alphas == FALSE) {
+      ind.alphas <- FALSE
+    }
+  } else {
+    ind.alphas <- FALSE
+  }
+
   # beta.comm -----------------------
   if ("beta.comm.normal" %in% names(priors)) {
     if (!is.list(priors$beta.comm.normal) | length(priors$beta.comm.normal) != 2) {
@@ -332,7 +355,7 @@ msNMix <- function(abund.formula, det.formula, data, inits, priors,
     }
     Sigma.beta.comm <- sigma.beta.comm * diag(p.abund)
   } else {
-    if (verbose) {
+    if (verbose & !ind.betas) {
       message("No prior specified for beta.comm.normal.\nSetting prior mean to 0 and prior variance to 100\n")
     }
     mu.beta.comm <- rep(0, p.abund)
@@ -373,7 +396,7 @@ msNMix <- function(abund.formula, det.formula, data, inits, priors,
     }
     Sigma.alpha.comm <- sigma.alpha.comm * diag(p.det)
   } else {
-    if (verbose) {
+    if (verbose & !ind.alphas) {
       message("No prior specified for alpha.comm.normal.\nSetting prior mean to 0 and prior variance to 2.72\n")
     }
     mu.alpha.comm <- rep(0, p.det)
@@ -413,7 +436,7 @@ msNMix <- function(abund.formula, det.formula, data, inits, priors,
       tau.sq.beta.b <- rep(tau.sq.beta.b, p.abund)
     }
   } else {
-    if (verbose) {
+    if (verbose & !ind.betas) {
       message("No prior specified for tau.sq.beta.ig.\nSetting prior shape to 0.1 and prior scale to 0.1\n")
     }
     tau.sq.beta.a <- rep(0.1, p.abund)
@@ -452,7 +475,7 @@ msNMix <- function(abund.formula, det.formula, data, inits, priors,
       tau.sq.alpha.b <- rep(tau.sq.alpha.b, p.det)
     }
   } else {
-    if (verbose) {
+    if (verbose & !ind.alphas) {
       message("No prior specified for tau.sq.alpha.ig.\nSetting prior shape to 0.1 and prior scale to 0.1\n")
     }
     tau.sq.alpha.a <- rep(0.1, p.det)
@@ -939,7 +962,8 @@ msNMix <- function(abund.formula, det.formula, data, inits, priors,
   storage.mode(K) <- "double"
   storage.mode(offset) <- "double"
   storage.mode(y.max) <- "double"
-  consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re, p.det, p.det.re, n.det.re)
+  consts <- c(n.sp, J, n.obs, p.abund, p.abund.re, n.abund.re, p.det, p.det.re, n.det.re,
+              ind.betas, ind.alphas)
   storage.mode(consts) <- "integer"
   storage.mode(beta.inits) <- "double"
   storage.mode(alpha.inits) <- "double"
@@ -1005,10 +1029,14 @@ msNMix <- function(abund.formula, det.formula, data, inits, priors,
   for (i in 1:n.chains) {
     # Change initial values if i > 1
     if ((i > 1) & (!fix.inits)) {
-      beta.comm.inits <- rnorm(p.abund, 0, 1)
-      alpha.comm.inits <- rnorm(p.det, 0, 1)
-      tau.sq.beta.inits <- runif(p.abund, 0.05, 1)
-      tau.sq.alpha.inits <- runif(p.det, 0.05, 1)
+      if (!ind.betas) {
+        beta.comm.inits <- rnorm(p.abund, 0, 1)
+        tau.sq.beta.inits <- runif(p.abund, 0.05, 1)
+      }
+      if (!ind.alphas) {
+        alpha.comm.inits <- rnorm(p.det, 0, 1)
+        tau.sq.alpha.inits <- runif(p.det, 0.05, 1)
+      }
       beta.inits <- matrix(rnorm(n.sp * p.abund, beta.comm.inits,
             		     sqrt(tau.sq.beta.inits)), n.sp, p.abund)
       alpha.inits <- matrix(rnorm(n.sp * p.det, alpha.comm.inits,
@@ -1030,20 +1058,20 @@ msNMix <- function(abund.formula, det.formula, data, inits, priors,
 
     storage.mode(chain.info) <- "integer"
     out.tmp[[i]] <- .Call("msNMix", y, X, X.p, X.re, X.p.re,
-        		  X.random, X.p.random, y.max, consts,
-    	                  n.abund.re.long, n.det.re.long, beta.inits,
-        		  alpha.inits, kappa.inits, N.inits, beta.comm.inits,
+                          X.random, X.p.random, y.max, consts,
+                          n.abund.re.long, n.det.re.long, beta.inits,
+                          alpha.inits, kappa.inits, N.inits, beta.comm.inits,
       	                  alpha.comm.inits, tau.sq.beta.inits, tau.sq.alpha.inits,
-      		          sigma.sq.mu.inits, sigma.sq.p.inits,
-    	                  beta.star.inits, alpha.star.inits, N.long.indx,
-      		          beta.star.indx, beta.level.indx, alpha.star.indx,
-      		          alpha.level.indx, mu.beta.comm, mu.alpha.comm,
-      		          Sigma.beta.comm, Sigma.alpha.comm, kappa.a,
-        		  kappa.b, tau.sq.beta.a, tau.sq.beta.b, tau.sq.alpha.a,
+                          sigma.sq.mu.inits, sigma.sq.p.inits,
+    	                    beta.star.inits, alpha.star.inits, N.long.indx,
+                          beta.star.indx, beta.level.indx, alpha.star.indx,
+                          alpha.level.indx, mu.beta.comm, mu.alpha.comm,
+                          Sigma.beta.comm, Sigma.alpha.comm, kappa.a,
+                          kappa.b, tau.sq.beta.a, tau.sq.beta.b, tau.sq.alpha.a,
       	                  tau.sq.alpha.b, sigma.sq.mu.a, sigma.sq.mu.b,
-      		          sigma.sq.p.a, sigma.sq.p.b,
-    	                  tuning.c, n.batch, batch.length, accept.rate, n.omp.threads,
-    	                  verbose, n.report, samples.info, chain.info, family.c, offset)
+                          sigma.sq.p.a, sigma.sq.p.b,
+                          tuning.c, n.batch, batch.length, accept.rate, n.omp.threads,
+                          verbose, n.report, samples.info, chain.info, family.c, offset)
     chain.info[1] <- chain.info[1] + 1
   }
   # Calculate R-Hat ---------------
