@@ -4655,7 +4655,7 @@ predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
 
       ptm <- proc.time()
 
-      out <- .Call("svcAbundNNGPGaussianPredict", coords, J, family.c, p.abund, p.svc, n.neighbors,
+      out <- .Call("svcAbundGaussianNNGPPredict", coords, J, family.c, p.abund, p.svc, n.neighbors,
                    X.fix, X.w.0, coords.0, J.0, nn.indx.0, beta.samples,
                    theta.samples, tau.sq.samples, w.samples, beta.star.sites.0.samples,
         	         sites.link, sites.0.sampled, sites.0.indx,
