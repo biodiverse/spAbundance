@@ -3,13 +3,13 @@
 \title{Function for prediction at new locations for univariate Gaussian spatially-varying coefficient models}
 
 \description{
-  The function \code{predict} collects posterior predictive samples for a set of new locations given an object of class `svcAbund`. 
+  The function \code{predict} collects posterior predictive samples for a set of new locations given an object of class `svcAbund`.
 }
 
 \usage{
-\method{predict}{svcAbund}(object, X.0, coords.0, n.omp.threads = 1, 
-        verbose = TRUE, n.report = 100, ignore.RE = FALSE, 
-        z.0.samples, ...)
+\method{predict}{svcAbund}(object, X.0, coords.0, n.omp.threads = 1,
+        verbose = TRUE, n.report = 100, ignore.RE = FALSE,
+        z.0.samples, include.sp = TRUE, ...)
 }
 
 \arguments{
@@ -18,30 +18,32 @@
 
   \item{X.0}{the design matrix of covariates at the prediction locations. This should include a column of 1s for the intercept if an intercept is included in the model. If random effects are included in the model, the levels of the random effects at the new locations should be included as a column in the design matrix. The ordering of the levels should match the ordering used to fit the data in \code{svcAbund}. Columns should correspond to the order of how covariates were specified in the corresponding formula argument of \code{svcAbund}. Column names of all variables must match the names of variables used when fitting the model (for the intercept, use \code{'(Intercept)'}).}
 
-  \item{coords.0}{the spatial coordinates corresponding to \code{X.0}. Note that \code{spAbundance} assumes coordinates are specified 
+  \item{coords.0}{the spatial coordinates corresponding to \code{X.0}. Note that \code{spAbundance} assumes coordinates are specified
   in a projected coordinate system.}
 
    \item{n.omp.threads}{a positive integer indicating
     the number of threads to use for SMP parallel processing. The package must
     be compiled for OpenMP support. For most Intel-based machines, we recommend setting
-    \code{n.omp.threads} up to the number of hyperthreaded cores. 
+    \code{n.omp.threads} up to the number of hyperthreaded cores.
     Note, \code{n.omp.threads} > 1 might not work on some systems.}
 
-  \item{verbose}{if \code{TRUE}, model specification and progress of the 
+  \item{verbose}{if \code{TRUE}, model specification and progress of the
     sampler is printed to the screen. Otherwise, nothing is printed to
     the screen.}
-  
+
   \item{n.report}{the interval to report sampling progress.}
 
   \item{ignore.RE}{logical value that specifies whether or not to remove unstructured random effects from the subsequent predictions. If \code{TRUE}, random effects will be included. If \code{FALSE}, random effects will be set to 0 and predictions will only be generated from the fixed effects.}
 
   \item{z.0.samples}{a matrix with rows corresponding to MCMC samples and columns corresponding to prediction locations containing the full posterior samples of the predicted binary portion of a zero-inflated Gaussian model. In the context of abundance models, this typically corresponds to estimates of the presence or absence of the species at the location. When using \code{spOccupancy} to generate the first stage samples of the zero-inflated Gaussian model, this is the object contained in the \code{z.0.samples} object of the predition function for th spOccupancy object. Ignored for all model types other than zero-inflated Gaussian.}
 
+  \item{include.sp}{a logical value used to indicate whether spatial random effects should be included in the predictions. By default, this is set to \code{TRUE}. If set to \code{FALSE}, predictions are given using the covariates and any unstructured random effects in the model. If \code{FALSE}, the \code{coords.0} argument is not required.}
+
   \item{...}{currently no additional arguments}
 }
 
 \note{
-  When \code{ignore.RE = FALSE}, both sampled levels and non-sampled levels of random effects are supported for prediction. For sampled levels, the posterior distribution for the random intercept corresponding to that level of the random effect will be used in the prediction. For non-sampled levels, random values are drawn from a normal distribution using the posterior samples of the random effect variance, which results in fully propagated uncertainty in predictions with models that incorporate random effects. 
+  When \code{ignore.RE = FALSE}, both sampled levels and non-sampled levels of random effects are supported for prediction. For sampled levels, the posterior distribution for the random intercept corresponding to that level of the random effect will be used in the prediction. For non-sampled levels, random values are drawn from a normal distribution using the posterior samples of the random effect variance, which results in fully propagated uncertainty in predictions with models that incorporate random effects.
 }
 
 \author{
@@ -50,7 +52,7 @@
 }
 
 \value{
-  A list object of class \code{predict.svcAbund}. When \code{type = 'abundance'}, the list consists of: 
+  A list object of class \code{predict.svcAbund}. When \code{type = 'abundance'}, the list consists of:
 
   \item{mu.0.samples}{a \code{coda} object of posterior predictive samples for the
     expected abundance values.}
@@ -59,17 +61,17 @@
     abundance values.}
 
   \item{w.0.samples}{a three-dimensional array of posterior predictive samples
-    for the spatially-varying coefficients, with dimensions corresponding to MCMC iteration, 
+    for the spatially-varying coefficients, with dimensions corresponding to MCMC iteration,
     coefficient, and site.}
 
-  The return object will include additional objects used for standard 
-  extractor functions. 
+  The return object will include additional objects used for standard
+  extractor functions.
 }
 
 \examples{
 set.seed(1000)
 # Sites
-J.x <- 10 
+J.x <- 10
 J.y <- 10
 J <- J.x * J.y
 # Occurrence --------------------------

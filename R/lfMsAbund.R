@@ -529,7 +529,7 @@ lfMsAbund <- function(formula, data, inits, priors,
         }
       }
       beta.star.indx <- rep(0:(p.abund.re - 1), n.abund.re.long)
-      beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
+      beta.star.inits <- rnorm(n.abund.re, 0, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
       # Starting values for all species
       beta.star.inits <- rep(beta.star.inits, n.sp)
     } else {
@@ -776,7 +776,7 @@ lfMsAbund <- function(formula, data, inits, priors,
         lambda.inits <- c(lambda.inits)
         if (p.abund.re > 0) {
           sigma.sq.mu.inits <- runif(p.abund.re, 0.05, 1)
-          beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
+          beta.star.inits <- rnorm(n.abund.re, 0, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
           beta.star.inits <- rep(beta.star.inits, n.sp)
         }
       }

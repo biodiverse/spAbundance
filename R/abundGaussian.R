@@ -364,7 +364,7 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
       }
     }
     beta.star.indx <- rep(0:(p.re - 1), n.re.long)
-    beta.star.inits <- rnorm(n.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
+    beta.star.inits <- rnorm(n.re, 0, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
   } else {
     sigma.sq.mu.inits <- 0
     beta.star.indx <- 0
@@ -449,7 +449,7 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
       beta.inits <- rnorm(p, mu.beta, sqrt(sigma.beta))
       if (p.re > 0) {
         sigma.sq.mu.inits <- runif(p.re, 0.5, 10)
-        beta.star.inits <- rnorm(n.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
+        beta.star.inits <- rnorm(n.re, 0, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
       }
       tau.sq.inits <- runif(1, 0.1, 10)
     }

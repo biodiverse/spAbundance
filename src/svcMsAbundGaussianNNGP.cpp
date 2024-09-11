@@ -447,7 +447,7 @@ extern "C" {
     int sizeBK = nThreads*(1.0+static_cast<int>(floor(nuB[0])));
     double *bk = (double *) R_alloc(q*sizeBK, sizeof(double));
 
-    // wStar is JN x pTilde
+    // wSites is JN x pTilde
     // Spatial process sums for each site and species
     double *wSites = (double *) R_alloc(JN, sizeof(double));
     // For each species and each location, multiply w x Xw

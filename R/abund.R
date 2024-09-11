@@ -395,7 +395,7 @@ abund <- function(formula, data, inits, priors, tuning,
         }
       }
       beta.star.indx <- rep(0:(p.abund.re - 1), n.abund.re.long)
-      beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
+      beta.star.inits <- rnorm(n.abund.re, 0, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
     } else {
       sigma.sq.mu.inits <- 0
       beta.star.indx <- 0
@@ -545,7 +545,7 @@ abund <- function(formula, data, inits, priors, tuning,
         }
         if (p.abund.re > 0) {
           sigma.sq.mu.inits <- runif(p.abund.re, 0.05, 1)
-          beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
+          beta.star.inits <- rnorm(n.abund.re, 0, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
         }
       }
       storage.mode(chain.info) <- "integer"

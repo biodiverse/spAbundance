@@ -7,9 +7,9 @@
 }
 
 \usage{
-simAbund(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = list(), 
-         offset = 1, sp = FALSE, svc.cols = 1, cov.model, sigma.sq, phi, nu, 
-         family = 'Poisson', z, x.positive = FALSE, ...)
+simAbund(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = list(),
+         offset = 1, sp = FALSE, svc.cols = 1, cov.model, sigma.sq, phi, nu,
+         family = 'Poisson', z, trend = FALSE, x.positive = FALSE, ...)
 }
 
 \arguments{
@@ -44,13 +44,15 @@ simAbund(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = list(),
 
 \item{phi}{a numeric value indicating the spatial decay parameter. Ignored when \code{sp = FALSE}. }
 
-\item{nu}{a numeric value indicating the spatial smoothness parameter. Only used when \code{sp = TRUE} and \code{cov.model = "matern"}.} 
+\item{nu}{a numeric value indicating the spatial smoothness parameter. Only used when \code{sp = TRUE} and \code{cov.model = "matern"}.}
 
 \item{family}{the distribution to use for the data. Currently
   supports \code{'NB'} (negative binomial), \code{'Poisson'}, \code{'Gaussian'}, and
   \code{'zi-Gaussian'}.}
 
 \item{z}{a vector of length \code{J} containing the binary presence/absence portion of a zero-inflated Gaussian model. Only relevant when \code{family = 'zi-Gaussian'}.}
+
+\item{trend}{a logical value indicating whether a trend should be included when simulating relative abundance. If \code{TRUE}, the second covariate will be simulated as a trend over the replicate surveys for a given site. Only relevant when \code{n.rep} is not 1 at every site.}
 
 \item{x.positive}{a logical value indicating whether the simulated covariates should be simulated as random standard normal covariates (\code{x.positive = FALSE}) or restricted to positive values using a uniform distribution with lower bound 0 and upper bound 1 (\code{x.positive = TRUE}).}
 
@@ -62,7 +64,7 @@ simAbund(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = list(),
 }
 
 \value{
-  A list comprised of: 
+  A list comprised of:
 
   \item{X}{a three-dimensional numeric design array of covariates with dimensions corresponding to sites, replicates, and number of covariates (including an intercept) for the model.}
   \item{coords}{a \eqn{J \times 2}{J x 2} numeric matrix of coordinates of each site. Required for spatial models.}
@@ -83,8 +85,8 @@ beta <- c(0, -1.5, 0.3, -0.8)
 p.abund <- length(beta)
 mu.RE <- list(levels = c(30), sigma.sq.mu = c(1.3))
 kappa <- 0.5
-sp <- FALSE 
+sp <- FALSE
 family <- 'NB'
-dat <- simAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta, 
+dat <- simAbund(J.x = J.x, J.y = J.y, n.rep = n.rep, beta = beta,
                 kappa = kappa, mu.RE = mu.RE, sp = sp, family = 'NB')
 }

@@ -1,6 +1,6 @@
 simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = list(),
 		     offset = 1, sp = FALSE, svc.cols = 1, cov.model, sigma.sq, phi,
-		     nu, family = 'Poisson', z, x.positive = FALSE, ...) {
+		     nu, family = 'Poisson', z, trend = FALSE, x.positive = FALSE, ...) {
 
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -78,9 +78,6 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
   if (length(svc.cols) > 1 & !sp) {
     stop("error: if simulating data with spatially-varying coefficients, set sp = TRUE")
   }
-  if (length(svc.cols) > 1 & family %in% c('Poisson', 'NB')) {
-    stop("spatially-varying coefficient models are only currently supported for Gaussian and zi-Gaussian models")
-  }
   if (sp) {
     if(missing(sigma.sq)) {
       stop("error: sigma.sq must be specified when sp = TRUE")
@@ -140,16 +137,30 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
   }
   X[, , 1] <- 1
   if (n.beta > 1) {
-    for (i in 2:n.beta) {
+    if (trend) { # if simulating data with a trend
       for (j in 1:J) {
-        if (x.positive) {
-          X[j, rep.indx[[j]], i] <- runif(n.rep[j], 0, 5)
-
-	} else {
-          X[j, rep.indx[[j]], i] <- rnorm(n.rep[j])
-	}
+        X[j, rep.indx[[j]], 2] <- (scale(1:n.rep.max))[rep.indx[[j]]]
+        if (n.beta > 2) {
+          for (i in 3:n.beta) {
+            if (x.positive) {
+              X[j, rep.indx[[j]], i] <- runif(n.rep[j], 0, 5)
+            } else {
+              X[j, rep.indx[[j]], i] <- rnorm(n.rep[j])
+            }
+          }
+        }
       }
-    } # i
+    } else {
+      for (i in 2:n.beta) {
+        for (j in 1:J) {
+          if (x.positive) {
+            X[j, rep.indx[[j]], i] <- runif(n.rep[j], 0, 5)
+          } else {
+            X[j, rep.indx[[j]], i] <- rnorm(n.rep[j])
+          }
+        }
+      } # i
+    }
   }
 
   # Simulate spatial random effect ----------------------------------------

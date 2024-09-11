@@ -1,8 +1,11 @@
-# spAbundance 0.1.4
+# spAbundance 0.2.0
 
++ Updated `svcAbund()` to now work with Poisson and negative binomial families. Note that the function now defaults to use `family = 'Poisson'`, which differs from the previous implementation when only `family = 'Gaussian'` was supported. This switch was done to maintain consistency with other spAbundance model-fitting functions. 
 + Added functionality for independent priors on the species-specific effects to allow species-effects to be treated as fixed effects as opposed to random effects from a common community-level distribution for the following model types: `msNMix()`.  
 + Added in a check at the top of all model fitting functions to return an error when the number of posterior samples saved based on the MCMC criteria (`n.batch`, `batch.length`, `n.samples`, `n.burn`, `n.thin`, `n.chains`) are specified in a way that leads to a non-integer value. In such situations, models would previously run and return without an error, but sometimes the last posterior sample in any given chain could have widely inaccurate values, or values that prevented subsequent functions from working. Thanks to Wendy Leuenberger for bringing this to my attention. 
++ Fixed some typos in the documentation.
 + Updated C++ code to adhere to the new lack of re-mapping of functions in Rinternals.h and R_ext/Error.h when building packages on CRAN. 
++ Fixed a typo in the generation of initial values for latent unstructured random effects in all model functions. The typo had no major ramifications, if anything it just led to slower convergence, as it resulted in very large (or very small) initial values for the latent random effects that are not really viable on the log scale.
 
 
 # spAbundance 0.1.3

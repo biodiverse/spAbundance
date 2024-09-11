@@ -516,7 +516,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
 	}
       } else {
         message("beta.star is not specified in initial values.\nSetting initial values from the prior.\n")
-        beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
+        beta.star.inits <- rnorm(n.abund.re, 0, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
         # Starting values for all species
         beta.star.inits <- rep(beta.star.inits, n.sp)
       }
@@ -687,7 +687,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
         }
         if (p.abund.re > 0) {
           sigma.sq.mu.inits <- runif(p.abund.re, 0.05, 1)
-          beta.star.inits <- rnorm(n.abund.re, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
+          beta.star.inits <- rnorm(n.abund.re, 0, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
           beta.star.inits <- rep(beta.star.inits, n.sp)
         }
       }
