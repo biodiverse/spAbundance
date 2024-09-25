@@ -403,7 +403,7 @@ extern "C" {
         // Proposal
         for (k = 0; k < pAbund; k++) {
           logPostBetaCand = 0.0;
-	  logPostBetaCurr = 0.0;
+          logPostBetaCurr = 0.0;
           betaCand[k] = rnorm(beta[k], exp(tuning[betaAMCMCIndx + k]));
           logPostBetaCand += dnorm(betaCand[k], muBeta[k], sqrt(SigmaBeta[k * pAbund + k]), 1);
 	  logPostBetaCurr += dnorm(beta[k], muBeta[k], sqrt(SigmaBeta[k * pAbund + k]), 1);

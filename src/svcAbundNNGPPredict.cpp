@@ -1,4 +1,3 @@
-// TODO: there is a memory problem here at 255 and 260 for spAbund type models (at least).
 #define USE_FC_LEN_T
 #include <string>
 #include "util.h"

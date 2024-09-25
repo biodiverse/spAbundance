@@ -549,7 +549,7 @@ extern "C" {
 	                e += B[ll * nIndx + nnIndxLU[jj]+i]*wCand[(nnIndx[nnIndxLU[jj]+i]) * pTilde + ll];
                 }
                 b = wCand[jj * pTilde + ll] - e;
-                a += b*b/F[ll * J + j];
+                a += b*b/F[ll * J + jj];
               }
 	          }
 	          // MVN for j

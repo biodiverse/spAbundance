@@ -440,7 +440,6 @@ extern "C" {
         /********************************************************************
          *Update random effects
          *******************************************************************/
-	// TODO: The random slopes component of this does not work.
         if (pRE > 0) {
           // Update each individual random effect one by one.
           for (l = 0; l < nRE; l++) {
@@ -455,13 +454,12 @@ extern "C" {
             for (j = 0; j < J; j++) {
               if (XRE[betaStarIndx[l] * J + j] == betaLevelIndx[l]) {
                 tmp_02 = 0.0;
-		for (ll = 0; ll < pRE; ll++) {
+                for (ll = 0; ll < pRE; ll++) {
                   tmp_02 += betaStar[betaStarLongIndx[ll * J + j]] * XRandom[ll * J + j];
-		}
+                }
                 tmp_one[0] += XRandom[betaStarIndx[l] * J + j] * (y[j] - F77_NAME(ddot)(&p, &X[j], &J, beta, &inc) -
-          		    tmp_02 + (betaStar[l] * XRandom[betaStarIndx[l] * J + j]) -
-			    wSites[j]) / tauSq;
-		// TODO: check this out. This matches postHocLM.
+                              tmp_02 + (betaStar[l] * XRandom[betaStarIndx[l] * J + j]) -
+                              wSites[j]) / tauSq;
                 tmp_0 += XRandom[betaStarIndx[l] * J + j] * XRandom[betaStarIndx[l] * J + j] / tauSq;
               }
             }

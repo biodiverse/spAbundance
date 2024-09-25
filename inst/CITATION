@@ -1,20 +1,36 @@
-if (!exists("meta") || is.null(meta)) meta <- packageDescription("spOccupancy")
+if (!exists("meta") || is.null(meta)) meta <- packageDescription("spAbundance")
 
-year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date, perl = TRUE)
-vers <- paste("R package version", meta$Version)
+citHeader("To cite package", sQuote(meta$Package), "in publications, please cite the Doser, Finley, Kéry, Zipkin (2024) paper. If using functions lfMsAbund, sfMsAbund, lfMsDS, or sfMsDS, please also cite the Doser, Finley, Banerjee (2023) paper that developed much of the code used for these functions.") 
 
 bibentry(bibtype = "Article",
   title        = "{spAbundance: An R package for univariate and multivariate spatially-explicit abundance models}",
   author       = c(as.person("Jeffrey W. Doser"), as.person("Andrew O. Finley"), as.person("Marc Kéry"), as.person("Elise F. Zipkin")),
-  journal      = "arXiv Preprint",
+  journal      = "Methods in Ecology and Evolution",
+  year         = "2024",
+  volume       = "15",
+  number       = "",
+  pages        = "1024-1033",
+  url          = "https://doi.org/10.1111/2041-210X.14332",
+
+  textVersion  =
+  paste("Doser, J. W., Finley A. O., Kéry, M., & Zipkin E. F. (2024).",
+        "spAbundance: An R package for single-species and multi-species spatially explicit abundance models",
+        "Methods in Ecology and Evolution, 15, 1024-1033. https://doi.org/10.1111/2041-210X.14332")
+)
+
+bibentry(bibtype = "Article",
+  title        = "Joint species distribution models with imperfect detection for high-dimensional spatial data",
+  author       = c(as.person("Jeffrey W. Doser"), as.person("Andrew O. Finley"), as.person("Sudipto Banerjee")),
+  journal      = "Ecology",
   year         = "2023",
   volume       = "",
   number       = "",
-  pages        = "",
-  url          = "",
+  pages        = "e4137",
+  url          = "https://doi.org/10.1002/ecy.4137",
 
   textVersion  =
-  paste("Doser, J. W., Finley A. O., Kéry, M., & Zipkin E. F. (2022).",
-        "spAbundance: An R package for univariate and multivariate spatially-explicit abundance models",
-        "arXiv Preprint.")
+  paste("Doser, J. W., Finley A. O., & Banerjee, S. (2023).",
+        "Joint species distribution models with imperfect detection for high-dimensional spatial data",
+        "Ecology e4137. https://doi.org/10.1002/ecy.4137")
 )
+
