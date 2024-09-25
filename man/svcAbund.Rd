@@ -49,7 +49,7 @@ svcAbund(formula, data, inits, priors, tuning,
 
   \item{inits}{a list with each tag corresponding to a parameter name.
     Valid tags are \code{beta}, \code{sigma.sq},
-    \code{phi}, \code{w}, \code{nu}, \code{tau.sq}, \code{sigma.sq.mu}.
+    \code{phi}, \code{w}, \code{nu}, \code{tau.sq}, \code{sigma.sq.mu}, \code{kappa}.
     \code{nu} is only specified if \code{cov.model = "matern"}, \code{sigma.sq.mu}
     is only specified if there are random effects in \code{formula}, and
     The value portion of each tag is the parameter's initial value. See \code{priors}
@@ -61,7 +61,7 @@ svcAbund(formula, data, inits, priors, tuning,
   \item{priors}{a list with each tag corresponding to a parameter name.
     Valid tags are \code{beta.normal}, \code{phi.unif},
     \code{sigma.sq.ig}, \code{nu.unif}, \code{tau.sq.ig},
-    \code{sigma.sq.mu.ig}. Abundance (\code{beta}) regression coefficients
+    \code{sigma.sq.mu.ig}, \code{kappa.unif}. Abundance (\code{beta}) regression coefficients
     are assumed to follow a normal distribution. The hyperparameters of the
     normal distribution are passed as a list of length two with the first
     and second elements corresponding to the mean and variance of the normal
@@ -90,7 +90,10 @@ svcAbund(formula, data, inits, priors, tuning,
     first and second elements corresponding to the shape and scale parameters,
     respectively, which are each specified as vectors of length equal to the
     number of random effects or of length one if priors are the same for all
-    random effect variances.}
+    random effect variances. The negative binomial dispersion parameter \code{kappa} is 
+    assumed to follow a Uniform distribution. The hyperparameters of the Uniform are passed 
+    as a vector of length two with the first and second elements corresponding to the
+    lower and upper support, respectively.}
 
   \item{svc.cols}{a vector indicating the variables whose effects will be
     estimated as spatially-varying coefficients. \code{svc.cols} can be an
@@ -216,6 +219,10 @@ svcAbund(formula, data, inits, priors, tuning,
 
   \item{tau.sq.samples}{a \code{coda} object of posterior samples
     for the residual variance parameter.}
+
+  \item{kappa.samples}{a \code{coda} object of posterior samples
+    for the abundance dispersion parameter. Only included when
+    \code{family = 'NB'}.}
 
   \item{y.rep.samples}{a two or three-dimensional object of posterior samples
     for the abundance replicate (fitted) values with dimensions

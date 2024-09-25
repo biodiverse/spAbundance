@@ -557,8 +557,8 @@ predict.spAbund <- function(object, X.0, coords.0,
       X.0 <- X.0[non.missing.indx, , drop = FALSE]
 
       n.post <- object$n.post * object$n.chains
-      p.abund <- dim(X)[3]
       X <- object$X
+      p.abund <- dim(X)[3]
       if (is(object, 'spAbund')) {
         svc.cols <- 1
         p.svc <- 1
