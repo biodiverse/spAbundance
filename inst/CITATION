@@ -1,6 +1,6 @@
 if (!exists("meta") || is.null(meta)) meta <- packageDescription("spAbundance")
 
-citHeader("To cite package", sQuote(meta$Package), "in publications, please cite the Doser, Finley, Kéry, Zipkin (2024) paper. If using functions lfMsAbund, sfMsAbund, lfMsDS, or sfMsDS, please also cite the Doser, Finley, Banerjee (2023) paper that developed much of the code used for these functions.") 
+citHeader("To cite package", sQuote(meta$Package), "in publications, please cite the Doser, Finley, Kéry, Zipkin (2024) paper. If using functions lfMsAbund, sfMsAbund, lfMsNMix, sfMsNMix, lfMsDS, or sfMsDS, please also cite the Doser, Finley, Banerjee (2023) paper that developed much of the code used for these functions.") 
 
 bibentry(bibtype = "Article",
   title        = "{spAbundance: An R package for univariate and multivariate spatially-explicit abundance models}",

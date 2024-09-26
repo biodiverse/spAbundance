@@ -1,12 +1,12 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# spAbundance <a href='https://www.doserlab.com/files/spabundance-web/'><img src="man/figures/logo.png" align="right" height="139" width="120"/></a>
+# spAbundance <a href='https://doserlab.com/files/spabundance-web/'><img src="man/figures/logo.png" align="right" height="139" width="120"/></a>
 
 [![](http://cranlogs.r-pkg.org/badges/grand-total/spAbundance?color=blue)](https://CRAN.R-project.org/package=spAbundance)
 [![CRAN](https://www.r-pkg.org/badges/version/spAbundance)](https://CRAN.R-project.org/package=spAbundance)
 [![Codecov test
-coverage](https://codecov.io/gh/biodiverse/spAbundance/branch/main/graph/badge.svg)](https://codecov.io/gh/biodiverse/spAbundance?branch=main)
+coverage](https://codecov.io/gh/biodiverse/spAbundance/branch/main/graph/badge.svg)](https://app.codecov.io/gh/biodiverse/spAbundance?branch=main)
 
 `spAbundance` fits univariate (i.e., single-species) and multivariate
 (i.e., multi-species) spatial N-mixture models, hierarchical distance
@@ -14,7 +14,7 @@ sampling models, and generalized linear mixed models using Markov chain
 Monte Carlo (MCMC). Spatial models are fit using Nearest Neighbor
 Gaussian Processes (NNGPs) to facilitate model fitting to large spatial
 datasets. `spAbundance` uses analogous syntax to its “sister package”
-[spOccupancy](https://www.doserlab.com/files/spoccupancy-web/) (Doser et
+[spOccupancy](https://doserlab.com/files/spoccupancy-web/) (Doser et
 al. 2022). Below we provide a very brief introduction to some of the
 package’s functionality, and illustrate just one of the model fitting
 functions. For more information, see the resources referenced at the
@@ -250,7 +250,7 @@ hierarchical distance sampling models, N-mixture models, and generalized
 linear mixed models in `spAbundance`, respectively. Given the similarity
 in syntax to fitting occupancy models in the `spOccupancy` package, much
 of the documentation on the [`spOccupancy`
-website](https://www.doserlab.com/files/spoccupancy-web/) will also be
+website](https://doserlab.com/files/spoccupancy-web/) will also be
 helpful for fitting models in `spAbundance`. Please also consider
 joining the [`spAbundance` and `spOccupancy` users google
 group](https://groups.google.com/g/spocc-spabund-users) to learn from
