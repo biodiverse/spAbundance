@@ -6,7 +6,7 @@
 [![](http://cranlogs.r-pkg.org/badges/grand-total/spAbundance?color=blue)](https://CRAN.R-project.org/package=spAbundance)
 [![CRAN](https://www.r-pkg.org/badges/version/spAbundance)](https://CRAN.R-project.org/package=spAbundance)
 [![Codecov test
-coverage](https://codecov.io/gh/doserjef/spAbundance/branch/main/graph/badge.svg)](https://codecov.io/gh/doserjef/spAbundance?branch=main)
+coverage](https://codecov.io/gh/biodiverse/spAbundance/branch/main/graph/badge.svg)](https://codecov.io/gh/biodiverse/spAbundance?branch=main)
 
 `spAbundance` fits univariate (i.e., single-species) and multivariate
 (i.e., multi-species) spatial N-mixture models, hierarchical distance
@@ -35,7 +35,7 @@ To download the development version of the package, you can use
 `devtools` as follows:
 
 ``` r
-devtools::install_github("doserjef/spAbundance")
+devtools::install_github("biodiverse/spAbundance")
 ```
 
 Note that because we implement the MCMC in C++, you will need a C++
@@ -160,7 +160,7 @@ summary(out)
 #> Thinning Rate: 5
 #> Number of Chains: 3
 #> Total Posterior Samples: 6000
-#> Run Time (min): 0.9219
+#> Run Time (min): 0.7582
 #> 
 #> Abundance (log scale): 
 #>                  Mean     SD    2.5%     50%   97.5%   Rhat ESS

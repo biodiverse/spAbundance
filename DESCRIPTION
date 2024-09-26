@@ -9,7 +9,7 @@ Encoding: UTF-8
 LazyData: true
 URL: https://www.doserlab.com/files/spabundance-web
      https://groups.google.com/g/spocc-spabund-users
-BugReports: https://github.com/doserjef/spAbundance/issues
+BugReports: https://github.com/biodiverse/spAbundance/issues
 Depends: R (>= 3.5.0)
 Imports: 
     stats, coda, abind, RANN, lme4, foreach, doParallel, methods

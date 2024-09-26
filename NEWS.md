@@ -6,6 +6,7 @@
 + Fixed some typos in the documentation.
 + Updated C++ code to adhere to the new lack of re-mapping of functions in Rinternals.h and R_ext/Error.h when building packages on CRAN. 
 + Fixed a typo in the generation of initial values for latent unstructured random effects in all model functions. The typo had no major ramifications, if anything it just led to slower convergence, as it resulted in very large (or very small) initial values for the latent random effects that are not really viable on the log scale.
++ Moved GitHub development page to the "biodiverse" group. The GitHub link for the development repository is now [https://github.com/biodiverse/spAbundance](https://github.com/biodiverse/spAbundance). 
 
 
 # spAbundance 0.1.3
