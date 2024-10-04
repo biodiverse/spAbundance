@@ -1,3 +1,7 @@
+# spAbundance 0.2.1
+
++ Fixed a `C++` memory issue in `predict.spAbund()` that could result in crashes under certain situations.
+
 # spAbundance 0.2.0
 
 + Updated `svcAbund()` to now work with Poisson and negative binomial families. Note that the function now defaults to use `family = 'Poisson'`, which differs from the previous implementation when only `family = 'Gaussian'` was supported. This switch was done to maintain consistency with other spAbundance model-fitting functions. 

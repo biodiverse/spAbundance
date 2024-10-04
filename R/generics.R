@@ -562,7 +562,7 @@ predict.spAbund <- function(object, X.0, coords.0,
       if (is(object, 'spAbund')) {
         svc.cols <- 1
         p.svc <- 1
-        X.w.0 <- matrix(1, nrow = X.0, ncol = 1)
+        X.w.0 <- matrix(1, nrow = nrow(X.0), ncol = 1)
       } else {
         svc.cols <- object$svc.cols
         p.svc <- length(svc.cols)
