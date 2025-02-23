@@ -10,7 +10,8 @@
 simMsAbund(J.x, J.y, n.rep, n.rep.max, n.sp, beta, kappa, tau.sq, mu.RE = list(), 
            offset = 1, sp = FALSE, cov.model, svc.cols = 1,
            sigma.sq, phi, nu, family = 'Poisson',
-           factor.model = FALSE, n.factors, z, ...)
+           factor.model = FALSE, n.factors, z, 
+           lambda.diag = 'one', ...)
 }
 
 \arguments{
@@ -58,6 +59,8 @@ simMsAbund(J.x, J.y, n.rep, n.rep.max, n.sp, beta, kappa, tau.sq, mu.RE = list()
   supports \code{'NB'} (negative binomial) and \code{'Poisson'}.}
 
 \item{z}{a matrix with \code{n.sp} rows and \code{J} columns containing the binary presence/absence portion of a zero-inflated Gaussian model for each species. Only relevant when \code{family = 'zi-Gaussian'}.}
+
+\item{lambda.diag}{a character value taking value 'one' or 'positive' to indicate how to simulate the diagonal of the factor loadings matrix. Default is 'one'.}
 
 \item{...}{currently no additional arguments}
 }

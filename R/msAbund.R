@@ -100,7 +100,7 @@ msAbund <- function(formula, data, inits, priors, tuning,
       offset <- data$offset
       if (length(offset) == 1) {
         offset <- matrix(offset, ncol(y), dim(y)[3])
-      } else if (length(dim(offset)) == 1) { # Value for each site
+      } else if (length(dim(offset)) == 0 & length(offset) > 1) { # Value for each site
         if (length(offset) != ncol(y)) {
           stop(paste0("offset must be a single value, vector of length ", ncol(y), " or a matrix with ",
                      ncol(y), " rows and ", dim(y)[3], " columns."))

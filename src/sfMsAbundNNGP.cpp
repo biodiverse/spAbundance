@@ -74,6 +74,7 @@ extern "C" {
                      SEXP kappaB_r, SEXP tauSqBetaA_r, SEXP tauSqBetaB_r,
                      SEXP phiA_r, SEXP phiB_r, SEXP nuA_r, SEXP nuB_r,
                      SEXP sigmaSqMuA_r, SEXP sigmaSqMuB_r,
+                     SEXP lambdaDiagA_r, SEXP lambdaDiagB_r,
                      SEXP tuning_r, SEXP covModel_r,
                      SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r,
                      SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r,
@@ -124,6 +125,8 @@ extern "C" {
     double *phiB = REAL(phiB_r);
     double *nuA = REAL(nuA_r);
     double *nuB = REAL(nuB_r);
+    double lambdaDiagA = REAL(lambdaDiagA_r)[0];
+    double lambdaDiagB = REAL(lambdaDiagB_r)[0];
     int *nnIndx = INTEGER(nnIndx_r);
     int *nnIndxLU = INTEGER(nnIndxLU_r);
     int *uIndx = INTEGER(uIndx_r);
@@ -867,56 +870,67 @@ extern "C" {
         /********************************************************************
          *Update spatial factors (lambda)
          *******************************************************************/
-	for (i = 0; i < nSp; i++) {
+        for (i = 0; i < nSp; i++) {
           for (ll = 0; ll < q; ll++) {
-            if (ll < i) { // only update lower triangle
-	      lambdaCand[ll * nSp + i] = rnorm(lambda[ll * nSp + i],
-                                               exp(tuning[lambdaAMCMCIndx + ll * nSp + i]));
-	      logPostLambdaCand[ll * nSp + i] = dnorm(lambdaCand[ll * nSp + i], 0.0, 1.0, 1);
-              logPostLambdaCurr[ll * nSp + i] = dnorm(lambda[ll * nSp + i], 0.0, 1.0, 1);
-	      for (j = 0; j < J; j++) {
+            if (ll <= i) { // only update lower triangle and diagonal
+              if (ll == i) { // Diagonal
+                lambdaCand[ll * nSp + i] = logitInv(rnorm(logit(lambda[ll * nSp + i], 
+                                                                lambdaDiagA, lambdaDiagB), 
+                                                          exp(tuning[lambdaAMCMCIndx + ll * nSp + i])),
+                                                    lambdaDiagA, lambdaDiagB);
+                logPostLambdaCand[ll * nSp + i] = log(lambdaCand[ll * nSp + i] - lambdaDiagA) + 
+                                                  log(lambdaDiagB - lambdaCand[ll * nSp + i]);
+                logPostLambdaCurr[ll * nSp + i] = log(lambda[ll * nSp + i] - lambdaDiagA) + 
+                                                  log(lambdaDiagB - lambda[ll * nSp + i]);
+              } else { // Lower triangle
+                lambdaCand[ll * nSp + i] = rnorm(lambda[ll * nSp + i],
+                                                 exp(tuning[lambdaAMCMCIndx + ll * nSp + i]));
+                logPostLambdaCand[ll * nSp + i] = dnorm(lambdaCand[ll * nSp + i], 0.0, 1.0, 1);
+                logPostLambdaCurr[ll * nSp + i] = dnorm(lambda[ll * nSp + i], 0.0, 1.0, 1);
+              }
+              for (j = 0; j < J; j++) {
                 wStarCand[j * nSp + i] = 0.0;
-		for (ii = 0; ii < q; ii++) {
+                for (ii = 0; ii < q; ii++) {
                   wStarCand[j * nSp + i] += lambdaCand[ii * nSp + i] * w[j * q + ii];
-		} // ii
-	      } // j
+                } // ii
+              } // j
               for (r = 0; r < nObs; r++) {
                 // Candidate
                 tmp_nObs[r] = exp(F77_NAME(ddot)(&pAbund, &X[r], &nObs, &beta[i], &nSp) +
                                   betaStarSites[i * nObs + r] + wStarCand[siteIndx[r] * nSp + i]);
-	        if (family == 1) {
+                if (family == 1) {
                   logPostLambdaCand[ll * nSp + i] += dnbinom_mu(y[r * nSp + i], kappa[i],
                                                                 tmp_nObs[r] * offset[r], 1);
-	        } else {
+                } else {
                   logPostLambdaCand[ll * nSp + i] += dpois(y[r * nSp + i], tmp_nObs[r] * offset[r], 1);
-	        }
-		// Current
+                }
+                // Current
                 tmp_nObs[r] = exp(F77_NAME(ddot)(&pAbund, &X[r], &nObs, &beta[i], &nSp) +
                                   betaStarSites[i * nObs + r] + wStar[siteIndx[r] * nSp + i]);
-	        if (family == 1) {
+                if (family == 1) {
                   logPostLambdaCurr[ll * nSp + i] += dnbinom_mu(y[r * nSp + i], kappa[i],
                                                                 tmp_nObs[r] * offset[r], 1);
-	        } else {
+                } else {
                   logPostLambdaCurr[ll * nSp + i] += dpois(y[r * nSp + i], tmp_nObs[r] * offset[r], 1);
-	        }
-	      } // r
+                }
+              } // r
               if (runif(0.0, 1.0) <= exp(logPostLambdaCand[ll * nSp + i] -
-				         logPostLambdaCurr[ll * nSp + i])) {
+				        logPostLambdaCurr[ll * nSp + i])) {
                 lambda[ll * nSp + i] = lambdaCand[ll * nSp + i];
-		for (j = 0; j < J; j++) {
+                for (j = 0; j < J; j++) {
                   wStar[j * nSp + i] = wStarCand[j * nSp + i];
-		}
-		accept[lambdaAMCMCIndx + ll * nSp + i]++;
-	      } else {
+                }
+                accept[lambdaAMCMCIndx + ll * nSp + i]++;
+              } else {
                 // Reset everything back to what it was
-		for (j = 0; j < J; j++) {
+                for (j = 0; j < J; j++) {
                   wStarCand[j * nSp + i] = wStar[j * nSp + i];
-		}
+                }
                 lambdaCand[ll * nSp + i] = lambda[ll * nSp + i];
-	      }
-	    }
-	  } // ll (factor)
-	} // i (species)
+              }
+            }
+          } // ll (factor)
+        } // i (species)
 
         /********************************************************************
          *Update phi (and nu if matern)

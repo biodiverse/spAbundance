@@ -496,14 +496,14 @@ extern "C" {
         /********************************************************************
          *Update w (spatial random effects)
          *******************************************************************/
-	for (j = 0; j < J; j++) {
+        for (j = 0; j < J; j++) {
           // Proposal
           a = 0.0;
           // Propose new value
-	  logPostWCand[j] = 0.0;
-	  wCand[j] = rnorm(w[j], exp(tuning[wAMCMCIndx + j]));
-	  // MVN for any neighbors of j
-	  if (uIndxLU[J + j] > 0) { // if current location j is a neighbor for anybody
+          logPostWCand[j] = 0.0;
+          wCand[j] = rnorm(w[j], exp(tuning[wAMCMCIndx + j]));
+          // MVN for any neighbors of j
+          if (uIndxLU[J + j] > 0) { // if current location j is a neighbor for anybody
             for (r = 0; r < uIndxLU[J + j]; r++) { // how many locations have j as a neighbor
               jj = uIndx[uIndxLU[j] + r]; // jj is the index of the rth location who has j as a neighbor
               e = 0;
@@ -513,15 +513,15 @@ extern "C" {
               b = wCand[jj] - e;
               a += b*b/F[jj];
             }
-	  }
-	  // MVN for j
+          }
+          // MVN for j
           if(nnIndxLU[J+j] > 0){ // if j has any neighbors
             e = 0;
             for(i = 0; i < nnIndxLU[J+j]; i++){
               e += B[nnIndxLU[j]+i]*wCand[nnIndx[nnIndxLU[j]+i]];
             }
             b = wCand[j] - e;
-          }else{
+          } else{
             b = wCand[j];
           }
           a += b*b/F[j];
@@ -532,15 +532,15 @@ extern "C" {
                                 betaStarSites[i] + wCand[j]);
               if (family == 1) {
                 logPostWCand[j] += dnbinom_mu(y[i], kappa, tmp_nObs[i] * offset[i], 1);
-	      } else {
+              } else {
                 logPostWCand[j] += dpois(y[i], tmp_nObs[i] * offset[i], 1);
-	      }
-	    }
-	  }
+              }
+            }
+          }
 
-	  a = 0.0;
-	  // MVN for any neighbors of j
-	  if (uIndxLU[J + j] > 0) { // if current location j is a neighbor for anybody
+          a = 0.0;
+          // MVN for any neighbors of j
+          if (uIndxLU[J + j] > 0) { // if current location j is a neighbor for anybody
             for (r = 0; r < uIndxLU[J + j]; r++) { // how many locations have j as a neighbor
               jj = uIndx[uIndxLU[j] + r]; // jj is the index of the rth location who has j as a neighbor
               e = 0;
@@ -550,15 +550,15 @@ extern "C" {
               b = w[jj] - e;
               a += b*b/F[jj];
             }
-	  }
-	  // MVN for j
+          }
+          // MVN for j
           if(nnIndxLU[J+j] > 0){ // if j has any neighbors
             e = 0;
             for(i = 0; i < nnIndxLU[J+j]; i++){
               e += B[nnIndxLU[j]+i]*w[nnIndx[nnIndxLU[j]+i]];
             }
             b = w[j] - e;
-          }else{
+          } else{
             b = w[j];
           }
           a += b*b/F[j];
@@ -567,20 +567,19 @@ extern "C" {
             if (siteIndx[i] == j) {
               tmp_nObs[i] = exp(F77_NAME(ddot)(&pAbund, &X[i], &nObs, beta, &inc) +
                                 betaStarSites[i] + w[j]);
-	      if (family == 1) {
+              if (family == 1) {
                 logPostWCurr[j] += dnbinom_mu(y[i], kappa, tmp_nObs[i] * offset[i], 1);
-	      } else {
+              } else {
                 logPostWCurr[j] += dpois(y[i], tmp_nObs[i] * offset[i], 1);
-	      }
-	    }
-	  }
-
-	  if (runif(0.0, 1.0) <= exp(logPostWCand[j] - logPostWCurr[j])) {
-	    w[j] = wCand[j];
-	    accept[wAMCMCIndx + j]++;
-	  } else {
+              }
+            }
+          }
+          if (runif(0.0, 1.0) <= exp(logPostWCand[j] - logPostWCurr[j])) {
+            w[j] = wCand[j];
+            accept[wAMCMCIndx + j]++;
+          } else {
             wCand[j] = w[j];
-	  }
+          }
         }
 
         /********************************************************************

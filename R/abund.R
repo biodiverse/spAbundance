@@ -1,8 +1,8 @@
 abund <- function(formula, data, inits, priors, tuning,
-		  n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
-		  n.omp.threads = 1, verbose = TRUE,
-		  n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1,
-		  n.chains = 1, save.fitted = TRUE, ...) {
+                  n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
+                  n.omp.threads = 1, verbose = TRUE,
+                  n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1,
+                  n.chains = 1, save.fitted = TRUE, ...) {
 
   ptm <- proc.time()
 
@@ -59,7 +59,7 @@ abund <- function(formula, data, inits, priors, tuning,
       offset <- data$offset
       if (length(offset) == 1) {
         offset <- matrix(offset, nrow(y), ncol(y))
-      } else if (length(dim(offset)) == 1) { # Value for each site
+      } else if (length(dim(offset)) == 0 & length(offset) > 1) { # Value for each site
         if (length(offset) != nrow(y)) {
           stop(paste0("offset must be a single value, vector of length ", nrow(y), " or a matrix with ",
                      nrow(y), " rows and ", ncol(y), " columns."))

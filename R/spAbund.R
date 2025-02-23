@@ -1,10 +1,10 @@
 spAbund <- function(formula, data, inits, priors, tuning,
-		    cov.model = 'exponential', NNGP = TRUE,
-		    n.neighbors = 15, search.type = 'cb',
-		    n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
-		    n.omp.threads = 1, verbose = TRUE,
-		    n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1,
-		    n.chains = 1, save.fitted = TRUE, ...){
+                    cov.model = 'exponential', NNGP = TRUE,
+                    n.neighbors = 15, search.type = 'cb',
+                    n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
+                    n.omp.threads = 1, verbose = TRUE,
+                    n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1,
+                    n.chains = 1, save.fitted = TRUE, ...){
 
   ptm <- proc.time()
 
@@ -23,13 +23,6 @@ spAbund <- function(formula, data, inits, priors, tuning,
       cat("----------------------------------------\n");
       cat("\tPreparing to run the model\n");
       cat("----------------------------------------\n");
-    }
-
-    # Functions ---------------------------------------------------------------
-    logit <- function(theta, a = 0, b = 1) {log((theta-a)/(b-theta))}
-    logit.inv <- function(z, a = 0, b = 1) {b-(b-a)/(1+exp(z))}
-    rigamma <- function(n, a, b){
-      1/rgamma(n = n, shape = a, rate = b)
     }
 
     # Check for unused arguments ------------------------------------------
@@ -64,7 +57,7 @@ spAbund <- function(formula, data, inits, priors, tuning,
       offset <- data$offset
       if (length(offset) == 1) {
         offset <- matrix(offset, nrow(y), ncol(y))
-      } else if (length(dim(offset)) == 1) { # Value for each site
+      } else if (length(dim(offset)) == 0 & length(offset) > 1) { # Value for each site
         if (length(offset) != nrow(y)) {
           stop(paste0("offset must be a single value, vector of length ", nrow(y), " or a matrix with ",
                      nrow(y), " rows and ", ncol(y), " columns."))
@@ -741,18 +734,6 @@ spAbund <- function(formula, data, inits, priors, tuning,
       storage.mode(u.search.type) <- "integer"
       storage.mode(J) <- "integer"
 
-
-      # Other miscellaneous ---------------------------------------------------
-      # For prediction with random slopes
-      re.cols <- list()
-      if (p.abund.re > 0) {
-        split.names <- strsplit(x.re.names, "[-]")
-        for (j in 1:p.abund.re) {
-          re.cols[[j]] <- split.names[[j]][1]
-          names(re.cols)[j] <- split.names[[j]][2]
-        }
-      }
-
       if(verbose){
         cat("----------------------------------------\n");
         cat("Building the neighbors of neighbors list\n");
@@ -765,6 +746,18 @@ spAbund <- function(formula, data, inits, priors, tuning,
       u.indx.lu <- indx$u.indx.lu
       ui.indx <- indx$ui.indx
       u.indx.run.time <- indx$run.time
+
+
+      # Other miscellaneous ---------------------------------------------------
+      # For prediction with random slopes
+      re.cols <- list()
+      if (p.abund.re > 0) {
+        split.names <- strsplit(x.re.names, "[-]")
+        for (j in 1:p.abund.re) {
+          re.cols[[j]] <- split.names[[j]][1]
+          names(re.cols)[j] <- split.names[[j]][2]
+        }
+      }
 
       # Set storage for all variables ---------------------------------------
       storage.mode(y) <- "double"

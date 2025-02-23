@@ -142,6 +142,7 @@ extern "C" {
                      SEXP kappaB_r, SEXP tauSqBetaA_r, SEXP tauSqBetaB_r,
                      SEXP phiA_r, SEXP phiB_r, SEXP nuA_r, SEXP nuB_r,
                      SEXP sigmaSqMuA_r, SEXP sigmaSqMuB_r,
+                     SEXP lambdaDiagA_r, SEXP lambdaDiagB_r,
                      SEXP tuning_r, SEXP covModel_r,
                      SEXP nBatch_r, SEXP batchLength_r, SEXP acceptRate_r,
                      SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r,
@@ -537,5 +538,34 @@ extern "C" {
                                      SEXP nSamples_r, SEXP covModel_r,
                                      SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r,
                                      SEXP z0Samples_r);
+
+  SEXP dynAbund(SEXP y_r, SEXP X_r, SEXP V_r, SEXP XRE_r, SEXP XRandom_r, 
+                SEXP consts_r, SEXP nRELong_r, SEXP beta0Starting_r, 
+                SEXP betaStarting_r, SEXP gammaStarting_r, SEXP kappaStarting_r, 
+                SEXP sigmaEtaStarting_r, SEXP sigmaSqMuStarting_r, 
+                SEXP betaStarStarting_r, SEXP yDatIndx_r, 
+                SEXP betaLevelIndx_r, SEXP betaStarIndx_r, SEXP muBeta0_r, SEXP SigmaBeta0_r, 
+                SEXP muGamma_r, SEXP SigmaGamma_r, SEXP kappaA_r, SEXP kappaB_r, 
+                SEXP sigmaEtaDF_r, SEXP sigmaEtaScale_r, SEXP sigmaSqMuA_r, 
+                SEXP sigmaSqMuB_r, SEXP tuning_r, SEXP nBatch_r, SEXP batchLength_r, 
+                SEXP acceptRate_r, SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r, 
+                SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r, SEXP offset_r);
+
+  SEXP spDynAbundNNGP(SEXP y_r, SEXP X_r, SEXP V_r, SEXP coords_r, SEXP XRE_r, SEXP XRandom_r, 
+                      SEXP consts_r, SEXP nRELong_r, SEXP nnIndx_r,
+                      SEXP nnIndxLU_r, SEXP uIndx_r, SEXP uIndxLU_r, SEXP beta0Starting_r, 
+                      SEXP betaStarting_r, SEXP gammaStarting_r, SEXP kappaStarting_r, 
+                      SEXP sigmaEtaStarting_r, SEXP sigmaSqMuStarting_r, 
+                      SEXP betaStarStarting_r, SEXP wStarting_r, SEXP phiStarting_r, 
+                      SEXP sigmaSqStarting_r, SEXP rhoStarting_r, SEXP nuStarting_r,
+                      SEXP yDatIndx_r, SEXP betaLevelIndx_r, 
+                      SEXP betaStarIndx_r, SEXP muBeta0_r, SEXP SigmaBeta0_r, 
+                      SEXP muGamma_r, SEXP SigmaGamma_r, SEXP kappaA_r, SEXP kappaB_r, 
+                      SEXP sigmaEtaDF_r, SEXP sigmaEtaScale_r, SEXP sigmaSqMuA_r, 
+                      SEXP sigmaSqMuB_r, SEXP sigmaSqPriors_r, SEXP phiPriors_r, 
+                      SEXP rhoPriors_r, SEXP nuPriors_r, SEXP tuning_r, 
+                      SEXP covModel_r, SEXP nBatch_r, SEXP batchLength_r, 
+                      SEXP acceptRate_r, SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r, 
+                      SEXP samplesInfo_r, SEXP chainInfo_r, SEXP family_r, SEXP offset_r);
 
 }

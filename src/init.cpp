@@ -14,7 +14,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"msAbundGaussian", (DL_FUNC) &msAbundGaussian, 33},
     {"lfMsAbund", (DL_FUNC) &lfMsAbund, 36},
     {"lfMsAbundGaussian", (DL_FUNC) &lfMsAbundGaussian, 35},
-    {"sfMsAbundNNGP", (DL_FUNC) &sfMsAbundNNGP, 50},
+    {"sfMsAbundNNGP", (DL_FUNC) &sfMsAbundNNGP, 52},
     {"sfMsAbundGaussianNNGP", (DL_FUNC) &sfMsAbundGaussianNNGP, 49},
     {"sfMsAbundNNGPPredict", (DL_FUNC) &sfMsAbundNNGPPredict, 27},
     {"NMix", (DL_FUNC) &NMix, 46},
@@ -37,6 +37,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"svcAbundGaussianNNGPPredict", (DL_FUNC) &svcAbundGaussianNNGPPredict, 25},
     {"svcMsAbundGaussianNNGP", (DL_FUNC) &svcMsAbundGaussianNNGP, 50},
     {"svcMsAbundGaussianNNGPPredict", (DL_FUNC) &svcMsAbundGaussianNNGPPredict, 27},
+    {"dynAbund", (DL_FUNC) &dynAbund, 38},
+    {"spDynAbundNNGP", (DL_FUNC) &spDynAbundNNGP, 53},
     {NULL, NULL, 0}
 };
 

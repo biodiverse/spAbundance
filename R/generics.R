@@ -17,12 +17,12 @@ summary.ppcAbund <- function(object, level = 'both',
   cat(paste("Number of Chains: ", n.chains, "\n", sep = ""))
   cat(paste("Total Posterior Samples: ",n.post * n.chains,"\n\n", sep=""))
 
-  if (object$class %in% c('NMix', 'spNMix', 'abund', 'spAbund', 'DS', 'spDS')) {
+  if (object$class %in% c('NMix', 'spNMix', 'abund', 'spAbund', 'DS', 'spDS', 'svcAbund', 'dynAbund')) {
     cat("Bayesian p-value: ", round(mean(object$fit.y.rep > object$fit.y), digits), "\n")
     cat("Fit statistic: ", object$fit.stat, "\n")
   }
 
-  if (object$class %in% c('msAbund', 'spMsAbund', 'lfMsAbund', 'sfMsAbund',
+  if (object$class %in% c('msAbund', 'spMsAbund', 'lfMsAbund', 'sfMsAbund', 'svcMsAbund',
 			  'msNMix', 'spMsNMix', 'lfMsNMix', 'sfMsNMix',
 			  'msDS', 'lfMsDS', 'sfMsDS')) {
 

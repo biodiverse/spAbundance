@@ -1078,3 +1078,4 @@ svcMsAbundGaussian <- function(formula, data, inits, priors, tuning,
   out$run.time <- proc.time() - ptm
   return(out)
 }
+

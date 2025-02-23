@@ -1,3 +1,9 @@
+# spAbundance 0.3.0
+
++ Added in the `loadings.diag` argument to `simMsAbund()` to allow for simulating data where the diagonal of the factor loadings matrix is set to 1 (i.e., the default and what was done in previous versions) or to random positive values. 
++ Updated `ppcAbund()` to work with `svcAbund()` models (Poisson and NB).
++ Fixed a bug in all GLMM models that prevented the models from running when a site-level offset was supplied into the model. Thanks to Sonia Illanas for brining this to my attention.
+
 # spAbundance 0.2.1
 
 + Fixed a `C++` memory issue in `predict.spAbund()` that could result in crashes under certain situations.

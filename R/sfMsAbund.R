@@ -73,7 +73,7 @@ sfMsAbund <- function(formula, data, inits, priors,
       offset <- data$offset
       if (length(offset) == 1) {
         offset <- matrix(offset, ncol(y), dim(y)[3])
-      } else if (length(dim(offset)) == 1) { # Value for each site
+      } else if (length(dim(offset)) == 0 & length(offset) > 1) { # Value for each site
         if (length(offset) != ncol(y)) {
           stop(paste0("offset must be a single value, vector of length ", ncol(y), " or a matrix with ",
                      ncol(y), " rows and ", dim(y)[3], " columns."))
@@ -529,6 +529,45 @@ sfMsAbund <- function(formula, data, inits, priors,
       nu.a <- rep(0, q)
       nu.b <- rep(0, q)
     }
+    # lambda.diag -----------------------
+    if ('lambda.diag' %in% names(priors)) {
+      if (priors$lambda.diag == 'one') {
+        lambda.diag.est <- FALSE
+      } else if (priors$lambda.diag == 'positive') {
+        lambda.diag.est <- TRUE
+      } else {
+        stop("priors$lambda.diag must be either 'one' or 'positive'") 
+      }
+    } else {
+      lambda.diag.est <- FALSE
+    }
+    # TODO: need to ensure that there are valid initial values given the uniform
+    #       prior for the lambda diagonals.
+    # lambda.diag.unif ------------------
+    if (lambda.diag.est) {
+      if ("lambda.diag.unif" %in% names(priors)) {
+        if (!is.vector(priors$lambda.diag.unif) | 
+            !is.atomic(priors$lambda.diag.unif) | 
+            length(priors$lambda.diag.unif) != 2) {
+          stop("error: lambda.diag.unif must be a vector of length 2 with elements corresponding to lambda.diag's lower and upper bounds")
+        }
+        lambda.diag.a <- priors$lambda.diag.unif[1]
+        lambda.diag.b <- priors$lambda.diag.unif[2]
+        if (lambda.diag.a <= 0) {
+          stop("The uniform prior for lambda.diag must have a lower bound greater than 0")
+        }
+      } else {
+        if (verbose) {
+          message("No prior specified for lambda.diag.unif.\nSetting uniform bounds of 0.001 and 10.\n")
+        }
+        # Note that this assumes the same prior for each of the diagonal elements.
+        lambda.diag.a <- 0.001
+        lambda.diag.b <- 10
+      }
+    } else {
+      lambda.diag.a <- 0
+      lambda.diag.b <- 0
+    }
 
     # Starting values -----------------------------------------------------
     if (missing(inits)) {
@@ -701,9 +740,9 @@ sfMsAbund <- function(formula, data, inits, priors,
         stop(paste("error: initial values for lambda must be a matrix with dimensions ",
           	 n.sp, " x ", q, sep = ""))
       }
-      if (!all.equal(diag(lambda.inits), rep(1, q))) {
-        stop("error: diagonal of inits$lambda matrix must be all 1s")
-      }
+      # if (!all.equal(diag(lambda.inits), rep(1, q))) {
+      #   stop("error: diagonal of inits$lambda matrix must be all 1s")
+      # }
       if (sum(lambda.inits[upper.tri(lambda.inits)]) != 0) {
         stop("error: upper triangle of inits$lambda must be all 0s")
       }
@@ -951,6 +990,8 @@ sfMsAbund <- function(formula, data, inits, priors,
       storage.mode(phi.b) <- "double"
       storage.mode(nu.a) <- "double"
       storage.mode(nu.b) <- "double"
+      storage.mode(lambda.diag.a) <- "double"
+      storage.mode(lambda.diag.b) <- "double"
       storage.mode(n.batch) <- "integer"
       storage.mode(batch.length) <- "integer"
       storage.mode(accept.rate) <- "double"
@@ -1019,19 +1060,21 @@ sfMsAbund <- function(formula, data, inits, priors,
 
         storage.mode(chain.info) <- "integer"
         out.tmp[[i]] <- .Call("sfMsAbundNNGP", y, X, coords, X.re, X.random,
-        		      consts, n.abund.re.long,
-          	              n.neighbors, nn.indx, nn.indx.lu, u.indx, u.indx.lu, ui.indx,
-          		      beta.inits, kappa.inits, beta.comm.inits,
-          	              tau.sq.beta.inits,
-          		      phi.inits, lambda.inits, nu.inits, w.inits,
-          		      sigma.sq.mu.inits, beta.star.inits,site.indx,
-          		      beta.star.indx, beta.level.indx,
-          		      mu.beta.comm, Sigma.beta.comm, kappa.a,
-            		      kappa.b, tau.sq.beta.a, tau.sq.beta.b,
-          	              phi.a, phi.b, nu.a, nu.b,
-          		      sigma.sq.mu.a, sigma.sq.mu.b, tuning.c, cov.model.indx,
-          		      n.batch, batch.length, accept.rate, n.omp.threads,
-        	              verbose, n.report, samples.info, chain.info, family.c, offset)
+                              consts, n.abund.re.long,
+                              n.neighbors, nn.indx, nn.indx.lu, u.indx, u.indx.lu, ui.indx,
+                              beta.inits, kappa.inits, beta.comm.inits,
+                              tau.sq.beta.inits,
+                              phi.inits, lambda.inits, nu.inits, w.inits,
+                              sigma.sq.mu.inits, beta.star.inits,site.indx,
+                              beta.star.indx, beta.level.indx,
+                              mu.beta.comm, Sigma.beta.comm, kappa.a,
+                              kappa.b, tau.sq.beta.a, tau.sq.beta.b,
+                              phi.a, phi.b, nu.a, nu.b,
+                              sigma.sq.mu.a, sigma.sq.mu.b, 
+                              lambda.diag.a, lambda.diag.b, 
+                              tuning.c, cov.model.indx,
+                              n.batch, batch.length, accept.rate, n.omp.threads,
+                              verbose, n.report, samples.info, chain.info, family.c, offset)
         chain.info[1] <- chain.info[1] + 1
       }
       # Calculate R-Hat ---------------

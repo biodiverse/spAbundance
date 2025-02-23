@@ -11,6 +11,8 @@
 #include <R.h>
 #include <Rmath.h>
 #include <Rinternals.h>
+#include <R_ext/Linpack.h>
+#include <R_ext/Lapack.h>
 #include <R_ext/BLAS.h>
 #include <R_ext/Utils.h>
 #ifndef FCONE
@@ -568,4 +570,122 @@ double nb_logpost(double kappa, double N, double mu, double r){
   return lgammafn(N + kappa) - (lgammafn(kappa) + lgammafn(N + 1.0)) + kappa * (log(kappa) - log(mu * r + kappa)) + N * (log(mu * r) - log(mu * r + kappa));
 }
 
+
+// rwish delivers a pseudo-random Wishart deviate
+//
+// USAGE:
+//
+//   A <- rwish(v, S)
+//
+// INPUT:
+//
+//   v    degrees of freedom
+//
+//   S    Scale matrix
+//
+// OUTPUT:
+//
+//  A     a pseudo-random Wishart deviate
+//
+// Based on code originally posted by Bill Venables to S-news
+// on 6/11/1998
+
+// extern "C" {
+
+//   SEXP rwish(SEXP S_r, SEXP v_r, SEXP p_r, SEXP Z_r, SEXP tmp_pp_r, SEXP iwish){
+
+//     double *S = REAL(S_r);
+//     int v = INTEGER(v_r)[0];
+//     int p = INTEGER(p_r)[0];
+//     double *Z = REAL(Z_r);
+//     double *tmp_pp = REAL(tmp_pp_r);
+//     bool riwish = static_cast<bool>(INTEGER(iwish));
+void rwish(double *S, int v, int p, double *Z, double *tmp_pp, int iwish){
+
+    int i, j, info;
+    char const *lower = "L";
+    char const *nUnit = "N";
+    char const *ntran = "N";
+    char const *ytran = "T";
+    char const *rside = "R";
+    const double one = 1.0;
+    const double zero = 0.0;
+    bool riwish = static_cast<bool>(iwish);
+
+    if(riwish){
+      F77_NAME(dpotrf)(lower, &p, S, &p, &info FCONE); if(info != 0){Rf_error("c++ error: dpotrf riwish failed\n");}
+      F77_NAME(dpotri)(lower, &p, S, &p, &info FCONE); if(info != 0){Rf_error("c++ error: dpotri riwish failed\n");}
+    }
+
+    if(v < p){
+      Rf_error("c++ error: rwish v < p\n");
+    }
+
+    F77_NAME(dpotrf)(lower, &p, S, &p, &info FCONE); if(info != 0){Rf_error("c++ error: dpotrf failed\n");}
+    zeros(tmp_pp, p*p);
+
+    //GetRNGstate();
+    for(i = 0; i < p; i++){
+      tmp_pp[i*p+i] = sqrt(rchisq(v-i));
+    }
+
+    for(j = 1; j < p; j++){
+      for(i = 0; i < j; i++){
+	tmp_pp[j*p+i] = rnorm(0, 1);
+      }
+    }
+    //PutRNGstate();
+
+    F77_NAME(dtrmm)(rside, lower, ytran, nUnit, &p, &p, &one, S, &p, tmp_pp, &p FCONE FCONE FCONE FCONE);
+    F77_NAME(dgemm)(ytran, ntran, &p, &p, &p, &one, tmp_pp, &p, tmp_pp, &p, &zero, Z, &p FCONE FCONE);
+
+    if(riwish){
+      F77_NAME(dpotrf)(lower, &p, Z, &p, &info FCONE); if(info != 0){Rf_error("c++ error: dpotrf riwish failed\n");}
+      F77_NAME(dpotri)(lower, &p, Z, &p, &info FCONE); if(info != 0){Rf_error("c++ error: dpotri riwish failed\n");}
+    }
+
+    for(i = 1; i < p; i++){
+      for(j = 0; j < i; j++){
+	Z[i*p+j] = Z[j*p+i];
+      }
+    }
+
+//     return(R_NilValue);
+}
+
+double mvn_logpost(double *y, double *mu, double *SigmaChol, double *SigmaInv, int n) {
+  double logDet = 0.0;
+  double out = 0.0;
+  double *tmp_n = (double *) R_alloc(n, sizeof(double)); zeros(tmp_n, n);
+  double *tmp_n2 = (double *) R_alloc(n, sizeof(double)); zeros(tmp_n2, n);
+  double tmp_0 = 0.0;
+  
+  int i, j; 
+  for (i = 0; i < n; i++) {
+    logDet += 2.0 * log(SigmaChol[i * n + i]);
+    tmp_n[i] = y[i] - mu[i];
+  }
+  // Add determinant to output
+  out += -0.5 * logDet;
+  
+  // tmp_n %*% SigmaInv
+  for (i = 0; i < n; i++) {
+    for (j = 0; j < n; j++) {
+      tmp_n2[i] += tmp_n[i] * SigmaInv[i * n + j];
+    }
+  }
+
+  // tmp_n2 %*% tmp_n
+  for (i = 0; i < n; i++) {
+    tmp_0 += tmp_n[i] * tmp_n2[i];
+  }
+
+  out += -0.5 * tmp_0;
+ 
+  return out;
+}
+
+double iGammaLogpost(double x, double a, double b) {
+  return -1.0 * (1.0 + a) * log(x) - b / x;
+}
 

@@ -55,6 +55,7 @@
   double integrate(int detModel, double distStart, double distEnd, double sigma, int n, int transect);
   double poisson_logpost(double N, double mu, double r);
   double nb_logpost(double kappa, double N, double mu, double r);
-
-
+  void rwish(double *S, int v, int p, double *Z, double *tmp_pp, int iwish);
+  double mvn_logpost(double *y, double *mu, double *SigmaChol, double *SigmaInv, int n);
+  double iGammaLogpost(double x, double a, double b);
 

@@ -1,7 +1,7 @@
 simMsAbund <- function(J.x, J.y, n.rep, n.rep.max, n.sp, beta, kappa, tau.sq, mu.RE = list(), 
 		       offset = 1, sp = FALSE, cov.model, svc.cols = 1, 
 		       sigma.sq, phi, nu, family = 'Poisson',
-		       factor.model = FALSE, n.factors, z, ...) {
+		       factor.model = FALSE, n.factors, z, lambda.diag = 'one', ...) {
 
   # Check for unused arguments ------------------------------------------
   formal.args <- names(formals(sys.function(sys.parent())))
@@ -165,6 +165,11 @@ simMsAbund <- function(J.x, J.y, n.rep, n.rep.max, n.sp, beta, kappa, tau.sq, mu
     }
   }
 
+  # Diagonal factor loadings ----------------------------------------------
+  if (!(lambda.diag %in% c('one', 'positive'))) {
+    stop("lambda.diag must be set to 'one' or 'positive'")
+  }
+
   # Subroutines -----------------------------------------------------------
   # MVN 
   rmvn <- function(n, mu=0, V = matrix(1)) {
@@ -209,8 +214,13 @@ simMsAbund <- function(J.x, J.y, n.rep, n.rep.max, n.sp, beta, kappa, tau.sq, mu
     w.star[[i]] <- matrix(0, nrow = n.sp, ncol = J)
     if (factor.model) {
       lambda[[i]] <- matrix(rnorm(n.sp * n.factors, 0, 0.5), n.sp, n.factors) 
-      # Set diagonals to 1
-      diag(lambda[[i]]) <- 1
+      # Set diagonals to 1 or positive only values
+      if (lambda.diag == 'one') {
+        diag(lambda[[i]]) <- 1
+      } else {
+        diag(lambda[[i]]) <- ifelse(diag(lambda[[i]]) < 0, -1 * diag(lambda[[i]]), 
+                                    diag(lambda[[i]]))
+      }
       # Set upper tri to 0
       lambda[[i]][upper.tri(lambda[[i]])] <- 0
       w[[i]] <- matrix(NA, n.factors, J)

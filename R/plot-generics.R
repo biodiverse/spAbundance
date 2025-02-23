@@ -5,7 +5,7 @@ overallPlot <- function(x, param, density = TRUE, ...) {
   indx <- 1:n.post
   if (param == 'beta.comm') {
     if (class(x) %in% c('abund', 'spAbund', 'svcAbund', 'NMix', 
-			     'spNMix', 'DS', 'spDS')) {
+			     'spNMix', 'DS', 'spDS', 'dynAbund')) {
       stop("beta.comm is not a parameter in the fitted model")
     }
     for (i in 1:n.chains) {
@@ -15,7 +15,7 @@ overallPlot <- function(x, param, density = TRUE, ...) {
   }
   if (param == 'tau.sq.beta') {
     if (class(x) %in% c('abund', 'spAbund', 'svcAbund', 'NMix', 
-			     'spNMix', 'DS', 'spDS')) {
+			     'spNMix', 'DS', 'spDS', 'dynAbund')) {
       stop("tau.sq.beta is not a parameter in the fitted model")
     }
     for (i in 1:n.chains) {
@@ -25,7 +25,7 @@ overallPlot <- function(x, param, density = TRUE, ...) {
   }
   if (param == 'lambda') {
     if (class(x) %in% c('abund', 'spAbund', 'svcAbund', 'NMix', 
-			     'spNMix', 'DS', 'spDS', 'msAbund', 'msNMix', 'msDS')) {
+			     'spNMix', 'DS', 'spDS', 'msAbund', 'msNMix', 'msDS', 'dynAbund')) {
       stop("lambda is not a parameter in the fitted model")
     }
     for (i in 1:n.chains) {
@@ -35,7 +35,7 @@ overallPlot <- function(x, param, density = TRUE, ...) {
   }
   if (param == 'tau.sq') {
     if (!(class(x) %in% c('abund', 'spAbund', 'svcAbund', 'svcMsAbund', 
-			     'msAbund', 'lfMsAbund', 'sfMsAbund'))) {
+			     'msAbund', 'lfMsAbund', 'sfMsAbund', 'dynAbund'))) {
       stop("tau.sq is not a parameter in the fitted model")
     }
     for (i in 1:n.chains) {
@@ -45,7 +45,7 @@ overallPlot <- function(x, param, density = TRUE, ...) {
   }
   if (param == 'alpha.comm') {
     if (class(x) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund', 'sfMsAbund', 
-			     'svcAbund', 'svcMsAbund', 'NMix', 'spNMix', 'DS', 'spDS')) {
+			     'svcAbund', 'svcMsAbund', 'NMix', 'spNMix', 'DS', 'spDS', 'dynAbund')) {
       stop("alpha.comm is not a parameter in the fitted model")
     }
     for (i in 1:n.chains) {
@@ -55,7 +55,7 @@ overallPlot <- function(x, param, density = TRUE, ...) {
   }
   if (param == 'tau.sq.alpha') {
     if (class(x) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund', 'sfMsAbund', 
-			     'svcAbund', 'svcMsAbund', 'NMix', 'spNMix', 'DS', 'spDS')) {
+			     'svcAbund', 'svcMsAbund', 'NMix', 'spNMix', 'DS', 'spDS', 'dynAbund')) {
       stop("tau.sq.alpha is not a parameter in the fitted model")
     }
     for (i in 1:n.chains) {
@@ -83,7 +83,7 @@ overallPlot <- function(x, param, density = TRUE, ...) {
   }
   if (param == 'alpha') {
     if (class(x) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund', 'sfMsAbund', 
-			     'svcAbund', 'svcMsAbund')) {
+			     'svcAbund', 'svcMsAbund', 'dynAbund')) {
       stop("alpha is not a parameter in the fitted model")
     }
     for (i in 1:n.chains) {
@@ -102,8 +102,8 @@ overallPlot <- function(x, param, density = TRUE, ...) {
   }
   if (param == 'sigma.sq.p') {
     if (class(x) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund', 'sfMsAbund', 
-			     'svcAbund', 'svcMsAbund')) {
-      stop("N is not a parameter in the fitted model")
+			     'svcAbund', 'svcMsAbund', 'dynAbund')) {
+      stop("sigma.sq.p is not a parameter in the fitted model")
     }
     if (!x$pRE) {
       stop("sigma.sq.p is not a parameter in the fitted model")
@@ -113,22 +113,6 @@ overallPlot <- function(x, param, density = TRUE, ...) {
       indx <- (n.post * i + 1):(n.post * (i + 1))
     }
   }
-  # if (param == 'N') {
-  #   if (class(x) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund', 'sfMsAbund', 
-  #       		     'svcAbund', 'svcMsAbund')) {
-  #     stop("N is not a parameter in the fitted model")
-  #   }
-  #   for (i in 1:n.chains) {
-  #     curr.samples[[i]] <- coda::mcmc(x$N.samples[indx, , drop = FALSE])
-  #     indx <- (n.post * i + 1):(n.post * (i + 1))
-  #   }
-  # }
-  # if (param == 'mu') {
-  #   for (i in 1:n.chains) {
-  #     curr.samples[[i]] <- coda::mcmc(x$mu.samples[indx, , drop = FALSE])
-  #     indx <- (n.post * i + 1):(n.post * (i + 1))
-  #   }
-  # }
   if (param == 'beta.star') {
     if (!x$muRE) {
       stop("the model was not fit with any abundance random effects (beta.star)")
@@ -140,7 +124,7 @@ overallPlot <- function(x, param, density = TRUE, ...) {
   }
   if (param == 'alpha.star') {
     if (class(x) %in% c('abund', 'spAbund', 'msAbund', 'lfMsAbund', 'sfMsAbund', 
-			     'svcAbund', 'svcMsAbund')) {
+			     'svcAbund', 'svcMsAbund', 'dynAbund')) {
       stop("alpha.star is not a parameter in the fitted model")
     }
     if (!x$pRE) {
@@ -207,5 +191,8 @@ plot.svcMsAbund <- function(x, param, density = TRUE, ...) {
   overallPlot(x, param, density)
 }
 plot.svcAbund <- function(x, param, density = TRUE, ...) {
+  overallPlot(x, param, density)
+}
+plot.dynAbund <- function(x, param, density = TRUE, ...) {
   overallPlot(x, param, density)
 }
