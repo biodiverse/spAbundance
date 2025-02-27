@@ -37,8 +37,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"svcAbundGaussianNNGPPredict", (DL_FUNC) &svcAbundGaussianNNGPPredict, 25},
     {"svcMsAbundGaussianNNGP", (DL_FUNC) &svcMsAbundGaussianNNGP, 50},
     {"svcMsAbundGaussianNNGPPredict", (DL_FUNC) &svcMsAbundGaussianNNGPPredict, 27},
-    {"dynAbund", (DL_FUNC) &dynAbund, 38},
-    {"spDynAbundNNGP", (DL_FUNC) &spDynAbundNNGP, 53},
     {NULL, NULL, 0}
 };
 
