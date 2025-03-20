@@ -71,14 +71,14 @@ waicAbund <- function(object, N.max, by.species = FALSE, ...) {
 
   # Single-species abundance GLMs -----------------------------------------
   if (class(object) %in% c('abund', 'spAbund', 'svcAbund')) {
-    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
+    if (object$dist %in% c('zi-Gaussian')) {
       if (object$dist == 'zi-Gaussian') {
         message("Calculated WAIC is only for stage 2 of the hurdle model\n")
       }
       elpd <- sum(apply(object$like.samples, c(2), function(a) log(mean(a))), na.rm = TRUE)
       pD <- sum(apply(object$like.samples, c(2), function(a) var(log(a))), na.rm = TRUE)
     }
-    if (object$dist %in% c('Poisson', 'NB')) {
+    if (object$dist %in% c('Poisson', 'NB', 'Gaussian')) {
       elpd <- sum(apply(object$like.samples, c(2, 3), function(a) log(mean(a))), na.rm = TRUE)
       pD <- sum(apply(object$like.samples, c(2, 3), function(a) var(log(a))), na.rm = TRUE)
     }

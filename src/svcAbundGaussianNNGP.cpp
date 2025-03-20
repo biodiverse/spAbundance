@@ -66,8 +66,8 @@ extern "C" {
                             SEXP consts_r, SEXP nRELong_r, SEXP m_r, SEXP nnIndx_r,
                             SEXP nnIndxLU_r, SEXP uIndx_r, SEXP uIndxLU_r, SEXP uiIndx_r,
                             SEXP betaStarting_r, SEXP tauSqStarting_r, SEXP sigmaSqMuStarting_r,
-                            SEXP betaStarStarting_r,
-                            SEXP wStarting_r, SEXP phiStarting_r,
+                            SEXP betaStarStarting_r, SEXP wStarting_r, 
+                            SEXP siteIndx_r, SEXP phiStarting_r,
                             SEXP sigmaSqStarting_r, SEXP nuStarting_r,
                             SEXP betaStarIndx_r, SEXP betaLevelIndx_r,
                             SEXP muBeta_r, SEXP SigmaBeta_r,
@@ -107,11 +107,12 @@ extern "C" {
     int pRE = INTEGER(consts_r)[2];
     int nRE = INTEGER(consts_r)[3];
     int pTilde = INTEGER(consts_r)[4];
-    int JZero = INTEGER(consts_r)[5];
+    int nObs = INTEGER(consts_r)[5];
+    int nObsZero = INTEGER(consts_r)[6];
     int pp = p * p;
     int ppTilde = pTilde * pTilde;
     int JpTilde = J * pTilde;
-    int JpRE = J * pRE;
+    int nObspRE = nObs * pRE;
     // Priors
     double *muBeta = (double *) R_alloc(p, sizeof(double));
     F77_NAME(dcopy)(&p, REAL(muBeta_r), &inc, muBeta, &inc);
@@ -129,6 +130,7 @@ extern "C" {
     double *sigmaSqMuB = REAL(sigmaSqMuB_r);
     double *tuning = REAL(tuning_r);
     double *coords = REAL(coords_r);
+    int *siteIndx = INTEGER(siteIndx_r);
     int *nRELong = INTEGER(nRELong_r);
     int *nnIndx = INTEGER(nnIndx_r);
     int *nnIndxLU = INTEGER(nnIndxLU_r);
@@ -166,7 +168,7 @@ extern "C" {
     /**********************************************************************
      * Print Information
      * *******************************************************************/
-    if(verbose){
+    if (verbose) {
       if (currChain == 1) {
         Rprintf("----------------------------------------\n");
         Rprintf("\tModel description\n");
@@ -229,17 +231,17 @@ extern "C" {
     PROTECT(betaSamples_r = Rf_allocMatrix(REALSXP, p, nPost)); nProtect++;
     zeros(REAL(betaSamples_r), p * nPost);
     SEXP yRepSamples_r;
-    PROTECT(yRepSamples_r = Rf_allocMatrix(REALSXP, J, nPost)); nProtect++;
-    zeros(REAL(yRepSamples_r), J * nPost);
+    PROTECT(yRepSamples_r = Rf_allocMatrix(REALSXP, nObs, nPost)); nProtect++;
+    zeros(REAL(yRepSamples_r), nObs * nPost);
     SEXP yRepZeroSamples_r;
-    PROTECT(yRepZeroSamples_r = Rf_allocMatrix(REALSXP, JZero, nPost)); nProtect++;
-    zeros(REAL(yRepZeroSamples_r), JZero * nPost);
+    PROTECT(yRepZeroSamples_r = Rf_allocMatrix(REALSXP, nObsZero, nPost)); nProtect++;
+    zeros(REAL(yRepZeroSamples_r), nObsZero * nPost);
     SEXP wSamples_r;
     PROTECT(wSamples_r = Rf_allocMatrix(REALSXP, JpTilde, nPost)); nProtect++;
     zeros(REAL(wSamples_r), JpTilde * nPost);
     SEXP muSamples_r;
-    PROTECT(muSamples_r = Rf_allocMatrix(REALSXP, J, nPost)); nProtect++;
-    zeros(REAL(muSamples_r), J * nPost);
+    PROTECT(muSamples_r = Rf_allocMatrix(REALSXP, nObs, nPost)); nProtect++;
+    zeros(REAL(muSamples_r), nObs * nPost);
     // Occurrence random effects
     SEXP sigmaSqMuSamples_r;
     SEXP betaStarSamples_r;
@@ -254,34 +256,32 @@ extern "C" {
     zeros(REAL(tauSqSamples_r), nPost);
     // Likelihood samples for WAIC.
     SEXP likeSamples_r;
-    PROTECT(likeSamples_r = Rf_allocMatrix(REALSXP, J, nPost)); nProtect++;
-    zeros(REAL(likeSamples_r), J * nPost);
+    PROTECT(likeSamples_r = Rf_allocMatrix(REALSXP, nObs, nPost)); nProtect++;
+    zeros(REAL(likeSamples_r), nObs * nPost);
 
     /**********************************************************************
      * Other initial starting stuff
      * *******************************************************************/
-    int Jp = J * p;
+    int nObsp = nObs * p;
     int jj, kk;
     double tmp_0, tmp_02;
     double *tmp_pp = (double *) R_alloc(pp, sizeof(double));
     double *tmp_p = (double *) R_alloc(p, sizeof(double));
     double *tmp_p2 = (double *) R_alloc(p, sizeof(double));
     double *tmp_one = (double *) R_alloc(1, sizeof(double));
-    int *tmp_J = (int *) R_alloc(J, sizeof(int));
-    for (j = 0; j < J; j++) {
-      tmp_J[j] = zero;
-    }
-    double *tmp_Jp = (double *) R_alloc(Jp, sizeof(double));
-    double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
+    double *tmp_nObsp = (double *) R_alloc(nObsp, sizeof(double)); 
+    zeros(tmp_nObsp, nObsp);
+    double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
+    zeros(tmp_nObs, nObs);
     double *tmp_pTilde = (double *) R_alloc(pTilde, sizeof(double));
     double * tmp_ppTilde = (double *) R_alloc(ppTilde, sizeof(double));
 
     // For latent occupancy
-    double *mu = (double *) R_alloc(J, sizeof(double));
-    zeros(mu, J);
-    double *like = (double *) R_alloc(J, sizeof(double)); zeros(like, J);
-    double *yRep = (double *) R_alloc(J, sizeof(double)); zeros(yRep, J);
-    double *yRepZero = (double *) R_alloc(JZero, sizeof(double)); zeros(yRepZero, JZero);
+    double *mu = (double *) R_alloc(nObs, sizeof(double));
+    zeros(mu, nObs);
+    double *like = (double *) R_alloc(nObs, sizeof(double)); zeros(like, nObs);
+    double *yRep = (double *) R_alloc(nObs, sizeof(double)); zeros(yRep, nObs);
+    double *yRepZero = (double *) R_alloc(nObsZero, sizeof(double)); zeros(yRepZero, nObsZero);
 
     // For normal priors
     // Occupancy regression coefficient priors.
@@ -297,14 +297,14 @@ extern "C" {
      * Prep for random effects
      * *******************************************************************/
     // Site-level sums of the occurrence random effects
-    double *betaStarSites = (double *) R_alloc(J, sizeof(double));
-    int *betaStarLongIndx = (int *) R_alloc(JpRE, sizeof(int));
-    zeros(betaStarSites, J);
+    double *betaStarSites = (double *) R_alloc(nObs, sizeof(double));
+    int *betaStarLongIndx = (int *) R_alloc(nObspRE, sizeof(int));
+    zeros(betaStarSites, nObs);
     // Initial sums
-    for (j = 0; j < J; j++) {
+    for (j = 0; j < nObs; j++) {
       for (l = 0; l < pRE; l++) {
-        betaStarLongIndx[l * J + j] = which(XRE[l * J + j], betaLevelIndx, nRE);
-        betaStarSites[j] += betaStar[betaStarLongIndx[l * J + j]] * XRandom[l * J + j];
+        betaStarLongIndx[l * nObs + j] = which(XRE[l * nObs + j], betaLevelIndx, nRE);
+        betaStarSites[j] += betaStar[betaStarLongIndx[l * nObs + j]] * XRandom[l * nObs + j];
       }
     }
     // Starting index for occurrence random effects
@@ -371,15 +371,17 @@ extern "C" {
 
     // Initiate B and F for each SVC
     for (i = 0; i < pTilde; i++) {
-    updateBFSVCNNGP(&B[i * nIndx], &F[i*J], &c[i * m*nThreads], &C[i * mm * nThreads], coords, nnIndx, nnIndxLU, J, m, theta[sigmaSqIndx * pTilde + i], theta[phiIndx * pTilde + i], nu[i], covModel, &bk[i * sizeBK], nuB[i]);
+      updateBFSVCNNGP(&B[i * nIndx], &F[i*J], &c[i * m*nThreads], &C[i * mm * nThreads], 
+                      coords, nnIndx, nnIndxLU, J, m, theta[sigmaSqIndx * pTilde + i], 
+                      theta[phiIndx * pTilde + i], nu[i], covModel, &bk[i * sizeBK], nuB[i]);
     }
     // Spatial process sums for each site
-    double *wSites = (double *) R_alloc(J, sizeof(double));
+    double *wSites = (double *) R_alloc(nObs, sizeof(double));
     // For each location, multiply w x Xw
-    for (j = 0; j < J; j++) {
+    for (j = 0; j < nObs; j++) {
       wSites[j] = 0.0;
       for (ll = 0; ll < pTilde; ll++) {
-        wSites[j] += w[j * pTilde + ll] * Xw[ll * J + j];
+        wSites[j] += w[siteIndx[j] * pTilde + ll] * Xw[ll * nObs + j];
       }
     }
 
@@ -394,13 +396,13 @@ extern "C" {
         /********************************************************************
          *Update Regression Coefficients
          *******************************************************************/
-        for (j = 0; j < J; j++) {
-          tmp_J1[j] = (y[j] - wSites[j] - betaStarSites[j]) / tauSq;
+        for (j = 0; j < nObs; j++) {
+          tmp_nObs[j] = (y[j] - wSites[j] - betaStarSites[j]) / tauSq;
         } // j
         /********************************
          * Compute b.beta
          *******************************/
-        F77_NAME(dgemv)(ytran, &J, &p, &one, X, &J, tmp_J1, &inc, &zero, tmp_p, &inc FCONE);
+        F77_NAME(dgemv)(ytran, &nObs, &p, &one, X, &nObs, tmp_nObs, &inc, &zero, tmp_p, &inc FCONE);
         for (j = 0; j < p; j++) {
           tmp_p[j] += SigmaBetaInvMuBeta[j];
         } // j
@@ -408,13 +410,15 @@ extern "C" {
         /********************************
          * Compute A.beta
          * *****************************/
-        for(j = 0; j < J; j++){
-          for(i = 0; i < p; i++){
-            tmp_Jp[i*J+j] = X[i*J+j] / tauSq;
+        for(j = 0; j < nObs; j++) {
+          for(i = 0; i < p; i++) {
+            tmp_nObsp[i * nObs + j] = X[i * nObs + j] / tauSq;
           }
         }
 
-        F77_NAME(dgemm)(ytran, ntran, &p, &p, &J, &one, X, &J, tmp_Jp, &J, &zero, tmp_pp, &p FCONE FCONE);
+        F77_NAME(dgemm)(ytran, ntran, &p, &p, &nObs, &one, X, 
+                        &nObs, tmp_nObsp, &nObs, &zero, 
+                        tmp_pp, &p FCONE FCONE);
         for (j = 0; j < pp; j++) {
           tmp_pp[j] += SigmaBetaInv[j];
         } // j
@@ -425,7 +429,7 @@ extern "C" {
         if(info != 0){Rf_error("c++ error: dpotri here failed\n");}
         F77_NAME(dsymv)(lower, &p, &one, tmp_pp, &p, tmp_p, &inc, &zero, tmp_p2, &inc FCONE);
         F77_NAME(dpotrf)(lower, &p, tmp_pp, &p, &info FCONE);
-	if(info != 0){Rf_error("c++ error: dpotrf here failed\n");}
+        if(info != 0){Rf_error("c++ error: dpotrf here failed\n");}
         mvrnorm(beta, tmp_p2, tmp_pp, p);
 
         /********************************************************************
@@ -451,16 +455,16 @@ extern "C" {
             // Only allow information to come from when XRE == betaLevelIndx[l].
             // aka information only comes from the sites with any given level
             // of a random effect.
-            for (j = 0; j < J; j++) {
-              if (XRE[betaStarIndx[l] * J + j] == betaLevelIndx[l]) {
+            for (j = 0; j < nObs; j++) {
+              if (XRE[betaStarIndx[l] * nObs + j] == betaLevelIndx[l]) {
                 tmp_02 = 0.0;
                 for (ll = 0; ll < pRE; ll++) {
-                  tmp_02 += betaStar[betaStarLongIndx[ll * J + j]] * XRandom[ll * J + j];
+                  tmp_02 += betaStar[betaStarLongIndx[ll * nObs + j]] * XRandom[ll * nObs + j];
                 }
-                tmp_one[0] += XRandom[betaStarIndx[l] * J + j] * (y[j] - F77_NAME(ddot)(&p, &X[j], &J, beta, &inc) -
-                              tmp_02 + (betaStar[l] * XRandom[betaStarIndx[l] * J + j]) -
+                tmp_one[0] += XRandom[betaStarIndx[l] * nObs + j] * (y[j] - F77_NAME(ddot)(&p, &X[j], &nObs, beta, &inc) -
+                              tmp_02 + (betaStar[l] * XRandom[betaStarIndx[l] * nObs + j]) -
                               wSites[j]) / tauSq;
-                tmp_0 += XRandom[betaStarIndx[l] * J + j] * XRandom[betaStarIndx[l] * J + j] / tauSq;
+                tmp_0 += XRandom[betaStarIndx[l] * nObs + j] * XRandom[betaStarIndx[l] * nObs + j] / tauSq;
               }
             }
             /********************************
@@ -472,10 +476,10 @@ extern "C" {
           }
 
           // Update the RE sums for the current species
-          zeros(betaStarSites, J);
-          for (j = 0; j < J; j++) {
+          zeros(betaStarSites, nObs);
+          for (j = 0; j < nObs; j++) {
             for (l = 0; l < pRE; l++) {
-              betaStarSites[j] += betaStar[betaStarLongIndx[l * J + j]] * XRandom[l * J + j];
+              betaStarSites[j] += betaStar[betaStarLongIndx[l * nObs + j]] * XRandom[l * nObs + j];
             }
           }
         }
@@ -483,100 +487,112 @@ extern "C" {
         /********************************************************************
          *Update tau.sq
          *******************************************************************/
-        for(j = 0; j < J; j++){
-	  tmp_J1[j] = y[j] - wSites[j] -
-	      	F77_NAME(ddot)(&p, &X[j], &J, beta, &inc) - betaStarSites[j];
+        for(j = 0; j < nObs; j++){
+          tmp_nObs[j] = y[j] - wSites[j] -
+                         F77_NAME(ddot)(&p, &X[j], &nObs, beta, &inc) - betaStarSites[j];
         }
-        tauSq = rigamma(tauSqA + J / 2.0, tauSqB + 0.5 *
-			   F77_NAME(ddot)(&J, tmp_J1, &inc, tmp_J1, &inc));
+        tauSq = rigamma(tauSqA + nObs / 2.0, tauSqB + 0.5 *
+                        F77_NAME(ddot)(&nObs, tmp_nObs, &inc, tmp_nObs, &inc));
 
         /********************************************************************
          *Update w (spatial random effects)
          *******************************************************************/
-	for (ii = 0; ii < J; ii++) {
+        for (ii = 0; ii < J; ii++) {
 
           for (ll = 0; ll < pTilde; ll++) { // row
-            // tmp_pTilde = X_tilde' %*% omega_beta
-            tmp_pTilde[ll] = Xw[ll * J + ii] / tauSq;
-	    // Compute tmp_pTilde %*% t(Xw)
-	    for (k = 0; k < pTilde; k++) { // column
-              tmp_ppTilde[ll * pTilde + k] = tmp_pTilde[ll] *
-		                             Xw[k * J + ii];
-	    } // k
-
             a[ll] = 0;
-	    v[ll] = 0;
+            v[ll] = 0;
 
-	    if (uIndxLU[J + ii] > 0){ // is ii a neighbor for anybody
-	      for (j = 0; j < uIndxLU[J+ii]; j++){ // how many locations have ii as a neighbor
-	        b = 0;
-	        // now the neighbors for the jth location who has ii as a neighbor
-	        jj = uIndx[uIndxLU[ii]+j]; // jj is the index of the jth location who has ii as a neighbor
-	        for(k = 0; k < nnIndxLU[J+jj]; k++){ // these are the neighbors of the jjth location
-	          kk = nnIndx[nnIndxLU[jj]+k]; // kk is the index for the jth locations neighbors
-	          if(kk != ii){ //if the neighbor of jj is not ii
-	    	    b += B[ll*nIndx + nnIndxLU[jj]+k]*w[kk * pTilde + ll]; //covariance between jj and kk and the random effect of kk
-	          }
-	        } // k
-	        aij = w[jj * pTilde + ll] - b;
-	        a[ll] += B[ll*nIndx + nnIndxLU[jj]+uiIndx[uIndxLU[ii]+j]]*aij/F[ll*J + jj];
-	        v[ll] += pow(B[ll * nIndx + nnIndxLU[jj]+uiIndx[uIndxLU[ii]+j]],2)/F[ll * J + jj];
-	      } // j
-	    }
+            if (uIndxLU[J + ii] > 0){ // is ii a neighbor for anybody
+              for (j = 0; j < uIndxLU[J+ii]; j++){ // how many locations have ii as a neighbor
+                b = 0;
+                // now the neighbors for the jth location who has ii as a neighbor
+                jj = uIndx[uIndxLU[ii]+j]; // jj is the index of the jth location who has ii as a neighbor
+                for (k = 0; k < nnIndxLU[J+jj]; k++) { // these are the neighbors of the jjth location
+                  kk = nnIndx[nnIndxLU[jj]+k]; // kk is the index for the jth locations neighbors
+                  if (kk != ii) { //if the neighbor of jj is not ii
+                    b += B[ll*nIndx + nnIndxLU[jj]+k]*w[kk * pTilde + ll]; //covariance between jj and kk and the random effect of kk
+                  }
+                } // k
+                aij = w[jj * pTilde + ll] - b;
+                a[ll] += B[ll*nIndx + nnIndxLU[jj]+uiIndx[uIndxLU[ii]+j]]*aij/F[ll*J + jj];
+                v[ll] += pow(B[ll * nIndx + nnIndxLU[jj]+uiIndx[uIndxLU[ii]+j]],2)/F[ll * J + jj];
+              } // j
+            }
+            e = 0;
+            for(j = 0; j < nnIndxLU[J+ii]; j++){
+              e += B[ll * nIndx + nnIndxLU[ii]+j]*w[nnIndx[nnIndxLU[ii]+j] * pTilde + ll];
+            }
+            ff[ll] = 1.0 / F[ll * J + ii];
+            gg[ll] = e / F[ll * J + ii];
+          } // ll
 
-	    e = 0;
-	    for(j = 0; j < nnIndxLU[J+ii]; j++){
-	      e += B[ll * nIndx + nnIndxLU[ii]+j]*w[nnIndx[nnIndxLU[ii]+j] * pTilde + ll];
-	    }
+          zeros(tmp_pTilde, pTilde);
+          zeros(tmp_ppTilde, ppTilde);
 
-	    ff[ll] = 1.0 / F[ll * J + ii];
-	    gg[ll] = e / F[ll * J + ii];
-	  } // ll
+          for (j = 0; j < nObs; j++) {
+            if (siteIndx[j] == ii) {
+              for (ll = 0; ll < pTilde; ll++) {
+                // tmp_pTilde = X_tilde' %*% omega_beta
+                tmp_pTilde[ll] = Xw[ll * nObs + j] / tauSq;
+                // Compute tmp_pTilde %*% t(Xw)
+                for (k = 0; k < pTilde; k++) { // column
+                  tmp_ppTilde[ll * pTilde + k] += tmp_pTilde[ll] * Xw[k * nObs + j];
+                } // k
+              } // ll
+            } // siteIndx
+          } // j
 
-	  // var
-	  F77_NAME(dcopy)(&ppTilde, tmp_ppTilde, &inc, var, &inc);
-	  for (k = 0; k < pTilde; k++) {
+          // var
+          F77_NAME(dcopy)(&ppTilde, tmp_ppTilde, &inc, var, &inc);
+          for (k = 0; k < pTilde; k++) {
             var[k * pTilde + k] += ff[k] + v[k];
           } // k
-	  F77_NAME(dpotrf)(lower, &pTilde, var, &pTilde, &info FCONE);
+          F77_NAME(dpotrf)(lower, &pTilde, var, &pTilde, &info FCONE);
           if(info != 0){Rf_error("c++ error: dpotrf var failed\n");}
-	  F77_NAME(dpotri)(lower, &pTilde, var, &pTilde, &info FCONE);
+          F77_NAME(dpotri)(lower, &pTilde, var, &pTilde, &info FCONE);
           if(info != 0){Rf_error("c++ error: dpotri var failed\n");}
 
-	  // muNNGP
-	  for (k = 0; k < pTilde; k++) {
-            muNNGP[k] = (y[ii] - F77_NAME(ddot)(&p, &X[ii], &J, beta, &inc) - betaStarSites[ii]) / tauSq * Xw[k * J + ii] + gg[k] + a[k];
-          } // k
+          // muNNGP
+          zeros(muNNGP, pTilde);
+          for (j = 0; j < nObs; j++) {
+            if (siteIndx[j] == ii) {
+              for (k = 0; k < pTilde; k++) {
+                muNNGP[k] += (y[j] - F77_NAME(ddot)(&p, &X[j], &nObs, beta, &inc) - betaStarSites[j]) / tauSq * Xw[k * nObs + j];
+              } // k
+            }
+          } // j
+          for (k = 0; k < pTilde; k++) {
+            muNNGP[k] += gg[k] + a[k];
+          }
 
-	  F77_NAME(dsymv)(lower, &pTilde, &one, var, &pTilde, muNNGP, &inc, &zero, tmp_pTilde, &inc FCONE);
-
-	  F77_NAME(dpotrf)(lower, &pTilde, var, &pTilde, &info FCONE);
+          F77_NAME(dsymv)(lower, &pTilde, &one, var, &pTilde, muNNGP, &inc, 
+                          &zero, tmp_pTilde, &inc FCONE);
+          F77_NAME(dpotrf)(lower, &pTilde, var, &pTilde, &info FCONE);
           if(info != 0){Rf_error("c++ error: dpotrf var 2 failed\n");}
 
-	  mvrnorm(&w[ii * pTilde], tmp_pTilde, var, pTilde);
+          mvrnorm(&w[ii * pTilde], tmp_pTilde, var, pTilde);
 
         } // ii
 
-
-	// Compute Xw %*% w = wSites.
-	// This calculation is correct (confirmed April 27)
-	for (j = 0; j < J; j++) {
+        // Compute Xw %*% w = wSites.
+        // This calculation is correct (confirmed April 27)
+        for (j = 0; j < nObs; j++) {
           wSites[j] = 0.0;
-	  for (ll = 0; ll < pTilde; ll++) {
-            wSites[j] += w[j * pTilde + ll] * Xw[ll * J + j];
-	    // Rprintf("w[%i]: %f\n", j * pTilde + ll, w[j * pTilde + ll]);
-	  }
-	  // Rprintf("wSites[%i]: %f\n", j, wSites[j]);
-	}
+          for (ll = 0; ll < pTilde; ll++) {
+            wSites[j] += w[siteIndx[j] * pTilde + ll] * Xw[ll * nObs + j];
+          }
+        }
 
         /********************************************************************
          *Update spatial covariance parameters
          *******************************************************************/
-	for (ll = 0; ll < pTilde; ll++) {
+       for (ll = 0; ll < pTilde; ll++) {
           /******************************************************************
            *Update sigmaSq
            *****************************************************************/
           aa = 0;
+          logDet = 0;
 #ifdef _OPENMP
 #pragma omp parallel for private (e, i, b) reduction(+:aa, logDet)
 #endif
@@ -600,7 +616,7 @@ extern "C" {
            *****************************************************************/
           // Current
           if (corName == "matern"){
-	    nu[ll] = theta[nuIndx * pTilde + ll];
+            nu[ll] = theta[nuIndx * pTilde + ll];
        	  }
           updateBFSVCNNGP(&B[ll * nIndx], &F[ll*J], &c[ll * m*nThreads], &C[ll * mm * nThreads], coords, nnIndx, nnIndxLU, J, m, theta[sigmaSqIndx * pTilde + ll], theta[phiIndx * pTilde + ll], nu[ll], covModel, &bk[ll * sizeBK], nuB[ll]);
           aa = 0;
@@ -681,44 +697,44 @@ extern "C" {
         /********************************************************************
          *Get fitted values and likelihood for WAIC
          *******************************************************************/
-         for (j = 0; j < J; j++) {
-           mu[j] = F77_NAME(ddot)(&p, &X[j], &J, beta, &inc) + wSites[j] + betaStarSites[j];
-           yRep[j] = rnorm(mu[j], sqrt(tauSq));
-           like[j] = dnorm(y[j], mu[j], sqrt(tauSq), 0);
-	 } // j
+        for (j = 0; j < nObs; j++) {
+          mu[j] = F77_NAME(ddot)(&p, &X[j], &nObs, beta, &inc) + 
+                  wSites[j] + betaStarSites[j];
+          yRep[j] = rnorm(mu[j], sqrt(tauSq));
+          like[j] = dnorm(y[j], mu[j], sqrt(tauSq), 0);
+        } // j
         /********************************************************************
          *Get fitted values and likelihood for WAIC for the zero values
          *******************************************************************/
-         for (j = 0; j < JZero; j++) {
+         for (j = 0; j < nObsZero; j++) {
            yRepZero[j] = rnorm(0.0, sqrt(0.0001));
-	 } // j
+         } // j
 
         /********************************************************************
          *Save samples
          *******************************************************************/
-	if (q >= nBurn) {
+        if (q >= nBurn) {
           thinIndx++;
-	  if (thinIndx == nThin) {
+          if (thinIndx == nThin) {
             F77_NAME(dcopy)(&p, beta, &inc, &REAL(betaSamples_r)[sPost*p], &inc);
-            F77_NAME(dcopy)(&J, mu, &inc, &REAL(muSamples_r)[sPost*J], &inc);
+            F77_NAME(dcopy)(&nObs, mu, &inc, &REAL(muSamples_r)[sPost*nObs], &inc);
             F77_NAME(dcopy)(&JpTilde, w, &inc, &REAL(wSamples_r)[sPost*JpTilde], &inc);
-	    REAL(tauSqSamples_r)[sPost] = tauSq;
-	    F77_NAME(dcopy)(&nThetapTilde, theta, &inc,
-			    &REAL(thetaSamples_r)[sPost*nThetapTilde], &inc);
-	    F77_NAME(dcopy)(&J, yRep, &inc, &REAL(yRepSamples_r)[sPost*J], &inc);
-	    F77_NAME(dcopy)(&JZero, yRepZero, &inc, &REAL(yRepZeroSamples_r)[sPost*JZero], &inc);
+            REAL(tauSqSamples_r)[sPost] = tauSq;
+            F77_NAME(dcopy)(&nThetapTilde, theta, &inc,
+                            &REAL(thetaSamples_r)[sPost*nThetapTilde], &inc);
+            F77_NAME(dcopy)(&nObs, yRep, &inc, &REAL(yRepSamples_r)[sPost*nObs], &inc);
+            F77_NAME(dcopy)(&nObsZero, yRepZero, &inc, &REAL(yRepZeroSamples_r)[sPost*nObsZero], &inc);
             if (pRE > 0) {
               F77_NAME(dcopy)(&pRE, sigmaSqMu, &inc,
-                  	    &REAL(sigmaSqMuSamples_r)[sPost*pRE], &inc);
+                              &REAL(sigmaSqMuSamples_r)[sPost*pRE], &inc);
               F77_NAME(dcopy)(&nRE, betaStar, &inc,
-                  	    &REAL(betaStarSamples_r)[sPost*nRE], &inc);
+                              &REAL(betaStarSamples_r)[sPost*nRE], &inc);
             }
-            F77_NAME(dcopy)(&J, like, &inc,
-        		    &REAL(likeSamples_r)[sPost*J], &inc);
-	    sPost++;
-	    thinIndx = 0;
-	  }
-	}
+            F77_NAME(dcopy)(&nObs, like, &inc, &REAL(likeSamples_r)[sPost*nObs], &inc);
+            sPost++;
+            thinIndx = 0;
+          }
+        }  
 
         R_CheckUserInterrupt();
       } // r (end batch)

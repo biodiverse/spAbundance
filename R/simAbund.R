@@ -35,11 +35,6 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
   if (! (family %in% c('NB', 'Poisson', 'Gaussian', 'zi-Gaussian'))) {
     stop("error: family must be one of: NB (negative binomial), Poisson, 'Gaussian', or 'zi-Gaussian'")
   }
-  if (family %in% c('Gaussian', 'zi-Gaussian')) {
-    if (n.rep.max != 1) {
-      stop("n.rep must be one for all sites for Gaussian or zi-Gaussian models")
-    }
-  }
   # kappa -----------------------------
   if (family == 'NB') {
     if (missing(kappa)) {
@@ -288,7 +283,7 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
       }
     } # k
   } # j
-  if (family %in% c('Gaussian', 'zi-Gaussian')) {
+  if (family %in% c('Gaussian', 'zi-Gaussian') & n.rep.max == 1) {
     y <- y[, 1]
     mu <- mu[, 1]
     X <- X[, 1, ]
@@ -300,6 +295,6 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
 
   return(
     list(X = X, coords = coords, w = w.mat, mu = mu,
-	 y = y, X.re = X.re, beta.star = beta.star)
+         y = y, X.re = X.re, beta.star = beta.star)
   )
 }

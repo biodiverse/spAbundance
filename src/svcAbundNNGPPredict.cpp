@@ -25,7 +25,8 @@ extern "C" {
                            SEXP sitesLink_r, SEXP sites0Sampled_r, SEXP sites0_r,
                            SEXP nnIndx0_r, SEXP betaSamples_r,
                            SEXP thetaSamples_r, SEXP wSamples_r,
-                           SEXP betaStarSiteSamples_r, SEXP kappaSamples_r, SEXP nSamples_r,
+                           SEXP betaStarSiteSamples_r, SEXP kappaSamples_r, 
+                           SEXP tauSqSamples_r, SEXP nSamples_r,
                            SEXP covModel_r, SEXP nThreads_r, SEXP verbose_r,
                            SEXP nReport_r, SEXP family_r){
 
@@ -59,6 +60,7 @@ extern "C" {
     double *w = REAL(wSamples_r);
     double *betaStarSite = REAL(betaStarSiteSamples_r);
     double *kappa = REAL(kappaSamples_r);
+    double *tauSq = REAL(tauSqSamples_r);
     int family = INTEGER(family_r)[0];
 
     int nSamples = INTEGER(nSamples_r)[0];
@@ -252,12 +254,16 @@ extern "C" {
         for (ll = 0; ll < pTilde; ll++) {
           wSites += w0[s * J0pTilde + sites0[i] * pTilde + ll] * Xw0[ll * nObs0 + i];
         }
-	      mu0[s*nObs0+i] = exp(F77_NAME(ddot)(&pAbund, &X0[i], &nObs0, &beta[s*pAbund], &inc) +
-                             wSites + betaStarSite[s * nObs0 + i]);
+	      mu0[s*nObs0+i] = F77_NAME(ddot)(&pAbund, &X0[i], &nObs0, &beta[s*pAbund], &inc) +
+                                        wSites + betaStarSite[s * nObs0 + i];
         if (family == 1) {
           y0[s * nObs0 + i] = rnbinom_mu(kappa[s], mu0[s * nObs0 + i]);
-        } else {
+          mu0[s * nObs0 + i] = exp(mu0[s * nObs0 + i]);
+        } else if (family == 2) {
+          y0[s * nObs0 + i] = rnorm(mu0[s * nObs0 + i], sqrt(tauSq[s]));
+        } else if (family == 0) {
           y0[s * nObs0 + i] = rpois(mu0[s * nObs0 + i]);
+          mu0[s * nObs0 + i] = exp(mu0[s * nObs0 + i]);
         }
       } // s
     } // i

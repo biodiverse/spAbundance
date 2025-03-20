@@ -69,7 +69,8 @@ extern "C" {
                            SEXP sitesLink_r, SEXP sites0Sampled_r, SEXP sites0_r,
                            SEXP nnIndx0_r, SEXP betaSamples_r,
                            SEXP thetaSamples_r, SEXP wSamples_r,
-                           SEXP betaStarSiteSamples_r, SEXP kappaSamples_r, SEXP nSamples_r,
+                           SEXP betaStarSiteSamples_r, SEXP kappaSamples_r, 
+                           SEXP tauSqSamples_r, SEXP nSamples_r,
                            SEXP covModel_r, SEXP nThreads_r, SEXP verbose_r,
                            SEXP nReport_r, SEXP family_r);
 
@@ -482,8 +483,8 @@ extern "C" {
                             SEXP consts_r, SEXP nRELong_r, SEXP m_r, SEXP nnIndx_r,
                             SEXP nnIndxLU_r, SEXP uIndx_r, SEXP uIndxLU_r, SEXP uiIndx_r,
                             SEXP betaStarting_r, SEXP tauSqStarting_r, SEXP sigmaSqMuStarting_r,
-                            SEXP betaStarStarting_r,
-                            SEXP wStarting_r, SEXP phiStarting_r,
+                            SEXP betaStarStarting_r, SEXP wStarting_r, 
+                            SEXP siteIndx_r, SEXP phiStarting_r,
                             SEXP sigmaSqStarting_r, SEXP nuStarting_r,
                             SEXP betaStarIndx_r, SEXP betaLevelIndx_r,
                             SEXP muBeta_r, SEXP SigmaBeta_r,

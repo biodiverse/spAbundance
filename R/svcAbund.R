@@ -3,8 +3,8 @@ svcAbund <- function(formula, data, inits, priors, tuning, svc.cols = 1,
                      n.neighbors = 15, search.type = 'cb',
                      n.batch, batch.length, accept.rate = 0.43, family = 'Poisson',
                      n.omp.threads = 1, verbose = TRUE,
-                     n.report = 100, n.burn = round(.10 * n.batch * batch.length), n.thin = 1,
-                     n.chains = 1, save.fitted = TRUE, ...){
+                     n.report = 100, n.burn = round(.10 * n.batch * batch.length), 
+                     n.thin = 1, n.chains = 1, save.fitted = TRUE, ...){
 
   ptm <- proc.time()
 

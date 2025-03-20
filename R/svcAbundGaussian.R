@@ -4,7 +4,7 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
                              batch.length, accept.rate = 0.43, family = 'Gaussian',
                              n.omp.threads = 1, verbose = TRUE, n.report = 100,
                              n.burn = round(.10 * n.batch * batch.length),
-                             n.thin = 1, n.chains = 1, ...){
+                             n.thin = 1, n.chains = 1, ...) {
 
   ptm <- proc.time()
 
@@ -48,15 +48,15 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
   if (!'y' %in% names(data)) {
     stop("error: detection-nondetection data y must be specified in data")
   }
-  y <- c(data$y)
+  y <- as.matrix(data$y)
   if (!'covs' %in% names(data)) {
     if (formula == ~ 1) {
       if (verbose) {
-        message("covariates (covs) not specified in data.\nAssuming intercept only model.\n")
+        message("abundance covariates (covs) not specified in data.\nAssuming intercept only abundance model.\n")
       }
-      data$covs <- matrix(1, length(y), 1)
+      data$covs <- list(int = array(1, dim = dim(y)))
     } else {
-      stop("error: covs must be specified in data for a model with covariates")
+      stop("error: covs must be specified in data for an abundance model with covariates")
     }
   }
   if (!is.list(data$covs)) {
@@ -74,6 +74,8 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
   }
   coords <- as.matrix(data$coords)
 
+  # TODO: note the replication is currently only fully supported for Gaussian and not ZI Gaussian
+  #       as of March 19, 2025.
   if (!(family) %in% c('Gaussian', 'zi-Gaussian')) {
     stop("svcAbund currently only supports family = 'Gaussian' or 'zi-Gaussian'")
   }
@@ -86,38 +88,50 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
     if (!'z' %in% names(data)) {
       stop("error: z must be specified in data for a two stage model")
     }
-    z <- data$z
+    z <- as.matrix(data$z)
   } else {
-    z <- rep(1, length(y))
+    z <- matrix(1, nrow = nrow(y), ncol = ncol(y))
   }
-
-  # First subset covariates to only use those that are included in the analysis.
-  # Get occurrence covariates in proper format
-  # Subset covariates to only use those that are included in the analysis
-  data$covs <- data$covs[names(data$covs) %in% all.vars(formula)]
-  # Null model support
-  if (length(data$covs) == 0) {
-    data$covs <- list(int = rep(1, length(y)))
-  }
-  # Ordered by rep, then site within rep
-  data$covs <- data.frame(lapply(data$covs, function(a) unlist(c(a))))
 
   # Check first-stage sample ----------------------------------------------
   if (length(z) != length(y)) {
-    stop(paste("z must be a vector of length ", length(y), ".", sep = ''))
+    stop(paste("z must be two-dimensional matrix (site x replicate) or a vector (site) with a total of ", length(y), " values.", sep = ''))
   }
   # Number of points where z == 1
-  J.est <- sum(z == 1)
+  n.obs.est <- sum(z == 1)
   # Number of points where z != 1
-  J.zero <- sum(z == 0)
+  n.obs.zero <- sum(z == 0)
+  # Index for the observations where z == 1
+  z.indx <- z == 1
   # Index for the sites where z == 1
-  z.indx <- which(z == 1)
+  z.site.indx <- apply(z.indx, 1, function(a) ifelse(sum(a) > 0, TRUE, FALSE)) 
+  # Number of sites where there's at least one replicate with z == 1
+  J.est <- sum(z.site.indx)
+  J.zero <- sum(!z.site.indx)
 
-  # Filter all objects to only use sites with z == 1
+  # TODO: need to confirm the following two chunks work properly for 
+  #       family = 'ZI-Gaussian' 
+  
+  # Set observations in y and covs to NA if not passing the hurdle
+  y <- ifelse(z.indx, y, NA)
+  for (i in 1:length(data$covs)) {
+    if (!is.null(dim(data$covs[[i]]))) {
+      data$covs[[i]] <- ifelse(z.indx, data$covs[[i]], NA)
+    }
+  }
+
+  # Filter all objects to only use sites with at least one site with z == 1
   y.orig <- y
-  y <- y[z.indx]
-  coords <- coords[z.indx, ]
-  data$covs <- data$covs[z.indx, , drop = FALSE]
+  y <- y[z.site.indx, , drop = FALSE]
+  coords <- coords[z.site.indx, ]
+  for (i in 1:length(data$covs)) {
+    if (!is.null(dim(data$covs[[i]]))) { # Obs level covariate
+      data$covs[[i]] <- data$covs[[i]][z.site.indx, , drop = FALSE]
+    } else { # Site-level covariate
+      data$covs[[i]] <- data$covs[[i]][z.site.indx]
+    }
+  }
+
 
   # Neighbors and Ordering ----------------------------------------------
   if (NNGP) {
@@ -125,27 +139,67 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
     ## Order by x column. Could potentially allow this to be user defined.
     ord <- order(coords[,1])
     # Reorder everything to align with NN ordering
-    y <- y[ord, drop = FALSE]
+    y <- y[ord, , drop = FALSE]
     coords <- coords[ord, , drop = FALSE]
-    # Occupancy covariates
-    data$covs <- data$covs[ord, , drop = FALSE]
+    # Covariates
+    for (i in 1:length(data$covs)) {
+      if (!is.null(dim(data$covs[[i]]))) {
+        data$covs[[i]] <- data$covs[[i]][ord, , drop = FALSE]
+      } else {
+        data$covs[[i]] <- data$covs[[i]][ord]
+      }
+    }
+  }
+  y.mat <- y
+
+  # First subset covariates to only use those that are included in the analysis.
+  # Get occurrence covariates in proper format
+  # Subset covariates to only use those that are included in the analysis
+  data$covs <- data$covs[names(data$covs) %in% all.vars(formula)]
+  # Null model support
+  if (length(data$covs) == 0) {
+    data$covs <- list(int = matrix(1, nrow = dim(y)[1], ncol = dim(y)[2]))
+  }
+  # Ordered by rep, then site within rep
+  data$covs <- data.frame(lapply(data$covs, function(a) unlist(c(a))))
+  # Check if only site-level covariates are included
+  if (nrow(data$covs) == dim(y)[1]) {
+    data$covs <- as.data.frame(lapply(data$covs, rep, dim(y)[2]))
   }
 
-  data$covs <- as.data.frame(data$covs)
 
   # Checking missing values ---------------------------------------------
   # y -------------------------------
-  if (sum(is.na(y) > 0)) {
-    stop("error: some sites in y have missing values. Remove these sites from all objects in the 'data' argument, then use 'predict' to obtain predictions at these locations if desired.")
+  y.na.test <- apply(y, 1, function(a) sum(!is.na(a)))
+  if (sum(y.na.test == 0) > 0) {
+    stop("error: some sites in y have all missing detection histories. Remove these sites from all objects in the 'data' argument, then use 'predict' to obtain predictions at these locations if desired.")
   }
-  # covs ------------------------
-  if (sum(is.na(data$covs)) != 0) {
-    stop("error: missing values in covs. Please remove these sites from all objects in data or somehow replace the NA values with non-missing values (e.g., mean imputation).")
+  # covs ------------------------------
+  for (i in 1:ncol(data$covs)) {
+    if (sum(is.na(data$covs[, i])) > sum(is.na(y))) {
+      stop("error: some elements in covs have missing values where there is an observed data value in y. Please either replace the NA values in covs with non-missing values (e.g., mean imputation) or set the corresponding values in y to NA where the covariate is missing.")
+    }
   }
+  # Misalignment between y and covs
+  y.missing <- which(is.na(y))
+  covs.missing <- lapply(data$covs, function(a) which(is.na(a)))
+  for (i in 1:length(covs.missing)) {
+    tmp.indx <- !(y.missing %in% covs.missing[[i]])
+    if (sum(tmp.indx) > 0) {
+      if (i == 1 & verbose) {
+        message("There are missing values in data$y with corresponding non-missing values in data$covs.\nRemoving these site/replicate combinations for fitting the model.")
+      }
+      data$covs[y.missing, i] <- NA
+    }
+  }
+  # Remove missing values in covariates prior to sending to parseFormula
+  if (length(unique(unlist(covs.missing))) > 0) {
+    data$covs <- data$covs[-c(unique(unlist(covs.missing))), , drop = FALSE]
+  }
+
 
   # Check whether random effects are sent in as numeric, and
   # return error if they are.
-  # Occurrence ----------------------
   if (!is.null(findbars(formula))) {
     re.names <- unique(unlist(sapply(findbars(formula), all.vars)))
     for (i in 1:length(re.names)) {
@@ -186,18 +240,24 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
   # Number of latent random effect values
   n.re <- length(unlist(apply(X.re, 2, unique)))
   n.re.long <- apply(X.re, 2, function(a) length(unique(a)))
+  # Number of replicates at each site
+  n.rep <- apply(y, 1, function(a) sum(!is.na(a)))
+  # Max number of repeat visits
+  K.max <- ncol(y)
+  # Because I like K better than n.rep
+  K <- n.rep
   if (missing(n.batch)) {
-    stop("error: must specify number of MCMC batches")
+    stop("must specify number of MCMC batches")
   }
   if (missing(batch.length)) {
-    stop("error: must specify length of each MCMC batch")
+    stop("must specify length of each MCMC batch")
   }
   n.samples <- n.batch * batch.length
   if (n.burn > n.samples) {
-    stop("error: n.burn must be less than n.samples")
+    stop("n.burn must be less than n.samples")
   }
   if (n.thin > n.samples) {
-    stop("error: n.thin must be less than n.samples")
+    stop("n.thin must be less than n.samples")
   }
   # Check if n.burn, n.thin, and n.samples result in an integer and error if otherwise.
   if (((n.samples - n.burn) / n.thin) %% 1 != 0) {
@@ -206,6 +266,28 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
   n.post.samples <- length(seq(from = n.burn + 1,
                                to = n.samples,
                                by = as.integer(n.thin)))
+
+  # Get indices to map sites to observations ------------------------------
+  site.indx <- rep(1:J, dim(y)[2])
+  site.indx <- site.indx[!is.na(c(y))]
+  # Subtract 1 for indices in C
+  site.indx <- site.indx - 1
+  y <- c(y)
+  names.long <- which(!is.na(y))
+  # Remove missing observations when the covariate data are available but
+  # there are missing abundance data.
+  if (nrow(X) == length(y)) {
+    X <- X[!is.na(y), , drop = FALSE]
+  }
+  if (nrow(X.re) == length(y) & p.re > 0) {
+    X.re <- X.re[!is.na(y), , drop = FALSE]
+  }
+  if (nrow(X.random) == length(y) & p.re > 0) {
+    X.random <- X.random[!is.na(y), , drop = FALSE]
+  }
+  y <- y[!is.na(y.mat)]
+  # Number of data points for the y vector
+  n.obs <- nrow(X)
 
   # Check SVC columns -----------------------------------------------------
   if (is.character(svc.cols)) {
@@ -636,7 +718,7 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
   curr.chain <- 1
 
   if (!NNGP) {
-    stop("error: svcAbund is currently only implemented for NNGPs, not full Gaussian Processes. Please set NNGP = TRUE.")
+    stop("svcAbund is only implemented for NNGPs, not full Gaussian Processes. Please set NNGP = TRUE. If you want a full GP, you can use spBayes::spSVC().")
 
   } else {
 
@@ -701,7 +783,7 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
     storage.mode(y) <- "double"
     storage.mode(X) <- "double"
     storage.mode(X.w) <- "double"
-    consts <- c(J.est, p, p.re, n.re, p.svc, J.zero)
+    consts <- c(J.est, p, p.re, n.re, p.svc, n.obs, n.obs.zero)
     storage.mode(consts) <- "integer"
     storage.mode(coords) <- "double"
     storage.mode(beta.inits) <- "double"
@@ -710,6 +792,7 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
     storage.mode(sigma.sq.inits) <- "double"
     storage.mode(nu.inits) <- "double"
     storage.mode(w.inits) <- "double"
+    storage.mode(site.indx) <- 'integer'
     storage.mode(mu.beta) <- "double"
     storage.mode(Sigma.beta) <- "double"
     storage.mode(phi.a) <- "double"
@@ -765,8 +848,7 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
       # Change initial values if i > 1
       if ((i > 1) & (!fix.inits)) {
         beta.inits <- rnorm(p, mu.beta, sqrt(sigma.beta))
-        sigma.sq.inits <- rigamma(p.svc, sigma.sq.a, sigma.sq.b)
-	sigma.sq.inits <- runif(p.svc, 0.05, 10)
+        sigma.sq.inits <- runif(p.svc, 0.05, 10)
         phi.inits <- runif(p.svc, phi.a, phi.b)
         if (cov.model == 'matern') {
           nu.inits <- runif(p.svc, nu.a, nu.b)
@@ -779,17 +861,15 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
       }
       storage.mode(chain.info) <- "integer"
       # Run the model in C
-      out.tmp[[i]] <- .Call("svcAbundGaussianNNGP", y, X,
-      		            X.w, coords,
-      		            X.re, X.random,
-      		            consts, n.re.long,
-        	             n.neighbors, nn.indx, nn.indx.lu, u.indx, u.indx.lu, ui.indx,
+      out.tmp[[i]] <- .Call("svcAbundGaussianNNGP", y, X, X.w, coords, X.re, X.random,
+                            consts, n.re.long, n.neighbors, 
+                            nn.indx, nn.indx.lu, u.indx, u.indx.lu, ui.indx,
                             beta.inits, tau.sq.inits, sigma.sq.mu.inits, beta.star.inits,
-                            w.inits, phi.inits, sigma.sq.inits, nu.inits,
+                            w.inits, site.indx, phi.inits, sigma.sq.inits, nu.inits,
                             beta.star.indx, beta.level.indx, mu.beta,
                             Sigma.beta, tau.sq.a, tau.sq.b, phi.a, phi.b,
                             sigma.sq.a, sigma.sq.b, nu.a, nu.b,
-      		            sigma.sq.mu.a, sigma.sq.mu.b,
+                            sigma.sq.mu.a, sigma.sq.mu.b,
                             tuning.c, cov.model.indx,
                             n.batch, batch.length,
                             accept.rate, n.omp.threads, verbose, n.report,
@@ -835,12 +915,33 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
     out$tau.sq.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$tau.sq.samples))))
     # Get everything back in the original order
     out$coords <- coords[order(ord), ]
+    y.non.miss.indx <- which(!is.na(y.mat), arr.ind = TRUE)
     if (!two.stage) {
       out$y.rep.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.samples))))
-      out$y.rep.samples <- mcmc(out$y.rep.samples[, order(ord), drop = FALSE])
+      tmp <- array(NA, dim = c(n.post.samples * n.chains, J, ncol(y.mat)))
+      for (j in 1:n.obs) {
+        curr.indx <- y.non.miss.indx[j, ]
+        tmp[, curr.indx[1], curr.indx[2]] <- out$y.rep.samples[, j]
+      }
+      out$y.rep.samples <- tmp[, order(ord), , drop = FALSE]
+      out$mu.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$mu.samples))))
+      tmp <- array(NA, dim = c(n.post.samples * n.chains, J, ncol(y.mat)))
+      for (j in 1:n.obs) {
+        curr.indx <- y.non.miss.indx[j, ]
+        tmp[, curr.indx[1], curr.indx[2]] <- out$mu.samples[, j]
+      }
+      out$mu.samples <- tmp[, order(ord), , drop = FALSE]
       out$like.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$like.samples))))
-      out$like.samples <- mcmc(out$like.samples[, order(ord), drop = FALSE])
+      tmp <- array(NA, dim = c(n.post.samples * n.chains, J, ncol(y.mat)))
+      for (j in 1:n.obs) {
+        curr.indx <- y.non.miss.indx[j, ]
+        tmp[, curr.indx[1], curr.indx[2]] <- out$like.samples[, j]
+      }
+      out$like.samples <- tmp[, order(ord), , drop = FALSE]
     } else {
+      # TODO: this needs to be updated to deal with multiple reps. Also make
+      #       sure that mu is included in here since you took it out of 
+      #       elsewhere. 
       y.rep.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.samples))))
       y.rep.samples <- mcmc(y.rep.samples[, order(ord), drop = FALSE])
       like.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$like.samples))))
@@ -853,9 +954,23 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
       out$like.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$like.samples))))
       out$like.samples <- mcmc(out$like.samples[, order(ord), drop = FALSE])
     }
-    out$X <- X[order(ord), , drop = FALSE]
-    out$X.re <- X.re[order(ord), , drop = FALSE]
-    out$X.w <- X.w[order(ord), , drop = FALSE]
+    out$X <- array(NA, dim = c(J, ncol(y.mat), p.abund))
+    out$X.re <- array(NA, dim = c(J, ncol(y.mat), p.re))
+    out$X.w <- array(NA, dim = c(J, ncol(y.mat), p.svc))
+    for (j in 1:n.obs) {
+      curr.indx <- y.non.miss.indx[j, ]
+      out$X[curr.indx[1], curr.indx[2], ] <- X[j, ]
+      out$X.w[curr.indx[1], curr.indx[2], ] <- X.w[j, ]
+      if (p.re > 0) {
+        out$X.re[curr.indx[1], curr.indx[2], ] <- X.re[j, ]
+      }
+    }
+    dimnames(out$X)[[3]] <- x.names
+    dimnames(out$X.w)[[3]] <- x.names[svc.cols]
+    dimnames(out$X.re)[[3]] <- colnames(X.re)
+    out$X <- out$X[order(ord), , , drop = FALSE]
+    out$X.w <- out$X.w[order(ord), , , drop = FALSE]
+    out$X.re <- out$X.re[order(ord), , , drop = FALSE]
     # Account for case when intercept only spatial model.
     if (p.svc == 1) {
       tmp <- do.call(rbind, lapply(out.tmp, function(a) t(a$w.samples)))
@@ -868,8 +983,6 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
       out$w.samples <- out$w.samples[, order(ord), ]
     }
     out$w.samples <- aperm(out$w.samples, c(3, 1, 2))
-    out$mu.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$mu.samples))))
-    out$mu.samples <- mcmc(out$mu.samples[, order(ord), drop = FALSE])
     out$y <- y.orig
     if (p.re > 0) {
       out$sigma.sq.mu.samples <- mcmc(

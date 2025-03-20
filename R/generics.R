@@ -374,8 +374,10 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
   }
   # If Gaussian, collapse to a matrix
   if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
-    out$y.0.samples <- out$y.0.samples[, , 1]
-    out$mu.0.samples <- out$mu.0.samples[, , 1]
+    if (K.max.0 == 1) {
+      out$y.0.samples <- out$y.0.samples[, , 1]
+      out$mu.0.samples <- out$mu.0.samples[, , 1]
+    }
   }
 
   out$call <- cl
@@ -489,10 +491,10 @@ summary.spAbund <- function(object,
 }
 
 predict.spAbund <- function(object, X.0, coords.0,
-			    n.omp.threads = 1, verbose = TRUE, n.report = 100,
-			    ignore.RE = FALSE, z.0.samples, include.sp = TRUE, ...) {
+                            n.omp.threads = 1, verbose = TRUE, n.report = 100,
+                            ignore.RE = FALSE, z.0.samples, include.sp = TRUE, ...) {
 
-  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
+  if (object$dist %in% c('zi-Gaussian')) {
     predict.svcAbund(object, X.0, coords.0, n.omp.threads,
 		     verbose, n.report, ignore.RE, z.0.samples, include.sp)
   } else {
@@ -685,7 +687,14 @@ predict.spAbund <- function(object, X.0, coords.0,
       } else {
         kappa.samples <- matrix(0, 1, n.post)
       }
-      family.c <- ifelse(object$dist == 'NB', 1, 0)
+      if (object$dist %in% c('Gaussian')) {
+        tau.sq.samples <- t(object$tau.sq.samples)
+      } else {
+        tau.sq.samples <- matrix(0, 1, n.post)
+      }
+      # 0 = Poisson, 1 = NB, 2 = Gaussian
+      family.c <- ifelse(object$dist == 'NB', 1, 
+                         ifelse(object$dist == 'Gaussian', 2, 0))
       theta.samples <- t(theta.samples)
 
       n.obs.0 <- nrow(X.fix)
@@ -723,6 +732,7 @@ predict.spAbund <- function(object, X.0, coords.0,
         storage.mode(beta.samples) <- "double"
         storage.mode(theta.samples) <- "double"
         storage.mode(kappa.samples) <- "double"
+        storage.mode(tau.sq.samples) <- "double"
         storage.mode(family.c) <- "integer"
         storage.mode(w.samples) <- "double"
         storage.mode(beta.star.sites.0.samples) <- "double"
@@ -738,7 +748,7 @@ predict.spAbund <- function(object, X.0, coords.0,
         out <- .Call("svcAbundNNGPPredict", coords, J, n.obs, p.abund, p.svc, n.neighbors,
                      X.fix, X.w.0, coords.0, J.0, n.obs.0, sites.link, sites.0.sampled, sites.0.indx,
                      nn.indx.0, beta.samples,
-                     theta.samples, w.samples, beta.star.sites.0.samples, kappa.samples,
+                     theta.samples, w.samples, beta.star.sites.0.samples, kappa.samples, tau.sq.samples,
                      n.post, cov.model.indx, n.omp.threads, verbose, n.report, family.c)
       }
 
@@ -4410,12 +4420,15 @@ summary.svcAbund <- function(object, quantiles = c(0.025, 0.5, 0.975),
   summary.spAbund(object, quantiles, digits)
 }
 
+# NOTE: predict.svcAbund is really for spAbund or svcAbund family types 
+#       that do not allow replication. predict.spAbund is for spAbund or svcAbund
+#       family types that do allow for replication.
 predict.svcAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
                              verbose = TRUE, n.report = 100,
                              ignore.RE = FALSE, z.0.samples,
                              include.sp = TRUE, ...) {
 
-  if (object$dist %in% c('Poisson', 'NB')) {
+  if (object$dist %in% c('Poisson', 'NB', 'Gaussian')) {
     predict.spAbund(object, X.0, coords.0, n.omp.threads, verbose,
                     n.report, ignore.RE, z.0.samples, include.sp)
   } else {
