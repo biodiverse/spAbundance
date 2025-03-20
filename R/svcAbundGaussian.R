@@ -954,7 +954,7 @@ svcAbundGaussian <- function(formula, data, inits, priors, tuning,
       out$like.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$like.samples))))
       out$like.samples <- mcmc(out$like.samples[, order(ord), drop = FALSE])
     }
-    out$X <- array(NA, dim = c(J, ncol(y.mat), p.abund))
+    out$X <- array(NA, dim = c(J, ncol(y.mat), p))
     out$X.re <- array(NA, dim = c(J, ncol(y.mat), p.re))
     out$X.w <- array(NA, dim = c(J, ncol(y.mat), p.svc))
     for (j in 1:n.obs) {
