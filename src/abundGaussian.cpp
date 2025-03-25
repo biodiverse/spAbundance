@@ -22,8 +22,8 @@ extern "C" {
   SEXP abundGaussian(SEXP y_r, SEXP X_r, SEXP XRE_r, SEXP XRandom_r,
                SEXP consts_r, SEXP nRELong_r,
                SEXP betaStarting_r, SEXP tauSqStarting_r, SEXP sigmaSqMuStarting_r,
-               SEXP betaStarStarting_r,
-               SEXP betaStarIndx_r, SEXP betaLevelIndx_r,
+               SEXP betaStarStarting_r, SEXP betaStarIndx_r, 
+               SEXP betaLevelIndx_r, 
                SEXP muBeta_r, SEXP SigmaBeta_r,
                SEXP tauSqA_r, SEXP tauSqB_r,
                SEXP sigmaSqMuA_r, SEXP sigmaSqMuB_r, SEXP nBatch_r,
@@ -54,10 +54,11 @@ extern "C" {
     int p = INTEGER(consts_r)[1];
     int pRE = INTEGER(consts_r)[2];
     int nRE = INTEGER(consts_r)[3];
-    int JZero = INTEGER(consts_r)[4];
-    int saveFitted = INTEGER(consts_r)[5];
+    int nObs = INTEGER(consts_r)[4];
+    int nObsZero = INTEGER(consts_r)[5];
+    int saveFitted = INTEGER(consts_r)[6];
     int pp = p * p;
-    int JpRE = J * pRE;
+    int nObspRE = nObs * pRE;
     // Priors
     double *muBeta = (double *) R_alloc(p, sizeof(double));
     F77_NAME(dcopy)(&p, REAL(muBeta_r), &inc, muBeta, &inc);
@@ -101,7 +102,7 @@ extern "C" {
         Rprintf("----------------------------------------\n");
         Rprintf("\tModel description\n");
         Rprintf("----------------------------------------\n");
-	if (JZero > 0) {
+	if (nObsZero > 0) {
           Rprintf("Zero-inflated Gaussian model with %i non-zero sites.\n\n", J);
 	} else {
           Rprintf("Gaussian model with %i sites.\n\n", J);
@@ -151,14 +152,14 @@ extern "C" {
     SEXP muSamples_r;
     SEXP likeSamples_r;
     if (saveFitted == 1) {
-      PROTECT(yRepSamples_r = Rf_allocMatrix(REALSXP, J, nPost)); nProtect++;
-      zeros(REAL(yRepSamples_r), J * nPost);
-      PROTECT(yRepZeroSamples_r = Rf_allocMatrix(REALSXP, JZero, nPost)); nProtect++;
-      zeros(REAL(yRepZeroSamples_r), JZero * nPost);
-      PROTECT(muSamples_r = Rf_allocMatrix(REALSXP, J, nPost)); nProtect++;
-      zeros(REAL(muSamples_r), J * nPost);
-      PROTECT(likeSamples_r = Rf_allocMatrix(REALSXP, J, nPost)); nProtect++;
-      zeros(REAL(likeSamples_r), J * nPost);
+      PROTECT(yRepSamples_r = Rf_allocMatrix(REALSXP, nObs, nPost)); nProtect++;
+      zeros(REAL(yRepSamples_r), nObs * nPost);
+      PROTECT(yRepZeroSamples_r = Rf_allocMatrix(REALSXP, nObsZero, nPost)); nProtect++;
+      zeros(REAL(yRepZeroSamples_r), nObsZero * nPost);
+      PROTECT(muSamples_r = Rf_allocMatrix(REALSXP, nObs, nPost)); nProtect++;
+      zeros(REAL(muSamples_r), nObs * nPost);
+      PROTECT(likeSamples_r = Rf_allocMatrix(REALSXP, nObs, nPost)); nProtect++;
+      zeros(REAL(likeSamples_r), nObs * nPost);
     }
     // Occurrence random effects
     SEXP sigmaSqMuSamples_r;
@@ -177,25 +178,23 @@ extern "C" {
     /**********************************************************************
      * Other initial starting stuff
      * *******************************************************************/
-    int Jp = J * p;
+    int nObsp = nObs * p;
     double tmp_0, tmp_02;
     double *tmp_pp = (double *) R_alloc(pp, sizeof(double));
     double *tmp_p = (double *) R_alloc(p, sizeof(double));
     double *tmp_p2 = (double *) R_alloc(p, sizeof(double));
     double *tmp_one = (double *) R_alloc(1, sizeof(double));
-    int *tmp_J = (int *) R_alloc(J, sizeof(int));
-    for (j = 0; j < J; j++) {
-      tmp_J[j] = zero;
-    }
-    double *tmp_Jp = (double *) R_alloc(Jp, sizeof(double));
-    double *tmp_J1 = (double *) R_alloc(J, sizeof(double));
+    double *tmp_nObsp = (double *) R_alloc(nObsp, sizeof(double)); 
+    zeros(tmp_nObsp, nObsp);
+    double *tmp_nObs = (double *) R_alloc(nObs, sizeof(double)); 
+    zeros(tmp_nObs, nObs);
 
     // For latent occupancy
-    double *mu = (double *) R_alloc(J, sizeof(double));
-    zeros(mu, J);
-    double *like = (double *) R_alloc(J, sizeof(double)); zeros(like, J);
-    double *yRep = (double *) R_alloc(J, sizeof(double)); zeros(yRep, J);
-    double *yRepZero = (double *) R_alloc(JZero, sizeof(double)); zeros(yRepZero, JZero);
+    double *mu = (double *) R_alloc(nObs, sizeof(double));
+    zeros(mu, nObs);
+    double *like = (double *) R_alloc(nObs, sizeof(double)); zeros(like, nObs);
+    double *yRep = (double *) R_alloc(nObs, sizeof(double)); zeros(yRep, nObs);
+    double *yRepZero = (double *) R_alloc(nObsZero, sizeof(double)); zeros(yRepZero, nObsZero);
 
     // For normal priors
     // Occupancy regression coefficient priors.
@@ -211,14 +210,14 @@ extern "C" {
      * Prep for random effects
      * *******************************************************************/
     // Site-level sums of the occurrence random effects
-    double *betaStarSites = (double *) R_alloc(J, sizeof(double));
-    int *betaStarLongIndx = (int *) R_alloc(JpRE, sizeof(int));
-    zeros(betaStarSites, J);
+    double *betaStarSites = (double *) R_alloc(nObs, sizeof(double));
+    int *betaStarLongIndx = (int *) R_alloc(nObspRE, sizeof(int));
+    zeros(betaStarSites, nObs);
     // Initial sums
-    for (j = 0; j < J; j++) {
+    for (j = 0; j < nObs; j++) {
       for (l = 0; l < pRE; l++) {
-        betaStarLongIndx[l * J + j] = which(XRE[l * J + j], betaLevelIndx, nRE);
-        betaStarSites[j] += betaStar[betaStarLongIndx[l * J + j]] * XRandom[l * J + j];
+        betaStarLongIndx[l * nObs + j] = which(XRE[l * nObs + j], betaLevelIndx, nRE);
+        betaStarSites[j] += betaStar[betaStarLongIndx[l * nObs + j]] * XRandom[l * nObs + j];
       }
     }
     // Starting index for occurrence random effects
@@ -238,13 +237,13 @@ extern "C" {
         /********************************************************************
          *Update Regression Coefficients
          *******************************************************************/
-        for (j = 0; j < J; j++) {
-          tmp_J1[j] = (y[j] - betaStarSites[j]) / tauSq;
+        for (j = 0; j < nObs; j++) {
+          tmp_nObs[j] = (y[j] - betaStarSites[j]) / tauSq;
         } // j
         /********************************
          * Compute b.beta
          *******************************/
-        F77_NAME(dgemv)(ytran, &J, &p, &one, X, &J, tmp_J1, &inc, &zero, tmp_p, &inc FCONE);
+        F77_NAME(dgemv)(ytran, &nObs, &p, &one, X, &nObs, tmp_nObs, &inc, &zero, tmp_p, &inc FCONE);
         for (j = 0; j < p; j++) {
           tmp_p[j] += SigmaBetaInvMuBeta[j];
         } // j
@@ -252,13 +251,14 @@ extern "C" {
         /********************************
          * Compute A.beta
          * *****************************/
-        for(j = 0; j < J; j++){
+        for(j = 0; j < nObs; j++){
           for(i = 0; i < p; i++){
-            tmp_Jp[i*J+j] = X[i*J+j] / tauSq;
+            tmp_nObsp[i*nObs+j] = X[i*nObs+j] / tauSq;
           }
         }
 
-        F77_NAME(dgemm)(ytran, ntran, &p, &p, &J, &one, X, &J, tmp_Jp, &J, &zero, tmp_pp, &p FCONE FCONE);
+        F77_NAME(dgemm)(ytran, ntran, &p, &p, &nObs, &one, X, &nObs, tmp_nObsp, &nObs, 
+                        &zero, tmp_pp, &p FCONE FCONE);
         for (j = 0; j < pp; j++) {
           tmp_pp[j] += SigmaBetaInv[j];
         } // j
@@ -295,15 +295,15 @@ extern "C" {
             // Only allow information to come from when XRE == betaLevelIndx[l].
             // aka information only comes from the sites with any given level
             // of a random effect.
-            for (j = 0; j < J; j++) {
-              if (XRE[betaStarIndx[l] * J + j] == betaLevelIndx[l]) {
+            for (j = 0; j < nObs; j++) {
+              if (XRE[betaStarIndx[l] * nObs + j] == betaLevelIndx[l]) {
                 tmp_02 = 0.0;
                 for (ll = 0; ll < pRE; ll++) {
-                  tmp_02 += betaStar[betaStarLongIndx[ll * J + j]] * XRandom[ll * J + j];
+                  tmp_02 += betaStar[betaStarLongIndx[ll * nObs + j]] * XRandom[ll * nObs + j];
                 }
-                tmp_one[0] += XRandom[betaStarIndx[l] * J + j] * (y[j] - F77_NAME(ddot)(&p, &X[j], &J, beta, &inc) -
-          		    tmp_02 + (betaStar[l] * XRandom[betaStarIndx[l] * J + j])) / tauSq;
-                tmp_0 += XRandom[betaStarIndx[l] * J + j] * XRandom[betaStarIndx[l] * J + j] / tauSq;
+                tmp_one[0] += XRandom[betaStarIndx[l] * nObs + j] * (y[j] - F77_NAME(ddot)(&p, &X[j], &nObs, beta, &inc) -
+          		    tmp_02 + (betaStar[l] * XRandom[betaStarIndx[l] * nObs + j])) / tauSq;
+                tmp_0 += XRandom[betaStarIndx[l] * nObs + j] * XRandom[betaStarIndx[l] * nObs + j] / tauSq;
               }
             }
             /********************************
@@ -315,10 +315,10 @@ extern "C" {
           }
 
           // Update the RE sums for the current species
-          zeros(betaStarSites, J);
-          for (j = 0; j < J; j++) {
+          zeros(betaStarSites, nObs);
+          for (j = 0; j < nObs; j++) {
             for (l = 0; l < pRE; l++) {
-              betaStarSites[j] += betaStar[betaStarLongIndx[l * J + j]] * XRandom[l * J + j];
+              betaStarSites[j] += betaStar[betaStarLongIndx[l * nObs + j]] * XRandom[l * nObs + j];
             }
           }
         }
@@ -326,46 +326,45 @@ extern "C" {
         /********************************************************************
          *Update tau.sq
          *******************************************************************/
-        for (j = 0; j < J; j++) {
-	  tmp_J1[j] = y[j] -
-	      	F77_NAME(ddot)(&p, &X[j], &J, beta, &inc) - betaStarSites[j];
+        for (j = 0; j < nObs; j++) {
+          tmp_nObs[j] = y[j] -
+	      	F77_NAME(ddot)(&p, &X[j], &nObs, beta, &inc) - betaStarSites[j];
         }
-        tauSq = rigamma(tauSqA + J / 2.0, tauSqB + 0.5 *
-			   F77_NAME(ddot)(&J, tmp_J1, &inc, tmp_J1, &inc));
+        tauSq = rigamma(tauSqA + nObs / 2.0, tauSqB + 0.5 *
+			   F77_NAME(ddot)(&nObs, tmp_nObs, &inc, tmp_nObs, &inc));
 
         /********************************************************************
          *Get fitted values and likelihood for WAIC
          *******************************************************************/
-	if (saveFitted == 1) {
-         for (j = 0; j < J; j++) {
-           mu[j] = F77_NAME(ddot)(&p, &X[j], &J, beta, &inc) + betaStarSites[j];
-           yRep[j] = rnorm(mu[j], sqrt(tauSq));
-           like[j] = dnorm(y[j], mu[j], sqrt(tauSq), 0);
-	 } // j
-	}
+        if (saveFitted == 1) {
+          for (j = 0; j < nObs; j++) {
+            mu[j] = F77_NAME(ddot)(&p, &X[j], &nObs, beta, &inc) + betaStarSites[j];
+            yRep[j] = rnorm(mu[j], sqrt(tauSq));
+            like[j] = dnorm(y[j], mu[j], sqrt(tauSq), 0);
+          } // j
+        }
         /********************************************************************
          *Get fitted values and likelihood for WAIC for the zero values
          *******************************************************************/
-	if (saveFitted == 1) {
-          for (j = 0; j < JZero; j++) {
+        if (saveFitted == 1) {
+          for (j = 0; j < nObsZero; j++) {
             yRepZero[j] = rnorm(0.0, sqrt(0.0001));
-	  } // j
+          } // j
         }
         /********************************************************************
          *Save samples
          *******************************************************************/
-	if (q >= nBurn) {
+       if (q >= nBurn) {
           thinIndx++;
-	  if (thinIndx == nThin) {
+         if (thinIndx == nThin) {
             F77_NAME(dcopy)(&p, beta, &inc, &REAL(betaSamples_r)[sPost*p], &inc);
-	    REAL(tauSqSamples_r)[sPost] = tauSq;
-	    if (saveFitted == 1) {
-	      F77_NAME(dcopy)(&J, yRep, &inc, &REAL(yRepSamples_r)[sPost*J], &inc);
-              F77_NAME(dcopy)(&J, mu, &inc, &REAL(muSamples_r)[sPost*J], &inc);
-	      F77_NAME(dcopy)(&JZero, yRepZero, &inc, &REAL(yRepZeroSamples_r)[sPost*JZero], &inc);
-              F77_NAME(dcopy)(&J, like, &inc,
-        		      &REAL(likeSamples_r)[sPost*J], &inc);
-	    }
+            REAL(tauSqSamples_r)[sPost] = tauSq;
+            if (saveFitted == 1) {
+              F77_NAME(dcopy)(&nObs, yRep, &inc, &REAL(yRepSamples_r)[sPost*nObs], &inc);
+              F77_NAME(dcopy)(&nObs, mu, &inc, &REAL(muSamples_r)[sPost*nObs], &inc);
+              F77_NAME(dcopy)(&nObsZero, yRepZero, &inc, &REAL(yRepZeroSamples_r)[sPost*nObsZero], &inc);
+              F77_NAME(dcopy)(&nObs, like, &inc, &REAL(likeSamples_r)[sPost*nObs], &inc);
+            }
             if (pRE > 0) {
               F77_NAME(dcopy)(&pRE, sigmaSqMu, &inc,
                   	    &REAL(sigmaSqMuSamples_r)[sPost*pRE], &inc);

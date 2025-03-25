@@ -284,13 +284,12 @@ cov.model <- "exponential"
 sigma.sq <- runif(p.svc, 0.4, 4)
 phi <- runif(p.svc, 3/1, 3/0.6)
 tau.sq <- 2
-z <- rbinom(J, 1, 0.5)
 
 # Get all the data
 dat <- simAbund(J.x = J.x, J.y = J.y, beta = beta, tau.sq = tau.sq,
                 mu.RE = mu.RE, sp = sp, svc.cols = svc.cols,
-                family = 'zi-Gaussian', cov.model = cov.model,
-                sigma.sq = sigma.sq, phi = phi, z = z)
+                family = 'Gaussian', cov.model = cov.model,
+                sigma.sq = sigma.sq, phi = phi)
 # Get data in format for spAbundance --------------------------------------
 y <- dat$y
 X <- dat$X
@@ -302,7 +301,7 @@ covs <- cbind(X, X.re)
 colnames(covs) <- c('int', 'cov.1', 'cov.2', 'cov.3', 'factor.1', 'factor.2')
 
 # Data list bundle
-data.list <- list(y = y, covs = covs, coords = coords, z = z)
+data.list <- list(y = y, covs = covs, coords = coords)
 # Priors
 prior.list <- list(beta.normal = list(mean = 0, var = 1000),
                    sigma.sq.ig = list(a = 2, b = 1), tau.sq = c(2, 1),
@@ -330,7 +329,7 @@ out <- svcAbund(formula = ~ cov.1 + cov.2 + cov.3 +
                 inits = inits.list,
                 priors = prior.list,
                 accept.rate = 0.43,
-                family = 'zi-Gaussian',
+                family = 'Gaussian',
                 cov.model = "exponential",
                 tuning = tuning.list,
                 n.omp.threads = 1,

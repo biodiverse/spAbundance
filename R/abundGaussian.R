@@ -46,13 +46,14 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   if (!'y' %in% names(data)) {
     stop("error: detection-nondetection data y must be specified in data")
   }
-  y <- c(data$y)
+  y <- as.matrix(data$y)
+  y.mat <- y
   if (!'covs' %in% names(data)) {
     if (formula == ~ 1) {
       if (verbose) {
         message("covariates (covs) not specified in data.\nAssuming intercept only model.\n")
       }
-      data$covs <- list(int = rep(1, length(y)))
+      data$covs <- list(int = array(1, dim = dim(y)))
     } else {
       stop("error: covs must be specified in data for a model with covariates")
     }
@@ -76,11 +77,48 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   }
   if (two.stage) {
     if (!'z' %in% names(data)) {
-      stop("error: z must be specified in data for a two stage model")
+      stop("z must be specified in data for a two stage model")
     }
     z <- data$z
   } else {
-    z <- rep(1, length(y))
+    z <- matrix(1, nrow = nrow(y), ncol = ncol(y))
+  }
+
+  # Check first-stage sample ----------------------------------------------
+  if (length(z) != length(y)) {
+    stop(paste("z must be two-dimensional matrix (site x replicate) or a vector (site) with a total of ", length(y), " values.", sep = ''))
+  }
+  # Number of points where z == 1
+  n.obs.est <- sum(z == 1)
+  # Number of points where z != 1
+  n.obs.zero <- sum(z == 0)
+  # Index for the observations where z == 1
+  z.indx <- z == 1
+  # Index for the sites where z == 1
+  z.site.indx <- apply(z.indx, 1, function(a) ifelse(sum(a) > 0, TRUE, FALSE)) 
+  # Number of sites where there's at least one replicate with z == 1
+  J.est <- sum(z.site.indx)
+  J.zero <- sum(!z.site.indx)
+
+  # TODO: need to confirm the following two chunks work properly for 
+  #       family = 'ZI-Gaussian' 
+  
+  # Set observations in y and covs to NA if not passing the hurdle
+  y <- ifelse(z.indx, y, NA)
+  for (i in 1:length(data$covs)) {
+    if (!is.null(dim(data$covs[[i]]))) {
+      data$covs[[i]] <- ifelse(z.indx, data$covs[[i]], NA)
+    }
+  }
+
+  # Filter all objects to only use sites with at least one site with z == 1
+  y <- y[z.site.indx, , drop = FALSE]
+  for (i in 1:length(data$covs)) {
+    if (!is.null(dim(data$covs[[i]]))) { # Obs level covariate
+      data$covs[[i]] <- data$covs[[i]][z.site.indx, , drop = FALSE]
+    } else { # Site-level covariate
+      data$covs[[i]] <- data$covs[[i]][z.site.indx]
+    }
   }
 
   # First subset covariates to only use those that are included in the analysis.
@@ -89,37 +127,44 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   data$covs <- data$covs[names(data$covs) %in% all.vars(formula)]
   # Null model support
   if (length(data$covs) == 0) {
-    data$covs <- list(int = rep(1, length(y)))
+    data$covs <- list(int = matrix(1, nrow = dim(y)[1], ncol = dim(y)[2]))
   }
   # Ordered by rep, then site within rep
   data$covs <- data.frame(lapply(data$covs, function(a) unlist(c(a))))
-
-  # Check first-stage sample ----------------------------------------------
-  if (length(z) != length(y)) {
-    stop(paste("z must be a vector of length ", length(y), ".", sep = ''))
+  # Check if only site-level covariates are included
+  if (nrow(data$covs) == dim(y)[1]) {
+    data$covs <- as.data.frame(lapply(data$covs, rep, dim(y)[2]))
   }
-  # Number of points where z == 1
-  J.est <- sum(z == 1)
-  # Number of points where z != 1
-  J.zero <- sum(z == 0)
-  # Index for the sites where z == 1
-  z.indx <- which(z == 1)
-
-  # Filter all objects to only use sites with z == 1
-  y.orig <- y
-  y <- y[z.indx]
-  data$covs <- data$covs[z.indx, , drop = FALSE]
-  data$covs <- as.data.frame(data$covs)
 
   # Checking missing values ---------------------------------------------
   # y -------------------------------
-  if (sum(is.na(y) > 0)) {
-    stop("error: some sites in y have missing values. Remove these sites from all objects in the 'data' argument, then use 'predict' to obtain predictions at these locations if desired.")
+  y.na.test <- apply(y, 1, function(a) sum(!is.na(a)))
+  if (sum(y.na.test == 0) > 0) {
+    stop("error: some sites in y have all missing detection histories. Remove these sites from all objects in the 'data' argument, then use 'predict' to obtain predictions at these locations if desired.")
   }
-  # covs ------------------------
-  if (sum(is.na(data$covs)) != 0) {
-    stop("error: missing values in covs. Please remove these sites from all objects in data or somehow replace the NA values with non-missing values (e.g., mean imputation).")
+  # covs ------------------------------
+  for (i in 1:ncol(data$covs)) {
+    if (sum(is.na(data$covs[, i])) > sum(is.na(y))) {
+      stop("error: some elements in covs have missing values where there is an observed data value in y. Please either replace the NA values in covs with non-missing values (e.g., mean imputation) or set the corresponding values in y to NA where the covariate is missing.")
+    }
   }
+  # Misalignment between y and covs
+  y.missing <- which(is.na(y))
+  covs.missing <- lapply(data$covs, function(a) which(is.na(a)))
+  for (i in 1:length(covs.missing)) {
+    tmp.indx <- !(y.missing %in% covs.missing[[i]])
+    if (sum(tmp.indx) > 0) {
+      if (i == 1 & verbose) {
+        message("There are missing values in data$y with corresponding non-missing values in data$covs.\nRemoving these site/replicate combinations for fitting the model.")
+      }
+      data$covs[y.missing, i] <- NA
+    }
+  }
+  # Remove missing values in covariates prior to sending to parseFormula
+  if (length(unique(unlist(covs.missing))) > 0) {
+    data$covs <- data$covs[-c(unique(unlist(covs.missing))), , drop = FALSE]
+  }
+
 
   # Check whether random effects are sent in as numeric, and
   # return error if they are.
@@ -161,7 +206,7 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
 
   # Get basic info from inputs ------------------------------------------
   # Number of sites
-  J <- nrow(X)
+  J <- nrow(y.mat)
   # Number of parameters
   p <- ncol(X)
   # Number of random effect parameters
@@ -169,6 +214,12 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   # Number of latent random effect values
   n.re <- length(unlist(apply(X.re, 2, unique)))
   n.re.long <- apply(X.re, 2, function(a) length(unique(a)))
+  # Number of replicates at each site
+  n.rep <- apply(y, 1, function(a) sum(!is.na(a)))
+  # Max number of repeat visits
+  K.max <- ncol(y)
+  # Because I like K better than n.rep
+  K <- n.rep
   if (missing(n.batch)) {
     stop("error: must specify number of MCMC batches")
   }
@@ -189,6 +240,28 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   n.post.samples <- length(seq(from = n.burn + 1,
                                to = n.samples,
                                by = as.integer(n.thin)))
+
+  # Get indices to map sites to observations ------------------------------
+  site.indx <- rep(1:J, dim(y)[2])
+  site.indx <- site.indx[!is.na(c(y))]
+  # Subtract 1 for indices in C
+  site.indx <- site.indx - 1
+  y <- c(y)
+  names.long <- which(!is.na(y))
+  # Remove missing observations when the covariate data are available but
+  # there are missing abundance data.
+  if (nrow(X) == length(y)) {
+    X <- X[!is.na(y), , drop = FALSE]
+  }
+  if (nrow(X.re) == length(y) & p.re > 0) {
+    X.re <- X.re[!is.na(y), , drop = FALSE]
+  }
+  if (nrow(X.random) == length(y) & p.re > 0) {
+    X.random <- X.random[!is.na(y), , drop = FALSE]
+  }
+  y <- y[!is.na(y.mat)]
+  # Number of data points for the y vector
+  n.obs <- nrow(X)
 
   # Get random effect matrices all set ----------------------------------
   X.re <- X.re - 1
@@ -398,11 +471,10 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
       names(re.cols)[j] <- split.names[[j]][2]
     }
   }
-
   # Set storage for all variables ---------------------------------------
   storage.mode(y) <- "double"
   storage.mode(X) <- "double"
-  consts <- c(J.est, p, p.re, n.re, J.zero, save.fitted)
+  consts <- c(J.est, p, p.re, n.re, n.obs, n.obs.zero, save.fitted)
   storage.mode(consts) <- "integer"
   storage.mode(beta.inits) <- "double"
   storage.mode(tau.sq.inits) <- "double"
@@ -456,11 +528,11 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
     storage.mode(chain.info) <- "integer"
     # Run the model in C
     out.tmp[[i]] <- .Call("abundGaussian", y, X, X.re, X.random,
-    		          consts, n.re.long,
+                          consts, n.re.long,
                           beta.inits, tau.sq.inits, sigma.sq.mu.inits, beta.star.inits,
                           beta.star.indx, beta.level.indx, mu.beta,
                           Sigma.beta, tau.sq.a, tau.sq.b,
-    		          sigma.sq.mu.a, sigma.sq.mu.b,
+                          sigma.sq.mu.a, sigma.sq.mu.b,
                           n.batch, batch.length,
                           accept.rate, n.omp.threads, verbose, n.report,
                           samples.info, chain.info)
@@ -494,11 +566,34 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
   out$tau.sq.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$tau.sq.samples))))
   colnames(out$tau.sq.samples) <- 'tau.sq'
   # Get everything back in the original order
+  y.non.miss.indx <- which(!is.na(y.mat), arr.ind = TRUE)
   if (save.fitted) {
     if (!two.stage) {
       out$y.rep.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.samples))))
+      tmp <- array(NA, dim = c(n.post.samples * n.chains, J, ncol(y.mat)))
+      for (j in 1:n.obs) {
+        curr.indx <- y.non.miss.indx[j, ]
+        tmp[, curr.indx[1], curr.indx[2]] <- out$y.rep.samples[, j]
+      }
+      out$y.rep.samples <- tmp
+      out$mu.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$mu.samples))))
+      tmp <- array(NA, dim = c(n.post.samples * n.chains, J, ncol(y.mat)))
+      for (j in 1:n.obs) {
+        curr.indx <- y.non.miss.indx[j, ]
+        tmp[, curr.indx[1], curr.indx[2]] <- out$mu.samples[, j]
+      }
+      out$mu.samples <- tmp
       out$like.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$like.samples))))
+      tmp <- array(NA, dim = c(n.post.samples * n.chains, J, ncol(y.mat)))
+      for (j in 1:n.obs) {
+        curr.indx <- y.non.miss.indx[j, ]
+        tmp[, curr.indx[1], curr.indx[2]] <- out$like.samples[, j]
+      }
+      out$like.samples <- tmp
     } else {
+      # TODO: this needs to be updated to deal with multiple reps. Also make
+      #       sure that mu is included in here since you took it out of 
+      #       elsewhere. 
       y.rep.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.samples))))
       y.rep.zero.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$y.rep.zero.samples))))
       out$y.rep.samples <- matrix(NA, n.post.samples * n.chains, J.est + J.zero)
@@ -510,9 +605,18 @@ abundGaussian <- function(formula, data, inits, priors, tuning, n.batch,
     out$mu.samples <- mcmc(do.call(rbind, lapply(out.tmp, function(a) t(a$mu.samples))))
     out$mu.samples <- mcmc(out$mu.samples)
   }
-  out$X <- X
-  out$X.re <- X.re
-  out$y <- y.orig
+  out$X <- array(NA, dim = c(J, ncol(y.mat), p))
+  out$X.re <- array(NA, dim = c(J, ncol(y.mat), p.re))
+  for (j in 1:n.obs) {
+    curr.indx <- y.non.miss.indx[j, ]
+    out$X[curr.indx[1], curr.indx[2], ] <- X[j, ]
+    if (p.re > 0) {
+      out$X.re[curr.indx[1], curr.indx[2], ] <- X.re[j, ]
+    }
+  }
+  dimnames(out$X)[[3]] <- x.names
+  dimnames(out$X.re)[[3]] <- colnames(X.re)
+  out$y <- y.mat
   if (p.re > 0) {
     out$sigma.sq.mu.samples <- mcmc(
       do.call(rbind, lapply(out.tmp, function(a) t(a$sigma.sq.mu.samples))))

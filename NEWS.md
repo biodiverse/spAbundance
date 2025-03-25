@@ -4,7 +4,7 @@
 + Updated `ppcAbund()` to work with `svcAbund()` models (Poisson and NB).
 + Fixed a bug in all GLMM models that prevented the models from running when a site-level offset was supplied into the model. Thanks to Sonia Illanas for bringing this to my attention.
 + Updated `simAbund()` to allow simulation of Gaussian and ZI-Gaussian data with multiple replicate samples per site. 
-+ Updated `svcAbund()` to allow fitting Gaussian SVC models with multiple replicate samples per site. 
++ Updated `svcAbund()`, and `abund()` to allow fitting Gaussian SVC models with multiple replicate samples per site. 
 
 # spAbundance 0.2.1
 

@@ -19,8 +19,8 @@ ppcAbund <- function(object, fit.stat, group, type = 'marginal', ...) {
 			     'msAbund', 'lfMsAbund', 'sfMsAbund', 
 			     'msNMix', 'spNMix', 'lfMsNMix', 'sfMsNMix', 
 			     'DS', 'spDS', 'msDS', 'lfMsDS', 'sfMsDS', 
-           'svcMsAbund', 'svcAbund', 'dynAbund'))) {
-    stop("error: object must be one of the following classes: NMix, spNMix, abund, spAbund, msAbund, lfMsAbund, sfMsAbund, msNMix, lfMsNMix, sfMsNMix, DS, spDS, msDS, lfMsDS, sfMsDS, svcMsAbund, svcAbund, dynAbund")
+           'svcMsAbund', 'svcAbund'))) {
+    stop("error: object must be one of the following classes: NMix, spNMix, abund, spAbund, msAbund, lfMsAbund, sfMsAbund, msNMix, lfMsNMix, sfMsNMix, DS, spDS, msDS, lfMsDS, sfMsDS, svcMsAbund, svcAbund")
   }
   # Fit statistic ---------------------
   if (missing(fit.stat)) {
@@ -42,7 +42,7 @@ ppcAbund <- function(object, fit.stat, group, type = 'marginal', ...) {
     stop("error: group must be 0 (raw data), 1 (sites), or 2 (replicates)")
   }
   if (group != 0 & class(object) %in% c('abund', 'spAbund', 'svcAbund', 'msAbund', 'lfMsAbund', 
-                                        'sfMsAbund', 'svcMsAbund', 'dynAbund')) {
+                                        'sfMsAbund', 'svcMsAbund')) {
     stop("error: group must be 0 (raw data) for abundance GLM models")
   }
   
@@ -315,66 +315,6 @@ ppcAbund <- function(object, fit.stat, group, type = 'marginal', ...) {
     out$n.post <- object$n.post
     out$n.chains <- object$n.chains
   } 
-
-  # Single-species dynamic models -----------------------------------------
-  if (class(object) %in% c('dynAbund', 'spDynAbund')) {
-    y <- object$y
-    J <- nrow(y)
-    y.rep.samples <- fitted.dynAbund(object)
-    mu.samples <- object$mu.samples
-    n.samples <- object$n.post * object$n.chains
-    fit.y <- rep(NA, n.samples)
-    fit.y.rep <- rep(NA, n.samples)
-    n.time <- apply(y, 1, function(a) sum(!is.na(a)))
-    time.indx <- vector(mode = 'list', length = J)
-    for (j in 1:J) {
-      time.indx[[j]] <- which(!is.na(y[j, ]))
-    }
-    n.time.max <- ncol(object$y)
-    e <- 0.0001
-    if (group == 0) {
-      if (fit.stat %in% c('chi-squared', 'chi-square')) {
-        fit.big.y.rep <- array(NA, dim = c(J, n.time.max, n.samples))
-        fit.big.y <- array(NA, dim = c(J, n.time.max, n.samples))
-        for (i in 1:n.samples) {
-          for (j in 1:J) {
-            E <- mu.samples[i, j, time.indx[[j]]] * object$offset[j, time.indx[[j]]]
-            fit.big.y.rep[j, time.indx[[j]], i] <- (y.rep.samples[i, j, time.indx[[j]]] - E)^2 / (E + e)
-            fit.big.y[j, time.indx[[j]], i] <- (y[j, time.indx[[j]]] - E)^2 / (E + e)
-	        } # j
-          fit.y[i] <- sum(fit.big.y[, , i], na.rm = TRUE)
-          fit.y.rep[i] <- sum(fit.big.y.rep[, , i], na.rm = TRUE)
-        } # i
-      } else if (fit.stat == 'freeman-tukey') {
-        fit.big.y.rep <- array(NA, dim = c(J, n.time.max, n.samples))
-        fit.big.y <- array(NA, dim = c(J, n.time.max, n.samples))
-        for (i in 1:n.samples) {
-          for (j in 1:J) {
-            E <- mu.samples[i, j, time.indx[[j]]] * object$offset[j, time.indx[[j]]]
-            fit.big.y.rep[j, time.indx[[j]], i] <- (sqrt(y.rep.samples[i, j, time.indx[[j]]]) - sqrt(E))^2
-            fit.big.y[j, time.indx[[j]], i] <- (sqrt(y[j, time.indx[[j]]]) - sqrt(E))^2
-          } # j
-          fit.y[i] <- sum(fit.big.y[, , i], na.rm = TRUE)
-          fit.y.rep[i] <- sum(fit.big.y.rep[, , i], na.rm = TRUE)
-        } # i
-      }
-    }
-    out$fit.y <- fit.y
-    out$fit.y.rep <- fit.y.rep
-    out$fit.y.group.quants <- apply(fit.big.y, c(1, 2), quantile, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm = TRUE)
-    out$fit.y.rep.group.quants <- apply(fit.big.y.rep, c(1, 2), quantile, c(0.025, 0.25, 0.5, 0.75, 0.975), na.rm = TRUE)
-    # For summaries
-    out$group <- group
-    out$fit.stat <- fit.stat
-    out$class <- class(object)
-    out$call <- cl
-    out$n.samples <- object$n.samples
-    out$n.burn <- object$n.burn
-    out$n.thin <- object$n.thin
-    out$n.post <- object$n.post
-    out$n.chains <- object$n.chains
-  } 
-
 
   # Multi-species abundance models ----------------------------------------
   if (class(object) %in% c('msAbund', 'lfMsAbund', 'sfMsAbund', 'svcMsAbund')) {

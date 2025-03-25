@@ -255,7 +255,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
     beta.star.samples <- object$beta.star.samples
     re.level.names <- object$re.level.names
     # Get columns in design matrix with random effects
-    if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
+    if (object$dist %in% c('zi-Gaussian')) {
       x.re.names <- dimnames(object$X.re)[[2]]
     } else {
       x.re.names <- dimnames(object$X.re)[[3]]
@@ -373,7 +373,7 @@ predict.abund <- function(object, X.0, ignore.RE = FALSE, z.0.samples, ...) {
     }
   }
   # If Gaussian, collapse to a matrix
-  if (object$dist %in% c('Gaussian', 'zi-Gaussian')) {
+  if (object$dist %in% c('zi-Gaussian')) {
     if (K.max.0 == 1) {
       out$y.0.samples <- out$y.0.samples[, , 1]
       out$mu.0.samples <- out$mu.0.samples[, , 1]
