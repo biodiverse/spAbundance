@@ -119,8 +119,6 @@ simAbund <- function(J.x, J.y, n.rep, n.rep.max, beta, kappa, tau.sq, mu.RE = li
     D <- chol(V)
     t(matrix(rnorm(n*p), ncol=p)%*%D + rep(mu,rep(n,p)))
   }
-  logit <- function(theta, a = 0, b = 1){log((theta-a)/(b-theta))}
-  logit.inv <- function(z, a = 0, b = 1){b-(b-a)/(1+exp(z))}
 
   # Form abundance covariates (if any) ------------------------------------
   n.beta <- length(beta)

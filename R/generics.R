@@ -4987,3 +4987,131 @@ predict.svcMsAbund <- function(object, X.0, coords.0, n.omp.threads = 1,
   class(out) <- "predict.svcMsAbund"
   out
 }
+
+# svcTIntAbund ------------------------------------------------------------
+print.svcTIntAbund <- function(x, ...) {
+  cat("\nCall:", deparse(x$call, width.cutoff = floor(getOption("width") * 0.75)),
+      "", sep = "\n")
+}
+
+summary.svcTIntAbund <- function(object, quantiles = c(0.025, 0.5, 0.975),
+                                 digits = max(3L, getOption("digits") - 3L), ...) {
+  print(object)
+
+  n.post <- object$n.post
+  n.samples <- object$n.samples
+  n.burn <- object$n.burn
+  n.thin <- object$n.thin
+  n.chains <- object$n.chains
+  run.time <- object$run.time[3] / 60 # minutes
+
+  cat(paste("Samples per Chain: ", n.samples,"\n", sep=""))
+  cat(paste("Burn-in: ", n.burn,"\n", sep=""))
+  cat(paste("Thinning Rate: ",n.thin,"\n", sep=""))
+  cat(paste("Number of Chains: ", n.chains, "\n", sep = ""))
+  cat(paste("Total Posterior Samples: ",n.post * n.chains,"\n", sep=""))
+  cat(paste("Run Time (min): ", round(run.time, digits), "\n\n", sep = ""))
+
+  n.data <- length(object$y)
+  p.det.long <- sapply(object$X.p, function(a) dim(a)[[2]])
+  p.det.re.long <- sapply(object$X.p.re, function(a) dim(a)[[2]])
+
+  # Abundance ------------------------
+  cat("----------------------------------------\n")
+  cat("Abundance\n")
+  cat("----------------------------------------\n")
+  cat("Fixed Effects (logit scale):\n")
+  tmp.1 <- t(apply(object$beta.samples, 2,
+		   function(x) c(mean(x), sd(x))))
+  colnames(tmp.1) <- c("Mean", "SD")
+  tmp <- t(apply(object$beta.samples, 2,
+		 function(x) quantile(x, prob = quantiles)))
+  diags <- matrix(c(object$rhat$beta, round(object$ESS$beta, 0)), ncol = 2)
+  colnames(diags) <- c('Rhat', 'ESS')
+
+  print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+
+  if (object$muRE) {
+    cat("\n")
+    cat("Random Effect Variances (logit scale):\n")
+    tmp.1 <- t(apply(object$sigma.sq.mu.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$sigma.sq.mu.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$sigma.sq.mu, round(object$ESS$sigma.sq.mu, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+  }
+  cat("\n")
+  # Detection -------------------------
+  indx <- 1
+  indx.re <- 1
+  for (i in 1:n.data) {
+    cat("----------------------------------------\n")
+    cat(paste("Data source ", i, " Detection\n", sep = ""))
+    cat("----------------------------------------\n")
+    cat("Fixed Effects (logit scale):\n")
+    tmp.1 <- t(apply(object$alpha.samples[,indx:(indx+p.det.long[i] - 1), drop = FALSE], 2,
+		     function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$alpha.samples[,indx:(indx+p.det.long[i] - 1), drop = FALSE], 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$alpha[indx:(indx+p.det.long[i] - 1)],
+		      round(object$ESS$alpha[indx:(indx+p.det.long[i] - 1)], 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+    indx <- indx + p.det.long[i]
+    cat("\n")
+    if (object$pRELong[i]) {
+      tmp.samples <- object$sigma.sq.p.samples[, indx.re:(indx.re+p.det.re.long[i] - 1),
+					       drop = FALSE]
+      cat("Random Effect Variances (logit scale):\n")
+      tmp.1 <- t(apply(tmp.samples, 2, function(x) c(mean(x), sd(x))))
+      colnames(tmp.1) <- c("Mean", "SD")
+      tmp <- t(apply(tmp.samples, 2, function(x) quantile(x, prob = quantiles)))
+      diags <- matrix(c(object$rhat$sigma.sq.p[indx.re:(indx.re+p.det.re.long[i] - 1)],
+			round(object$ESS$sigma.sq.p[indx.re:(indx.re+p.det.re.long[i] - 1)],
+			      0)), ncol = 2)
+      colnames(diags) <- c('Rhat', 'ESS')
+
+      print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+      cat("\n")
+      indx.re <- indx.re + p.det.re.long[i]
+    }
+  }
+  if (class(object) %in% c('svcTIntAbund')) {
+    cat("----------------------------------------\n")
+    cat("Abundance Spatial Covariance: \n")
+    cat("----------------------------------------\n")
+    tmp.1 <- t(apply(object$theta.samples, 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$theta.samples, 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$theta, round(object$ESS$theta, 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+  }
+
+  # NB Overdispersion
+  if (any(object$dist == "NB")) {
+    cat("\n")
+    cat("----------------------------------------\n");
+    cat("\tNB overdispersion\n");
+    cat("----------------------------------------\n");
+    nb.indx <- which(object$dist == 'NB')
+    tmp.1 <- t(apply(object$kappa.samples[, nb.indx], 2,
+          	   function(x) c(mean(x), sd(x))))
+    colnames(tmp.1) <- c("Mean", "SD")
+    tmp <- t(apply(object$kappa.samples[, nb.indx], 2,
+          	 function(x) quantile(x, prob = quantiles)))
+    diags <- matrix(c(object$rhat$kappa[nb.indx], round(object$ESS$kappa[nb.indx], 0)), ncol = 2)
+    colnames(diags) <- c('Rhat', 'ESS')
+    print(noquote(round(cbind(tmp.1, tmp, diags), digits)))
+  }
+
+}
+
+

@@ -539,4 +539,27 @@ extern "C" {
                                      SEXP nSamples_r, SEXP covModel_r,
                                      SEXP nThreads_r, SEXP verbose_r, SEXP nReport_r,
                                      SEXP z0Samples_r);
+
+  SEXP svcTIntAbundNNGP(SEXP y_r, SEXP X_r, SEXP Xw_r, SEXP Xp_r, SEXP coords_r, SEXP XRE_r,
+                        SEXP XpRE_r, SEXP consts_r, SEXP pDetLong_r, 
+                        SEXP JLong_r, SEXP nObsLong_r, SEXP nAbundRELong_r, SEXP nDetRELong_r,
+                        SEXP nnIndx_r, SEXP nnIndxLU_r, SEXP uIndx_r, SEXP uIndxLU_r, 
+                        SEXP betaStarting_r, SEXP alphaStarting_r, 
+                        SEXP sigmaSqMuStarting_r, SEXP sigmaSqPStarting_r, 
+                        SEXP betaStarStarting_r, SEXP alphaStarStarting_r,  
+                        SEXP phiStarting_r, SEXP sigmaSqStarting_r, SEXP nuStarting_r,
+                        SEXP wStarting_r, SEXP kappaStarting_r,  
+                        SEXP zLongIndx_r, SEXP dataIndx_r, SEXP alphaIndx_r, SEXP zYearIndx_r, 
+                        SEXP zDatIndx_r, SEXP zSiteIndx_r, SEXP siteIndx_r, 
+                        SEXP betaStarIndx_r, SEXP betaLevelIndx_r,
+                        SEXP alphaStarIndx_r, SEXP alphaLevelIndx_r, SEXP alphaNREIndx_r,
+                        SEXP alphaColIndx_r, SEXP muBeta_r, SEXP SigmaBeta_r,
+                        SEXP muAlpha_r, SEXP sigmaAlpha_r,
+                        SEXP phiA_r, SEXP phiB_r,
+                        SEXP sigmaSqA_r, SEXP sigmaSqB_r, SEXP nuA_r, SEXP nuB_r, 
+                        SEXP sigmaSqMuA_r, SEXP sigmaSqMuB_r, SEXP sigmaSqPA_r, 
+                        SEXP sigmaSqPB_r, SEXP kappaA_r, SEXP kappaB_r, 
+                        SEXP tuning_r, SEXP acceptRate_r, SEXP chainInfo_r, 
+                        SEXP waicNObsIndx_r, SEXP waicCellIndx_r, SEXP offset_r);
+
 }

@@ -5,6 +5,8 @@
 + Fixed a bug in all GLMM models that prevented the models from running when a site-level offset was supplied into the model. Thanks to Sonia Illanas for bringing this to my attention.
 + Updated `simAbund()` to allow simulation of Gaussian and ZI-Gaussian data with multiple replicate samples per site. 
 + Updated `svcAbund()`, and `abund()` to allow fitting Gaussian SVC models with multiple replicate samples per site. 
++ New function `simTIntAbund()` allows for simulating abundance data from multiple data sources within a GLMM type structure. More details soon...
++ New function `svcTIntAbund()` allows fitting a SVC GLMM that is informed by multiple data sources with distinct observational covariates. More details soon...
 
 # spAbundance 0.2.1
 

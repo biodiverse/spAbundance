@@ -39,8 +39,8 @@ parseFormula <-  function(formula, data, intercept=TRUE, justX=FALSE){
     if (ncol(X.re) > 0) {
       for (j in 1:ncol(X.re)) {
         curr.indx <- unique.indx[j]
-	tmp <- as.numeric(re.terms$flist[[re.col.indx[curr.indx]]])
-	miss.indx <- is.na(tmp)
+        tmp <- as.numeric(re.terms$flist[[re.col.indx[curr.indx]]])
+        miss.indx <- is.na(tmp)
         X.re[, j] <- tmp[!miss.indx]
       }
       colnames(X.re) <- names(re.terms$flist)
