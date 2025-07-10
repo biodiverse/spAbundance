@@ -1592,7 +1592,8 @@ svcTIntAbund <- function(abund.formula, det.formula, data, inits, priors,
     update.list$n.omp.threads <- n.omp.threads
     update.list$data <- data.orig
     update.list$priors <- priors
-    update.list$formula <- formula
+    update.list$abund.formula <- abund.formula
+    update.list$det.formula <- det.formula
     # Random seed to have for updating.
     update.list$final.seed <- seeds.list
     out$update <- update.list
