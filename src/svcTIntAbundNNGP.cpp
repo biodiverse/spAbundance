@@ -1154,7 +1154,7 @@ extern "C" {
     PutRNGstate();
 
     SEXP result_r, resultName_r;
-    int nResultListObjs = 8;
+    int nResultListObjs = 10;
     if (pAbundRE > 0) {
       nResultListObjs += 2;
     }
@@ -1179,16 +1179,18 @@ extern "C" {
     SET_VECTOR_ELT(result_r, 5, alphaSamples_r);
     SET_VECTOR_ELT(result_r, 6, wSamples_r);
     SET_VECTOR_ELT(result_r, 7, thetaSamples_r);
+    SET_VECTOR_ELT(result_r, 8, tuningSamples_r);
+    SET_VECTOR_ELT(result_r, 9, acceptSamples_r);
     if (pDetRE > 0) {
-      tmp_0 = 8; // Needed to make tracking kappa easier.
-      SET_VECTOR_ELT(result_r, 8, sigmaSqPSamples_r);
-      SET_VECTOR_ELT(result_r, 9, alphaStarSamples_r);
+      tmp_0 = 10; // Needed to make tracking kappa easier.
+      SET_VECTOR_ELT(result_r, 10, sigmaSqPSamples_r);
+      SET_VECTOR_ELT(result_r, 11, alphaStarSamples_r);
     }
     if (pAbundRE > 0) {
       if (pDetRE > 0) {
-        tmp_0 = 10;
+        tmp_0 = 11;
       } else {
-        tmp_0 = 8;
+        tmp_0 = 10;
       }
       SET_VECTOR_ELT(result_r, tmp_0, sigmaSqMuSamples_r);
       SET_VECTOR_ELT(result_r, tmp_0 + 1, betaStarSamples_r);
@@ -1197,7 +1199,7 @@ extern "C" {
       if ((pDetRE > 0) || (pAbundRE > 0)) {
         tmp_02 = tmp_0 + 2;
       } else {
-        tmp_02 = 8;
+        tmp_02 = 10;
       }
       SET_VECTOR_ELT(result_r, tmp_02, kappaSamples_r);
     }
@@ -1212,9 +1214,11 @@ extern "C" {
     SET_VECTOR_ELT(resultName_r, 5, Rf_mkChar("alpha.samples"));
     SET_VECTOR_ELT(resultName_r, 6, Rf_mkChar("w.samples"));
     SET_VECTOR_ELT(resultName_r, 7, Rf_mkChar("theta.samples"));
+    SET_VECTOR_ELT(resultName_r, 8, Rf_mkChar("tune"));
+    SET_VECTOR_ELT(resultName_r, 9, Rf_mkChar("accept"));
     if (pDetRE > 0) {
-      SET_VECTOR_ELT(resultName_r, 8, Rf_mkChar("sigma.sq.p.samples"));
-      SET_VECTOR_ELT(resultName_r, 9, Rf_mkChar("alpha.star.samples"));
+      SET_VECTOR_ELT(resultName_r, 10, Rf_mkChar("sigma.sq.p.samples"));
+      SET_VECTOR_ELT(resultName_r, 11, Rf_mkChar("alpha.star.samples"));
     }
     if (pAbundRE > 0) {
       SET_VECTOR_ELT(resultName_r, tmp_0, Rf_mkChar("sigma.sq.mu.samples"));

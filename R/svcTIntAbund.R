@@ -39,6 +39,7 @@ svcTIntAbund <- function(abund.formula, det.formula, data, inits, priors,
     stop("data must be a list")
   }
   names(data) <- tolower(names(data))
+  data.orig <- data
   if (missing(abund.formula)) {
     stop("abund.formula must be specified")
   }
@@ -1375,6 +1376,8 @@ svcTIntAbund <- function(abund.formula, det.formula, data, inits, priors,
 
     out.tmp <- list()                          
     out <- list()                              
+    # Random seed information for each chain of the model.
+    seeds.list <- list()
     for (i in 1:n.chains) { 
       # Change initial values if i > 1       
       if ((i > 1)) {
@@ -1417,6 +1420,7 @@ svcTIntAbund <- function(abund.formula, det.formula, data, inits, priors,
                             kappa.a, kappa.b, tuning.c, accept.rate, chain.info, 
                             waic.n.obs.indx, waic.cell.indx, offset)
       chain.info[1] <- chain.info[1] + 1
+      seeds.list[[i]] <- .Random.seed
     }
 
     # Calculate R-Hat ---------------
@@ -1576,6 +1580,22 @@ svcTIntAbund <- function(abund.formula, det.formula, data, inits, priors,
       out$muRE <- FALSE
     }
     out$pRELong <- ifelse(p.det.re.by.data > 0, TRUE, FALSE)
+    # Send out objects needed for updateMCMC
+    update.list <- list()
+    update.list$tuning <- matrix(NA, nrow(out.tmp[[1]]$tune), n.chains)
+    for (i in 1:n.chains) {
+      update.list$tuning[, i] <- exp(out.tmp[[i]]$tune[, n.batch])
+    }
+    update.list$accept.rate <- accept.rate
+    update.list$n.batch <- n.batch
+    update.list$batch.length <- batch.length
+    update.list$n.omp.threads <- n.omp.threads
+    update.list$data <- data.orig
+    update.list$priors <- priors
+    update.list$formula <- formula
+    # Random seed to have for updating.
+    update.list$final.seed <- seeds.list
+    out$update <- update.list
   } # NNGP
   class(out) <- "svcTIntAbund"
   out$run.time <- proc.time() - ptm
