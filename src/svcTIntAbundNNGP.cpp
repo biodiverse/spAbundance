@@ -1188,7 +1188,7 @@ extern "C" {
     }
     if (pAbundRE > 0) {
       if (pDetRE > 0) {
-        tmp_0 = 11;
+        tmp_0 = 12;
       } else {
         tmp_0 = 10;
       }

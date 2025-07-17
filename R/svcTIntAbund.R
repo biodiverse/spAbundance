@@ -993,8 +993,25 @@ svcTIntAbund <- function(abund.formula, det.formula, data, inits, priors,
     }
   }
   # w ---------------------------------
-  # Just set initial W values to 0. 
-  w.inits <- rep(0, J * p.svc)
+  if ("w" %in% names(inits)) {
+    w.inits <- inits[["w"]]
+    if (!is.matrix(w.inits)) {
+      stop(paste("error: initial values for w must be a matrix with dimensions ",
+      	   p.svc, " x ", J, sep = ""))
+    }
+    if (nrow(w.inits) != p.svc | ncol(w.inits) != J) {
+      stop(paste("error: initial values for w must be a matrix with dimensions ",
+      	   p.svc, " x ", J, sep = ""))
+    }
+    if (NNGP) {
+      w.inits <- w.inits[, ord, drop = FALSE]
+    }
+  } else {
+    w.inits <- matrix(0, p.svc, J)
+    if (verbose) {
+      message("w is not specified in initial values.\nSetting initial value to 0\n")
+    }
+  }
   # sigma.sq.mu -------------------
   if (p.abund.re > 0) {
     if ("sigma.sq.mu" %in% names(inits)) {
@@ -1018,12 +1035,33 @@ svcTIntAbund <- function(abund.formula, det.formula, data, inits, priors,
       }
     }
     beta.star.indx <- rep(0:(p.abund.re - 1), n.abund.re.long)
-    beta.star.inits <- rnorm(n.abund.re, 0, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
   } else {
     sigma.sq.mu.inits <- 0
     beta.star.indx <- 0
     beta.star.inits <- 0
   }
+  # beta.star -------------------------
+  if (p.abund.re > 0) {
+    if ("beta.star" %in% names(inits)) {
+      beta.star.inits <- inits[['beta.star']]
+      if (length(beta.star.inits) != n.abund.re & length(beta.star.inits) != 1) {
+        stop(paste("initial values for beta.star must be of length ", n.abund.re, 
+             " or 1", sep = ""))
+      }
+      if (length(beta.star.inits) != n.abund.re) {
+        beta.star.inits <- rep(beta.star.inits, n.abund.re)
+      }
+    } else {
+      if (verbose) {
+        message('beta.star is not specified in initial values.\nSetting initial values to random values from the prior distribution\n')
+      }
+      beta.star.inits <- rnorm(n.abund.re, 0, sqrt(sigma.sq.mu.inits[beta.star.indx + 1]))
+    }
+  } else {
+    beta.star.indx <- 0
+    beta.star.inits <- 0
+  }
+
   # sigma.sq.p ------------------
   if (p.det.re > 0) {
     if ("sigma.sq.p" %in% names(inits)) {
@@ -1072,6 +1110,27 @@ svcTIntAbund <- function(abund.formula, det.formula, data, inits, priors,
     alpha.star.indx <- 0
     alpha.star.inits <- 0
     alpha.col.indx <- 0
+  }
+  # alpha.star ------------------------
+  if (p.det.re > 0) {
+    if ("alpha.star" %in% names(inits)) {
+      alpha.star.inits <- inits[['alpha.star']]
+      if (length(alpha.star.inits) != n.det.re & length(alpha.star.inits) != 1) {
+        stop(paste("initial values for alpha.star must be of length ", n.det.re, 
+             " or 1", sep = ""))
+      }
+      if (length(alpha.star.inits) != n.det.re) {
+        alpha.star.inits <- rep(alpha.star.inits, n.det.re)
+      }
+    } else {
+      if (verbose) {
+        message('alpha.star is not specified in initial values.\nSetting initial values to random values from the prior distribution\n')
+      }
+      alpha.star.inits <- rnorm(n.det.re, 0, sqrt(sigma.sq.p.inits[alpha.star.indx + 1]))
+    }
+  } else {
+    alpha.star.indx <- 0
+    alpha.star.inits <- 0
   }
   # kappa ---------------------------
   if (any(family == 'NB')) {
@@ -1219,10 +1278,12 @@ svcTIntAbund <- function(abund.formula, det.formula, data, inits, priors,
         stop("beta.star must be specified in tuning value list")
       }
       beta.star.tuning <- tuning$beta.star
-      if (length(beta.star.tuning) != 1) {
-        stop("beta.star tuning must be a single value")
+      if (length(beta.star.tuning) != 1 & length(beta.star.tuning) != n.abund.re) {
+        stop(paste0("beta.star tuning must be a single value or a vector of length ", n.abund.re))
       }
-      beta.star.tuning <- rep(beta.star.tuning, n.abund.re)
+      if (length(beta.star.tuning) == 1) {
+        beta.star.tuning <- rep(beta.star.tuning, n.abund.re)
+      }
     } else {
       beta.star.tuning <- NULL
     }
@@ -1232,10 +1293,12 @@ svcTIntAbund <- function(abund.formula, det.formula, data, inits, priors,
         stop("alpha.star must be specified in tuning value list")
       }
       alpha.star.tuning <- tuning$alpha.star
-      if (length(alpha.star.tuning) != 1) {
-        stop("alpha.star tuning must be a single value")
+      if (length(alpha.star.tuning) != 1 & length(alpha.star.tuning) != n.det.re) {
+        stop(paste0("alpha.star tuning must be a single value or a vector of length ", n.det.re))
       }
-      alpha.star.tuning <- rep(alpha.star.tuning, n.det.re)
+      if (length(alpha.star.tuning) == 1) {
+        alpha.star.tuning <- rep(alpha.star.tuning, n.det.re)
+      }
     } else {
       alpha.star.tuning <- NULL
     }
